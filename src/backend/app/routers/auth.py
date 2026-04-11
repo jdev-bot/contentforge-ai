@@ -181,3 +181,46 @@ async def get_current_user(user=Depends(get_auth_user)):
         full_name=profile_data.get("full_name"),
         is_active=True,
     )
+
+
+class UpdateProfileRequest(BaseModel):
+    full_name: str
+
+
+@router.patch("/auth/me", response_model=UserResponse)
+async def update_current_user(update_data: UpdateProfileRequest, user=Depends(get_auth_user)):
+    """Update current user's profile."""
+    supabase = get_supabase_client()
+    
+    try:
+        # Update user metadata in Supabase Auth
+        auth_response = supabase.auth.update_user({
+            "data": {
+                "full_name": update_data.full_name,
+            }
+        })
+        
+        if not auth_response.user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to update profile",
+            )
+        
+        # Also update in profiles table
+        supabase.table("profiles").update({
+            "full_name": update_data.full_name,
+            "updated_at": "now()"
+        }).eq("id", str(user.id)).execute()
+        
+        return UserResponse(
+            id=str(user.id),
+            email=user.email,
+            full_name=update_data.full_name,
+            is_active=True,
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )

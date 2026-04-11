@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { listDistributions, Distribution } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { Loader2, Calendar, ExternalLink, Trash2 } from 'lucide-react'
 
 export default function DistributionsTab() {
@@ -28,8 +29,25 @@ export default function DistributionsTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-24" />
+        </div>
+        <div className="space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-32" />
+                <div className="ml-auto">
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }

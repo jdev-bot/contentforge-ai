@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { listProjects, deleteProject, Project } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
 import { 
   Plus, 
@@ -82,19 +83,22 @@ export default function ProjectsTab() {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
-          <Button 
-            className="flex items-center gap-2"
-            onClick={() => router.push('/projects/new')}
-            disabled
-          >
-            <Plus className="h-4 w-4" />
-            New Project
-          </Button>
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-32" />
         </div>
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
-          <span className="ml-3 text-gray-600">Loading projects...</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-start gap-3">
+                <Skeleton className="h-10 w-10 rounded-lg" />
+                <div className="flex-1">
+                  <Skeleton className="h-5 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-full mb-3" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     )

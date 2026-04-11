@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthUser } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
-import { Plus, FileText, Share2, BarChart3, Settings, Folder } from 'lucide-react'
+import { Plus, FileText, Share2, BarChart3, Settings, Folder, Menu, X } from 'lucide-react'
 import DistributionsTab from './DistributionsTab'
 import ProjectsTab from './ProjectsTab'
+import AnalyticsTab from './AnalyticsTab'
+import SettingsTab from './SettingsTab'
+import ContentTab from './ContentTab'
 
 interface DashboardProps {
   user: AuthUser
@@ -14,23 +17,78 @@ interface DashboardProps {
 
 export default function Dashboard({ user }: DashboardProps) {
   const [activeTab, setActiveTab] = useState('content')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const router = useRouter()
 
   const tabs = [
     { id: 'content', name: 'Content', icon: FileText },
-    { id: 'projects', name: 'Projects', icon: Plus },
+    { id: 'projects', name: 'Projects', icon: Folder },
     { id: 'distributions', name: 'Distributions', icon: Share2 },
     { id: 'analytics', name: 'Analytics', icon: BarChart3 },
     { id: 'settings', name: 'Settings', icon: Settings },
   ]
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + N for new content
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault()
+        router.push('/content/new')
+      }
+      // Ctrl/Cmd + P for new project
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault()
+        router.push('/projects/new')
+      }
+      // Escape to close mobile menu
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [router])
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'content':
+        return <ContentTab />
+      case 'projects':
+        return <ProjectsTab />
+      case 'distributions':
+        return <DistributionsTab />
+      case 'analytics':
+        return <AnalyticsTab />
+      case 'settings':
+        return <SettingsTab user={user} />
+      default:
+        return <ContentTab />
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
+            {/* Logo and Mobile Menu Button */}
+            <div className="flex items-center gap-4">
+              {/* Mobile Menu Button */}
+              <button
+                className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              >
+                {mobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
+              </button>
+              
               <div className="flex-shrink-0">
                 <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   ContentForge
@@ -38,7 +96,8 @@ export default function Dashboard({ user }: DashboardProps) {
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-4">
               <div className="text-sm text-gray-600">
                 {user.email}
               </div>
@@ -52,8 +111,8 @@ export default function Dashboard({ user }: DashboardProps) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row gap-8">
-          {/* Sidebar */}
-          <aside className="w-full md:w-64">
+          {/* Sidebar - Desktop */}
+          <aside className="hidden md:block w-64">
             <nav className="space-y-1">
               {tabs.map((tab) => {
                 const Icon = tab.icon
@@ -74,35 +133,83 @@ export default function Dashboard({ user }: DashboardProps) {
               })}
             </nav>
             
-            {/* Quick Stats */}
-            <div className="mt-8 bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Quick Stats</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Content Pieces</span>
-                  <span className="font-medium">0</span>
+            {/* Keyboard Shortcuts Info */}
+            <div className="mt-8 p-4 bg-gray-100 rounded-lg">
+              <p className="text-xs font-medium text-gray-700 mb-2">Keyboard Shortcuts</p>
+              <div className="space-y-1 text-xs text-gray-500">
+                <div className="flex justify-between">
+                  <span>New Content</span>
+                  <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-300">Ctrl+N</kbd>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Assets Generated</span>
-                  <span className="font-medium">0</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Published</span>
-                  <span className="font-medium">0</span>
+                <div className="flex justify-between">
+                  <span>New Project</span>
+                  <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-300">Ctrl+P</kbd>
                 </div>
               </div>
             </div>
           </aside>
 
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <>
+              {/* Backdrop */}
+              <div 
+                className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                onClick={() => setMobileMenuOpen(false)}
+              />
+              
+              {/* Mobile Sidebar */}
+              <aside className="fixed inset-y-0 left-0 w-64 bg-white z-50 md:hidden shadow-xl">
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                  <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    ContentForge
+                  </span>
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <nav className="p-4 space-y-1">
+                  {tabs.map((tab) => {
+                    const Icon = tab.icon
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setActiveTab(tab.id)
+                          setMobileMenuOpen(false)
+                        }}
+                        className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                          activeTab === tab.id
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <Icon className="mr-3 h-5 w-5" />
+                        {tab.name}
+                      </button>
+                    )
+                  })}
+                </nav>
+                
+                <div className="p-4 border-t border-gray-200">
+                  <div className="text-sm text-gray-600 mb-4">
+                    {user.email}
+                  </div>
+                  <Button variant="outline" className="w-full">
+                    Sign Out
+                  </Button>
+                </div>
+              </aside>
+            </>
+          )}
+
           {/* Main Content */}
-          <main className="flex-1">
-            {activeTab === 'content' && (
-              <ContentTab router={router} />
-            )}
-            {activeTab === 'projects' && <ProjectsTab />}
-            {activeTab === 'distributions' && <DistributionsTab />}
-            {activeTab === 'analytics' && <AnalyticsTab />}
-            {activeTab === 'settings' && <SettingsTab user={user} />}
+          <main className="flex-1 min-w-0">
+            {renderTabContent()}
           </main>
         </div>
       </div>
@@ -110,89 +217,3 @@ export default function Dashboard({ user }: DashboardProps) {
   )
 }
 
-function ContentTab({ router }: { router: any }) {
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Your Content</h2>
-        <Button 
-          className="flex items-center gap-2"
-          onClick={() => router.push('/content/new')}
-        >
-          <Plus className="h-4 w-4" />
-          New Content
-        </Button>
-      </div>
-
-      {/* Empty State */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-        <div className="mx-auto h-12 w-12 text-gray-400">
-          <FileText className="h-12 w-12" />
-        </div>
-        
-        <h3 className="mt-4 text-lg font-medium text-gray-900">No content yet</h3>
-        <p className="mt-2 text-gray-500 max-w-sm mx-auto">
-          Get started by adding your first piece of content. We'll transform it into multiple formats.
-        </p>
-        
-        <div className="mt-6">
-          <Button 
-            className="flex items-center gap-2 mx-auto"
-            onClick={() => router.push('/content/new')}
-          >
-            <Plus className="h-4 w-4" />
-            Add Content
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-
-
-function AnalyticsTab() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Analytics</h2>
-      <p className="text-gray-500">Track your content performance and engagement metrics.</p>
-    </div>
-  )
-}
-
-function SettingsTab({ user }: { user: AuthUser }) {
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
-      
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Profile</h3>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <div className="mt-1 text-gray-900">{user.email}</div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Full Name</label>
-            <div className="mt-1 text-gray-900">{user.full_name || 'Not set'}</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Subscription</h3>
-        
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-500">Current Plan</p>
-            <p className="text-lg font-medium text-gray-900">Free</p>
-          </div>
-          
-          <Button variant="outline">Upgrade</Button>
-        </div>
-      </div>
-    </div>
-  )
-}
