@@ -279,3 +279,121 @@ export async function publishNow(distributionId: string): Promise<Distribution> 
   
   return response.json()
 }
+
+// Analytics Types
+export interface UsageStats {
+  monthly_usage_count: number
+  monthly_usage_limit: number
+  remaining: number
+  percentage_used: number
+  reset_at?: string
+}
+
+export interface UsageActivity {
+  event_type: string
+  tokens_used?: number
+  created_at: string
+}
+
+export interface UsageSummary {
+  stats: UsageStats
+  recent_activity: UsageActivity[]
+  status: 'active' | 'limit_reached'
+}
+
+export async function getUsageSummary(): Promise<UsageSummary> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/usage/summary`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch usage summary')
+  }
+  
+  return response.json()
+}
+
+export interface AnalyticsStats {
+  content_count: number
+  assets_generated: number
+  distributions_published: number
+}
+
+export async function getAnalyticsStats(): Promise<AnalyticsStats> {
+  // Aggregate from multiple endpoints
+  const [content, distributions] = await Promise.all([
+    listContent(),
+    listDistributions('published')
+  ])
+  
+  // Get assets for all content
+  let totalAssets = 0
+  for (const item of content) {
+    try {
+      const assets = await listAssets(item.id)
+      totalAssets += assets.length
+    } catch {
+      // Skip if error
+    }
+  }
+  
+  return {
+    content_count: content.length,
+    assets_generated: totalAssets,
+    distributions_published: distributions.length,
+  }
+}
+
+// User Profile
+export interface UserProfile {
+  id: string
+  email: string
+  full_name?: string
+  subscription_tier: string
+}
+
+export async function getUserProfile(): Promise<UserProfile> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/auth/me`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch profile')
+  }
+  
+  return response.json()
+}
+
+export async function updateUserProfile(data: { full_name: string }): Promise<UserProfile> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/auth/me`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(data),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update profile')
+  }
+  
+  return response.json()
+}
+
+// API Keys (mock for now - would come from backend)
+export interface ApiKeys {
+  stripe_key?: string
+  groq_key?: string
+}
+
+export async function getApiKeys(): Promise<ApiKeys> {
+  // In production, these would be fetched from the backend
+  // For now, return empty (user would need to configure)
+  return {
+    stripe_key: process.env.NEXT_PUBLIC_STRIPE_KEY,
+    groq_key: process.env.NEXT_PUBLIC_GROQ_KEY,
+  }
+}
