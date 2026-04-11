@@ -186,3 +186,53 @@ export async function createProject(data: { name: string; description?: string }
   
   return response.json()
 }
+
+export interface Distribution {
+  id: string
+  asset_id: string
+  user_id: string
+  platform: string
+  status: 'pending' | 'scheduled' | 'publishing' | 'published' | 'failed' | 'cancelled'
+  scheduled_at?: string
+  published_at?: string
+  published_url?: string
+  external_id?: string
+  retry_count: number
+  created_at: string
+  updated_at: string
+}
+
+export async function createDistribution(data: { asset_id: string; platform: string; scheduled_at?: string }): Promise<Distribution> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/distributions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to schedule distribution')
+  }
+  
+  return response.json()
+}
+
+export async function listDistributions(status?: string): Promise<Distribution[]> {
+  const headers = await getAuthHeader()
+  
+  let url = `${API_URL}/distributions`
+  if (status) {
+    url += `?status=${status}`
+  }
+  
+  const response = await fetch(url, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch distributions')
+  }
+  
+  return response.json()
+}
