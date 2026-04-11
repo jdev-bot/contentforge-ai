@@ -1,17 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/Card'
-import { ArrowLeft, Link, FileText, Youtube, Upload } from 'lucide-react'
+import { ArrowLeft, Link, FileText, Youtube, Upload, Loader2 } from 'lucide-react'
+import { createContent, listProjects } from '@/lib/api'
 
 export default function NewContentPage() {
   const [sourceType, setSourceType] = useState('url')
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
+  const [text, setText] = useState('')
+  const [projectId, setProjectId] = useState('')
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const router = useRouter()
 
   const sourceTypes = [
@@ -21,17 +26,51 @@ export default function NewContentPage() {
     { id: 'upload', name: 'Upload File', icon: Upload, description: 'Audio or video file' },
   ]
 
+  // Load projects on mount
+  useEffect(() => {
+    async function loadProjects() {
+      try {
+        const projects = await listProjects()
+        setProjects(projects.filter(p => p.is_active).map(p => ({ id: p.id, name: p.name })))
+        if (projects.length > 0) {
+          setProjectId(projects[0].id)
+        }
+      } catch (e) {
+        console.error('Failed to load projects:', e)
+      }
+    }
+    loadProjects()
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setError('')
 
-    // TODO: Connect to backend API
-    console.log('Creating content:', { sourceType, url, title })
+    try {
+      if (!projectId) {
+        throw new Error('Please select a project')
+      }
 
-    setTimeout(() => {
+      const contentData = {
+        title,
+        project_id: projectId,
+        source: {
+          type: sourceType,
+          url: sourceType === 'url' || sourceType === 'youtube' ? url : undefined,
+          text: sourceType === 'text' ? text : undefined,
+        },
+      }
+
+      const content = await createContent(contentData)
+      
+      // Redirect to content view page
+      router.push(`/content/${content.id}`)
+    } catch (err: any) {
+      setError(err.message || 'Failed to create content')
+    } finally {
       setLoading(false)
-      router.push('/')
-    }, 2000)
+    }
   }
 
   return (
@@ -59,6 +98,31 @@ export default function NewContentPage() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Project Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Project
+                </label>
+                <select
+                  value={projectId}
+                  onChange={(e) => setProjectId(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select a project...</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+                {projects.length === 0 && (
+                  <p className="text-sm text-amber-600 mt-1">
+                    No projects found. Create one in the Projects tab first.
+                  </p>
+                )}
+              </div>
+
               {/* Source Type Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -73,11 +137,12 @@ export default function NewContentPage() {
                         key={type.id}
                         type="button"
                         onClick={() => setSourceType(type.id)}
+                        disabled={type.id === 'upload'}
                         className={`p-4 rounded-lg border-2 text-left transition-all ${
                           sourceType === type.id
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                        } ${type.id === 'upload' ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <Icon className="h-6 w-6 mb-2" />
                         <p className="font-medium text-sm">{type.name}</p>
@@ -137,6 +202,8 @@ export default function NewContentPage() {
                     id="content"
                     rows={10}
                     placeholder="Paste your blog post, article, or any text here..."
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
                     className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
@@ -152,9 +219,16 @@ export default function NewContentPage() {
                   
                   <div className="mt-1 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 cursor-pointer">
                     <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                    <p className="mt-2 text-sm text-gray-600">Click to upload or drag and drop</p>
-                    <p className="text-xs text-gray-500">MP3, MP4, WAV up to 100MB</p>
+                    <p className="mt-2 text-sm text-gray-600">Upload coming soon</p>
+                    <p className="text-xs text-gray-500">Use URL or text input for now</p>
                   </div>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">{error}</p>
                 </div>
               )}
 
@@ -164,16 +238,24 @@ export default function NewContentPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  disabled={loading}
                 >
                   Cancel
                 </Button>
                 
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !projectId}
                   className="flex items-center gap-2"
                 >
-                  {loading ? 'Processing...' : 'Add Content'}
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Add Content'
+                  )}
                 </Button>
               </div>
             </form>

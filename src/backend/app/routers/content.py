@@ -1,11 +1,16 @@
 """
-Content router.
+Content router with full implementation.
 """
-from fastapi import APIRouter, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Depends, Request
 from pydantic import BaseModel, HttpUrl
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
+
+from app.core.supabase import get_supabase_client
+from app.routers.auth import get_auth_user
+from app.services.extraction_service import content_extraction_service
+from app.services.groq_service import groq_service
 
 router = APIRouter()
 
@@ -26,11 +31,13 @@ class ContentCreate(BaseModel):
 class ContentResponse(BaseModel):
     id: UUID
     project_id: UUID
+    user_id: UUID
     title: str
     source_type: str
     source_url: Optional[str] = None
     original_text: Optional[str] = None
-    status: str  # "pending", "processing", "completed", "failed"
+    word_count: Optional[int] = None
+    status: str
     created_at: datetime
     updated_at: datetime
 
@@ -38,68 +45,311 @@ class ContentResponse(BaseModel):
 class GeneratedAsset(BaseModel):
     id: UUID
     content_id: UUID
-    type: str  # "social_post", "newsletter", "blog_post", "thread", "short_video_script"
-    platform: Optional[str] = None  # "twitter", "linkedin", "instagram", etc.
+    user_id: UUID
+    type: str
+    platform: Optional[str] = None
     content: str
+    tokens_used: Optional[int] = None
     status: str
     created_at: datetime
 
 
 @router.post("/content", response_model=ContentResponse, status_code=status.HTTP_201_CREATED)
-async def create_content(content: ContentCreate):
-    """Create new content from a source."""
-    # TODO: Implement with content extraction
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Content creation not yet implemented",
-    )
+async def create_content(
+    content_data: ContentCreate,
+    user=Depends(get_auth_user)
+):
+    """Create new content from a source and extract text."""
+    supabase = get_supabase_client()
+    
+    try:
+        # Extract text based on source type
+        original_text = None
+        source_url = None
+        word_count = None
+        
+        if content_data.source.type == "url" and content_data.source.url:
+            source_url = str(content_data.source.url)
+            original_text = await content_extraction_service.extract_from_url(source_url)
+            
+        elif content_data.source.type == "youtube" and content_data.source.url:
+            source_url = str(content_data.source.url)
+            # Extract video ID from URL
+            video_id = None
+            if "v=" in source_url:
+                video_id = source_url.split("v=")[1].split("&")[0]
+            elif "youtu.be/" in source_url:
+                video_id = source_url.split("youtu.be/")[1].split("?")[0]
+            
+            if video_id:
+                original_text = await content_extraction_service.extract_from_youtube(video_id)
+            
+        elif content_data.source.type == "text":
+            original_text = content_data.source.text
+            
+        # Clean and calculate word count
+        if original_text:
+            cleaned_text = content_extraction_service.clean_text(original_text)
+            word_count = len(cleaned_text.split())
+            
+        # Create content record
+        data = {
+            "project_id": str(content_data.project_id),
+            "user_id": str(user.id),
+            "title": content_data.title,
+            "source_type": content_data.source.type,
+            "source_url": source_url,
+            "original_text": original_text,
+            "word_count": word_count,
+            "status": "completed" if original_text else "failed",
+        }
+        
+        result = supabase.table("content").insert(data).execute()
+        
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create content",
+            )
+        
+        return ContentResponse(**result.data[0])
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 @router.get("/content", response_model=List[ContentResponse])
-async def list_content(project_id: Optional[UUID] = None):
+async def list_content(
+    project_id: Optional[UUID] = None,
+    status: Optional[str] = None,
+    user=Depends(get_auth_user)
+):
     """List all content for the current user."""
-    # TODO: Implement with Supabase
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Content listing not yet implemented",
-    )
+    supabase = get_supabase_client()
+    
+    try:
+        query = supabase.table("content").select("*").eq("user_id", str(user.id))
+        
+        if project_id:
+            query = query.eq("project_id", str(project_id))
+        if status:
+            query = query.eq("status", status)
+            
+        query = query.order("created_at", desc=True)
+        
+        result = query.execute()
+        
+        return [ContentResponse(**c) for c in result.data]
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
 
 
 @router.get("/content/{content_id}", response_model=ContentResponse)
-async def get_content(content_id: UUID):
+async def get_content(
+    content_id: UUID,
+    user=Depends(get_auth_user)
+):
     """Get specific content."""
-    # TODO: Implement with Supabase
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Content retrieval not yet implemented",
-    )
+    supabase = get_supabase_client()
+    
+    try:
+        result = supabase.table("content").select("*").eq("id", str(content_id)).eq("user_id", str(user.id)).single().execute()
+        
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Content not found",
+            )
+        
+        return ContentResponse(**result.data)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
 
 
-@router.post("/content/{content_id}/generate")
-async def generate_assets(content_id: UUID):
-    """Generate repurposed assets from content."""
-    # TODO: Implement with Groq AI
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Asset generation not yet implemented",
-    )
+@router.post("/content/{content_id}/generate", response_model=List[GeneratedAsset])
+async def generate_assets(
+    content_id: UUID,
+    user=Depends(get_auth_user)
+):
+    """Generate repurposed assets from content using Groq AI."""
+    supabase = get_supabase_client()
+    
+    try:
+        # Get the content
+        content_result = supabase.table("content").select("*").eq("id", str(content_id)).eq("user_id", str(user.id)).single().execute()
+        
+        if not content_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Content not found",
+            )
+        
+        content = content_result.data
+        original_text = content.get("original_text")
+        
+        if not original_text:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No content text available for generation",
+            )
+        
+        # Generate various assets using Groq
+        assets_to_create = []
+        
+        # Generate Twitter/X threads
+        try:
+            threads = await groq_service.generate_thread(original_text, "twitter")
+            for i, thread_post in enumerate(threads):
+                assets_to_create.append({
+                    "content_id": str(content_id),
+                    "user_id": str(user.id),
+                    "type": "thread",
+                    "platform": "twitter",
+                    "content": thread_post,
+                    "status": "generated",
+                })
+        except Exception as e:
+            print(f"Error generating threads: {e}")
+        
+        # Generate LinkedIn posts
+        try:
+            linkedin_posts = await groq_service.generate_social_posts(original_text, "linkedin", count=2)
+            for post in linkedin_posts:
+                assets_to_create.append({
+                    "content_id": str(content_id),
+                    "user_id": str(user.id),
+                    "type": "social_post",
+                    "platform": "linkedin",
+                    "content": post,
+                    "status": "generated",
+                })
+        except Exception as e:
+            print(f"Error generating LinkedIn posts: {e}")
+        
+        # Generate Newsletter
+        try:
+            newsletter_result = await groq_service.generate_newsletter(original_text)
+            assets_to_create.append({
+                "content_id": str(content_id),
+                "user_id": str(user.id),
+                "type": "newsletter",
+                "platform": None,
+                "content": newsletter_result.get("newsletter", ""),
+                "status": "generated",
+            })
+        except Exception as e:
+            print(f"Error generating newsletter: {e}")
+        
+        # Generate video script
+        try:
+            video_result = await groq_service.generate_short_video_script(original_text)
+            assets_to_create.append({
+                "content_id": str(content_id),
+                "user_id": str(user.id),
+                "type": "video_script",
+                "platform": None,
+                "content": video_result.get("script", ""),
+                "status": "generated",
+            })
+        except Exception as e:
+            print(f"Error generating video script: {e}")
+        
+        # Insert all assets
+        created_assets = []
+        if assets_to_create:
+            result = supabase.table("generated_assets").insert(assets_to_create).execute()
+            created_assets = [GeneratedAsset(**a) for a in result.data]
+        
+        # Update content status
+        supabase.table("content").update({"status": "completed"}).eq("id", str(content_id)).execute()
+        
+        return created_assets
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
 
 
 @router.get("/content/{content_id}/assets", response_model=List[GeneratedAsset])
-async def list_assets(content_id: UUID):
+async def list_assets(
+    content_id: UUID,
+    user=Depends(get_auth_user)
+):
     """List generated assets for content."""
-    # TODO: Implement with Supabase
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Asset listing not yet implemented",
-    )
+    supabase = get_supabase_client()
+    
+    try:
+        result = supabase.table("generated_assets").select("*").eq("content_id", str(content_id)).eq("user_id", str(user.id)).order("created_at", desc=True).execute()
+        
+        return [GeneratedAsset(**a) for a in result.data]
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
 
 
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(
+    file: UploadFile = File(...),
+    user=Depends(get_auth_user)
+):
     """Upload a file (audio/video)."""
     # TODO: Implement file upload to R2
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="File upload not yet implemented",
     )
+
+
+@router.delete("/content/{content_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_content(
+    content_id: UUID,
+    user=Depends(get_auth_user)
+):
+    """Delete content."""
+    supabase = get_supabase_client()
+    
+    try:
+        # Check if content exists and belongs to user
+        existing = supabase.table("content").select("*").eq("id", str(content_id)).eq("user_id", str(user.id)).single().execute()
+        
+        if not existing.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Content not found",
+            )
+        
+        # Delete related assets first
+        supabase.table("generated_assets").delete().eq("content_id", str(content_id)).execute()
+        
+        # Delete content
+        supabase.table("content").delete().eq("id", str(content_id)).execute()
+        
+        return None
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
