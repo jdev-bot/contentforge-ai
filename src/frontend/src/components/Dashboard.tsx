@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { AuthUser } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Plus, FileText, Share2, BarChart3, Settings, Folder } from 'lucide-react'
+import DistributionsTab from './DistributionsTab'
 
 interface DashboardProps {
   user: AuthUser
@@ -181,15 +182,6 @@ function ProjectsTab({ router }: { router: any }) {
           </Button>
         </div>
       </div>
-    </div>
-  )
-}
-
-function DistributionsTab() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Distributions</h2>
-      <p className="text-gray-500">Manage your scheduled and published content across platforms.</p>
     </div>
   )
 }
