@@ -6,6 +6,7 @@ import { createProject } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/Card'
+import { useToast } from '@/hooks/useToast'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 
 export default function NewProjectPage() {
@@ -14,6 +15,7 @@ export default function NewProjectPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const { showToast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,9 +24,11 @@ export default function NewProjectPage() {
 
     try {
       await createProject({ name, description })
-      router.push('/')
+      showToast('Project created successfully!', 'success')
+      router.push('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Failed to create project')
+      showToast('Failed to create project', 'error')
     } finally {
       setLoading(false)
     }
