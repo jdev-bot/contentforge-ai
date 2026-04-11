@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { AuthUser } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Plus, FileText, Share2, BarChart3, Settings } from 'lucide-react'
@@ -11,6 +12,7 @@ interface DashboardProps {
 
 export default function Dashboard({ user }: DashboardProps) {
   const [activeTab, setActiveTab] = useState('content')
+  const router = useRouter()
 
   const tabs = [
     { id: 'content', name: 'Content', icon: FileText },
@@ -92,7 +94,9 @@ export default function Dashboard({ user }: DashboardProps) {
 
           {/* Main Content */}
           <main className="flex-1">
-            {activeTab === 'content' && <ContentTab />}
+            {activeTab === 'content' && (
+              <ContentTab router={router} />
+            )}
             {activeTab === 'projects' && <ProjectsTab />}
             {activeTab === 'distributions' && <DistributionsTab />}
             {activeTab === 'analytics' && <AnalyticsTab />}
@@ -104,12 +108,15 @@ export default function Dashboard({ user }: DashboardProps) {
   )
 }
 
-function ContentTab() {
+function ContentTab({ router }: { router: any }) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Your Content</h2>
-        <Button className="flex items-center gap-2">
+        <Button 
+          className="flex items-center gap-2"
+          onClick={() => router.push('/content/new')}
+        >
           <Plus className="h-4 w-4" />
           New Content
         </Button>
@@ -120,13 +127,17 @@ function ContentTab() {
         <div className="mx-auto h-12 w-12 text-gray-400">
           <FileText className="h-12 w-12" />
         </div>
+        
         <h3 className="mt-4 text-lg font-medium text-gray-900">No content yet</h3>
         <p className="mt-2 text-gray-500 max-w-sm mx-auto">
           Get started by adding your first piece of content. We'll transform it into multiple formats.
         </p>
         
         <div className="mt-6">
-          <Button className="flex items-center gap-2 mx-auto">
+          <Button 
+            className="flex items-center gap-2 mx-auto"
+            onClick={() => router.push('/content/new')}
+          >
             <Plus className="h-4 w-4" />
             Add Content
           </Button>
