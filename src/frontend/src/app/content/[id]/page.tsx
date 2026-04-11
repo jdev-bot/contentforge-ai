@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getContent, generateAssets, listAssets, deleteContent, Content, GeneratedAsset } from '@/lib/api'
+import { getContent, generateAssets, listAssets, deleteContent, Content, GeneratedAsset, createDistribution, publishNow } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/Card'
-import { ArrowLeft, Loader2, Sparkles, Trash2, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Loader2, Sparkles, Trash2, RefreshCw, Share2, Send } from 'lucide-react'
 
 export default function ContentDetailPage({ params }: { params: { id: string } }) {
   const [content, setContent] = useState<Content | null>(null)
@@ -201,6 +201,9 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
 
 function AssetCard({ asset }: { asset: GeneratedAsset }) {
   const [copied, setCopied] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [publishError, setPublishError] = useState('')
+  const [published, setPublished] = useState(false)
 
   const typeLabels: Record<string, string> = {
     'thread': 'Twitter Thread',
@@ -216,10 +219,40 @@ function AssetCard({ asset }: { asset: GeneratedAsset }) {
     'instagram': 'bg-pink-100 text-pink-700',
   }
 
+  const platformDisplayNames: Record<string, string> = {
+    'twitter': 'Twitter/X',
+    'linkedin': 'LinkedIn',
+    'instagram': 'Instagram',
+  }
+
   async function handleCopy() {
     await navigator.clipboard.writeText(asset.content)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function handlePublish() {
+    if (!asset.platform) return
+    
+    setPublishing(true)
+    setPublishError('')
+    
+    try {
+      // Create distribution first
+      const distribution = await createDistribution({
+        asset_id: asset.id,
+        platform: asset.platform,
+      })
+      
+      // Then publish immediately
+      await publishNow(distribution.id)
+      
+      setPublished(true)
+    } catch (err: any) {
+      setPublishError(err.message || 'Failed to publish')
+    } finally {
+      setPublishing(false)
+    }
   }
 
   return (
@@ -230,18 +263,51 @@ function AssetCard({ asset }: { asset: GeneratedAsset }) {
             <span className="font-medium">{typeLabels[asset.type] || asset.type}</span>
             {asset.platform && (
               <span className={`text-xs px-2 py-1 rounded-full ${platformColors[asset.platform] || 'bg-gray-100 text-gray-700'}`}>
-                {asset.platform}
+                {platformDisplayNames[asset.platform] || asset.platform}
+              </span>
+            )}
+            {published && (
+              <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
+                Published
               </span>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleCopy}
-          >
-            {copied ? 'Copied!' : 'Copy'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopy}
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </Button>
+            
+            {asset.platform && !published && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePublish}
+                disabled={publishing}
+                className="flex items-center gap-1"
+              >
+                {publishing ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-3 w-3" />
+                    Publish Now
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
+        
+        {publishError && (
+          <p className="text-xs text-red-600 mt-2">{publishError}</p>
+        )}
       </CardHeader>
       <CardContent>
         <div className="bg-gray-50 rounded-lg p-4">
