@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/Card'
-import { ArrowLeft, Link, FileText, Youtube, Upload, Loader2 } from 'lucide-react'
-import { createContent, listProjects } from '@/lib/api'
+import { ArrowLeft, Link, FileText, Video, Upload, Loader2 } from 'lucide-react'
+import { createContent, listProjects, ContentCreate } from '@/lib/api'
 import { useToast } from '@/hooks/useToast'
 
 export default function NewContentPage() {
@@ -23,7 +23,7 @@ export default function NewContentPage() {
 
   const sourceTypes = [
     { id: 'url', name: 'Website URL', icon: Link, description: 'Extract from blog post or article' },
-    { id: 'youtube', name: 'YouTube Video', icon: Youtube, description: 'Extract transcript from video' },
+    { id: 'youtube', name: 'YouTube Video', icon: Video, description: 'Extract transcript from video' },
     { id: 'text', name: 'Paste Text', icon: FileText, description: 'Copy and paste your content' },
     { id: 'upload', name: 'Upload File', icon: Upload, description: 'Audio or video file' },
   ]
@@ -54,11 +54,11 @@ export default function NewContentPage() {
         throw new Error('Please select a project')
       }
 
-      const contentData = {
+      const contentData: ContentCreate = {
         title,
         project_id: projectId,
         source: {
-          type: sourceType,
+          type: sourceType as 'url' | 'youtube' | 'text' | 'upload',
           url: sourceType === 'url' || sourceType === 'youtube' ? url : undefined,
           text: sourceType === 'text' ? text : undefined,
         },
