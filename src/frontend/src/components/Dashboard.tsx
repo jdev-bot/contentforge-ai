@@ -6,6 +6,7 @@ import { AuthUser } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Plus, FileText, Share2, BarChart3, Settings, Folder } from 'lucide-react'
 import DistributionsTab from './DistributionsTab'
+import ProjectsTab from './ProjectsTab'
 
 interface DashboardProps {
   user: AuthUser
@@ -148,43 +149,7 @@ function ContentTab({ router }: { router: any }) {
   )
 }
 
-function ProjectsTab({ router }: { router: any }) {
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
-        <Button 
-          className="flex items-center gap-2"
-          onClick={() => router.push('/projects/new')}
-        >
-          <Plus className="h-4 w-4" />
-          New Project
-        </Button>
-      </div>
-      
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-        <div className="mx-auto h-12 w-12 text-gray-400">
-          <Folder className="h-12 w-12" />
-        </div>
-        
-        <h3 className="mt-4 text-lg font-medium text-gray-900">No projects yet</h3>
-        <p className="mt-2 text-gray-500 max-w-sm mx-auto">
-          Create your first project to organize your content.
-        </p>
-        
-        <div className="mt-6">
-          <Button 
-            className="flex items-center gap-2 mx-auto"
-            onClick={() => router.push('/projects/new')}
-          >
-            <Plus className="h-4 w-4" />
-            Create Project
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
+
 
 function AnalyticsTab() {
   return (

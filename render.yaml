@@ -1,0 +1,147 @@
+# Render Blueprint for ContentForge AI Backend
+# Deploy with: https://render.com/docs/blueprint-spec
+
+services:
+  # FastAPI Backend Service
+  - type: web
+    name: contentforge-ai-api
+    runtime: docker
+    dockerfilePath: ./infra/docker/Dockerfile.backend
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: APP_ENV
+        value: production
+      - key: APP_URL
+        value: https://contentforge-ai-api.onrender.com
+      - key: PORT
+        value: 8000
+      # Database - Supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # AI - Groq
+      - key: GROQ_API_KEY
+        sync: false
+      # Email - Resend
+      - key: RESEND_API_KEY
+        sync: false
+      # Payments - Stripe
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # Storage - Cloudflare R2
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: contentforge-ai-production
+      # n8n
+      - key: N8N_WEBHOOK_URL
+        sync: false
+      - key: N8N_API_KEY
+        sync: false
+      # Redis (internal or external)
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: contentforge-ai-redis
+          property: connectionString
+      # Security
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+    buildCommand: "pip install -r src/backend/requirements.txt"
+    startCommand: "cd src/backend && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    branch: main
+
+  # Redis for Celery task queue
+  - type: redis
+    name: contentforge-ai-redis
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+
+  # Background Worker (Celery)
+  - type: worker
+    name: contentforge-ai-worker
+    runtime: docker
+    dockerfilePath: ./infra/docker/Dockerfile.backend
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: APP_ENV
+        value: production
+      # Same env vars as API service
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: contentforge-ai-production
+      - key: N8N_WEBHOOK_URL
+        sync: false
+      - key: N8N_API_KEY
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: contentforge-ai-redis
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+    buildCommand: "pip install -r src/backend/requirements.txt"
+    startCommand: "cd src/backend && celery -A app.celery worker --loglevel=info --concurrency=2"
+    autoDeploy: true
+    branch: main
+
+  # Optional: Celery Beat Scheduler
+  - type: worker
+    name: contentforge-ai-scheduler
+    runtime: docker
+    dockerfilePath: ./infra/docker/Dockerfile.backend
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: APP_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: contentforge-ai-redis
+          property: connectionString
+    buildCommand: "pip install -r src/backend/requirements.txt"
+    startCommand: "cd src/backend && celery -A app.celery beat --loglevel=info"
+    autoDeploy: true
+    branch: main

@@ -187,6 +187,33 @@ export async function createProject(data: { name: string; description?: string }
   return response.json()
 }
 
+export async function getProject(projectId: string): Promise<Project> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/projects/${projectId}`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch project')
+  }
+  
+  return response.json()
+}
+
+export async function deleteProject(projectId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/projects/${projectId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete project')
+  }
+}
+
 export interface Distribution {
   id: string
   asset_id: string

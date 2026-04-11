@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ToastProvider } from "@/hooks/useToast";
 
 export const metadata: Metadata = {
   title: "ContentForge AI - Content Repurposing Platform",
@@ -14,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased min-h-screen bg-gray-50">
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );
