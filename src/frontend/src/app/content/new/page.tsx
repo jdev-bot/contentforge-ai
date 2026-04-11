@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/Card'
 import { ArrowLeft, Link, FileText, Youtube, Upload, Loader2 } from 'lucide-react'
 import { createContent, listProjects } from '@/lib/api'
+import { useToast } from '@/hooks/useToast'
 
 export default function NewContentPage() {
   const [sourceType, setSourceType] = useState('url')
@@ -18,6 +19,7 @@ export default function NewContentPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const { showToast } = useToast()
 
   const sourceTypes = [
     { id: 'url', name: 'Website URL', icon: Link, description: 'Extract from blog post or article' },
@@ -63,11 +65,13 @@ export default function NewContentPage() {
       }
 
       const content = await createContent(contentData)
+      showToast('Content created successfully!', 'success')
       
       // Redirect to content view page
       router.push(`/content/${content.id}`)
     } catch (err: any) {
       setError(err.message || 'Failed to create content')
+      showToast('Failed to create content', 'error')
     } finally {
       setLoading(false)
     }

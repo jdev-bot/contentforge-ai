@@ -6,6 +6,7 @@ import { getContent, generateAssets, listAssets, deleteContent, Content, Generat
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/Card'
 import { ArrowLeft, Loader2, Sparkles, Trash2, RefreshCw, Share2, Send } from 'lucide-react'
+import { useToast } from '@/hooks/useToast'
 
 export default function ContentDetailPage({ params }: { params: { id: string } }) {
   const [content, setContent] = useState<Content | null>(null)
@@ -14,6 +15,7 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const { showToast } = useToast()
 
   useEffect(() => {
     loadContent()
@@ -39,8 +41,10 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
     try {
       const newAssets = await generateAssets(params.id)
       setAssets(newAssets)
+      showToast('Assets generated successfully!', 'success')
     } catch (err: any) {
       setError(err.message || 'Failed to generate assets')
+      showToast('Failed to generate assets', 'error')
     } finally {
       setGenerating(false)
     }
@@ -50,7 +54,8 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
     if (!confirm('Are you sure you want to delete this content?')) return
     try {
       await deleteContent(params.id)
-      router.push('/')
+      showToast('Content deleted successfully!', 'success')
+      router.push('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Failed to delete content')
     }
@@ -199,11 +204,12 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
   )
 }
 
-function AssetCard({ asset }: { asset: GeneratedAsset }) {
+function AssetCard({ asset, onCopy, onPublish }: { asset: GeneratedAsset; onCopy?: () => void; onPublish?: () => void }) {
   const [copied, setCopied] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [publishError, setPublishError] = useState('')
   const [published, setPublished] = useState(false)
+  const { showToast } = useToast()
 
   const typeLabels: Record<string, string> = {
     'thread': 'Twitter Thread',
@@ -228,6 +234,7 @@ function AssetCard({ asset }: { asset: GeneratedAsset }) {
   async function handleCopy() {
     await navigator.clipboard.writeText(asset.content)
     setCopied(true)
+    showToast('Content copied to clipboard!', 'success')
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -248,8 +255,10 @@ function AssetCard({ asset }: { asset: GeneratedAsset }) {
       await publishNow(distribution.id)
       
       setPublished(true)
+      showToast('Published successfully!', 'success')
     } catch (err: any) {
       setPublishError(err.message || 'Failed to publish')
+      showToast('Failed to publish', 'error')
     } finally {
       setPublishing(false)
     }

@@ -263,3 +263,19 @@ export async function listDistributions(status?: string): Promise<Distribution[]
   
   return response.json()
 }
+
+export async function publishNow(distributionId: string): Promise<Distribution> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/distributions/${distributionId}/publish-now`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to publish')
+  }
+  
+  return response.json()
+}
