@@ -78,6 +78,20 @@ Transform a single piece of long-form content into 20+ platform-native formats a
 
 ## Deployment
 
+### Quick Deploy
+
+**Render:**
+- Use `render.yaml` blueprint for auto-provisioning
+- Web Service + Worker + Redis + Scheduler
+- Supports Git-based auto-deploy
+
+**Vercel:**
+- Connect GitHub repo for auto-deploy
+- Serverless functions via API routes
+- Edge network CDN included
+
+> See `docs/` for detailed instructions
+
 ### Prerequisites
 
 Before deploying, ensure you have:
