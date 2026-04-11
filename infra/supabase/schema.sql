@@ -1,0 +1,196 @@
+-- Enable RLS (Row Level Security)
+alter table if exists public.users enable row level security;
+
+-- Users table (extends Supabase Auth)
+create table if not exists public.profiles (
+    id uuid references auth.users on delete cascade primary key,
+    full_name text,
+    avatar_url text,
+    subscription_tier text default 'free',
+    subscription_status text default 'active',
+    monthly_usage_count integer default 0,
+    monthly_usage_limit integer default 50, -- free tier limit
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
+-- Enable RLS on profiles
+alter table public.profiles enable row level security;
+
+-- Profiles policies
+create policy "Users can view own profile"
+    on public.profiles for select
+    using (auth.uid() = id);
+
+create policy "Users can update own profile"
+    on public.profiles for update
+    using (auth.uid() = id);
+
+-- Projects table
+create table if not exists public.projects (
+    id uuid default gen_random_uuid() primary key,
+    user_id uuid references auth.users on delete cascade not null,
+    name text not null,
+    description text,
+    brand_voice jsonb default '{}', -- tone, style guidelines
+    target_platforms text[] default '{}',
+    is_active boolean default true,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
+-- Enable RLS on projects
+alter table public.projects enable row level security;
+
+-- Projects policies
+create policy "Users can CRUD own projects"
+    on public.projects for all
+    using (auth.uid() = user_id);
+
+-- Content table
+create table if not exists public.content (
+    id uuid default gen_random_uuid() primary key,
+    project_id uuid references public.projects on delete cascade not null,
+    user_id uuid references auth.users on delete cascade not null,
+    title text not null,
+    source_type text not null, -- 'url', 'youtube', 'upload', 'text'
+    source_url text,
+    original_text text,
+    word_count integer,
+    status text default 'pending', -- 'pending', 'processing', 'completed', 'failed'
+    error_message text,
+    metadata jsonb default '{}',
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
+-- Enable RLS on content
+alter table public.content enable row level security;
+
+-- Content policies
+create policy "Users can CRUD own content"
+    on public.content for all
+    using (auth.uid() = user_id);
+
+-- Generated Assets table
+create table if not exists public.generated_assets (
+    id uuid default gen_random_uuid() primary key,
+    content_id uuid references public.content on delete cascade not null,
+    user_id uuid references auth.users on delete cascade not null,
+    type text not null, -- 'social_post', 'thread', 'newsletter', 'blog_post', 'video_script'
+    platform text, -- 'twitter', 'linkedin', 'instagram', etc.
+    content text not null,
+    tokens_used integer,
+    status text default 'pending', -- 'pending', 'generated', 'approved', 'rejected'
+    engagement_prediction jsonb default '{}',
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
+-- Enable RLS on generated_assets
+alter table public.generated_assets enable row level security;
+
+-- Generated assets policies
+create policy "Users can CRUD own assets"
+    on public.generated_assets for all
+    using (auth.uid() = user_id);
+
+-- Distributions table
+create table if not exists public.distributions (
+    id uuid default gen_random_uuid() primary key,
+    asset_id uuid references public.generated_assets on delete cascade not null,
+    user_id uuid references auth.users on delete cascade not null,
+    platform text not null,
+    status text default 'pending', -- 'pending', 'scheduled', 'publishing', 'published', 'failed', 'cancelled'
+    scheduled_at timestamptz,
+    published_at timestamptz,
+    published_url text,
+    external_id text, -- platform-specific ID
+    error_message text,
+    retry_count integer default 0,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
+-- Enable RLS on distributions
+alter table public.distributions enable row level security;
+
+-- Distributions policies
+create policy "Users can CRUD own distributions"
+    on public.distributions for all
+    using (auth.uid() = user_id);
+
+-- Usage tracking table
+create table if not exists public.usage_logs (
+    id uuid default gen_random_uuid() primary key,
+    user_id uuid references auth.users on delete cascade not null,
+    action text not null, -- 'content_create', 'asset_generate', 'distribution_publish'
+    tokens_used integer default 0,
+    metadata jsonb default '{}',
+    created_at timestamptz default now()
+);
+
+-- Enable RLS on usage_logs
+alter table public.usage_logs enable row level security;
+
+-- Usage logs policies
+create policy "Users can view own usage logs"
+    on public.usage_logs for select
+    using (auth.uid() = user_id);
+
+-- Create indexes for performance
+create index if not exists idx_projects_user_id on public.projects(user_id);
+create index if not exists idx_content_project_id on public.content(project_id);
+create index if not exists idx_content_user_id on public.content(user_id);
+create index if not exists idx_content_status on public.content(status);
+create index if not exists idx_assets_content_id on public.generated_assets(content_id);
+create index if not exists idx_assets_user_id on public.generated_assets(user_id);
+create index if not exists idx_distributions_user_id on public.distributions(user_id);
+create index if not exists idx_distributions_status on public.distributions(status);
+create index if not exists idx_usage_logs_user_id on public.usage_logs(user_id);
+create index if not exists idx_usage_logs_created_at on public.usage_logs(created_at);
+
+-- Functions for updated_at timestamps
+create or replace function public.handle_updated_at()
+returns trigger as $$
+begin
+    new.updated_at = now();
+    return new;
+end;
+$$ language plpgsql;
+
+-- Triggers for updated_at
+create trigger handle_profiles_updated_at
+    before update on public.profiles
+    for each row execute function public.handle_updated_at();
+
+create trigger handle_projects_updated_at
+    before update on public.projects
+    for each row execute function public.handle_updated_at();
+
+create trigger handle_content_updated_at
+    before update on public.content
+    for each row execute function public.handle_updated_at();
+
+create trigger handle_assets_updated_at
+    before update on public.generated_assets
+    for each row execute function public.handle_updated_at();
+
+create trigger handle_distributions_updated_at
+    before update on public.distributions
+    for each row execute function public.handle_updated_at();
+
+-- Function to automatically create profile after signup
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+    insert into public.profiles (id, full_name, avatar_url)
+    values (new.id, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url');
+    return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger to create profile on signup
+create trigger on_auth_user_created
+    after insert on auth.users
+    for each row execute function public.handle_new_user();
