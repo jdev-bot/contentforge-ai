@@ -7,6 +7,7 @@ from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 
+from app.core.rate_limit import check_and_increment_usage, rate_limit_dependency
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.extraction_service import content_extraction_service
@@ -182,9 +183,13 @@ async def get_content(
 @router.post("/content/{content_id}/generate", response_model=List[GeneratedAsset])
 async def generate_assets(
     content_id: UUID,
-    user=Depends(get_auth_user)
+    user=Depends(get_auth_user),
+    _: bool = Depends(rate_limit_dependency)
 ):
     """Generate repurposed assets from content using Groq AI."""
+    # Check and increment usage before processing
+    usage_stats = check_and_increment_usage(str(user.id))
+    
     supabase = get_supabase_client()
     
     try:

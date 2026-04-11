@@ -7,7 +7,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import get_settings
-from app.routers import auth, content, projects, distributions, health
+from app.routers import auth, content, projects, distributions, health, usage
 
 settings = get_settings()
 
@@ -31,7 +31,13 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,
 )
 
-# Middleware
+# Import rate limit middleware
+from app.core.rate_limit import UsageTrackingMiddleware
+
+# Usage tracking middleware
+app.add_middleware(UsageTrackingMiddleware)
+
+# Compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
     CORSMiddleware,
@@ -47,6 +53,7 @@ app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
 app.include_router(projects.router, prefix="/api/v1", tags=["projects"])
 app.include_router(content.router, prefix="/api/v1", tags=["content"])
 app.include_router(distributions.router, prefix="/api/v1", tags=["distributions"])
+app.include_router(usage.router, prefix="/api/v1", tags=["usage"])
 
 
 @app.get("/")
