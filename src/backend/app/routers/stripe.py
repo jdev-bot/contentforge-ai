@@ -213,7 +213,7 @@ async def get_subscription_status(user=Depends(get_auth_user)):
 
 
 @router.post("/stripe/portal")
-async def create_portal_session(user=Depends(get_auth_user)):
+async def create_portal_session(request: Request, user=Depends(get_auth_user)):
     """Create a Stripe Customer Portal session for managing subscription."""
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(
@@ -235,9 +235,10 @@ async def create_portal_session(user=Depends(get_auth_user)):
             )
         
         # Create portal session
+        origin = request.headers.get('origin', 'http://localhost:3000')
         session = stripe.billing_portal.Session.create(
             customer=customer_id,
-            return_url=f"{request.headers.get('origin', 'http://localhost:3000')}/settings"
+            return_url=f"{origin}/settings"
         )
         
         return PortalSessionResponse(url=session.url)
