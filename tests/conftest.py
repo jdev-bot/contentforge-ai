@@ -7,7 +7,6 @@ from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
 
 # Add backend to path
 backend_path = os.path.join(os.path.dirname(__file__), "..", "src", "backend")
@@ -22,51 +21,46 @@ os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key"
 os.environ["GROQ_API_KEY"] = "test-groq-api-key"
 os.environ["DEBUG"] = "true"
 
-from app.main import app
-from app.core.config import get_settings
-
-
-@pytest.fixture(scope="session")
-def test_settings():
-    """Return test settings."""
-    return get_settings()
-
 
 @pytest.fixture
-def client() -> Generator:
-    """Create a test client for the FastAPI app."""
-    with TestClient(app) as test_client:
-        yield test_client
-
-
-@pytest.fixture
-def mock_supabase():
-    """Create a mock Supabase client."""
-    mock_client = MagicMock()
-    
-    # Mock auth methods
+def mock_supabase_client():
+    """Create a mock Supabase client factory."""
+    # Create mock auth
     mock_auth = MagicMock()
-    mock_client.auth = mock_auth
     
-    # Mock table methods
+    # Create mock query chain
+    mock_query = MagicMock()
+    mock_query.eq = MagicMock(return_value=mock_query)
+    mock_query.order = MagicMock(return_value=mock_query)
+    mock_query.single = MagicMock(return_value=mock_query)
+    mock_query.execute = MagicMock(return_value=MagicMock(data=[]))
+    
     mock_table = MagicMock()
-    mock_client.table = MagicMock(return_value=mock_table)
+    mock_table.select = MagicMock(return_value=mock_query)
+    mock_table.insert = MagicMock(return_value=mock_query)
+    mock_table.update = MagicMock(return_value=mock_query)
+    mock_table.delete = MagicMock(return_value=mock_query)
     
-    # Mock storage methods
+    # Create mock storage
     mock_storage = MagicMock()
+    
+    # Create main mock client
+    mock_client = MagicMock()
+    mock_client.auth = mock_auth
+    mock_client.table = MagicMock(return_value=mock_table)
     mock_client.storage = mock_storage
     
-    return mock_client, mock_auth, mock_table, mock_storage
+    return mock_client, mock_auth, mock_table, mock_storage, mock_query
 
 
 @pytest.fixture
 def mock_user():
-    """Create a mock authenticated user."""
-    return MagicMock(
-        id="test-user-id-123",
-        email="test@example.com",
-        user_metadata={"full_name": "Test User"},
-    )
+    """Create a mock authenticated user with proper string values."""
+    user = MagicMock()
+    user.id = "test-user-id-123"
+    user.email = "test@example.com"
+    user.user_metadata = {"full_name": "Test User"}
+    return user
 
 
 @pytest.fixture
@@ -79,17 +73,56 @@ def mock_session():
 
 
 @pytest.fixture
-def auth_headers(mock_user, mock_session):
+def auth_headers(mock_session):
     """Create authorization headers for authenticated requests."""
     return {"Authorization": f"Bearer {mock_session.access_token}"}
 
 
-@pytest.fixture(autouse=True)
-def mock_get_supabase_client(mock_supabase):
-    """Automatically mock Supabase client for all tests."""
-    mock_client, _, _, _ = mock_supabase
+@pytest.fixture
+def client():
+    """Create a test client with mocked Supabase."""
+    from fastapi.testclient import TestClient
+    
+    # Clear any cached supabase client
+    from app.core import supabase as supabase_module
+    supabase_module.get_supabase_client.cache_clear()
+    
+    # Create fresh mock for this test
+    mock_auth = MagicMock()
+    mock_query = MagicMock()
+    mock_query.eq = MagicMock(return_value=mock_query)
+    mock_query.order = MagicMock(return_value=mock_query)
+    mock_query.single = MagicMock(return_value=mock_query)
+    mock_query.execute = MagicMock(return_value=MagicMock(data=[]))
+    
+    mock_table = MagicMock()
+    mock_table.select = MagicMock(return_value=mock_query)
+    mock_table.insert = MagicMock(return_value=mock_query)
+    mock_table.update = MagicMock(return_value=mock_query)
+    mock_table.delete = MagicMock(return_value=mock_query)
+    
+    mock_storage = MagicMock()
+    
+    mock_client = MagicMock()
+    mock_client.auth = mock_auth
+    mock_client.table = MagicMock(return_value=mock_table)
+    mock_client.storage = mock_storage
+    
+    # Patch the supabase client BEFORE importing the app
     with patch("app.core.supabase.get_supabase_client", return_value=mock_client):
-        yield mock_client
+        with patch("app.core.supabase.create_client", return_value=mock_client):
+            from app.main import app
+            with TestClient(app) as test_client:
+                # Store mocks on client for test access
+                test_client.mock_supabase = (mock_client, mock_auth, mock_table, mock_storage, mock_query)
+                yield test_client
+
+
+@pytest.fixture
+def test_settings():
+    """Return test settings."""
+    from app.core.config import get_settings
+    return get_settings()
 
 
 @pytest.fixture

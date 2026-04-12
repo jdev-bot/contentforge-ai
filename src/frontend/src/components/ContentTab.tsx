@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { listContent, deleteContent, Content } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
@@ -18,7 +18,11 @@ import {
   AlertCircle
 } from 'lucide-react'
 
-export default function ContentTab({ router: routerProp }: { router?: any }) {
+interface ContentTabProps {
+  router?: any
+}
+
+export default function ContentTab({ router: routerProp }: ContentTabProps) {
   const router = routerProp || useRouter()
   const { showToast } = useToast()
   const [content, setContent] = useState<Content[]>([])
@@ -26,20 +30,7 @@ export default function ContentTab({ router: routerProp }: { router?: any }) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showMenu, setShowMenu] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadContent()
-  }, [])
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => setShowMenu(null)
-    if (showMenu) {
-      document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
-    }
-  }, [showMenu])
-
-  const loadContent = async () => {
+  const loadContent = useCallback(async () => {
     try {
       setLoading(true)
       const data = await listContent()
@@ -50,9 +41,22 @@ export default function ContentTab({ router: routerProp }: { router?: any }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showToast])
 
-  const handleDelete = async (contentId: string, title: string) => {
+  useEffect(() => {
+    loadContent()
+  }, [loadContent])
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setShowMenu(null)
+    if (showMenu) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [showMenu])
+
+  const handleDelete = useCallback(async (contentId: string, title: string) => {
     if (!confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
       setShowMenu(null)
       return
@@ -61,7 +65,7 @@ export default function ContentTab({ router: routerProp }: { router?: any }) {
     try {
       setDeletingId(contentId)
       await deleteContent(contentId)
-      setContent(content.filter(c => c.id !== contentId))
+      setContent(prev => prev.filter(c => c.id !== contentId))
       showToast(`Content deleted successfully`, 'success')
     } catch (error) {
       console.error('Failed to delete content:', error)
@@ -70,17 +74,17 @@ export default function ContentTab({ router: routerProp }: { router?: any }) {
       setDeletingId(null)
       setShowMenu(null)
     }
-  }
+  }, [])
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     })
-  }
+  }, [])
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = useCallback((status: string) => {
     const colors: Record<string, string> = {
       pending: 'bg-yellow-100 text-yellow-700',
       processing: 'bg-blue-100 text-blue-700',
@@ -88,7 +92,7 @@ export default function ContentTab({ router: routerProp }: { router?: any }) {
       failed: 'bg-red-100 text-red-700',
     }
     return colors[status] || 'bg-gray-100 text-gray-700'
-  }
+  }, [])
 
   if (loading) {
     return (

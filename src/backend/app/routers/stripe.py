@@ -280,9 +280,10 @@ async def stripe_webhook(request: Request):
         plan = session.get("metadata", {}).get("plan", "pro")
         
         if user_id:
-            # Update user's subscription tier
+            # Update user's subscription tier and status
             supabase.table("profiles").update({
                 "subscription_tier": plan,
+                "subscription_status": "active",
                 "monthly_usage_limit": 1000 if plan == "pro" else 100,  # Adjust limits based on plan
                 "updated_at": "now()"
             }).eq("id", user_id).execute()
@@ -300,6 +301,7 @@ async def stripe_webhook(request: Request):
             if user_id:
                 supabase.table("profiles").update({
                     "subscription_tier": plan,
+                    "subscription_status": "active",
                     "updated_at": "now()"
                 }).eq("id", user_id).execute()
     
@@ -308,9 +310,10 @@ async def stripe_webhook(request: Request):
         user_id = subscription.metadata.get("user_id")
         
         if user_id:
-            # Downgrade to free tier
+            # Downgrade to free tier and mark as canceled
             supabase.table("profiles").update({
                 "subscription_tier": "free",
+                "subscription_status": "canceled",
                 "monthly_usage_limit": 10,  # Free tier limit
                 "updated_at": "now()"
             }).eq("id", user_id).execute()
@@ -318,20 +321,41 @@ async def stripe_webhook(request: Request):
     elif event["type"] == "customer.subscription.updated":
         subscription = event["data"]["object"]
         user_id = subscription.metadata.get("user_id")
-        status = subscription.get("status")
+        sub_status = subscription.get("status")
         
         if user_id:
-            if status == "canceled" or status == "unpaid":
-                # Downgrade to free
+            if sub_status == "canceled":
+                # Subscription canceled at period end
                 supabase.table("profiles").update({
-                    "subscription_tier": "free",
-                    "monthly_usage_limit": 10,
+                    "subscription_status": "canceled",
                     "updated_at": "now()"
                 }).eq("id", user_id).execute()
-            elif status == "active":
+            elif sub_status == "unpaid":
+                # Payment failed - mark as past_due
+                supabase.table("profiles").update({
+                    "subscription_status": "past_due",
+                    "updated_at": "now()"
+                }).eq("id", user_id).execute()
+            elif sub_status == "active":
                 plan = subscription.metadata.get("plan", "pro")
                 supabase.table("profiles").update({
                     "subscription_tier": plan,
+                    "subscription_status": "active",
+                    "updated_at": "now()"
+                }).eq("id", user_id).execute()
+    
+    elif event["type"] == "invoice.payment_failed":
+        invoice = event["data"]["object"]
+        subscription_id = invoice.get("subscription")
+        
+        if subscription_id:
+            subscription = stripe.Subscription.retrieve(subscription_id)
+            user_id = subscription.metadata.get("user_id")
+            
+            if user_id:
+                # Mark subscription as past_due
+                supabase.table("profiles").update({
+                    "subscription_status": "past_due",
                     "updated_at": "now()"
                 }).eq("id", user_id).execute()
     

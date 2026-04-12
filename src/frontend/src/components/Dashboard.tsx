@@ -1,18 +1,21 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, Suspense, lazy } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthUser } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
-import { Card, CardContent } from '@/components/ui/Card'
-import { Plus, FileText, Share2, BarChart3, Settings, Folder, Menu, X, AlertCircle } from 'lucide-react'
-import DistributionsTab from './DistributionsTab'
-import ProjectsTab from './ProjectsTab'
-import AnalyticsTab from './AnalyticsTab'
-import SettingsTab from './SettingsTab'
-import ContentTab from './ContentTab'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X } from 'lucide-react'
+import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
+import OfflineBanner from './OfflineBanner'
+
+// Dynamic imports for code splitting
+const ContentTab = lazy(() => import('./ContentTab'))
+const ProjectsTab = lazy(() => import('./ProjectsTab'))
+const DistributionsTab = lazy(() => import('./DistributionsTab'))
+const AnalyticsTab = lazy(() => import('./AnalyticsTab'))
+const SettingsTab = lazy(() => import('./SettingsTab'))
 
 interface DashboardProps {
   user: AuthUser
@@ -24,13 +27,14 @@ export default function Dashboard({ user }: DashboardProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const router = useRouter()
 
-  const tabs = [
+  // Memoize tabs array to prevent unnecessary re-renders
+  const tabs = useMemo(() => [
     { id: 'content', name: 'Content', icon: FileText },
     { id: 'projects', name: 'Projects', icon: Folder },
     { id: 'distributions', name: 'Distributions', icon: Share2 },
     { id: 'analytics', name: 'Analytics', icon: BarChart3 },
     { id: 'settings', name: 'Settings', icon: Settings },
-  ]
+  ], [])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -55,25 +59,77 @@ export default function Dashboard({ user }: DashboardProps) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [router])
 
+  // Wrap tab content with ErrorBoundary and Suspense
   const renderTabContent = () => {
+    const fallback = (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-pulse flex space-x-4">
+          <div className="h-12 w-12 bg-gray-200 rounded-full"></div>
+          <div className="space-y-2">
+            <div className="h-4 w-48 bg-gray-200 rounded"></div>
+            <div className="h-4 w-32 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    )
+
     switch (activeTab) {
       case 'content':
-        return <ContentTab />
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('content')}>
+            <Suspense fallback={fallback}>
+              <ContentTab />
+            </Suspense>
+          </ErrorBoundary>
+        )
       case 'projects':
-        return <ProjectsTab />
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('projects')}>
+            <Suspense fallback={fallback}>
+              <ProjectsTab />
+            </Suspense>
+          </ErrorBoundary>
+        )
       case 'distributions':
-        return <DistributionsTab />
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('distributions')}>
+            <Suspense fallback={fallback}>
+              <DistributionsTab />
+            </Suspense>
+          </ErrorBoundary>
+        )
       case 'analytics':
-        return <AnalyticsTab />
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('analytics')}>
+            <Suspense fallback={fallback}>
+              <AnalyticsTab />
+            </Suspense>
+          </ErrorBoundary>
+        )
       case 'settings':
-        return <SettingsTab user={user} />
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('settings')}>
+            <Suspense fallback={fallback}>
+              <SettingsTab user={user} />
+            </Suspense>
+          </ErrorBoundary>
+        )
       default:
-        return <ContentTab />
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('content')}>
+            <Suspense fallback={fallback}>
+              <ContentTab />
+            </Suspense>
+          </ErrorBoundary>
+        )
     }
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Offline Banner */}
+      <OfflineBanner />
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

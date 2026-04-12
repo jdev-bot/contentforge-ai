@@ -346,6 +346,92 @@ export async function getAnalyticsStats(): Promise<AnalyticsStats> {
   }
 }
 
+// Enhanced Analytics Types
+export interface ContentStatusMetric {
+  status: string
+  count: number
+}
+
+export interface ContentMetricsResponse {
+  total_content: number
+  by_status: ContentStatusMetric[]
+  total_views?: number
+  last_30_days_count: number
+}
+
+export interface AssetTypeMetric {
+  type: string
+  count: number
+}
+
+export interface AssetPlatformMetric {
+  platform: string | null
+  count: number
+}
+
+export interface AssetMetricsResponse {
+  total_assets: number
+  by_type: AssetTypeMetric[]
+  by_platform: AssetPlatformMetric[]
+}
+
+export interface DailyUsageMetric {
+  date: string
+  count: number
+}
+
+export interface UsageMetricsResponse {
+  daily_counts: DailyUsageMetric[]
+  total_in_period: number
+  average_daily: number
+}
+
+export async function getContentMetrics(): Promise<ContentMetricsResponse> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/analytics/content`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch content metrics')
+  }
+  
+  return response.json()
+}
+
+export async function getAssetMetrics(): Promise<AssetMetricsResponse> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/analytics/assets`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch asset metrics')
+  }
+  
+  return response.json()
+}
+
+export async function getUsageMetrics(days: number = 30): Promise<UsageMetricsResponse> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/analytics/usage?days=${days}`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch usage metrics')
+  }
+  
+  return response.json()
+}
+
+export interface AnalyticsSummaryData {
+  contentMetrics: ContentMetricsResponse
+  assetMetrics: AssetMetricsResponse
+  usageMetrics: UsageMetricsResponse
+  usageSummary: UsageSummary
+}
+
 // User Profile
 export interface UserProfile {
   id: string

@@ -1,122 +1,190 @@
 """
-Pytest fixtures for ContentForge AI tests.
+Pytest configuration and fixtures for ContentForge AI tests.
 """
 import os
+import sys
 import pytest
-from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, AsyncMock
+from typing import Generator, Dict
+from unittest.mock import Mock, MagicMock, patch
+
+# Add the app directory to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 # Set test environment variables before importing app
-os.environ["APP_NAME"] = "ContentForge AI Test"
-os.environ["APP_ENV"] = "test"
+os.environ["APP_ENV"] = "testing"
 os.environ["DEBUG"] = "true"
-os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only-32bytes-long"
+os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
 os.environ["SUPABASE_URL"] = "https://test.supabase.co"
 os.environ["SUPABASE_KEY"] = "test-anon-key"
 os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key"
 os.environ["GROQ_API_KEY"] = "test-groq-api-key"
-os.environ["RESEND_API_KEY"] = "test-resend-api-key"
-os.environ["STRIPE_SECRET_KEY"] = "test-stripe-secret-key"
-os.environ["STRIPE_WEBHOOK_SECRET"] = "test-webhook-secret"
+os.environ["RATE_LIMIT_REQUESTS"] = "1000"
+os.environ["RATE_LIMIT_WINDOW"] = "3600"
 
-# Import app after setting env vars
-from app.main import app
+# Mock the middleware before importing the app
+# This prevents the middleware from trying to validate tokens during tests
+from fastapi import Request
+
+# Create a no-op middleware for testing
+class NoOpMiddleware:
+    def __init__(self, app):
+        self.app = app
+    
+    async def __call__(self, scope, receive, send):
+        await self.app(scope, receive, send)
+
+# Patch the middleware classes before importing app
+with patch('app.core.rate_limit.UsageTrackingMiddleware', NoOpMiddleware):
+    with patch('app.core.error_tracking.ErrorTrackingMiddleware', NoOpMiddleware):
+        from app.main import app
+        from app.core.config import get_settings
 
 
 @pytest.fixture(scope="session")
-def test_client():
-    """Create a test client for the FastAPI app."""
-    with TestClient(app) as client:
-        yield client
+def settings():
+    """Get test settings."""
+    return get_settings()
 
 
 @pytest.fixture
-def mock_supabase():
+def client() -> Generator:
+    """Create a test client."""
+    with TestClient(app) as c:
+        yield c
+
+
+@pytest.fixture
+def mock_supabase_client():
     """Create a mock Supabase client."""
-    mock = MagicMock()
+    mock_client = MagicMock()
+    mock_auth = MagicMock()
+    mock_table = MagicMock()
     
-    # Mock auth methods
-    mock.auth = MagicMock()
-    mock.auth.sign_up = AsyncMock()
-    mock.auth.sign_in_with_password = AsyncMock()
-    mock.auth.sign_out = AsyncMock()
-    mock.auth.get_user = AsyncMock()
-    mock.auth.refresh_session = AsyncMock()
+    mock_client.auth = mock_auth
+    mock_client.table = MagicMock(return_value=mock_table)
     
-    # Mock table operations
-    mock.table = MagicMock(return_value=MagicMock())
-    mock.table().select = MagicMock(return_value=MagicMock())
-    mock.table().insert = MagicMock(return_value=MagicMock())
-    mock.table().update = MagicMock(return_value=MagicMock())
-    mock.table().delete = MagicMock(return_value=MagicMock())
-    mock.table().eq = MagicMock(return_value=MagicMock())
-    mock.table().execute = AsyncMock()
-    
-    # Mock storage
-    mock.storage = MagicMock()
-    mock.storage.from_ = MagicMock(return_value=MagicMock())
-    
-    return mock
+    return mock_client, mock_auth, mock_table
 
 
 @pytest.fixture
 def mock_user():
-    """Create a mock authenticated user."""
+    """Create a mock user."""
+    user = Mock()
+    user.id = "test-user-id-123"
+    user.email = "test@example.com"
+    user.user_metadata = {"full_name": "Test User"}
+    return user
+
+
+@pytest.fixture
+def mock_auth_response(mock_user):
+    """Create a mock auth response."""
+    mock_response = Mock()
+    mock_response.user = mock_user
+    
+    mock_session = Mock()
+    mock_session.access_token = "test-access-token"
+    mock_response.session = mock_session
+    
+    return mock_response
+
+
+@pytest.fixture
+def auth_headers():
+    """Create authentication headers."""
+    return {"Authorization": "Bearer test-access-token"}
+
+
+@pytest.fixture
+def sample_project():
+    """Create a sample project."""
     return {
-        "id": "test-user-id-123",
-        "email": "test@example.com",
-        "full_name": "Test User",
-        "avatar_url": None,
-        "subscription_tier": "free",
+        "id": "test-project-id-456",
+        "user_id": "test-user-id-123",
+        "name": "Test Project",
+        "description": "A test project for unit tests",
+        "brand_voice": {"tone": "professional"},
+        "target_platforms": ["twitter", "linkedin"],
+        "is_active": True,
         "created_at": "2024-01-01T00:00:00Z",
-        "updated_at": "2024-01-01T00:00:00Z"
+        "updated_at": "2024-01-01T00:00:00Z",
     }
 
 
 @pytest.fixture
-def mock_auth_token():
-    """Return a mock JWT token for testing."""
-    return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test-token-for-mocking"
-
-
-@pytest.fixture(autouse=True)
-def reset_env_vars():
-    """Reset environment variables between tests."""
-    # Store original values
-    original_vars = {key: os.environ.get(key) for key in [
-        "APP_ENV", "DEBUG", "SECRET_KEY", "SUPABASE_URL", 
-        "SUPABASE_KEY", "GROQ_API_KEY"
-    ]}
-    
-    yield
-    
-    # Restore original values after test
-    for key, value in original_vars.items():
-        if value is not None:
-            os.environ[key] = value
-        elif key in os.environ:
-            del os.environ[key]
-
-
-@pytest.fixture
-def mock_groq_response():
-    """Create a mock Groq API response."""
+def sample_content():
+    """Create a sample content."""
     return {
-        "id": "chatcmpl-test",
-        "object": "chat.completion",
-        "created": 1234567890,
-        "model": "llama-3.3-70b-versatile",
-        "choices": [{
-            "index": 0,
-            "message": {
-                "role": "assistant",
-                "content": "This is a mock response from the AI model for testing purposes."
-            },
-            "finish_reason": "stop"
-        }],
-        "usage": {
-            "prompt_tokens": 100,
-            "completion_tokens": 50,
-            "total_tokens": 150
-        }
+        "id": "test-content-id-789",
+        "project_id": "test-project-id-456",
+        "user_id": "test-user-id-123",
+        "title": "Test Content",
+        "source_type": "url",
+        "source_url": "https://example.com/article",
+        "original_text": "This is a test article content. It has multiple sentences for testing purposes.",
+        "word_count": 12,
+        "status": "completed",
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
     }
+
+
+@pytest.fixture
+def sample_generated_assets():
+    """Create sample generated assets."""
+    return [
+        {
+            "id": "asset-1",
+            "content_id": "test-content-id-789",
+            "user_id": "test-user-id-123",
+            "type": "thread",
+            "platform": "twitter",
+            "content": "Test tweet thread content",
+            "tokens_used": 150,
+            "status": "generated",
+            "created_at": "2024-01-01T00:00:00Z",
+        },
+        {
+            "id": "asset-2",
+            "content_id": "test-content-id-789",
+            "user_id": "test-user-id-123",
+            "type": "social_post",
+            "platform": "linkedin",
+            "content": "Test LinkedIn post content",
+            "tokens_used": 200,
+            "status": "generated",
+            "created_at": "2024-01-01T00:00:00Z",
+        },
+    ]
+
+
+@pytest.fixture
+def sample_usage_stats():
+    """Create sample usage stats."""
+    return {
+        "monthly_usage_count": 50,
+        "monthly_usage_limit": 100,
+        "remaining": 50,
+    }
+
+
+@pytest.fixture
+def mock_request():
+    """Create a mock request object."""
+    request = Mock(spec=Request)
+    request.headers = {}
+    request.client = Mock()
+    request.client.host = "127.0.0.1"
+    request.state = Mock()
+    request.state.user_id = None
+    return request
+
+
+def pytest_configure(config):
+    """Configure pytest."""
+    config.addinivalue_line(
+        "markers", "integration: mark test as integration test"
+    )
+    config.addinivalue_line(
+        "markers", "unit: mark test as unit test"
+    )

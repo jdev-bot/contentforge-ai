@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/hooks/useToast";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "ContentForge AI - Content Repurposing Platform",
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased min-h-screen bg-gray-50">
-        <ToastProvider>{children}</ToastProvider>
+        <ErrorBoundary>
+          <ToastProvider>{children}</ToastProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

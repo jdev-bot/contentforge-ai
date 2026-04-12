@@ -219,7 +219,7 @@ export default function PricingPage() {
                 <Button
                   onClick={() => handleSubscribe(plan.id)}
                   disabled={loading === plan.id}
-                  variant={plan.popular ? 'default' : 'outline'}
+                  variant={plan.popular ? 'primary' : 'outline'}
                   className={`w-full ${
                     plan.popular
                       ? 'bg-blue-600 hover:bg-blue-700 text-white'

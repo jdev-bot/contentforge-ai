@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { getAnalyticsStats, getUsageSummary, UsageActivity, AnalyticsStats } from '@/lib/api'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -23,7 +23,7 @@ export default function AnalyticsTab() {
     loadAnalytics()
   }, [])
 
-  async function loadAnalytics() {
+  const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true)
       const [analyticsData, usageData] = await Promise.all([
@@ -37,18 +37,18 @@ export default function AnalyticsTab() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     })
-  }
+  }, [])
 
-  const getActivityIcon = (eventType: string) => {
+  const getActivityIcon = useCallback((eventType: string) => {
     switch (eventType) {
       case 'content_generation':
         return <FileText className="h-4 w-4 text-blue-500" />
@@ -59,9 +59,9 @@ export default function AnalyticsTab() {
       default:
         return <Activity className="h-4 w-4 text-gray-500" />
     }
-  }
+  }, [])
 
-  const getActivityLabel = (eventType: string) => {
+  const getActivityLabel = useCallback((eventType: string) => {
     const labels: Record<string, string> = {
       content_generation: 'Content created',
       asset_generation: 'Asset generated',
@@ -69,16 +69,16 @@ export default function AnalyticsTab() {
       api_call: 'API call made',
     }
     return labels[eventType] || 'Activity recorded'
-  }
+  }, [])
 
-  // Simple bar chart data
-  const barData = [
+  // Memoize bar chart data to prevent recalculation on every render
+  const barData = useMemo(() => [
     { label: 'Content', value: stats?.content_count || 0, color: 'bg-blue-500' },
     { label: 'Assets', value: stats?.assets_generated || 0, color: 'bg-purple-500' },
     { label: 'Published', value: stats?.distributions_published || 0, color: 'bg-green-500' },
-  ]
+  ], [stats?.content_count, stats?.assets_generated, stats?.distributions_published])
 
-  const maxValue = Math.max(...barData.map(d => d.value), 1)
+  const maxValue = useMemo(() => Math.max(...barData.map(d => d.value), 1), [barData])
 
   if (loading) {
     return (
