@@ -140,14 +140,14 @@ export function usePromiseToast() {
   const { showToast, dismissToast } = useToast()
 
   const toastPromise = useCallback(
-    async <T extends unknown>(
+    async function toastPromise<T extends unknown>(
       promise: Promise<T>,
       messages: {
         loading: string
         success: string
         error: string
       }
-    ): Promise<T> => {
+    ): Promise<T> {
       const loadingId = Math.random().toString(36).substring(2, 9)
       showToast(messages.loading, 'loading', 0)
 
