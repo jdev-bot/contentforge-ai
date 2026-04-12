@@ -19,12 +19,15 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
+    "node-screenshots": "^0.2.8",
+    "puppeteer-core": "^24.40.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -7,6 +7,13 @@ __pycache__/
 dist/
 build/
 
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+virtualenv/
+
 # Environment
 .env
 .env.local
@@ -46,3 +53,25 @@ out/
 temp/
 tmp/
 *.tmp
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Python
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Pytest
+.pytest_cache/
+.coverage
+.tox/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
