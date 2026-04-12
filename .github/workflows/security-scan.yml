@@ -88,12 +88,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Secret Detection
+      - name: Secret Detection (PR)
+        if: github.event_name == 'pull_request'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
           head: HEAD
+          extra_args: --debug --only-verified --exclude-paths=.github/workflows/.trufflehogignore
+
+      - name: Secret Detection (Push)
+        if: github.event_name == 'push'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
           extra_args: --debug --only-verified --exclude-paths=.github/workflows/.trufflehogignore
 
   dependency-review:
