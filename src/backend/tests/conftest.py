@@ -39,6 +39,21 @@ with patch('app.core.rate_limit.UsageTrackingMiddleware', NoOpMiddleware):
         from app.core.config import get_settings
 
 
+def create_mock_auth_user(
+    user_id: str = "test-user-id-123",
+    email: str = "test@example.com",
+    full_name: str = "Test User",
+    is_active: bool = True
+):
+    """Create a mock authenticated user."""
+    user = Mock()
+    user.id = user_id
+    user.email = email
+    user.user_metadata = {"full_name": full_name}
+    user.is_active = is_active
+    return user
+
+
 @pytest.fixture(scope="session")
 def settings():
     """Get test settings."""
@@ -68,11 +83,7 @@ def mock_supabase_client():
 @pytest.fixture
 def mock_user():
     """Create a mock user."""
-    user = Mock()
-    user.id = "test-user-id-123"
-    user.email = "test@example.com"
-    user.user_metadata = {"full_name": "Test User"}
-    return user
+    return create_mock_auth_user()
 
 
 @pytest.fixture
@@ -98,8 +109,8 @@ def auth_headers():
 def sample_project():
     """Create a sample project."""
     return {
-        "id": "test-project-id-456",
-        "user_id": "test-user-id-123",
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "user_id": "123e4567-e89b-12d3-a456-426614174001",
         "name": "Test Project",
         "description": "A test project for unit tests",
         "brand_voice": {"tone": "professional"},
@@ -114,9 +125,9 @@ def sample_project():
 def sample_content():
     """Create a sample content."""
     return {
-        "id": "test-content-id-789",
-        "project_id": "test-project-id-456",
-        "user_id": "test-user-id-123",
+        "id": "123e4567-e89b-12d3-a456-426614174002",
+        "project_id": "123e4567-e89b-12d3-a456-426614174000",
+        "user_id": "123e4567-e89b-12d3-a456-426614174001",
         "title": "Test Content",
         "source_type": "url",
         "source_url": "https://example.com/article",

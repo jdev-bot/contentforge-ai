@@ -66,22 +66,23 @@ def mock_user():
 @pytest.fixture
 def mock_session():
     """Create a mock Supabase session."""
-    return MagicMock(
-        access_token="test-access-token",
-        refresh_token="test-refresh-token",
-    )
+    session = MagicMock()
+    session.access_token = "test-access-token"
+    session.refresh_token = "test-refresh-token"
+    return session
 
 
 @pytest.fixture
-def auth_headers(mock_session):
+def auth_headers():
     """Create authorization headers for authenticated requests."""
-    return {"Authorization": f"Bearer {mock_session.access_token}"}
+    return {"Authorization": "Bearer test-access-token"}
 
 
 @pytest.fixture
 def client():
     """Create a test client with mocked Supabase."""
     from fastapi.testclient import TestClient
+    import importlib
     
     # Clear any cached supabase client
     from app.core import supabase as supabase_module
@@ -107,6 +108,12 @@ def client():
     mock_client.auth = mock_auth
     mock_client.table = MagicMock(return_value=mock_table)
     mock_client.storage = mock_storage
+    
+    # Reload modules to clear any cached state
+    if "app.main" in sys.modules:
+        del sys.modules["app.main"]
+    if "app.routers.auth" in sys.modules:
+        del sys.modules["app.routers.auth"]
     
     # Patch the supabase client BEFORE importing the app
     with patch("app.core.supabase.get_supabase_client", return_value=mock_client):
