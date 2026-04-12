@@ -5,7 +5,6 @@ from fastapi import APIRouter, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from app.main import app
 from app.core.config import get_settings
 
 router = APIRouter()
@@ -15,6 +14,8 @@ settings = get_settings()
 @router.get("/docs/openapi.json")
 async def get_openapi_json(request: Request):
     """Return auto-generated OpenAPI specification as JSON."""
+    # Use request.app to avoid circular import with app.main
+    app = request.app
     openapi_schema = get_openapi(
         title=app.title,
         version=app.version,
