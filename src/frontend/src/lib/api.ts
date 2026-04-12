@@ -280,7 +280,7 @@ export async function publishNow(distributionId: string): Promise<Distribution> 
   return response.json()
 }
 
-// Analytics Types
+// Usage Types
 export interface UsageStats {
   monthly_usage_count: number
   monthly_usage_limit: number
@@ -315,38 +315,7 @@ export async function getUsageSummary(): Promise<UsageSummary> {
   return response.json()
 }
 
-export interface AnalyticsStats {
-  content_count: number
-  assets_generated: number
-  distributions_published: number
-}
-
-export async function getAnalyticsStats(): Promise<AnalyticsStats> {
-  // Aggregate from multiple endpoints
-  const [content, distributions] = await Promise.all([
-    listContent(),
-    listDistributions('published')
-  ])
-  
-  // Get assets for all content
-  let totalAssets = 0
-  for (const item of content) {
-    try {
-      const assets = await listAssets(item.id)
-      totalAssets += assets.length
-    } catch {
-      // Skip if error
-    }
-  }
-  
-  return {
-    content_count: content.length,
-    assets_generated: totalAssets,
-    distributions_published: distributions.length,
-  }
-}
-
-// Enhanced Analytics Types
+// Analytics Types
 export interface ContentStatusMetric {
   status: string
   count: number
@@ -380,10 +349,50 @@ export interface DailyUsageMetric {
   count: number
 }
 
+export interface WeeklyUsageMetric {
+  week: string
+  count: number
+}
+
+export interface MonthlyUsageMetric {
+  month: string
+  count: number
+}
+
 export interface UsageMetricsResponse {
   daily_counts: DailyUsageMetric[]
+  weekly_counts: WeeklyUsageMetric[]
+  monthly_counts: MonthlyUsageMetric[]
   total_in_period: number
   average_daily: number
+}
+
+export interface DistributionStatusMetric {
+  status: string
+  count: number
+}
+
+export interface PlatformDistributionMetric {
+  platform: string
+  count: number
+  success_rate: number
+}
+
+export interface DistributionMetricsResponse {
+  total_distributions: number
+  by_status: DistributionStatusMetric[]
+  by_platform: PlatformDistributionMetric[]
+  success_rate: number
+}
+
+export interface KPIDashboardResponse {
+  total_content: number
+  total_assets: number
+  total_distributions: number
+  published_distributions: number
+  content_growth_30d: number
+  asset_growth_30d: number
+  distribution_success_rate: number
 }
 
 export async function getContentMetrics(): Promise<ContentMetricsResponse> {
@@ -425,11 +434,115 @@ export async function getUsageMetrics(days: number = 30): Promise<UsageMetricsRe
   return response.json()
 }
 
+export async function getDistributionMetrics(): Promise<DistributionMetricsResponse> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/analytics/distributions`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch distribution metrics')
+  }
+  
+  return response.json()
+}
+
+export async function getDashboardKPIs(): Promise<KPIDashboardResponse> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/analytics/dashboard`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch dashboard KPIs')
+  }
+  
+  return response.json()
+}
+
+export async function exportAnalyticsCSV(days: number = 30): Promise<Blob> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/analytics/export?format=csv&days=${days}`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to export analytics')
+  }
+  
+  return response.blob()
+}
+
+export async function exportAnalyticsJSON(days: number = 30): Promise<Blob> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/analytics/export/json?days=${days}`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to export analytics')
+  }
+  
+  return response.blob()
+}
+
 export interface AnalyticsSummaryData {
   contentMetrics: ContentMetricsResponse
   assetMetrics: AssetMetricsResponse
   usageMetrics: UsageMetricsResponse
+  distributionMetrics: DistributionMetricsResponse
+  dashboardKPIs: KPIDashboardResponse
   usageSummary: UsageSummary
+}
+
+export async function getAnalyticsSummary(days: number = 30): Promise<AnalyticsSummaryData> {
+  const [contentMetrics, assetMetrics, usageMetrics, distributionMetrics, dashboardKPIs, usageSummary] = await Promise.all([
+    getContentMetrics().catch(() => ({ total_content: 0, by_status: [], last_30_days_count: 0 })),
+    getAssetMetrics().catch(() => ({ total_assets: 0, by_type: [], by_platform: [] })),
+    getUsageMetrics(days).catch(() => ({ daily_counts: [], weekly_counts: [], monthly_counts: [], total_in_period: 0, average_daily: 0 })),
+    getDistributionMetrics().catch(() => ({ total_distributions: 0, by_status: [], by_platform: [], success_rate: 0 })),
+    getDashboardKPIs().catch(() => ({ total_content: 0, total_assets: 0, total_distributions: 0, published_distributions: 0, content_growth_30d: 0, asset_growth_30d: 0, distribution_success_rate: 0 })),
+    getUsageSummary().catch(() => ({ stats: { monthly_usage_count: 0, monthly_usage_limit: 100, remaining: 100, percentage_used: 0, subscription_tier: 'free' }, recent_activity: [], status: 'active' as const })),
+  ])
+  
+  return {
+    contentMetrics,
+    assetMetrics,
+    usageMetrics,
+    distributionMetrics,
+    dashboardKPIs,
+    usageSummary,
+  }
+}
+
+// Legacy Analytics Stats - for backward compatibility
+export interface AnalyticsStats {
+  content_count: number
+  assets_generated: number
+  distributions_published: number
+}
+
+export async function getAnalyticsStats(): Promise<AnalyticsStats> {
+  const [content, distributions] = await Promise.all([
+    listContent(),
+    listDistributions('published')
+  ])
+  
+  let totalAssets = 0
+  for (const item of content) {
+    try {
+      const assets = await listAssets(item.id)
+      totalAssets += assets.length
+    } catch {
+      // Skip if error
+    }
+  }
+  
+  return {
+    content_count: content.length,
+    assets_generated: totalAssets,
+    distributions_published: distributions.length,
+  }
 }
 
 // User Profile
@@ -479,10 +592,224 @@ export interface ApiKeys {
 }
 
 export async function getApiKeys(): Promise<ApiKeys> {
-  // In production, these would be fetched from the backend
-  // For now, return empty (user would need to configure)
   return {
     stripe_key: process.env.NEXT_PUBLIC_STRIPE_KEY,
     groq_key: process.env.NEXT_PUBLIC_GROQ_KEY,
+  }
+}
+
+// Organization Types
+export type OrganizationRole = 'admin' | 'member'
+
+export interface Organization {
+  id: string
+  name: string
+  owner_id: string
+  created_at: string
+  updated_at: string
+  member_count?: number
+  is_owner?: boolean
+}
+
+export interface OrganizationMember {
+  id: string
+  org_id: string
+  user_id: string
+  role: OrganizationRole
+  created_at: string
+  user_email?: string
+  user_name?: string
+  avatar_url?: string
+}
+
+export interface OrganizationWithMembers extends Organization {
+  members: OrganizationMember[]
+  current_user_role?: string
+}
+
+export interface OrganizationCreate {
+  name: string
+}
+
+export interface OrganizationUpdate {
+  name?: string
+}
+
+export interface OrganizationInvite {
+  email: string
+  role: OrganizationRole
+}
+
+export interface OrganizationInvitationResponse {
+  message: string
+  email: string
+  org_id: string
+}
+
+// Organization API Functions
+
+export async function listOrganizations(): Promise<Organization[]> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/organizations`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch organizations')
+  }
+  
+  return response.json()
+}
+
+export async function createOrganization(data: OrganizationCreate): Promise<Organization> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/organizations`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create organization')
+  }
+  
+  return response.json()
+}
+
+export async function getOrganization(orgId: string): Promise<OrganizationWithMembers> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/organizations/${orgId}`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch organization')
+  }
+  
+  return response.json()
+}
+
+export async function updateOrganization(orgId: string, data: OrganizationUpdate): Promise<Organization> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/organizations/${orgId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(data),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update organization')
+  }
+  
+  return response.json()
+}
+
+export async function deleteOrganization(orgId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/organizations/${orgId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete organization')
+  }
+}
+
+export async function inviteMember(orgId: string, data: OrganizationInvite): Promise<OrganizationInvitationResponse> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/organizations/${orgId}/invite`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to invite member')
+  }
+  
+  return response.json()
+}
+
+export async function listMembers(orgId: string): Promise<OrganizationMember[]> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/organizations/${orgId}/members`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch members')
+  }
+  
+  return response.json()
+}
+
+export async function updateMemberRole(orgId: string, memberId: string, role: OrganizationRole): Promise<OrganizationMember> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/organizations/${orgId}/members/${memberId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ role }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update member role')
+  }
+  
+  return response.json()
+}
+
+export async function removeMember(orgId: string, memberId: string): Promise<void> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/organizations/${orgId}/members/${memberId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to remove member')
+  }
+}
+
+export async function transferOwnership(orgId: string, newOwnerId: string): Promise<{ message: string; organization_id: string; new_owner_id: string }> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/organizations/${orgId}/transfer-ownership`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ new_owner_id: newOwnerId }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to transfer ownership')
+  }
+  
+  return response.json()
+}
+
+export async function leaveOrganization(orgId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/organizations/${orgId}/leave`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to leave organization')
   }
 }

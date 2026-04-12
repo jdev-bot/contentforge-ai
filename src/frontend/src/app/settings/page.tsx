@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { getUserProfile, updateUserProfile, getUsageSummary, UserProfile, UsageStats } from '@/lib/api'
 import { getSubscriptionStatus, createPortalSession, SubscriptionStatus, getStripeConfig } from '@/lib/stripe'
 import { Button } from '@/components/ui/Button'
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
-import SubscriptionModal from './SubscriptionModal'
+import SubscriptionModal from '@/components/SubscriptionModal'
 import { 
   User, 
   Key, 
@@ -22,6 +23,7 @@ import {
   ExternalLink,
   Sparkles,
   Crown,
+  RefreshCw,
   AlertTriangle,
   X
 } from 'lucide-react'
@@ -34,7 +36,10 @@ interface SettingsTabProps {
   }
 }
 
-export default function SettingsTab({ user }: SettingsTabProps) {
+// Separate component that uses useSearchParams
+function SettingsContent({ user }: SettingsTabProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -44,6 +49,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
   const [stripeConfig, setStripeConfig] = useState<{ is_configured: boolean; test_mode: boolean } | null>(null)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const [portalLoading, setPortalLoading] = useState(false)
+  const [syncLoading, setSyncLoading] = useState(false)
   
   // Form state
   const [fullName, setFullName] = useState('')
@@ -53,6 +59,11 @@ export default function SettingsTab({ user }: SettingsTabProps) {
   const [showStripeKey, setShowStripeKey] = useState(false)
   const [showGroqKey, setShowGroqKey] = useState(false)
   
+  // Success/Cancel messages from URL
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [cancelMessage, setCancelMessage] = useState<string | null>(null)
+  const [canceledMessage, setCanceledMessage] = useState<string | null>(null)
+
   // Mock API keys (in production, these would be fetched from secure storage)
   const [apiKeys] = useState({
     stripe: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_live_•••••••••••••••••••••••••••••••••',
@@ -61,8 +72,25 @@ export default function SettingsTab({ user }: SettingsTabProps) {
 
   useEffect(() => {
     loadSettings()
+    checkUrlParams()
     loadStripeConfig()
   }, [])
+
+  function checkUrlParams() {
+    const success = searchParams.get('success')
+    const canceled = searchParams.get('canceled')
+    
+    if (success) {
+      setSuccessMessage('Payment successful! Your subscription is now active.')
+      // Clear URL params
+      router.replace('/settings')
+    }
+    if (canceled) {
+      setCanceledMessage('Payment was canceled. Your subscription was not changed.')
+      // Clear URL params
+      router.replace('/settings')
+    }
+  }
 
   async function loadSettings() {
     try {
@@ -136,6 +164,32 @@ export default function SettingsTab({ user }: SettingsTabProps) {
       showToast(errorMessage, 'error')
     } finally {
       setPortalLoading(false)
+    }
+  }
+
+  const handleSyncSubscription = async () => {
+    try {
+      setSyncLoading(true)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/stripe/sync`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) throw new Error('Failed to sync')
+      
+      const result = await response.json()
+      if (result.synced) {
+        showToast('Subscription synced successfully', 'success')
+        await loadSettings()
+      }
+    } catch (error: unknown) {
+      console.error('Failed to sync subscription:', error)
+      showToast('Failed to sync subscription', 'error')
+    } finally {
+      setSyncLoading(false)
     }
   }
 
@@ -223,6 +277,24 @@ export default function SettingsTab({ user }: SettingsTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Success/Cancel Messages */}
+      {successMessage && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-green-900">{successMessage}</p>
+          </div>
+        </div>
+      )}
+      {canceledMessage && (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-yellow-900">{canceledMessage}</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
       </div>
@@ -511,3 +583,36 @@ export default function SettingsTab({ user }: SettingsTabProps) {
     </div>
   )
 }
+
+// Loading fallback
+function SettingsLoading() {
+  return (
+    <div className="space-y-6">
+      <Skeleton className="h-8 w-48" />
+      <Card>
+        <CardContent className="p-6">
+          <Skeleton className="h-32 w-full" />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Main export with Suspense
+export default function SettingsPage() {
+  // Mock user - in real implementation this would come from auth context
+  const user = {
+    id: 'mock-user-id',
+    email: 'user@example.com',
+    full_name: 'User Name',
+  }
+
+  return (
+    <Suspense fallback={<SettingsLoading />}>
+      <SettingsContent user={user} />
+    </Suspense>
+  )
+}
+
+// Import supabase for sync function
+import { supabase } from '@/lib/supabase'

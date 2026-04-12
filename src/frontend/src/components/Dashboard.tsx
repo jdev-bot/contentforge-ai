@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, Suspense, lazy } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthUser } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
-import { FileText, Share2, BarChart3, Settings, Folder, Menu, X } from 'lucide-react'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
@@ -16,6 +16,7 @@ const ProjectsTab = lazy(() => import('./ProjectsTab'))
 const DistributionsTab = lazy(() => import('./DistributionsTab'))
 const AnalyticsTab = lazy(() => import('./AnalyticsTab'))
 const SettingsTab = lazy(() => import('./SettingsTab'))
+const TeamTab = lazy(() => import('./TeamTab'))
 
 interface DashboardProps {
   user: AuthUser
@@ -33,6 +34,7 @@ export default function Dashboard({ user }: DashboardProps) {
     { id: 'projects', name: 'Projects', icon: Folder },
     { id: 'distributions', name: 'Distributions', icon: Share2 },
     { id: 'analytics', name: 'Analytics', icon: BarChart3 },
+    { id: 'team', name: 'Team', icon: Users },
     { id: 'settings', name: 'Settings', icon: Settings },
   ], [])
 
@@ -103,6 +105,14 @@ export default function Dashboard({ user }: DashboardProps) {
           <ErrorBoundary onReset={() => setActiveTab('analytics')}>
             <Suspense fallback={fallback}>
               <AnalyticsTab />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'team':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('team')}>
+            <Suspense fallback={fallback}>
+              <TeamTab user={user} />
             </Suspense>
           </ErrorBoundary>
         )

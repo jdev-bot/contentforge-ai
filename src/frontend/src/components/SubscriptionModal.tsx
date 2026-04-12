@@ -14,7 +14,8 @@ import {
   Zap,
   ArrowRight,
   ExternalLink,
-  AlertCircle
+  AlertCircle,
+  Info
 } from 'lucide-react'
 
 interface SubscriptionModalProps {
@@ -38,6 +39,7 @@ const plans = [
       'Priority support',
     ],
     popular: true,
+    color: 'blue',
   },
   {
     id: 'pro' as const,
@@ -53,6 +55,7 @@ const plans = [
       'API access',
     ],
     popular: false,
+    color: 'purple',
   },
 ]
 
@@ -61,7 +64,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   const [loading, setLoading] = useState<string | null>(null)
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null)
-  const [, setIsLoadingStatus] = useState(false)
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false)
 
   useEffect(() => {
     if (isOpen && currentTier !== 'free') {
@@ -129,6 +132,32 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
     })
   }
 
+  const getPlanColor = (color: string) => {
+    switch (color) {
+      case 'blue':
+        return {
+          border: 'border-blue-500',
+          bg: 'bg-blue-500',
+          text: 'text-blue-600',
+          lightBg: 'bg-blue-50',
+        }
+      case 'purple':
+        return {
+          border: 'border-purple-500',
+          bg: 'bg-purple-500',
+          text: 'text-purple-600',
+          lightBg: 'bg-purple-50',
+        }
+      default:
+        return {
+          border: 'border-gray-500',
+          bg: 'bg-gray-500',
+          text: 'text-gray-600',
+          lightBg: 'bg-gray-50',
+        }
+    }
+  }
+
   if (!isOpen) return null
 
   return (
@@ -169,7 +198,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
                 <Sparkles className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium text-blue-900">
-                    You&apos;re currently on the <span className="capitalize">{currentTier}</span> plan
+                    You're currently on the <span className="capitalize">{currentTier}</span> plan
                   </p>
                   {subscription?.current_period_end && (
                     <p className="text-sm text-blue-700 mt-1">
@@ -210,6 +239,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
           {/* Plan Cards */}
           <div className="grid md:grid-cols-2 gap-6">
             {plans.map((plan) => {
+              const colors = getPlanColor(plan.color)
               const isCurrentPlan = currentTier === plan.id
               const isDowngrade = currentTier === 'pro' && plan.id === 'starter'
               
@@ -218,12 +248,12 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
                   key={plan.id}
                   className={`relative overflow-hidden ${
                     plan.popular && !isCurrentPlan
-                      ? 'border-2 border-blue-500 shadow-lg'
+                      ? `${colors.border} border-2 shadow-lg`
                       : 'border border-gray-200'
-                  } ${isCurrentPlan ? 'ring-2 ring-green-500' : ''}`}
+                  } ${isCurrentPlan ? `ring-2 ring-green-500` : ''}`}
                 >
                   {plan.popular && !isCurrentPlan && (
-                    <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-bl-lg">
+                    <div className={`absolute top-0 right-0 ${colors.bg} text-white text-xs font-semibold px-3 py-1 rounded-bl-lg`}>
                       Most Popular
                     </div>
                   )}
@@ -293,7 +323,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
                         disabled={loading === plan.id}
                         className={`w-full ${
                           plan.popular
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                            ? `${colors.bg} hover:opacity-90 text-white`
                             : ''
                         }`}
                       >
@@ -335,11 +365,11 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
 
           {/* Test Mode Notice */}
           <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <Info className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-yellow-800">
-              <p className="font-medium">Test Mode Active</p>
+              <p className="font-medium">Secure Payment Processing</p>
               <p className="mt-1">
-                Use test card number <code className="bg-yellow-100 px-1 py-0.5 rounded">4242 4242 4242 4242</code> with any future date and CVC.
+                All payments are processed securely through Stripe. You'll be redirected to Stripe's secure checkout page to complete your subscription.
               </p>
             </div>
           </div>
@@ -349,7 +379,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
         <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Zap className="h-4 w-4" />
-            <span>14-day free trial • Cancel anytime</span>
+            <span>Cancel anytime • No setup fees</span>
           </div>
           <button
             onClick={onClose}

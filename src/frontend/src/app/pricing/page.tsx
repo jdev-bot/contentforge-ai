@@ -1,18 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { useToast } from '@/hooks/useToast'
-import { createCheckoutSession } from '@/lib/stripe'
+import { createCheckoutSession, getStripeConfig } from '@/lib/stripe'
 import { 
   Check, 
   Sparkles, 
   Zap, 
   Loader2,
   ArrowLeft,
-  Crown
+  Crown,
+  AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -76,6 +77,20 @@ export default function PricingPage() {
   const { showToast } = useToast()
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   const [loading, setLoading] = useState<string | null>(null)
+  const [isTestMode, setIsTestMode] = useState(false)
+
+  useEffect(() => {
+    checkStripeMode()
+  }, [])
+
+  async function checkStripeMode() {
+    try {
+      const config = await getStripeConfig()
+      setIsTestMode(config.test_mode)
+    } catch (error) {
+      console.error('Failed to check Stripe mode:', error)
+    }
+  }
 
   const handleSubscribe = async (planId: string) => {
     if (planId === 'free') {
@@ -143,6 +158,15 @@ export default function PricingPage() {
         <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
           Start free and scale as you grow. No hidden fees, cancel anytime.
         </p>
+
+        {/* Test Mode Banner */}
+        {isTestMode && (
+          <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm">
+            <AlertCircle className="h-4 w-4" />
+            <span className="font-medium">Test Mode Active</span>
+            <span className="text-yellow-600">— Use card 4242 4242 4242 4242</span>
+          </div>
+        )}
 
         {/* Billing Toggle */}
         <div className="flex items-center justify-center gap-4">
@@ -288,10 +312,33 @@ export default function PricingPage() {
         </div>
       </div>
 
+      {/* Test Mode Info */}
+      {isTestMode && (
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-yellow-800">
+                <p className="font-medium">Test Mode</p>
+                <p className="mt-1">
+                  Use test card <code className="bg-yellow-100 px-1 py-0.5 rounded font-mono text-xs">4242 4242 4242 4242</code> with any future expiration date and any CVC code.
+                  No real charges will be made.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="border-t border-gray-200 py-8">
         <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
           <p>© 2025 ContentForge AI. All rights reserved.</p>
+          {isTestMode && (
+            <p className="mt-2 text-xs text-yellow-600">
+              Payments are in test mode. No real charges will be made.
+            </p>
+          )}
         </div>
       </footer>
     </div>
