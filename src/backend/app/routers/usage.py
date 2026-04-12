@@ -23,6 +23,7 @@ class UsageStatsResponse(BaseModel):
     remaining: int
     percentage_used: float
     reset_at: Optional[datetime] = None
+    subscription_tier: str = "free"
 
 
 class UsageLogEntry(BaseModel):
@@ -55,10 +56,13 @@ async def get_current_usage(user=Depends(get_auth_user)):
     try:
         stats = get_user_usage_stats(str(user.id))
         
-        percentage_used = (
-            (stats.monthly_usage_count / stats.monthly_usage_limit * 100)
-            if stats.monthly_usage_limit > 0 else 0
-        )
+        # Calculate percentage (handle unlimited -1)
+        if stats.monthly_usage_limit == -1:
+            percentage_used = 0
+        elif stats.monthly_usage_limit > 0:
+            percentage_used = (stats.monthly_usage_count / stats.monthly_usage_limit * 100)
+        else:
+            percentage_used = 0
         
         return UsageStatsResponse(
             monthly_usage_count=stats.monthly_usage_count,
@@ -66,6 +70,7 @@ async def get_current_usage(user=Depends(get_auth_user)):
             remaining=stats.remaining,
             percentage_used=round(percentage_used, 2),
             reset_at=stats.reset_at,
+            subscription_tier=stats.subscription_tier,
         )
         
     except HTTPException:
@@ -124,10 +129,13 @@ async def get_usage_summary(user=Depends(get_auth_user)):
         stats = get_user_usage_stats(str(user.id))
         history = get_usage_history(str(user.id), limit=10)
         
-        percentage_used = (
-            (stats.monthly_usage_count / stats.monthly_usage_limit * 100)
-            if stats.monthly_usage_limit > 0 else 0
-        )
+        # Calculate percentage (handle unlimited)
+        if stats.monthly_usage_limit == -1:
+            percentage_used = 0
+        elif stats.monthly_usage_limit > 0:
+            percentage_used = (stats.monthly_usage_count / stats.monthly_usage_limit * 100)
+        else:
+            percentage_used = 0
         
         return {
             "stats": {
@@ -135,6 +143,7 @@ async def get_usage_summary(user=Depends(get_auth_user)):
                 "monthly_usage_limit": stats.monthly_usage_limit,
                 "remaining": stats.remaining,
                 "percentage_used": round(percentage_used, 2),
+                "subscription_tier": stats.subscription_tier,
             },
             "recent_activity": [
                 {
@@ -144,7 +153,7 @@ async def get_usage_summary(user=Depends(get_auth_user)):
                 }
                 for entry in history
             ],
-            "status": "active" if stats.remaining > 0 else "limit_reached",
+            "status": "active" if stats.remaining > 0 or stats.remaining == -1 else "limit_reached",
         }
         
     except HTTPException:

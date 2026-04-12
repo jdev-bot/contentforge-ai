@@ -286,6 +286,7 @@ export interface UsageStats {
   monthly_usage_limit: number
   remaining: number
   percentage_used: number
+  subscription_tier: string
   reset_at?: string
 }
 
@@ -296,7 +297,7 @@ export interface UsageActivity {
 }
 
 export interface UsageSummary {
-  stats: UsageStats
+  stats: UsageStats & { subscription_tier: string }
   recent_activity: UsageActivity[]
   status: 'active' | 'limit_reached'
 }
@@ -351,6 +352,8 @@ export interface UserProfile {
   email: string
   full_name?: string
   subscription_tier: string
+  monthly_usage_count: number
+  monthly_usage_limit: number
 }
 
 export async function getUserProfile(): Promise<UserProfile> {

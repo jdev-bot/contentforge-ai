@@ -27,6 +27,8 @@ class UserResponse(BaseModel):
     full_name: Optional[str] = None
     is_active: bool = True
     subscription_tier: str = "free"
+    monthly_usage_count: int = 0
+    monthly_usage_limit: int = 10
 
 
 class TokenResponse(BaseModel):
@@ -172,14 +174,37 @@ async def logout(request: Request):
 
 @router.get("/auth/me", response_model=UserResponse)
 async def get_current_user(user=Depends(get_auth_user)):
-    """Get current authenticated user."""
+    """Get current authenticated user with subscription details."""
+    supabase = get_supabase_client()
     profile_data = user.user_metadata or {}
+    
+    # Fetch subscription info from profiles table
+    try:
+        result = supabase.table("profiles").select(
+            "subscription_tier, monthly_usage_count, monthly_usage_limit"
+        ).eq("id", str(user.id)).single().execute()
+        
+        if result.data:
+            subscription_tier = result.data.get("subscription_tier", "free")
+            monthly_usage_count = result.data.get("monthly_usage_count", 0)
+            monthly_usage_limit = result.data.get("monthly_usage_limit", 10)
+        else:
+            subscription_tier = "free"
+            monthly_usage_count = 0
+            monthly_usage_limit = 10
+    except Exception:
+        subscription_tier = "free"
+        monthly_usage_count = 0
+        monthly_usage_limit = 10
     
     return UserResponse(
         id=str(user.id),
         email=user.email,
         full_name=profile_data.get("full_name"),
         is_active=True,
+        subscription_tier=subscription_tier,
+        monthly_usage_count=monthly_usage_count,
+        monthly_usage_limit=monthly_usage_limit,
     )
 
 

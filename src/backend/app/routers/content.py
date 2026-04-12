@@ -7,7 +7,7 @@ from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 
-from app.core.rate_limit import check_and_increment_usage, rate_limit_dependency
+from app.core.rate_limit import check_and_increment_usage, rate_limit_dependency, enforce_subscription_limit, UsageStats
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.extraction_service import content_extraction_service
@@ -58,12 +58,16 @@ class GeneratedAsset(BaseModel):
 @router.post("/content", response_model=ContentResponse, status_code=status.HTTP_201_CREATED)
 async def create_content(
     content_data: ContentCreate,
-    user=Depends(get_auth_user)
+    user=Depends(get_auth_user),
+    _: UsageStats = Depends(enforce_subscription_limit)
 ):
     """Create new content from a source and extract text."""
     supabase = get_supabase_client()
     
     try:
+        # Check and increment usage after validation but before processing
+        usage_stats = check_and_increment_usage(str(user.id))
+        
         # Extract text based on source type
         original_text = None
         source_url = None
@@ -184,7 +188,7 @@ async def get_content(
 async def generate_assets(
     content_id: UUID,
     user=Depends(get_auth_user),
-    _: bool = Depends(rate_limit_dependency)
+    _: UsageStats = Depends(enforce_subscription_limit)
 ):
     """Generate repurposed assets from content using Groq AI."""
     # Check and increment usage before processing

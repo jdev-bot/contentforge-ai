@@ -2,7 +2,7 @@
 Rate limiting and usage tracking middleware.
 """
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, Literal
 from datetime import datetime
 from functools import wraps
 from collections import defaultdict
@@ -21,6 +21,12 @@ settings = get_settings()
 # Note: For production, consider using Redis
 _rate_limit_store: Dict[str, list] = defaultdict(list)
 
+# Subscription tier limits
+SUBSCRIPTION_LIMITS = {
+    "free": 10,
+    "pro": 100,
+    "agency": float("inf"),  # Unlimited
+}
 
 class RateLimitConfig:
     """Rate limiting configuration."""
@@ -34,6 +40,66 @@ class UsageStats(BaseModel):
     monthly_usage_limit: int
     remaining: int
     reset_at: Optional[datetime] = None
+    subscription_tier: str = "free"
+
+
+def get_user_subscription_tier(user_id: str) -> str:
+    """Get user's subscription tier from database."""
+    supabase = get_supabase_client()
+    
+    try:
+        result = supabase.table("profiles").select(
+            "subscription_tier"
+        ).eq("id", user_id).single().execute()
+        
+        if result.data:
+            return result.data.get("subscription_tier", "free")
+        return "free"
+    except Exception:
+        return "free"
+
+
+def get_subscription_limit(tier: str) -> int:
+    """Get usage limit for a subscription tier."""
+    return SUBSCRIPTION_LIMITS.get(tier.lower(), SUBSCRIPTION_LIMITS["free"])
+
+
+def check_monthly_reset(user_id: str) -> bool:
+    """Check if monthly usage should be reset (first day of month)."""
+    supabase = get_supabase_client()
+    
+    try:
+        result = supabase.table("profiles").select(
+            "updated_at, monthly_usage_count"
+        ).eq("id", user_id).single().execute()
+        
+        if not result.data:
+            return False
+        
+        last_updated = result.data.get("updated_at")
+        if not last_updated:
+            return False
+        
+        # Parse last updated timestamp
+        try:
+            last_date = datetime.fromisoformat(last_updated.replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            return False
+        
+        now = datetime.now(datetime.now().astimezone().tzinfo)
+        
+        # Check if we're in a new month compared to last update
+        if last_date.month != now.month or last_date.year != now.year:
+            # Reset usage count
+            supabase.table("profiles").update({
+                "monthly_usage_count": 0,
+                "updated_at": now.isoformat()
+            }).eq("id", user_id).execute()
+            return True
+        
+        return False
+    except Exception:
+        return False
 
 
 def check_and_increment_usage(user_id: str) -> UsageStats:
@@ -44,9 +110,12 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
     supabase = get_supabase_client()
     
     try:
+        # Check for monthly reset first
+        check_monthly_reset(user_id)
+        
         # Get user's profile with usage data
         result = supabase.table("profiles").select(
-            "monthly_usage_count, monthly_usage_limit"
+            "monthly_usage_count, monthly_usage_limit, subscription_tier"
         ).eq("id", user_id).single().execute()
         
         if not result.data:
@@ -56,14 +125,20 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
             )
         
         profile = result.data
-        usage_count = profile.get("monthly_usage_count", 0)
-        usage_limit = profile.get("monthly_usage_limit", 100)  # Default 100
+        subscription_tier = profile.get("subscription_tier", "free")
         
-        # Check if under limit
-        if usage_count >= usage_limit:
+        # Get the limit based on subscription tier
+        tier_limit = get_subscription_limit(subscription_tier)
+        
+        usage_count = profile.get("monthly_usage_count", 0)
+        # Use tier limit if monthly_usage_limit is not set or is default
+        usage_limit = profile.get("monthly_usage_limit", tier_limit)
+        
+        # Check if under limit (unlimited tiers have float('inf'))
+        if usage_count >= usage_limit and usage_limit != float("inf"):
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Monthly usage limit exceeded. Please upgrade your plan.",
+                detail="Monthly limit reached. Upgrade to Pro.",
             )
         
         # Increment usage count
@@ -76,10 +151,13 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
         # Log usage
         log_usage_event(user_id, "content_generation", 1)
         
+        remaining = float("inf") if usage_limit == float("inf") else max(0, usage_limit - new_count)
+        
         return UsageStats(
             monthly_usage_count=new_count,
-            monthly_usage_limit=usage_limit,
-            remaining=usage_limit - new_count,
+            monthly_usage_limit=int(usage_limit) if usage_limit != float("inf") else -1,  # -1 indicates unlimited
+            remaining=int(remaining) if remaining != float("inf") else -1,
+            subscription_tier=subscription_tier,
         )
         
     except HTTPException:
@@ -113,8 +191,11 @@ def get_user_usage_stats(user_id: str) -> UsageStats:
     supabase = get_supabase_client()
     
     try:
+        # Check for monthly reset
+        check_monthly_reset(user_id)
+        
         result = supabase.table("profiles").select(
-            "monthly_usage_count, monthly_usage_limit"
+            "monthly_usage_count, monthly_usage_limit, subscription_tier"
         ).eq("id", user_id).single().execute()
         
         if not result.data:
@@ -124,13 +205,26 @@ def get_user_usage_stats(user_id: str) -> UsageStats:
             )
         
         profile = result.data
+        subscription_tier = profile.get("subscription_tier", "free")
         usage_count = profile.get("monthly_usage_count", 0)
-        usage_limit = profile.get("monthly_usage_limit", 100)
+        
+        # Get the limit based on subscription tier
+        tier_limit = get_subscription_limit(subscription_tier)
+        usage_limit = profile.get("monthly_usage_limit", tier_limit)
+        
+        # Handle unlimited
+        if usage_limit == float("inf"):
+            remaining = -1  # -1 indicates unlimited
+            usage_limit_display = -1
+        else:
+            remaining = max(0, usage_limit - usage_count)
+            usage_limit_display = usage_limit
         
         return UsageStats(
             monthly_usage_count=usage_count,
-            monthly_usage_limit=usage_limit,
-            remaining=max(0, usage_limit - usage_count),
+            monthly_usage_limit=usage_limit_display,
+            remaining=remaining,
+            subscription_tier=subscription_tier,
         )
         
     except HTTPException:
@@ -223,6 +317,70 @@ def rate_limit_dependency(request: Request):
         )
     
     return True
+
+
+def check_subscription_limit(user_id: str, action: str = "content_creation"):
+    """
+    Check if user has available usage quota before allowing action.
+    Raises HTTPException if limit exceeded.
+    
+    Args:
+        user_id: The user's ID
+        action: The action being performed (for logging)
+    """
+    stats = get_user_usage_stats(user_id)
+    
+    # Check if limit reached (-1 means unlimited)
+    if stats.remaining == 0:
+        tier = stats.subscription_tier
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Monthly limit reached. Upgrade to Pro.",
+            headers={
+                "X-Subscription-Tier": tier,
+                "X-Usage-Count": str(stats.monthly_usage_count),
+                "X-Usage-Limit": str(stats.monthly_usage_limit) if stats.monthly_usage_limit > 0 else "unlimited",
+            }
+        )
+    
+    return stats
+
+
+def enforce_subscription_limit(request: Request):
+    """
+    FastAPI dependency to enforce subscription limits on endpoints.
+    Use this as a dependency for content creation and asset generation endpoints.
+    """
+    auth_header = request.headers.get("authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    token = auth_header.replace("Bearer ", "")
+    supabase = get_supabase_client()
+    
+    try:
+        user = supabase.auth.get_user(token)
+        if not user or not user.user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        user_id = str(user.user.id)
+        return check_subscription_limit(user_id)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to check subscription: {str(e)}",
+        )
 
 
 class UsageTrackingMiddleware:
