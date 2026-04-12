@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/Card'
-import { ArrowLeft, Link, FileText, Video, Upload, Loader2 } from 'lucide-react'
-import { createContent, listProjects, ContentCreate } from '@/lib/api'
+import { ArrowLeft, Link, FileText, Video, Upload, Loader2, AlertCircle } from 'lucide-react'
+import { createContent, listProjects, getUsageSummary, ContentCreate, UsageSummary } from '@/lib/api'
 import { useToast } from '@/hooks/useToast'
 
 export default function NewContentPage() {
@@ -18,6 +18,8 @@ export default function NewContentPage() {
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [usage, setUsage] = useState<UsageSummary | null>(null)
+  const [checkingUsage, setCheckingUsage] = useState(true)
   const router = useRouter()
   const { showToast } = useToast()
 
@@ -28,24 +30,42 @@ export default function NewContentPage() {
     { id: 'upload', name: 'Upload File', icon: Upload, description: 'Audio or video file' },
   ]
 
-  // Load projects on mount
+  // Load projects and usage on mount
   useEffect(() => {
-    async function loadProjects() {
+    async function loadData() {
       try {
+        setCheckingUsage(true)
+        // Check usage first
+        const usageData = await getUsageSummary()
+        setUsage(usageData)
+
+        // Then load projects
         const projects = await listProjects()
         setProjects(projects.filter(p => p.is_active).map(p => ({ id: p.id, name: p.name })))
         if (projects.length > 0) {
           setProjectId(projects[0].id)
         }
       } catch (e) {
-        console.error('Failed to load projects:', e)
+        console.error('Failed to load data:', e)
+      } finally {
+        setCheckingUsage(false)
       }
     }
-    loadProjects()
+    loadData()
   }, [])
+
+  const isLimitReached = usage?.status === 'limit_reached'
+  const isApproachingLimit = !isLimitReached && usage && usage.stats.remaining !== -1 && usage.stats.remaining <= 3
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Check limit before submitting
+    if (isLimitReached) {
+      setError('Monthly usage limit reached. Please upgrade your plan to continue.')
+      return
+    }
+
     setLoading(true)
     setError('')
 
@@ -70,11 +90,24 @@ export default function NewContentPage() {
       // Redirect to content view page
       router.push(`/content/${content.id}`)
     } catch (err: any) {
-      setError(err.message || 'Failed to create content')
+      // Check if error is due to limit exceeded
+      if (err.message?.includes('limit exceeded') || err.message?.includes('429')) {
+        setError('Monthly usage limit reached. Please upgrade your plan to continue.')
+      } else {
+        setError(err.message || 'Failed to create content')
+      }
       showToast('Failed to create content', 'error')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (checkingUsage) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+      </div>
+    )
   }
 
   return (
@@ -101,6 +134,42 @@ export default function NewContentPage() {
           </CardHeader>
 
           <CardContent>
+            {/* Usage Warning */}
+            {isLimitReached && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-red-800">Monthly Limit Reached</p>
+                    <p className="text-sm text-red-600 mt-1">
+                      You've used all {usage?.stats.monthly_usage_limit} content generations this month.
+                      Upgrade your plan to continue creating content.
+                    </p>
+                    <button
+                      onClick={() => router.push('/dashboard?upgrade=true')}
+                      className="mt-3 text-sm font-medium text-red-700 hover:text-red-800 underline"
+                    >
+                      Upgrade Plan →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isApproachingLimit && (
+              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-yellow-800">Approaching Limit</p>
+                    <p className="text-sm text-yellow-600 mt-1">
+                      You have {usage?.stats.remaining} content generations remaining this month.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Project Selection */}
               <div>
@@ -249,13 +318,19 @@ export default function NewContentPage() {
                 
                 <Button
                   type="submit"
-                  disabled={loading || !projectId}
+                  disabled={loading || !projectId || isLimitReached}
                   className="flex items-center gap-2"
+                  title={isLimitReached ? 'Monthly usage limit reached' : ''}
                 >
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Processing...
+                    </>
+                  ) : isLimitReached ? (
+                    <>
+                      <AlertCircle className="h-4 w-4" />
+                      Limit Reached
                     </>
                   ) : (
                     'Add Content'

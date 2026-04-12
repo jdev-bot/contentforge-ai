@@ -17,6 +17,26 @@ from app.core.config import get_settings
 settings = get_settings()
 
 
+# Subscription tier limits with clear enforcement values
+SUBSCRIPTION_TIERS = {
+    "free": {
+        "monthly_limit": 10,
+        "can_upgrade": True,
+        "features": ["basic_text_extraction", "1_project"],
+    },
+    "pro": {
+        "monthly_limit": 100,
+        "can_upgrade": True,
+        "features": ["advanced_ai", "unlimited_projects", "analytics"],
+    },
+    "agency": {
+        "monthly_limit": float("inf"),  # Unlimited
+        "can_upgrade": False,
+        "features": ["unlimited_generations", "custom_ai", "team_collaboration", "api_access"],
+    },
+}
+
+
 # In-memory rate limit storage: {user_id: [(timestamp, count), ...]}
 # Note: For production, consider using Redis
 _rate_limit_store: Dict[str, list] = defaultdict(list)
@@ -28,7 +48,38 @@ SUBSCRIPTION_LIMITS = {
     "agency": float("inf"),  # Unlimited
 }
 
-class RateLimitConfig:
+
+def get_subscription_config(tier: str) -> dict:
+    """Get full subscription configuration for a tier."""
+    return SUBSCRIPTION_TIERS.get(tier.lower(), SUBSCRIPTION_TIERS["free"])
+
+
+def is_unlimited_tier(tier: str) -> bool:
+    """Check if the tier has unlimited usage."""
+    return tier.lower() == "agency"
+
+class RateLimitExceededError(HTTPException):
+    """Raised when a user exceeds their subscription limit."""
+    
+    def __init__(self, tier: str, usage_count: int, usage_limit: int):
+        detail = {
+            "error": "RATE_LIMIT_EXCEEDED",
+            "message": "Monthly limit reached. Upgrade to continue creating content.",
+            "tier": tier,
+            "usage_count": usage_count,
+            "usage_limit": usage_limit if usage_limit != float("inf") else "unlimited",
+            "remaining": 0,
+        }
+        super().__init__(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=detail,
+            headers={
+                "X-Subscription-Tier": tier,
+                "X-Usage-Count": str(usage_count),
+                "X-Usage-Limit": str(usage_limit) if usage_limit != float("inf") else "unlimited",
+                "X-Usage-Remaining": "0",
+            }
+        )
     """Rate limiting configuration."""
     requests: int = settings.RATE_LIMIT_REQUESTS
     window: int = settings.RATE_LIMIT_WINDOW  # seconds

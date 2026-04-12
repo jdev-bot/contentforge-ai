@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getContent, generateAssets, listAssets, deleteContent, Content, GeneratedAsset, createDistribution, publishNow } from '@/lib/api'
+import { getContent, generateAssets, listAssets, deleteContent, Content, GeneratedAsset, createDistribution, publishNow, getUsageSummary, UsageSummary } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/Card'
-import { ArrowLeft, Loader2, Sparkles, Trash2, RefreshCw, Share2, Send } from 'lucide-react'
+import { ArrowLeft, Loader2, Sparkles, Trash2, RefreshCw, Share2, Send, AlertCircle } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 
 export default function ContentDetailPage({ params }: { params: { id: string } }) {
@@ -14,6 +14,7 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
+  const [usage, setUsage] = useState<UsageSummary | null>(null)
   const router = useRouter()
   const { showToast } = useToast()
 
@@ -23,12 +24,14 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
 
   async function loadContent() {
     try {
-      const [contentData, assetsData] = await Promise.all([
+      const [contentData, assetsData, usageData] = await Promise.all([
         getContent(params.id),
         listAssets(params.id),
+        getUsageSummary(),
       ])
       setContent(contentData)
       setAssets(assetsData)
+      setUsage(usageData)
     } catch (err: any) {
       setError(err.message || 'Failed to load content')
     } finally {
@@ -37,14 +40,31 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
   }
 
   async function handleGenerate() {
+    // Check if limit is reached
+    if (usage?.status === 'limit_reached') {
+      setError('Monthly usage limit reached. Please upgrade your plan to continue.')
+      showToast('Monthly usage limit reached', 'error')
+      return
+    }
+
     setGenerating(true)
     try {
       const newAssets = await generateAssets(params.id)
       setAssets(newAssets)
+      
+      // Update usage after generating
+      const updatedUsage = await getUsageSummary()
+      setUsage(updatedUsage)
+      
       showToast('Assets generated successfully!', 'success')
     } catch (err: any) {
-      setError(err.message || 'Failed to generate assets')
-      showToast('Failed to generate assets', 'error')
+      if (err.message?.includes('limit exceeded') || err.message?.includes('429')) {
+        setError('Monthly usage limit reached. Please upgrade your plan to continue.')
+        showToast('Monthly usage limit reached', 'error')
+      } else {
+        setError(err.message || 'Failed to generate assets')
+        showToast('Failed to generate assets', 'error')
+      }
     } finally {
       setGenerating(false)
     }
@@ -82,6 +102,9 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
     )
   }
 
+  const isLimitReached = usage?.status === 'limit_reached'
+  const isApproachingLimit = !isLimitReached && usage && usage.stats.remaining !== -1 && usage.stats.remaining <= 3
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -116,6 +139,42 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Usage Warning */}
+        {isLimitReached && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-red-800">Monthly Limit Reached</p>
+                <p className="text-sm text-red-600 mt-1">
+                  You've used all {usage?.stats.monthly_usage_limit} content generations this month.
+                  Upgrade your plan to generate more assets.
+                </p>
+                <button
+                  onClick={() => router.push('/dashboard?upgrade=true')}
+                  className="mt-3 text-sm font-medium text-red-700 hover:text-red-800 underline"
+                >
+                  Upgrade Plan →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isApproachingLimit && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-yellow-800">Approaching Limit</p>
+                <p className="text-sm text-yellow-600 mt-1">
+                  You have {usage?.stats.remaining} content generations remaining this month.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-600">{error}</p>
@@ -148,13 +207,19 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
 
                 <Button
                   onClick={handleGenerate}
-                  disabled={generating || !content.original_text}
+                  disabled={generating || !content.original_text || isLimitReached}
                   className="w-full mt-6 flex items-center justify-center gap-2"
+                  title={isLimitReached ? 'Monthly usage limit reached' : ''}
                 >
                   {generating ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Generating...
+                    </>
+                  ) : isLimitReached ? (
+                    <>
+                      <AlertCircle className="h-4 w-4" />
+                      Limit Reached
                     </>
                   ) : (
                     <>

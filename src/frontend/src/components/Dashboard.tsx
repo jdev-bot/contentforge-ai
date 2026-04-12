@@ -4,12 +4,15 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthUser } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
-import { Plus, FileText, Share2, BarChart3, Settings, Folder, Menu, X } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/Card'
+import { Plus, FileText, Share2, BarChart3, Settings, Folder, Menu, X, AlertCircle } from 'lucide-react'
 import DistributionsTab from './DistributionsTab'
 import ProjectsTab from './ProjectsTab'
 import AnalyticsTab from './AnalyticsTab'
 import SettingsTab from './SettingsTab'
 import ContentTab from './ContentTab'
+import UsageCounter from './UsageCounter'
+import UpgradeModal from './UpgradeModal'
 
 interface DashboardProps {
   user: AuthUser
@@ -18,6 +21,7 @@ interface DashboardProps {
 export default function Dashboard({ user }: DashboardProps) {
   const [activeTab, setActiveTab] = useState('content')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const router = useRouter()
 
   const tabs = [
@@ -133,8 +137,13 @@ export default function Dashboard({ user }: DashboardProps) {
               })}
             </nav>
             
+            {/* Usage Counter */}
+            <div className="mt-6">
+              <UsageCounter onUpgrade={() => setShowUpgradeModal(true)} />
+            </div>
+            
             {/* Keyboard Shortcuts Info */}
-            <div className="mt-8 p-4 bg-gray-100 rounded-lg">
+            <div className="mt-6 p-4 bg-gray-100 rounded-lg">
               <p className="text-xs font-medium text-gray-700 mb-2">Keyboard Shortcuts</p>
               <div className="space-y-1 text-xs text-gray-500">
                 <div className="flex justify-between">
@@ -213,6 +222,13 @@ export default function Dashboard({ user }: DashboardProps) {
           </main>
         </div>
       </div>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        currentTier="free" // This should come from user data in production
+      />
     </div>
   )
 }
