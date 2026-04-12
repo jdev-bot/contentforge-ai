@@ -43,12 +43,14 @@ export function Tooltip({
   const [isMounted, setIsMounted] = useState(false)
   const triggerRef = useRef<HTMLDivElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const showTimeoutRef = useRef<NodeJS.Timeout>()
-  const hideTimeoutRef = useRef<NodeJS.Timeout>()
+  const showTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const clearTimeouts = useCallback(() => {
     if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current)
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
+    showTimeoutRef.current = null
+    hideTimeoutRef.current = null
   }, [])
 
   const calculatePosition = useCallback(() => {

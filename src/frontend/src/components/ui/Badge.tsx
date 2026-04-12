@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils'
 import { HTMLAttributes, forwardRef, memo, ReactNode } from 'react'
 
-type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info' | 'purple' | 'orange' | 'outline'
+type BadgeVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' | 'purple' | 'orange' | 'outline'
 type BadgeSize = 'sm' | 'md' | 'lg'
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
@@ -29,6 +29,11 @@ const Badge = memo(forwardRef<HTMLSpanElement, BadgeProps>(
   }, ref) => {
     const variants: Record<BadgeVariant, string> = {
       default: [
+        'bg-slate-100 dark:bg-slate-800',
+        'text-slate-700 dark:text-slate-300',
+        'border border-slate-200 dark:border-slate-700',
+      ].join(' '),
+      secondary: [
         'bg-slate-100 dark:bg-slate-800',
         'text-slate-700 dark:text-slate-300',
         'border border-slate-200 dark:border-slate-700',
@@ -83,6 +88,7 @@ const Badge = memo(forwardRef<HTMLSpanElement, BadgeProps>(
 
     const dotColors: Record<BadgeVariant, string> = {
       default: 'bg-slate-500',
+      secondary: 'bg-slate-500',
       primary: 'bg-blue-500',
       success: 'bg-emerald-500',
       warning: 'bg-amber-500',
