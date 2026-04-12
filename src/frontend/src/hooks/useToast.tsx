@@ -1,20 +1,26 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
-import { X, CheckCircle, AlertCircle, Info, Loader2 } from 'lucide-react'
+import { X, CheckCircle, AlertCircle, Info, Loader2, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/Button'
 
-type ToastType = 'success' | 'error' | 'info' | 'loading'
+type ToastType = 'success' | 'error' | 'info' | 'loading' | 'warning'
 
 interface Toast {
   id: string
   message: string
   type: ToastType
   duration?: number
+  action?: {
+    label: string
+    onClick: () => void
+  }
 }
 
 interface ToastContextType {
   showToast: (message: string, type?: ToastType, duration?: number) => void
+  showToastWithAction: (message: string, action: { label: string; onClick: () => void }, type?: ToastType) => void
   dismissToast: (id: string) => void
 }
 
@@ -22,32 +28,44 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined)
 
 const typeConfig = {
   success: {
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    text: 'text-green-900',
+    bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+    border: 'border-emerald-200 dark:border-emerald-800',
+    text: 'text-emerald-900 dark:text-emerald-100',
     icon: CheckCircle,
-    iconColor: 'text-green-600',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+    title: 'Success',
   },
   error: {
-    bg: 'bg-red-50',
-    border: 'border-red-200',
-    text: 'text-red-900',
+    bg: 'bg-rose-50 dark:bg-rose-900/20',
+    border: 'border-rose-200 dark:border-rose-800',
+    text: 'text-rose-900 dark:text-rose-100',
     icon: AlertCircle,
-    iconColor: 'text-red-600',
+    iconColor: 'text-rose-600 dark:text-rose-400',
+    title: 'Error',
+  },
+  warning: {
+    bg: 'bg-amber-50 dark:bg-amber-900/20',
+    border: 'border-amber-200 dark:border-amber-800',
+    text: 'text-amber-900 dark:text-amber-100',
+    icon: AlertTriangle,
+    iconColor: 'text-amber-600 dark:text-amber-400',
+    title: 'Warning',
   },
   info: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    text: 'text-blue-900',
+    bg: 'bg-blue-50 dark:bg-blue-900/20',
+    border: 'border-blue-200 dark:border-blue-800',
+    text: 'text-blue-900 dark:text-blue-100',
     icon: Info,
-    iconColor: 'text-blue-600',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+    title: 'Info',
   },
   loading: {
-    bg: 'bg-gray-50',
-    border: 'border-gray-200',
-    text: 'text-gray-900',
+    bg: 'bg-slate-50 dark:bg-slate-800',
+    border: 'border-slate-200 dark:border-slate-700',
+    text: 'text-slate-900 dark:text-slate-100',
     icon: Loader2,
-    iconColor: 'text-gray-600',
+    iconColor: 'text-slate-600 dark:text-slate-400',
+    title: 'Loading',
   },
 }
 
@@ -70,11 +88,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }
   }, [dismissToast])
 
+  const showToastWithAction = useCallback((message: string, action: { label: string; onClick: () => void }, type: ToastType = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9)
+    setToasts((prev) => [...prev, { id, message, type, duration: 10000, action }])
+
+    setTimeout(() => {
+      dismissToast(id)
+    }, 10000)
+  }, [dismissToast])
+
   return (
-    <ToastContext.Provider value={{ showToast, dismissToast }}>
+    <ToastContext.Provider value={{ showToast, showToastWithAction, dismissToast }}>
       {children}
+      
+      {/* Toast Container */}
       <div 
-        className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+        className="fixed bottom-4 right-4 z-[100] flex flex-col gap-3 w-full max-w-sm pointer-events-none p-4 sm:p-0"
         role="region"
         aria-live="polite"
         aria-label="Notifications"
@@ -88,41 +117,92 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               key={toast.id}
               className={cn(
                 'pointer-events-auto',
-                'flex items-start gap-3 px-4 py-3 rounded-lg shadow-lg border',
-                'min-w-[320px] max-w-md',
-                'transition-all duration-300 ease-out',
-                'animate-in slide-in-from-right-full fade-in',
-                'hover:shadow-xl hover:-translate-y-0.5',
+                'w-full max-w-sm',
+                'rounded-xl',
+                'shadow-2xl shadow-slate-900/10 dark:shadow-black/50',
+                'border',
+                'transform transition-all duration-300 ease-out',
+                'animate-slideInRight',
                 config.bg,
                 config.border,
-                config.text
               )}
               style={{
                 animationDelay: `${index * 50}ms`,
               }}
               role="alert"
             >
-              <Icon 
-                className={cn(
-                  'h-5 w-5 flex-shrink-0 mt-0.5',
-                  config.iconColor,
-                  toast.type === 'loading' && 'animate-spin'
-                )} 
-              />
-              <span className="flex-1 text-sm font-medium leading-relaxed">
-                {toast.message}
-              </span>
-              <button
-                onClick={() => dismissToast(toast.id)}
-                className="flex-shrink-0 -mr-1 -mt-1 p-1 rounded-lg opacity-60 hover:opacity-100 hover:bg-black/5 transition-all"
-                aria-label="Dismiss notification"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="p-4 flex items-start gap-3">
+                <Icon 
+                  className={cn(
+                    'h-5 w-5 flex-shrink-0 mt-0.5',
+                    config.iconColor,
+                    toast.type === 'loading' && 'animate-spin'
+                  )} 
+                />
+                
+                <div className="flex-1 min-w-0">
+                  <p className={cn('text-sm font-medium', config.text)}>
+                    {toast.message}
+                  </p>
+                  
+                  {toast.action && (
+                    <div className="mt-3 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          toast.action?.onClick()
+                          dismissToast(toast.id)
+                        }}
+                      >
+                        {toast.action.label}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                
+                <button
+                  onClick={() => dismissToast(toast.id)}
+                  className={cn(
+                    'flex-shrink-0 p-1 rounded-lg transition-colors',
+                    'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200',
+                    'hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                  )}
+                  aria-label="Dismiss notification"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              
+              {/* Progress bar for auto-dismiss */}
+              {toast.type !== 'loading' && (
+                <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-b-xl overflow-hidden">
+                  <div 
+                    className={cn(
+                      'h-full transition-all duration-300',
+                      toast.type === 'success' && 'bg-emerald-500',
+                      toast.type === 'error' && 'bg-rose-500',
+                      toast.type === 'warning' && 'bg-amber-500',
+                      toast.type === 'info' && 'bg-blue-500'
+                    )}
+                    style={{
+                      width: '100%',
+                      animation: `shrink ${toast.duration}ms linear forwards`,
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )
         })}
       </div>
+      
+      <style jsx>{`
+        @keyframes shrink {
+          from { width: 100%; }
+          to { width: 0%; }
+        }
+      `}</style>
     </ToastContext.Provider>
   )
 }

@@ -4,11 +4,15 @@ import { useState, useEffect, useMemo, Suspense, lazy } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthUser } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
-import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users } from 'lucide-react'
+import { Badge, StatusBadge } from '@/components/ui/Badge'
+import { Avatar, AvatarWithText } from '@/components/ui/Avatar'
+import { Tooltip } from '@/components/ui/Tooltip'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
 import OfflineBanner from './OfflineBanner'
+import { cn } from '@/lib/utils'
 
 // Dynamic imports for code splitting
 const ContentTab = lazy(() => import('./ContentTab'))
@@ -26,16 +30,26 @@ export default function Dashboard({ user }: DashboardProps) {
   const [activeTab, setActiveTab] = useState('content')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
   const router = useRouter()
+
+  // Handle scroll for glass effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Memoize tabs array to prevent unnecessary re-renders
   const tabs = useMemo(() => [
-    { id: 'content', name: 'Content', icon: FileText },
-    { id: 'projects', name: 'Projects', icon: Folder },
-    { id: 'distributions', name: 'Distributions', icon: Share2 },
-    { id: 'analytics', name: 'Analytics', icon: BarChart3 },
-    { id: 'team', name: 'Team', icon: Users },
-    { id: 'settings', name: 'Settings', icon: Settings },
+    { id: 'content', name: 'Content', icon: FileText, badge: null },
+    { id: 'projects', name: 'Projects', icon: Folder, badge: null },
+    { id: 'distributions', name: 'Distributions', icon: Share2, badge: null },
+    { id: 'analytics', name: 'Analytics', icon: BarChart3, badge: 'New' },
+    { id: 'team', name: 'Team', icon: Users, badge: null },
+    { id: 'settings', name: 'Settings', icon: Settings, badge: null },
   ], [])
 
   // Keyboard shortcuts
@@ -51,6 +65,14 @@ export default function Dashboard({ user }: DashboardProps) {
         e.preventDefault()
         router.push('/projects/new')
       }
+      // Number keys for tab switching
+      if (e.altKey && e.key >= '1' && e.key <= '6') {
+        e.preventDefault()
+        const tabIndex = parseInt(e.key) - 1
+        if (tabs[tabIndex]) {
+          setActiveTab(tabs[tabIndex].id)
+        }
+      }
       // Escape to close mobile menu
       if (e.key === 'Escape') {
         setMobileMenuOpen(false)
@@ -59,18 +81,15 @@ export default function Dashboard({ user }: DashboardProps) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [router])
+  }, [router, tabs])
 
   // Wrap tab content with ErrorBoundary and Suspense
   const renderTabContent = () => {
     const fallback = (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse flex space-x-4">
-          <div className="h-12 w-12 bg-gray-200 rounded-full"></div>
-          <div className="space-y-2">
-            <div className="h-4 w-48 bg-gray-200 rounded"></div>
-            <div className="h-4 w-32 bg-gray-200 rounded"></div>
-          </div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          <p className="text-slate-500">Loading...</p>
         </div>
       </div>
     )
@@ -136,21 +155,27 @@ export default function Dashboard({ user }: DashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Offline Banner */}
       <OfflineBanner />
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <header className={cn(
+        'sticky top-0 z-50 transition-all duration-300',
+        isScrolled 
+          ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm border-b border-slate-200/50 dark:border-slate-700/50'
+          : 'bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700'
+      )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo and Mobile Menu Button */}
             <div className="flex items-center gap-4">
               {/* Mobile Menu Button */}
               <button
-                className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                className="md:hidden p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={mobileMenuOpen}
               >
                 {mobileMenuOpen ? (
                   <X className="h-6 w-6" />
@@ -159,21 +184,51 @@ export default function Dashboard({ user }: DashboardProps) {
                 )}
               </button>
               
-              <div className="flex-shrink-0">
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <div className="flex-shrink-0 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
                   ContentForge
                 </span>
               </div>
             </div>
             
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                {user.email}
-              </div>
-              <Button variant="outline" size="sm">
-                Sign Out
-              </Button>
+            {/* Desktop Navigation - Right Side */}
+            <div className="hidden md:flex items-center gap-4">
+              <Tooltip content="Create new content (Ctrl+N)" position="bottom">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  onClick={() => router.push('/content/new')}
+                >
+                  New Content
+                </Button>
+              </Tooltip>
+              
+              <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+              
+              <Tooltip content="View profile" position="bottom">
+                <button
+                  onClick={() => setActiveTab('settings')}
+                  className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <Avatar
+                    name={user.email?.split('@')[0] || 'User'}
+                    size="sm"
+                    status="online"
+                  />
+                  <div className="text-left hidden lg:block">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      {user.email?.split('@')[0] || 'User'}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {user.email}
+                    </p>
+                  </div>
+                </button>
+              </Tooltip>
             </div>
           </div>
         </div>
@@ -182,43 +237,84 @@ export default function Dashboard({ user }: DashboardProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Sidebar - Desktop */}
-          <aside className="hidden md:block w-64">
-            <nav className="space-y-1">
-              {tabs.map((tab) => {
+          <aside className="hidden md:block w-64 flex-shrink-0">
+            <nav className="sticky top-24 space-y-1">
+              {tabs.map((tab, index) => {
                 const Icon = tab.icon
+                const isActive = activeTab === tab.id
+                
                 return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Icon className="mr-3 h-5 w-5" />
-                    {tab.name}
-                  </button>
+                  <Tooltip content={`Alt+${index + 1}`} position="right" delay={1000}>
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={cn(
+                        'w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200',
+                        'group relative overflow-hidden',
+                        isActive
+                          ? 'bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-lg shadow-blue-500/25'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className={cn(
+                          'h-5 w-5 transition-colors',
+                          isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                        )} />
+                        <span>{tab.name}</span>
+                      </div>
+                      
+                      {tab.badge && (
+                        <Badge 
+                          variant={isActive ? 'default' : 'primary'} 
+                          size="sm"
+                          className={cn(
+                            'ml-2',
+                            isActive && 'bg-white/20 text-white border-white/30'
+                          )}
+                        >
+                          {tab.badge}
+                        </Badge>
+                      )}
+                      
+                      {/* Active indicator */}
+                      {isActive && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-violet-600/20 animate-pulse" />
+                      )}
+                    </button>
+                  </Tooltip>
                 )
               })}
             </nav>
             
-            {/* Usage Counter */}
-            <div className="mt-6">
+            {/* Glass Card - Usage Stats */}
+            <div className="mt-6 p-4 rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
               <UsageCounter onUpgrade={() => setShowUpgradeModal(true)} />
             </div>
             
             {/* Keyboard Shortcuts Info */}
-            <div className="mt-6 p-4 bg-gray-100 rounded-lg">
-              <p className="text-xs font-medium text-gray-700 mb-2">Keyboard Shortcuts</p>
-              <div className="space-y-1 text-xs text-gray-500">
-                <div className="flex justify-between">
+            <div className="mt-6 p-4 rounded-2xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wider">
+                Keyboard Shortcuts
+              </p>
+              <div className="space-y-2 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex justify-between items-center">
                   <span>New Content</span>
-                  <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-300">Ctrl+N</kbd>
+                  <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 font-mono">
+                    Ctrl+N
+                  </kbd>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span>New Project</span>
-                  <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-300">Ctrl+P</kbd>
+                  <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 font-mono">
+                    Ctrl+P
+                  </kbd>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Switch Tab</span>
+                  <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 font-mono">
+                    Alt+1-6
+                  </kbd>
                 </div>
               </div>
             </div>
@@ -229,27 +325,55 @@ export default function Dashboard({ user }: DashboardProps) {
             <>
               {/* Backdrop */}
               <div 
-                className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 md:hidden"
                 onClick={() => setMobileMenuOpen(false)}
+                aria-hidden="true"
               />
               
               {/* Mobile Sidebar */}
-              <aside className="fixed inset-y-0 left-0 w-64 bg-white z-50 md:hidden shadow-xl">
-                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                  <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    ContentForge
-                  </span>
+              <aside className="fixed inset-y-0 left-0 w-72 bg-white dark:bg-slate-900 z-50 md:hidden shadow-2xl">
+                <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+                      ContentForge
+                    </span>
+                  </div>
                   <button
                     onClick={() => setMobileMenuOpen(false)}
-                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
+                    className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
+                    aria-label="Close menu"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
                 
+                {/* User Info in Mobile Menu */}
+                <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <Avatar
+                      name={user.email?.split('@')[0] || 'User'}
+                      size="md"
+                      status="online"
+                    />
+                    <div>
+                      <p className="font-medium text-slate-900 dark:text-slate-100">
+                        {user.email?.split('@')[0] || 'User'}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
                 <nav className="p-4 space-y-1">
-                  {tabs.map((tab) => {
+                  {tabs.map((tab, index) => {
                     const Icon = tab.icon
+                    const isActive = activeTab === tab.id
+                    
                     return (
                       <button
                         key={tab.id}
@@ -257,23 +381,45 @@ export default function Dashboard({ user }: DashboardProps) {
                           setActiveTab(tab.id)
                           setMobileMenuOpen(false)
                         }}
-                        className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
-                          activeTab === tab.id
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
+                        className={cn(
+                          'w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200',
+                          isActive
+                            ? 'bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-lg shadow-blue-500/25'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        )}
                       >
-                        <Icon className="mr-3 h-5 w-5" />
-                        {tab.name}
+                        <div className="flex items-center gap-3">
+                          <Icon className={cn(
+                            'h-5 w-5',
+                            isActive ? 'text-white' : 'text-slate-400'
+                          )} />
+                          <span>{tab.name}</span>
+                        </div>
+                        
+                        {tab.badge && (
+                          <Badge 
+                            variant={isActive ? 'default' : 'primary'} 
+                            size="sm"
+                            className={cn(
+                              isActive && 'bg-white/20 text-white border-white/30'
+                            )}
+                          >
+                            {tab.badge}
+                          </Badge>
+                        )}
                       </button>
                     )
                   })}
                 </nav>
                 
-                <div className="p-4 border-t border-gray-200">
-                  <div className="text-sm text-gray-600 mb-4">
-                    {user.email}
+                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200 dark:border-slate-700">
+                  <div className="mb-4">
+                    <UsageCounter onUpgrade={() => {
+                      setShowUpgradeModal(true)
+                      setMobileMenuOpen(false)
+                    }} />
                   </div>
+                  
                   <Button variant="outline" className="w-full">
                     Sign Out
                   </Button>
@@ -284,7 +430,46 @@ export default function Dashboard({ user }: DashboardProps) {
 
           {/* Main Content */}
           <main className="flex-1 min-w-0">
-            {renderTabContent()}
+            {/* Tab Header */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {tabs.find(t => t.id === activeTab)?.name}
+                  </h1>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Manage your {activeTab.toLowerCase()} and settings
+                  </p>
+                </div>
+                
+                {/* Contextual Actions */}
+                {activeTab === 'content' && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<Plus className="h-4 w-4" />}
+                    onClick={() => router.push('/content/new')}
+                  >
+                    New Content
+                  </Button>
+                )}
+                {activeTab === 'projects' && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<Plus className="h-4 w-4" />}
+                    onClick={() => router.push('/projects/new')}
+                  >
+                    New Project
+                  </Button>
+                )}
+              </div>
+            </div>
+            
+            {/* Tab Content */}
+            <div className="animate-fadeIn">
+              {renderTabContent()}
+            </div>
           </main>
         </div>
       </div>
@@ -293,9 +478,8 @@ export default function Dashboard({ user }: DashboardProps) {
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        currentTier="free" // This should come from user data in production
+        currentTier="free"
       />
     </div>
   )
 }
-

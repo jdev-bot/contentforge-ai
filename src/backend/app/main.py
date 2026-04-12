@@ -7,7 +7,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import get_settings
-from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations
+from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation
 
 settings = get_settings()
 
@@ -64,6 +64,8 @@ app.include_router(admin.router, prefix="/api/v1", tags=["admin"])
 app.include_router(webhooks.router, prefix="/api/v1", tags=["webhooks"])
 app.include_router(analytics.router, prefix="/api/v1", tags=["analytics"])
 app.include_router(stripe_router.router, prefix="/api/v1", tags=["stripe"])
+app.include_router(ai_suggestions.router, prefix="/api/v1", tags=["ai-suggestions"])
+app.include_router(automation.router, prefix="/api/v1", tags=["automation"])
 
 
 @app.get("/")
