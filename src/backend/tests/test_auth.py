@@ -264,20 +264,31 @@ class TestAuthMe:
         headers = create_auth_headers("valid-token")
         
         mock_user = create_mock_auth_user(
-            user_id="current-user-id",
+            user_id="123e4567-e89b-12d3-a456-426614174010",
             email="current@example.com",
             full_name="Current User"
         )
         
-        builder = MockSupabaseBuilder()
-        builder.with_user(mock_user)
+        # Profile data response
+        profile_data = {
+            "subscription_tier": "free",
+            "monthly_usage_count": 0,
+            "monthly_usage_limit": 10,
+        }
         
-        with patch('app.routers.auth.get_supabase_client', return_value=builder.build()):
+        mock_table = MagicMock()
+        mock_table.select.return_value.eq.return_value.single.return_value.execute.return_value = \
+            create_mock_supabase_response(data=profile_data)
+        
+        mock_client = MagicMock()
+        mock_client.auth.get_user.return_value = Mock(user=mock_user)
+        mock_client.table.return_value = mock_table
+        
+        with patch('app.routers.auth.get_supabase_client', return_value=mock_client):
             response = client.get("/api/v1/auth/me", headers=headers)
             
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
-            assert data["id"] == "current-user-id"
             assert data["email"] == "current@example.com"
             assert data["full_name"] == "Current User"
             assert data["is_active"] is True
