@@ -17,14 +17,17 @@ export function Tooltip({
   delay = 200 
 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false)
-  let timeoutId: NodeJS.Timeout
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
 
   const handleMouseEnter = () => {
-    timeoutId = setTimeout(() => setIsVisible(true), delay)
+    const id = setTimeout(() => setIsVisible(true), delay)
+    setTimeoutId(id)
   }
 
   const handleMouseLeave = () => {
-    clearTimeout(timeoutId)
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
     setIsVisible(false)
   }
 

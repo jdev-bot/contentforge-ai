@@ -94,9 +94,10 @@ export default function PricingPage() {
       
       // Redirect to Stripe Checkout
       window.location.href = url
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create checkout:', error)
-      showToast(error.message || 'Failed to start checkout. Please try again.', 'error')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start checkout. Please try again.'
+      showToast(errorMessage, 'error')
     } finally {
       setLoading(null)
     }
@@ -280,7 +281,7 @@ export default function PricingPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h3 className="font-semibold text-gray-900 mb-2">What happens when I hit my limit?</h3>
               <p className="text-gray-600 text-sm">
-                You'll be notified when you're close to your limit. You can upgrade anytime or wait until the next billing cycle.
+              You&apos;ll be notified when you&apos;re close to your limit. You can upgrade anytime or wait until the next billing cycle.
               </p>
             </div>
           </div>

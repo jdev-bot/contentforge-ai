@@ -150,7 +150,7 @@ export interface Project {
   user_id: string
   name: string
   description?: string
-  brand_voice?: Record<string, any>
+  brand_voice?: Record<string, unknown>
   target_platforms?: string[]
   is_active: boolean
   created_at: string

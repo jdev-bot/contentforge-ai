@@ -82,9 +82,10 @@ export default function SettingsTab({ user }: SettingsTabProps) {
       setProfile(updated)
       setOriginalFullName(fullName)
       showToast('Profile updated successfully', 'success')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to update profile:', error)
-      showToast(error.message || 'Failed to update profile', 'error')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile'
+      showToast(errorMessage, 'error')
     } finally {
       setSaving(false)
     }

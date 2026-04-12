@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertCircle, XCircle, Info, CheckCircle, X } from 'lucide-react'
+import { AlertCircle, Info, CheckCircle, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ReactNode } from 'react'
 

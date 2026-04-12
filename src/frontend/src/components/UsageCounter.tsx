@@ -12,7 +12,8 @@ interface UsageCounterProps {
 }
 
 export default function UsageCounter({ onUpgrade }: UsageCounterProps) {
-  const { showToast } = useToast()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _unused = useToast()
   const [usage, setUsage] = useState<UsageSummary | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -43,7 +44,8 @@ export default function UsageCounter({ onUpgrade }: UsageCounterProps) {
     }
   }
 
-  const getTierColor = (tier: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _getTierColor = (tier: string) => {
     switch (tier.toLowerCase()) {
       case 'agency':
         return 'bg-purple-50 text-purple-700 border-purple-200'
@@ -144,7 +146,7 @@ export default function UsageCounter({ onUpgrade }: UsageCounterProps) {
             {isLimitReached ? (
               <div className="text-center">
                 <p className="text-sm text-red-600 mb-2">
-                  You've reached your monthly limit. Upgrade to continue creating content.
+                  You&apos;ve reached your monthly limit. Upgrade to continue creating content.
                 </p>
                 <Button
                   size="sm"

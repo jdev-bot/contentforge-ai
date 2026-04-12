@@ -54,6 +54,10 @@ const typeConfig = {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
 
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }, [])
+
   const showToast = useCallback((message: string, type: ToastType = 'info', duration = 5000) => {
     const id = Math.random().toString(36).substring(2, 9)
     setToasts((prev) => [...prev, { id, message, type, duration }])
@@ -64,11 +68,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         dismissToast(id)
       }, duration)
     }
-  }, [])
-
-  const dismissToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id))
-  }, [])
+  }, [dismissToast])
 
   return (
     <ToastContext.Provider value={{ showToast, dismissToast }}>
@@ -140,7 +140,7 @@ export function usePromiseToast() {
   const { showToast, dismissToast } = useToast()
 
   const toastPromise = useCallback(
-    async function toastPromise<T extends unknown>(
+    async function toastPromise<T>(
       promise: Promise<T>,
       messages: {
         loading: string

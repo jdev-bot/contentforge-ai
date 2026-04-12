@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getContent, generateAssets, listAssets, deleteContent, Content, GeneratedAsset, createDistribution, publishNow, getUsageSummary, UsageSummary } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/Card'
-import { ArrowLeft, Loader2, Sparkles, Trash2, RefreshCw, Share2, Send, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Loader2, Sparkles, Trash2, RefreshCw, Send, AlertCircle } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 
 export default function ContentDetailPage({ params }: { params: { id: string } }) {
@@ -32,8 +32,9 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
       setContent(contentData)
       setAssets(assetsData)
       setUsage(usageData)
-    } catch (err: any) {
-      setError(err.message || 'Failed to load content')
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load content'
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }
@@ -57,12 +58,14 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
       setUsage(updatedUsage)
       
       showToast('Assets generated successfully!', 'success')
-    } catch (err: any) {
-      if (err.message?.includes('limit exceeded') || err.message?.includes('429')) {
+    } catch (err: unknown) {
+      // Check if error is due to limit exceeded
+      const errorMsg = err instanceof Error ? err.message : 'Failed to generate assets'
+      if (errorMsg.includes('limit exceeded') || errorMsg.includes('429')) {
         setError('Monthly usage limit reached. Please upgrade your plan to continue.')
         showToast('Monthly usage limit reached', 'error')
       } else {
-        setError(err.message || 'Failed to generate assets')
+        setError(errorMsg)
         showToast('Failed to generate assets', 'error')
       }
     } finally {
@@ -76,8 +79,9 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
       await deleteContent(params.id)
       showToast('Content deleted successfully!', 'success')
       router.push('/dashboard')
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete content')
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete content'
+      setError(errorMsg)
     }
   }
 
@@ -147,7 +151,7 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
               <div>
                 <p className="font-medium text-red-800">Monthly Limit Reached</p>
                 <p className="text-sm text-red-600 mt-1">
-                  You've used all {usage?.stats.monthly_usage_limit} content generations this month.
+                  You&apos;ve used all {usage?.stats.monthly_usage_limit} content generations this month.
                   Upgrade your plan to generate more assets.
                 </p>
                 <button
@@ -252,7 +256,7 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
                 <Sparkles className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-4 text-lg font-medium text-gray-900">No assets yet</h3>
                 <p className="mt-2 text-gray-500 max-w-sm mx-auto">
-                  Click "Generate Assets" to transform your content into multiple formats.
+                  Click &quot;Generate Assets&quot; to transform your content into multiple formats.
                 </p>
               </div>
             ) : (
@@ -269,7 +273,7 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
   )
 }
 
-function AssetCard({ asset, onCopy, onPublish }: { asset: GeneratedAsset; onCopy?: () => void; onPublish?: () => void }) {
+function AssetCard({ asset }: { asset: GeneratedAsset }) {
   const [copied, setCopied] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [publishError, setPublishError] = useState('')
@@ -321,8 +325,9 @@ function AssetCard({ asset, onCopy, onPublish }: { asset: GeneratedAsset; onCopy
       
       setPublished(true)
       showToast('Published successfully!', 'success')
-    } catch (err: any) {
-      setPublishError(err.message || 'Failed to publish')
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to publish'
+      setPublishError(errorMsg)
       showToast('Failed to publish', 'error')
     } finally {
       setPublishing(false)

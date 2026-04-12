@@ -5,7 +5,7 @@ import { listDistributions, Distribution } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { Loader2, Calendar, ExternalLink, Trash2 } from 'lucide-react'
+import { Calendar, ExternalLink, Trash2 } from 'lucide-react'
 
 export default function DistributionsTab() {
   const [distributions, setDistributions] = useState<Distribution[]>([])
@@ -20,8 +20,8 @@ export default function DistributionsTab() {
     try {
       const data = await listDistributions()
       setDistributions(data)
-    } catch (err: any) {
-      setError(err.message || 'Failed to load distributions')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load distributions')
     } finally {
       setLoading(false)
     }

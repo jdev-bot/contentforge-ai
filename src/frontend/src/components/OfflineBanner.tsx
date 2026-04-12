@@ -22,7 +22,7 @@ export default function OfflineBanner() {
         >
           <WifiOff className="h-4 w-4" />
           <span className="text-sm font-medium">
-            You're offline. Changes will be saved locally.
+            You&apos;re offline. Changes will be saved locally.
           </span>
           {pendingActionsCount > 0 && (
             <span className="ml-2 text-xs bg-amber-600 px-2 py-0.5 rounded-full">

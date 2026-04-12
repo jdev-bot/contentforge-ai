@@ -61,7 +61,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   const [loading, setLoading] = useState<string | null>(null)
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null)
-  const [isLoadingStatus, setIsLoadingStatus] = useState(false)
+  const [, setIsLoadingStatus] = useState(false)
 
   useEffect(() => {
     if (isOpen && currentTier !== 'free') {
@@ -92,9 +92,10 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
       })
       
       window.location.href = url
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create checkout:', error)
-      showToast(error.message || 'Failed to start checkout', 'error')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start checkout'
+      showToast(errorMessage, 'error')
     } finally {
       setLoading(null)
     }
@@ -105,9 +106,10 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
       setLoading('manage')
       const { url } = await createPortalSession()
       window.open(url, '_blank')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to open portal:', error)
-      showToast(error.message || 'Failed to open billing portal', 'error')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to open billing portal'
+      showToast(errorMessage, 'error')
     } finally {
       setLoading(null)
     }
@@ -167,7 +169,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
                 <Sparkles className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium text-blue-900">
-                    You're currently on the <span className="capitalize">{currentTier}</span> plan
+                    You&apos;re currently on the <span className="capitalize">{currentTier}</span> plan
                   </p>
                   {subscription?.current_period_end && (
                     <p className="text-sm text-blue-700 mt-1">

@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { InputHTMLAttributes, forwardRef } from 'react'
+import { InputHTMLAttributes, forwardRef, useId } from 'react'
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string
@@ -9,7 +9,8 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, error, label, helperText, id, ...props }, ref) => {
-    const inputId = id || `input-${Math.random().toString(36).slice(2, 11)}`
+    const generatedId = useId()
+    const inputId = id || `input-${generatedId}`
     
     return (
       <div className="w-full">

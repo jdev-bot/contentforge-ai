@@ -89,12 +89,13 @@ export default function NewContentPage() {
       
       // Redirect to content view page
       router.push(`/content/${content.id}`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Check if error is due to limit exceeded
-      if (err.message?.includes('limit exceeded') || err.message?.includes('429')) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create content'
+      if (errorMessage.includes('limit exceeded') || errorMessage.includes('429')) {
         setError('Monthly usage limit reached. Please upgrade your plan to continue.')
       } else {
-        setError(err.message || 'Failed to create content')
+        setError(errorMessage)
       }
       showToast('Failed to create content', 'error')
     } finally {
@@ -142,7 +143,7 @@ export default function NewContentPage() {
                   <div>
                     <p className="font-medium text-red-800">Monthly Limit Reached</p>
                     <p className="text-sm text-red-600 mt-1">
-                      You've used all {usage?.stats.monthly_usage_limit} content generations this month.
+                      You&apos;ve used all {usage?.stats.monthly_usage_limit} content generations this month.
                       Upgrade your plan to continue creating content.
                     </p>
                     <button

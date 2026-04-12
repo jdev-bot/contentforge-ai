@@ -30,15 +30,18 @@ export function useNetworkStatus(): NetworkStatus {
   // Load queued actions from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem(QUEUE_KEY)
-        if (stored) {
-          const parsed = JSON.parse(stored)
-          setPendingActions(parsed)
+      // Use requestAnimationFrame to avoid synchronous setState in effect
+      requestAnimationFrame(() => {
+        try {
+          const stored = localStorage.getItem(QUEUE_KEY)
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            setPendingActions(parsed)
+          }
+        } catch (e) {
+          console.error('Failed to load offline queue:', e)
         }
-      } catch (e) {
-        console.error('Failed to load offline queue:', e)
-      }
+      })
     }
   }, [])
 
@@ -59,6 +62,30 @@ export function useNetworkStatus(): NetworkStatus {
 
   // Listen for online/offline events
   useEffect(() => {
+    const processQueue = () => {
+      if (!navigator.onLine) return
+
+      const actionsToProcess = pendingActions.filter(a => !processedRef.current.has(a.id))
+      
+      if (actionsToProcess.length === 0) return
+
+      // Mark actions as processed
+      actionsToProcess.forEach(action => {
+        processedRef.current.add(action.id)
+      })
+
+      // Dispatch a custom event for the application to handle
+      const event = new CustomEvent('process-offline-queue', {
+        detail: { actions: actionsToProcess }
+      })
+      window.dispatchEvent(event)
+
+      // Clear processed actions after a delay
+      setTimeout(() => {
+        setPendingActions(prev => prev.filter(a => !processedRef.current.has(a.id)))
+      }, 5000)
+    }
+
     const handleOnline = () => {
       setWasOffline(!isOnline)
       setIsOnline(true)
@@ -77,7 +104,7 @@ export function useNetworkStatus(): NetworkStatus {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  }, [isOnline])
+  }, [isOnline, pendingActions])
 
   const queueAction = useCallback((type: string, payload: unknown) => {
     const action: QueuedAction = {
@@ -90,7 +117,8 @@ export function useNetworkStatus(): NetworkStatus {
     setPendingActions(prev => [...prev, action])
   }, [])
 
-  const processQueue = useCallback(() => {
+  // Remove duplicate processQueue - defined inside useEffect above
+  const processQueue = () => {
     if (!navigator.onLine) return
 
     const actionsToProcess = pendingActions.filter(a => !processedRef.current.has(a.id))
@@ -112,7 +140,7 @@ export function useNetworkStatus(): NetworkStatus {
     setTimeout(() => {
       setPendingActions(prev => prev.filter(a => !processedRef.current.has(a.id)))
     }, 5000)
-  }, [pendingActions])
+  }
 
   const clearQueue = useCallback(() => {
     processedRef.current.clear()
@@ -140,13 +168,15 @@ export function useOfflineBanner() {
   const [showReconnected, setShowReconnected] = useState(false)
 
   useEffect(() => {
-    setShowBanner(!isOnline)
-    
-    if (wasOffline && isOnline) {
-      setShowReconnected(true)
-      const timer = setTimeout(() => setShowReconnected(false), 3000)
-      return () => clearTimeout(timer)
-    }
+    // Use requestAnimationFrame to defer state updates and avoid sync setState warning
+    requestAnimationFrame(() => {
+      setShowBanner(!isOnline)
+      
+      if (wasOffline && isOnline) {
+        setShowReconnected(true)
+        setTimeout(() => setShowReconnected(false), 3000)
+      }
+    })
   }, [isOnline, wasOffline])
 
   return {

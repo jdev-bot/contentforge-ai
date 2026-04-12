@@ -26,8 +26,9 @@ export default function NewProjectPage() {
       await createProject({ name, description })
       showToast('Project created successfully!', 'success')
       router.push('/dashboard')
-    } catch (err: any) {
-      setError(err.message || 'Failed to create project')
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create project'
+      setError(errorMessage)
       showToast('Failed to create project', 'error')
     } finally {
       setLoading(false)

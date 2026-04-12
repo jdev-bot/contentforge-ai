@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { listContent, deleteContent, Content } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
@@ -15,15 +15,15 @@ import {
   MoreVertical,
   Loader2,
   Calendar,
-  AlertCircle
 } from 'lucide-react'
 
 interface ContentTabProps {
-  router?: any
+  router?: ReturnType<typeof import('next/navigation').useRouter>
 }
 
 export default function ContentTab({ router: routerProp }: ContentTabProps) {
-  const router = routerProp || useRouter()
+  const nextRouter = useRouter()
+  const router = routerProp || nextRouter
   const { showToast } = useToast()
   const [content, setContent] = useState<Content[]>([])
   const [loading, setLoading] = useState(true)
@@ -145,7 +145,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
           
           <h3 className="mt-4 text-lg font-medium text-gray-900">No content yet</h3>
           <p className="mt-2 text-gray-500 max-w-sm mx-auto">
-            Get started by adding your first piece of content. We'll transform it into multiple formats.
+            Get started by adding your first piece of content. We&apos;ll transform it into multiple formats.
           </p>
           
           <div className="mt-6">

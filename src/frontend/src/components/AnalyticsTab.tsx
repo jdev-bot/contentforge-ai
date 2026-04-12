@@ -17,7 +17,7 @@ export default function AnalyticsTab() {
   const [stats, setStats] = useState<AnalyticsStats | null>(null)
   const [usage, setUsage] = useState<{ stats: { monthly_usage_count: number; monthly_usage_limit: number; percentage_used: number }; recent_activity: UsageActivity[] } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
     loadAnalytics()
@@ -32,8 +32,8 @@ export default function AnalyticsTab() {
       ])
       setStats(analyticsData)
       setUsage(usageData)
-    } catch (err: any) {
-      setError(err.message || 'Failed to load analytics')
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to load analytics')
     } finally {
       setLoading(false)
     }
@@ -123,12 +123,12 @@ export default function AnalyticsTab() {
     )
   }
 
-  if (error) {
+  if (errorMsg) {
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-900">Analytics</h2>
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="text-sm text-red-600">{errorMsg}</p>
         </div>
       </div>
     )
