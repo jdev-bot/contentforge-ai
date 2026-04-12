@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { InputHTMLAttributes, forwardRef, useId, useState, ReactNode } from 'react'
-import { Eye, EyeOff, AlertCircle, Check, X } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, X } from 'lucide-react'
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string

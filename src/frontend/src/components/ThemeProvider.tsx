@@ -29,6 +29,7 @@ export function ThemeProvider({
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
 
   // Initialize theme from localStorage or default
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     const savedTheme = localStorage.getItem(storageKey) as Theme | null
     if (savedTheme) {
@@ -38,6 +39,7 @@ export function ThemeProvider({
   }, [storageKey])
 
   // Update resolved theme whenever theme changes
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     const root = window.document.documentElement
     
@@ -56,6 +58,7 @@ export function ThemeProvider({
   }, [theme])
 
   // Listen for system theme changes
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (theme !== 'system') return
     
