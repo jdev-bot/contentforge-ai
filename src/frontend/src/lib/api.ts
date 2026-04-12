@@ -486,6 +486,404 @@ export async function exportAnalyticsJSON(days: number = 30): Promise<Blob> {
   return response.blob()
 }
 
+// ============ AI Suggestions Types ============
+
+export interface AIImprovementSuggestion {
+  id: string
+  content_id: string
+  user_id: string
+  suggestion_type: string
+  original_text: string
+  improved_text: string
+  explanation: string
+  confidence_score: number
+  applied: boolean
+  created_at: string
+}
+
+export interface SEOAnalysisResult {
+  id: string
+  content_id: string
+  user_id: string
+  seo_score: number
+  keyword_density: Record<string, number>
+  readability_score: number
+  suggestions: string[]
+  meta_title_suggestion: string | null
+  meta_description_suggestion: string | null
+  heading_structure_suggestions: string[]
+  created_at: string
+}
+
+export interface ToneAdjustmentResult {
+  id: string
+  content_id: string
+  user_id: string
+  original_tone: string
+  target_tone: string
+  adjusted_text: string
+  tone_characteristics: Record<string, unknown>
+  created_at: string
+}
+
+export async function getContentImprovements(
+  contentId: string,
+  suggestionType: 'readability' | 'engagement' | 'clarity' | 'grammar'
+): Promise<AIImprovementSuggestion> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/ai-suggestions/improve`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content_id: contentId, suggestion_type: suggestionType }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get content improvements')
+  }
+  
+  return response.json()
+}
+
+export async function getSEOOtimization(
+  contentId: string,
+  keywords?: string[],
+  targetAudience?: string
+): Promise<SEOAnalysisResult> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/ai-suggestions/seo`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content_id: contentId, keywords, target_audience: targetAudience }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get SEO analysis')
+  }
+  
+  return response.json()
+}
+
+export async function adjustContentTone(
+  contentId: string,
+  tone: 'professional' | 'casual' | 'humorous' | 'formal' | 'friendly' | 'authoritative'
+): Promise<ToneAdjustmentResult> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/ai-suggestions/tone`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content_id: contentId, tone }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to adjust tone')
+  }
+  
+  return response.json()
+}
+
+export async function listAISuggestions(
+  contentId: string,
+  suggestionType?: string
+): Promise<AIImprovementSuggestion[]> {
+  const headers = await getAuthHeader()
+  
+  let url = `${API_URL}/ai-suggestions/${contentId}`
+  if (suggestionType) {
+    url += `?suggestion_type=${suggestionType}`
+  }
+  
+  const response = await fetch(url, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to list AI suggestions')
+  }
+  
+  return response.json()
+}
+
+export async function applySuggestion(suggestionId: string): Promise<AIImprovementSuggestion> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/ai-suggestions/${suggestionId}/apply`, {
+    method: 'PATCH',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to apply suggestion')
+  }
+  
+  return response.json()
+}
+
+// ============ Automation Types ============
+
+export interface AutomationRule {
+  id: string
+  name: string
+  description?: string
+  project_id?: string
+  user_id: string
+  trigger_type: string
+  trigger_config?: Record<string, unknown>
+  conditions?: Record<string, unknown>[]
+  action_type: string
+  action_config: Record<string, unknown>
+  schedule_config?: Record<string, unknown>
+  webhook_config?: Record<string, unknown>
+  status: string
+  last_run_at?: string
+  next_run_at?: string
+  run_count: number
+  success_count: number
+  fail_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AutomationLog {
+  id: string
+  rule_id: string
+  user_id: string
+  status: string
+  triggered_by: string
+  input_data?: Record<string, unknown>
+  output_data?: Record<string, unknown>
+  error_message?: string
+  execution_time_ms?: number
+  created_at: string
+}
+
+export interface WebhookEndpoint {
+  id: string
+  name: string
+  description?: string
+  project_id?: string
+  user_id: string
+  endpoint_url: string
+  secret?: string
+  allowed_ips?: string[]
+  is_active: boolean
+  total_calls: number
+  last_called_at?: string
+  created_at: string
+}
+
+export interface QueueItem {
+  id: string
+  user_id: string
+  content_id: string
+  asset_id?: string
+  platform: string
+  status: string
+  scheduled_for?: string
+  published_at?: string
+  error_message?: string
+  retry_count: number
+  created_at: string
+  updated_at: string
+}
+
+export async function createAutomationRule(rule: {
+  name: string
+  description?: string
+  project_id?: string
+  trigger_type: string
+  action_type: string
+  action_config: Record<string, unknown>
+  enabled?: boolean
+}): Promise<AutomationRule> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/automation/rules`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(rule),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create automation rule')
+  }
+  
+  return response.json()
+}
+
+export async function listAutomationRules(
+  projectId?: string,
+  status?: string
+): Promise<AutomationRule[]> {
+  const headers = await getAuthHeader()
+  
+  let url = `${API_URL}/automation/rules`
+  const params = new URLSearchParams()
+  if (projectId) params.append('project_id', projectId)
+  if (status) params.append('status', status)
+  if (params.toString()) url += `?${params.toString()}`
+  
+  const response = await fetch(url, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch automation rules')
+  }
+  
+  return response.json()
+}
+
+export async function getAutomationRule(ruleId: string): Promise<AutomationRule> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/automation/rules/${ruleId}`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch automation rule')
+  }
+  
+  return response.json()
+}
+
+export async function toggleAutomationRule(ruleId: string): Promise<{ status: string }> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/automation/rules/${ruleId}/toggle`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to toggle automation rule')
+  }
+  
+  return response.json()
+}
+
+export async function runAutomationRule(ruleId: string): Promise<{ message: string; log_id: string }> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/automation/rules/${ruleId}/run`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to run automation rule')
+  }
+  
+  return response.json()
+}
+
+export async function listAutomationLogs(ruleId?: string): Promise<AutomationLog[]> {
+  const headers = await getAuthHeader()
+  
+  let url = `${API_URL}/automation/logs`
+  if (ruleId) url += `?rule_id=${ruleId}`
+  
+  const response = await fetch(url, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch automation logs')
+  }
+  
+  return response.json()
+}
+
+export async function getBestPostingTime(platform: string): Promise<{
+  platform: string
+  best_times: string[]
+  timezone_recommendation: string
+  frequency_recommendation: string
+}> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/automation/best-times/${platform}`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch best posting times')
+  }
+  
+  return response.json()
+}
+
+export async function bulkScheduleContent(
+  contentIds: string[],
+  platform: string,
+  startTime: string,
+  intervalMinutes: number
+): Promise<{
+  scheduled_count: number
+  start_time: string
+  end_time: string
+  queue_items: string[]
+}> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/automation/schedule/bulk`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      content_ids: contentIds,
+      platform,
+      start_time: startTime,
+      interval_minutes: intervalMinutes,
+    }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to bulk schedule content')
+  }
+  
+  return response.json()
+}
+
+export async function getPublishingQueue(status?: string): Promise<QueueItem[]> {
+  const headers = await getAuthHeader()
+  
+  let url = `${API_URL}/automation/queue`
+  if (status) url += `?status=${status}`
+  
+  const response = await fetch(url, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch publishing queue')
+  }
+  
+  return response.json()
+}
+
+export async function cancelQueueItem(queueId: string): Promise<{ message: string }> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/automation/queue/${queueId}/cancel`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to cancel queue item')
+  }
+  
+  return response.json()
+}
+
+// ============ End Advanced Features ============
+
 export interface AnalyticsSummaryData {
   contentMetrics: ContentMetricsResponse
   assetMetrics: AssetMetricsResponse

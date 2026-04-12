@@ -4,8 +4,8 @@ import { useState, useEffect, useMemo, Suspense, lazy } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthUser } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
-import { Badge, StatusBadge } from '@/components/ui/Badge'
-import { Avatar, AvatarWithText } from '@/components/ui/Avatar'
+import { Badge } from '@/components/ui/Badge'
+import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -244,7 +244,7 @@ export default function Dashboard({ user }: DashboardProps) {
                 const isActive = activeTab === tab.id
                 
                 return (
-                  <Tooltip content={`Alt+${index + 1}`} position="right" delay={1000}>
+                  <Tooltip key={tab.id} content={`Alt+${index + 1}`} position="right" delay={1000}>
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
@@ -370,7 +370,7 @@ export default function Dashboard({ user }: DashboardProps) {
                 </div>
                 
                 <nav className="p-4 space-y-1">
-                  {tabs.map((tab, index) => {
+                  {tabs.map((tab) => {
                     const Icon = tab.icon
                     const isActive = activeTab === tab.id
                     

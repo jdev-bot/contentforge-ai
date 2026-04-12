@@ -18,28 +18,19 @@ import {
   Key, 
   CreditCard, 
   CheckCircle, 
-  AlertCircle,
-  Eye,
-  EyeOff,
   Copy,
-  Loader2,
   ExternalLink,
-  RefreshCw,
   AlertTriangle,
-  X,
   Settings,
   Bell,
   Shield,
   Palette,
-  Globe,
-  ChevronRight,
-  Smartphone,
   Moon,
   Sun,
   Monitor,
   Upload,
-  Trash2,
-  LogOut
+  LogOut,
+  Sparkles
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -111,8 +102,7 @@ function ProfileTab({ user, profile, loading, onSave }: {
               </h3>
               <p className="text-slate-500 dark:text-slate-400">{user.email}</p>
               <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
-                <PlanBadge plan={(profile?.subscription_tier as any) || 'free'} />
-                <StatusBadge status="active" />
+                <PlanBadge plan={(profile?.subscription_tier || 'free') as 'free' | 'starter' | 'pro' | 'enterprise'} />
               </div>
             </div>
           </div>
@@ -463,7 +453,7 @@ function SettingsContent({ user }: SettingsTabProps) {
   const [stripeConfig, setStripeConfig] = useState<{ is_configured: boolean; test_mode: boolean } | null>(null)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
 
-  const tabs: { id: SettingsTab; name: string; icon: any; badge?: string }[] = [
+  const tabs: { id: SettingsTab; name: string; icon: typeof User; badge?: string }[] = [
     { id: 'profile', name: 'Profile', icon: User },
     { id: 'account', name: 'Account', icon: Key },
     { id: 'billing', name: 'Billing', icon: CreditCard },
@@ -743,6 +733,5 @@ export default function SettingsPage() {
   )
 }
 
-// Import supabase for sync function
-import { supabase } from '@/lib/supabase'
-import { StatusBadge } from '@/components/ui/Badge'
+// Import supabase for sync function - kept for future use
+// import { supabase } from '@/lib/supabase'
