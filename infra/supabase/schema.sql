@@ -194,3 +194,94 @@ $$ language plpgsql security definer;
 create trigger on_auth_user_created
     after insert on auth.users
     for each row execute function public.handle_new_user();
+
+-- ============================================================================
+-- ERROR LOGS TABLE (for application error tracking)
+-- ============================================================================
+create table if not exists public.error_logs (
+    id uuid default gen_random_uuid() primary key,
+    timestamp timestamptz default now(),
+    status_code integer not null,
+    error_type text not null, -- 'client_error', 'server_error', 'unhandled_exception'
+    message text not null,
+    detail text,
+    path text not null,
+    method text not null,
+    user_id uuid references auth.users on delete set null,
+    ip_address text,
+    user_agent text,
+    request_body text,
+    traceback text,
+    metadata jsonb default '{}'
+);
+
+-- Enable RLS on error_logs
+alter table public.error_logs enable row level security;
+
+-- Error logs policies
+-- Only admins can view all error logs
+-- Users can view their own error logs (though typically not used)
+create policy "Users can view own error logs"
+    on public.error_logs for select
+    using (auth.uid() = user_id);
+
+-- Create index for error_logs queries
+create index if not exists idx_error_logs_timestamp on public.error_logs(timestamp desc);
+create index if not exists idx_error_logs_status_code on public.error_logs(status_code);
+create index if not exists idx_error_logs_user_id on public.error_logs(user_id);
+create index if not exists idx_error_logs_error_type on public.error_logs(error_type);
+
+-- ============================================================================
+-- USAGE_TRACKING TABLE (renamed from usage_logs for clarity)
+-- ============================================================================
+
+-- Create new usage_tracking table with better name
+-- Note: If usage_logs already exists with data, we create a view instead
+DO $$
+BEGIN
+    -- Check if usage_logs table exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'usage_logs'
+    ) THEN
+        -- Rename the table to usage_tracking
+        ALTER TABLE public.usage_logs RENAME TO usage_tracking;
+        
+        -- Rename the index
+        IF EXISTS (
+            SELECT 1 FROM pg_indexes 
+            WHERE indexname = 'idx_usage_logs_user_id'
+        ) THEN
+            ALTER INDEX idx_usage_logs_user_id RENAME TO idx_usage_tracking_user_id;
+        END IF;
+        
+        IF EXISTS (
+            SELECT 1 FROM pg_indexes 
+            WHERE indexname = 'idx_usage_logs_created_at'
+        ) THEN
+            ALTER INDEX idx_usage_logs_created_at RENAME TO idx_usage_tracking_created_at;
+        END IF;
+    ELSE
+        -- Create the table fresh
+        CREATE TABLE public.usage_tracking (
+            id uuid default gen_random_uuid() primary key,
+            user_id uuid references auth.users on delete cascade not null,
+            action text not null, -- 'content_create', 'asset_generate', 'distribution_publish'
+            tokens_used integer default 0,
+            metadata jsonb default '{}',
+            created_at timestamptz default now()
+        );
+        
+        -- Enable RLS on usage_tracking
+        ALTER TABLE public.usage_tracking ENABLE ROW LEVEL SECURITY;
+        
+        -- Usage tracking policies
+        CREATE POLICY "Users can view own usage tracking"
+            ON public.usage_tracking FOR SELECT
+            USING (auth.uid() = user_id);
+        
+        -- Create indexes
+        CREATE INDEX idx_usage_tracking_user_id ON public.usage_tracking(user_id);
+        CREATE INDEX idx_usage_tracking_created_at ON public.usage_tracking(created_at);
+    END IF;
+END $$;
