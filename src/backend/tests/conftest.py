@@ -10,6 +10,9 @@ from unittest.mock import Mock, MagicMock, patch
 # Add the app directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+from fastapi.testclient import TestClient
+from fastapi import Request
+
 # Set test environment variables before importing app
 os.environ["APP_ENV"] = "testing"
 os.environ["DEBUG"] = "true"
@@ -20,10 +23,6 @@ os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key"
 os.environ["GROQ_API_KEY"] = "test-groq-api-key"
 os.environ["RATE_LIMIT_REQUESTS"] = "1000"
 os.environ["RATE_LIMIT_WINDOW"] = "3600"
-
-# Mock the middleware before importing the app
-# This prevents the middleware from trying to validate tokens during tests
-from fastapi import Request
 
 # Create a no-op middleware for testing
 class NoOpMiddleware:

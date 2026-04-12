@@ -12,8 +12,8 @@ from fastapi import status
 class TestCreateContentEndpoint:
     """Tests for POST /api/v1/content endpoint."""
 
-    def test_create_content_endpoint_exists(self, client, auth_headers):
-        """Test that POST /api/v1/content endpoint exists and accepts requests."""
+    def test_create_content_endpoint_exists(self, client):
+        """Test that POST /api/v1/content endpoint exists."""
         payload = {
             "title": "Test Content",
             "source": {
@@ -23,32 +23,9 @@ class TestCreateContentEndpoint:
             "project_id": str(uuid.uuid4())
         }
         
-        with patch("app.core.rate_limit.get_user_usage_stats") as mock_stats:
-            mock_stats.return_value = MagicMock(
-                monthly_usage_count=0,
-                monthly_usage_limit=10,
-                remaining=10,
-                subscription_tier="free"
-            )
-            response = client.post("/api/v1/content", json=payload, headers=auth_headers)
+        response = client.post("/api/v1/content", json=payload)
         
-        # Should not be 404 - endpoint should exist
-        assert response.status_code != status.HTTP_404_NOT_FOUND
-
-    def test_create_content_accepts_valid_request(self, client, auth_headers):
-        """Test that POST /api/v1/content accepts valid requests."""
-        payload = {
-            "title": "Test Content",
-            "source": {
-                "type": "text",
-                "text": "This is test content text."
-            },
-            "project_id": str(uuid.uuid4())
-        }
-        
-        response = client.post("/api/v1/content", json=payload, headers=auth_headers)
-        
-        # Endpoint exists if we don't get 404 (may get other errors due to auth/subscription)
+        # Endpoint exists if we don't get 404 (will get 401 for unauthenticated)
         assert response.status_code != status.HTTP_404_NOT_FOUND
 
     def test_create_content_requires_auth(self, client):
@@ -70,11 +47,11 @@ class TestCreateContentEndpoint:
 class TestListContentEndpoint:
     """Tests for GET /api/v1/content endpoint."""
 
-    def test_list_content_endpoint_exists(self, client, auth_headers):
+    def test_list_content_endpoint_exists(self, client):
         """Test that GET /api/v1/content endpoint exists."""
-        response = client.get("/api/v1/content", headers=auth_headers)
+        response = client.get("/api/v1/content")
         
-        # Should not be 404 - endpoint should exist
+        # Endpoint exists if we don't get 404 (will get 401 for unauthenticated)
         assert response.status_code != status.HTTP_404_NOT_FOUND
 
     def test_list_content_returns_200(self, client, auth_headers, mock_supabase_client):

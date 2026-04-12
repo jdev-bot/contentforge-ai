@@ -1,6 +1,8 @@
-"""
-Team management component.
-"""
+'use client'
+
+/**
+ * Team management component.
+ */
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 
