@@ -1,15 +1,26 @@
 -- Enable RLS (Row Level Security)
 alter table if exists public.users enable row level security;
 
+-- Subscription status constraint values: 'inactive', 'active', 'past_due', 'canceled'
+
+-- Subscription tier enum
+create type subscription_tier_enum as enum ('free', 'starter', 'pro', 'enterprise');
+
 -- Users table (extends Supabase Auth)
 create table if not exists public.profiles (
     id uuid references auth.users on delete cascade primary key,
     full_name text,
     avatar_url text,
-    subscription_tier text default 'free',
-    subscription_status text default 'active',
+    subscription_tier subscription_tier_enum default 'free',
+    subscription_status text default 'inactive',
+    stripe_customer_id text,
+    stripe_subscription_id text,
     monthly_usage_count integer default 0,
+    
+    -- Subscription status check constraint
+    constraint chk_subscription_status check (subscription_status in ('inactive', 'active', 'past_due', 'canceled')),
     monthly_usage_limit integer default 50, -- free tier limit
+    subscription_period_end timestamptz, -- when current period ends
     created_at timestamptz default now(),
     updated_at timestamptz default now()
 );
