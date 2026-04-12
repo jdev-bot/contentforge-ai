@@ -1,0 +1,23 @@
+# TruffleHog ignore patterns for test files containing mock credentials
+# These are test-only mock secrets, not real credentials
+
+# Test directories
+**/tests/
+**/test/
+**/__tests__/
+
+# Specific test files with mock credentials
+**/conftest.py
+**/test_*.py
+**/*_test.py
+
+# Environment files (already tracked in gitignore but adding for clarity)
+**/.env.local
+**/.env
+**/venv/
+**/.venv/
+**/.pytest_cache/
+**/node_modules/
+
+# Documentation
+**/README.md
