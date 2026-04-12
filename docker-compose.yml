@@ -1,135 +1,119 @@
-version: '3.8'
+# ContentForge AI - Local Development Docker Compose
+# This file sets up all external services for local development
+
+version: "3.8"
 
 services:
-  # Redis for caching and task queue
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: contentforge-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: contentforge
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - contentforge-network
+
+  # Redis Cache & Queue
   redis:
     image: redis:7-alpine
     container_name: contentforge-redis
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/data
+      - redis_data:/data
+    command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
     networks:
       - contentforge-network
 
-  # PostgreSQL database (optional, for local development)
-  db:
-    image: postgres:15-alpine
-    container_name: contentforge-db
+  # n8n Workflow Automation
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: contentforge-n8n
     environment:
-      POSTGRES_USER: contentforge
-      POSTGRES_PASSWORD: contentforge
-      POSTGRES_DB: contentforge
+      # Basic n8n config
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: "admin"
+      N8N_BASIC_AUTH_PASSWORD: "admin"
+      
+      # Database config
+      DB_TYPE: "postgresdb"
+      DB_POSTGRESDB_HOST: "postgres"
+      DB_POSTGRESDB_PORT: "5432"
+      DB_POSTGRESDB_DATABASE: "contentforge"
+      DB_POSTGRESDB_USER: "postgres"
+      DB_POSTGRESDB_PASSWORD: "postgres"
+      
+      # Execution config
+      EXECUTIONS_MODE: "regular"
+      EXECUTIONS_DATA_SAVE_ON_ERROR: "all"
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: "all"
+      
+      # Webhook config
+      WEBHOOK_URL: "http://localhost:5678"
+      
+      # Timezone
+      GENERIC_TIMEZONE: "UTC"
     ports:
-      - "5432:5432"
+      - "5678:5678"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U contentforge"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - contentforge-network
 
-  # Backend API (FastAPI)
-  backend:
-    build:
-      context: ./src/backend
-      dockerfile: Dockerfile
-    container_name: contentforge-backend
+  # Optional: MailHog for testing emails
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: contentforge-mailhog
     ports:
-      - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://contentforge:contentforge@db:5432/contentforge
-      - REDIS_URL=redis://redis:6379/0
-      - ENVIRONMENT=development
-    env_file:
-      - .env
-    volumes:
-      - ./src/backend:/app
-    depends_on:
-      redis:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web UI
     networks:
       - contentforge-network
 
-  # Celery Worker
-  worker:
-    build:
-      context: ./src/backend
-      dockerfile: Dockerfile
-    container_name: contentforge-worker
+  # Optional: MinIO for S3-compatible object storage (for file uploads)
+  minio:
+    image: minio/minio:latest
+    container_name: contentforge-minio
     environment:
-      - DATABASE_URL=postgresql://contentforge:contentforge@db:5432/contentforge
-      - REDIS_URL=redis://redis:6379/0
-      - ENVIRONMENT=development
-    env_file:
-      - .env
-    volumes:
-      - ./src/backend:/app
-    depends_on:
-      redis:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-    command: celery -A app.core.celery worker --loglevel=info
-    networks:
-      - contentforge-network
-
-  # Celery Beat (scheduler)
-  beat:
-    build:
-      context: ./src/backend
-      dockerfile: Dockerfile
-    container_name: contentforge-beat
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-      - ENVIRONMENT=development
-    env_file:
-      - .env
-    volumes:
-      - ./src/backend:/app
-    depends_on:
-      redis:
-        condition: service_healthy
-    command: celery -A app.core.celery beat --loglevel=info
-    networks:
-      - contentforge-network
-
-  # Frontend (Next.js)
-  frontend:
-    image: node:20-alpine
-    container_name: contentforge-frontend
-    working_dir: /app
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-    env_file:
-      - .env
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
     volumes:
-      - ./src/frontend:/app
-      - /app/node_modules
-    command: sh -c "npm install && npm run dev"
-    depends_on:
-      - backend
+      - minio_data:/data
+    command: server /data --console-address ":9001"
     networks:
       - contentforge-network
 
 volumes:
-  redis-data:
-  postgres-data:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  n8n_data:
+    driver: local
+  minio_data:
+    driver: local
 
 networks:
   contentforge-network:

@@ -1,114 +1,230 @@
 #!/bin/bash
 set -e
 
-echo "🚀 ContentForge AI - Development Start"
-echo "======================================="
+# ContentForge AI - Development Start Script
+# Start all services for local development
+
+echo "🚀 Starting ContentForge AI development environment..."
+echo ""
 
 # Colors for output
+RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Check if we're in the right directory
-if [ ! -f "PROJECT.md" ]; then
-    echo -e "${RED}Error: Please run this script from the project root directory${NC}"
-    exit 1
-fi
+# Project root
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$PROJECT_ROOT"
 
-PROJECT_ROOT=$(pwd)
+# Parse arguments
+SERVICES_ONLY=false
+BACKEND_ONLY=false
+FRONTEND_ONLY=false
+N8N_ONLY=false
 
-# Function to cleanup processes on exit
-cleanup() {
+for arg in "$@"; do
+    case $arg in
+        --services-only)
+            SERVICES_ONLY=true
+            shift
+            ;;
+        --backend-only)
+            BACKEND_ONLY=true
+            shift
+            ;;
+        --frontend-only)
+            FRONTEND_ONLY=true
+            shift
+            ;;
+        --n8n-only)
+            N8N_ONLY=true
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: ./scripts/dev-start.sh [options]"
+            echo ""
+            echo "Options:"
+            echo "  --services-only    Start only Docker services (PostgreSQL, Redis, n8n)"
+            echo "  --backend-only     Start only the backend"
+            echo "  --frontend-only    Start only the frontend"
+            echo "  --n8n-only         Start only n8n"
+            echo "  --help, -h         Show this help message"
+            echo ""
+            echo "Without options: starts all services"
+            exit 0
+            ;;
+    esac
+done
+
+# Function to start Docker services
+start_services() {
+    echo -e "${BLUE}🐳 Starting Docker services...${NC}"
+    
+    # Check if docker-compose.yml exists
+    if [ -f "docker-compose.yml" ]; then
+        docker-compose up -d postgres redis n8n
+    elif [ -f "infra/docker/docker-compose.yml" ]; then
+        docker-compose -f infra/docker/docker-compose.yml up -d
+    else
+        echo -e "${YELLOW}⚠️  No docker-compose.yml found. Make sure PostgreSQL and Redis are running manually.${NC}"
+    fi
+    
+    echo -e "${GREEN}✅ Docker services started${NC}"
     echo ""
-    echo -e "${YELLOW}Shutting down services...${NC}"
-    if [ -n "$BACKEND_PID" ]; then
-        kill $BACKEND_PID 2>/dev/null || true
-    fi
-    if [ -n "$FRONTEND_PID" ]; then
-        kill $FRONTEND_PID 2>/dev/null || true
-    fi
-    if [ -n "$WORKER_PID" ]; then
-        kill $WORKER_PID 2>/dev/null || true
-    fi
-    exit 0
 }
 
-# Set trap to cleanup on Ctrl+C
-trap cleanup SIGINT SIGTERM
-
-echo -e "${YELLOW}Checking prerequisites...${NC}"
-
-# Check if virtual environment exists
-if [ ! -d "$PROJECT_ROOT/src/backend/venv" ]; then
-    echo -e "${RED}Error: Virtual environment not found. Run ./scripts/dev-setup.sh first.${NC}"
-    exit 1
-fi
-
-# Check if frontend dependencies exist
-if [ ! -d "$PROJECT_ROOT/src/frontend/node_modules" ]; then
-    echo -e "${RED}Error: Frontend dependencies not found. Run ./scripts/dev-setup.sh first.${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}✓ Prerequisites verified${NC}"
-
-# Start Backend
-echo -e "${BLUE}Starting Backend (FastAPI)...${NC}"
-cd "$PROJECT_ROOT/src/backend"
-source venv/bin/activate
-
-# Check if we have an app module
-if [ -f "main.py" ]; then
-    python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000 &
+# Function to start backend
+start_backend() {
+    echo -e "${BLUE}🐍 Starting backend...${NC}"
+    
+    cd src/backend
+    
+    # Check if virtual environment exists
+    if [ ! -d "venv" ]; then
+        echo -e "${YELLOW}⚠️  Virtual environment not found. Running dev-setup.sh first...${NC}"
+        cd ../..
+        ./scripts/dev-setup.sh
+        cd src/backend
+    fi
+    
+    # Activate virtual environment
+    source venv/bin/activate 2>/dev/null || . venv/bin/activate
+    
+    # Check if alembic migrations need to be run
+    echo -e "${BLUE}📊 Running database migrations...${NC}"
+    alembic upgrade head 2>/dev/null || echo "No migrations configured or database not ready yet"
+    
+    # Start the backend server
+    echo -e "${BLUE}🚀 Starting FastAPI server on http://localhost:8000${NC}"
+    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
     BACKEND_PID=$!
-elif [ -d "app" ]; then
-    python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
-    BACKEND_PID=$!
-else
-    echo -e "${YELLOW}⚠ No main app found. Skipping backend startup.${NC}"
+    cd ../..
+    
+    echo -e "${GREEN}✅ Backend started (PID: $BACKEND_PID)${NC}"
+    echo ""
+}
+
+# Function to start frontend
+start_frontend() {
+    echo -e "${BLUE}⚡ Starting frontend...${NC}"
+    
+    cd src/frontend
+    
+    # Check if node_modules exists
+    if [ ! -d "node_modules" ]; then
+        echo -e "${YELLOW}⚠️  node_modules not found. Running npm install...${NC}"
+        npm install
+    fi
+    
+    # Start the frontend dev server
+    echo -e "${BLUE}🚀 Starting Next.js dev server on http://localhost:3000${NC}"
+    npm run dev &
+    FRONTEND_PID=$!
+    cd ../..
+    
+    echo -e "${GREEN}✅ Frontend started (PID: $FRONTEND_PID)${NC}"
+    echo ""
+}
+
+# Function to start n8n
+start_n8n() {
+    echo -e "${BLUE}🔗 Starting n8n...${NC}"
+    
+    # n8n is typically started via Docker Compose
+    # But if it needs to be started separately, we can do it here
+    
+    echo -e "${GREEN}✅ n8n should be available at http://localhost:5678${NC}"
+    echo ""
+}
+
+# Main execution
+if [ "$SERVICES_ONLY" = true ]; then
+    start_services
+    echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}✅ Services started!${NC}"
+    echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo "Services running:"
+    echo "  - PostgreSQL: localhost:5432"
+    echo "  - Redis: localhost:6379"
+    echo "  - n8n: http://localhost:5678"
+    echo ""
+    echo "Run './scripts/dev-start.sh' without flags to start all services."
+    exit 0
 fi
 
-if [ -n "$BACKEND_PID" ]; then
-    echo -e "${GREEN}✓ Backend started (PID: $BACKEND_PID) - http://localhost:8000${NC}"
-    echo -e "${GREEN}  API Docs: http://localhost:8000/docs${NC}"
+if [ "$N8N_ONLY" = true ]; then
+    start_services
+    start_n8n
+    echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}✅ n8n started!${NC}"
+    echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo "n8n is available at: http://localhost:5678"
+    echo ""
+    echo "Press Ctrl+C to stop"
+    wait
+    exit 0
 fi
 
-# Start Frontend
-echo -e "${BLUE}Starting Frontend (Next.js)...${NC}"
-cd "$PROJECT_ROOT/src/frontend"
-
-npm run dev &
-FRONTEND_PID=$!
-echo -e "${GREEN}✓ Frontend started (PID: $FRONTEND_PID) - http://localhost:3000${NC}"
-
-# Start Celery Worker (if Redis is available)
-echo -e "${BLUE}Checking for Redis...${NC}"
-if command -v redis-cli &> /dev/null && redis-cli ping &> /dev/null; then
-    echo -e "${GREEN}✓ Redis found, starting Celery worker...${NC}"
-    cd "$PROJECT_ROOT/src/backend"
-    source venv/bin/activate
-    celery -A app.core.celery worker --loglevel=info &
-    WORKER_PID=$!
-    echo -e "${GREEN}✓ Celery worker started (PID: $WORKER_PID)${NC}"
-else
-    echo -e "${YELLOW}⚠ Redis not available. Celery worker not started.${NC}"
+if [ "$BACKEND_ONLY" = true ]; then
+    start_backend
+    echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}✅ Backend running!${NC}"
+    echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo "Backend is available at: http://localhost:8000"
+    echo "API documentation: http://localhost:8000/docs"
+    echo ""
+    echo "Press Ctrl+C to stop"
+    wait
+    exit 0
 fi
 
-echo ""
-echo "======================================="
-echo -e "${GREEN}🎉 All services started!${NC}"
-echo ""
-echo -e "${BLUE}Services:${NC}"
-echo "  Backend:  http://localhost:8000"
-echo "  Frontend: http://localhost:3000"
-if [ -n "$WORKER_PID" ]; then
-    echo "  Worker:   Running"
+if [ "$FRONTEND_ONLY" = true ]; then
+    start_frontend
+    echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}✅ Frontend running!${NC}"
+    echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo "Frontend is available at: http://localhost:3000"
+    echo ""
+    echo "Press Ctrl+C to stop"
+    wait
+    exit 0
 fi
-echo ""
-echo -e "${YELLOW}Press Ctrl+C to stop all services${NC}"
+
+# Start all services
+echo -e "${BLUE}🔄 Starting all services...${NC}"
 echo ""
 
-# Wait for all background processes
+start_services
+
+# Wait a moment for services to be ready
+sleep 3
+
+start_backend
+start_frontend
+
+echo ""
+echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}✅ All services started!${NC}"
+echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+echo ""
+echo "🌐 Application URLs:"
+echo "   Frontend:    http://localhost:3000"
+echo "   Backend API: http://localhost:8000"
+echo "   API Docs:    http://localhost:8000/docs"
+echo "   n8n:         http://localhost:5678"
+echo ""
+echo "📝 Logs are available in:"
+echo "   ./logs/"
+echo ""
+echo "Press Ctrl+C to stop all services"
+echo ""
+
+# Wait for interrupt
+trap 'echo -e "\n${YELLOW}🛑 Stopping services...${NC}"; docker-compose down 2>/dev/null || true; exit 0' INT
 wait
