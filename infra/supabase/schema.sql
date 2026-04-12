@@ -149,6 +149,100 @@ create policy "Users can view own usage logs"
     on public.usage_logs for select
     using (auth.uid() = user_id);
 
+-- ============================================================================-- ORGANIZATIONS TABLE (for multi-tenant team support)-- ============================================================================create type organization_role_enum as enum ('admin', 'member');
+create table if not exists public.organizations (    id uuid default gen_random_uuid() primary key,    name text not null,    owner_id uuid references auth.users on delete cascade not null,
+    created_at timestamptz default now());
+
+-- Enable RLS on organizations
+alter table public.organizations enable row level security;
+
+-- Organizations RLS policies
+create policy "Users can view own organizations"
+    on public.organizations for select
+    using (auth.uid() = owner_id);
+
+create policy "Organization members can view their organizations"
+    on public.organizations for select
+    using (
+        exists (
+            select 1 from public.organization_members
+            where organization_members.org_id = organizations.id
+            and organization_members.user_id = auth.uid()
+        )
+    );
+
+create policy "Owners can update their organizations"
+    on public.organizations for update
+    using (auth.uid() = owner_id);
+
+create policy "Owners can delete their organizations"
+    on public.organizations for delete
+    using (auth.uid() = owner_id);
+
+create policy "Authenticated users can create organizations"
+    on public.organizations for insert
+    with check (auth.uid() = owner_id);
+
+-- Organization members table
+create table if not exists public.organization_members (
+    id uuid default gen_random_uuid() primary key,
+    org_id uuid references public.organizations on delete cascade not null,
+    user_id uuid references auth.users on delete cascade not null,
+    role organization_role_enum default 'member',
+    created_at timestamptz default now(),
+    unique(org_id, user_id));
+
+-- Enable RLS on organization_members
+alter table public.organization_members enable row level security;
+
+-- Organization members RLS policies
+create policy "Users can view organization members of their orgs"
+    on public.organization_members for select
+    using (
+        auth.uid() = user_id
+        or exists (
+            select 1 from public.organizations
+            where organizations.id = organization_members.org_id
+            and organizations.owner_id = auth.uid()
+        )
+        or exists (
+            select 1 from public.organization_members om
+            where om.org_id = organization_members.org_id
+            and om.user_id = auth.uid()
+        )
+    );
+
+create policy "Owners can manage organization members"
+    on public.organization_members for all
+    using (
+        exists (
+            select 1 from public.organizations
+            where organizations.id = organization_members.org_id
+            and organizations.owner_id = auth.uid()
+        )
+    );
+
+create policy "Admins can invite members"
+    on public.organization_members for insert
+    with check (
+        exists (
+            select 1 from public.organization_members om
+            where om.org_id = organization_members.org_id
+            and om.user_id = auth.uid()
+            and om.role = 'admin'
+        )
+        or exists (
+            select 1 from public.organizations
+            where organizations.id = organization_members.org_id
+            and organizations.owner_id = auth.uid()
+        )
+    );
+
+-- Create indexes for organizations
+create index if not exists idx_organizations_owner_id on public.organizations(owner_id);
+create index if not exists idx_organization_members_org_id on public.organization_members(org_id);
+create index if not exists idx_organization_members_user_id on public.organization_members(user_id);
+
 -- Create indexes for performance
 create index if not exists idx_projects_user_id on public.projects(user_id);
 create index if not exists idx_content_project_id on public.content(project_id);
@@ -205,6 +299,39 @@ $$ language plpgsql security definer;
 create trigger on_auth_user_created
     after insert on auth.users
     for each row execute function public.handle_new_user();
+
+-- Function to automatically reset monthly usage at the start of each month
+create or replace function public.reset_monthly_usage()
+returns trigger as $$
+begin
+    -- Check if the last update was in a different month
+    if extract(month from old.updated_at) != extract(month from current_date) or
+       extract(year from old.updated_at) != extract(year from current_date) then
+        -- Reset monthly usage count
+        new.monthly_usage_count := 0;
+    end if;
+    return new;
+end;
+$$ language plpgsql;
+
+-- Trigger to reset usage on profile updates when month changes
+create trigger reset_monthly_usage_on_update
+    before update on public.profiles
+    for each row execute function public.reset_monthly_usage();
+
+-- ============================================================================
+-- MONTHLY USAGE RESET FUNCTION (can be called via cron or edge function)
+-- ============================================================================
+create or replace function public.reset_all_monthly_usage()
+returns void as $$
+begin
+    update public.profiles
+    set monthly_usage_count = 0,
+        updated_at = now()
+    where extract(month from updated_at) != extract(month from current_date)
+       or extract(year from updated_at) != extract(year from current_date);
+end;
+$$ language plpgsql security definer;
 
 -- ============================================================================
 -- ERROR LOGS TABLE (for application error tracking)
