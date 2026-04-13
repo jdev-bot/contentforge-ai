@@ -4616,7 +4616,7 @@ export interface ChannelPerformanceData {
 
 export type ChannelPerformanceResult = ChannelPerformanceData
 
-export interface AttributionResult extends ChannelPerformanceData {}
+export type AttributionResult = ChannelPerformanceData
 
 export interface TouchpointListResponse {
   touchpoints: TouchpointData[]
