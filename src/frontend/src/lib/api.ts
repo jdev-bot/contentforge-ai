@@ -882,6 +882,210 @@ export async function cancelQueueItem(queueId: string): Promise<{ message: strin
   return response.json()
 }
 
+// ============ Scheduled Publishing Types ============
+
+export interface ScheduleRequest {
+  asset_id: string
+  content: string
+  platforms: string[]
+  scheduled_at: string
+  timezone?: string
+  recurring_pattern?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface ScheduledPost {
+  id: string
+  asset_id: string
+  user_id: string
+  content: string
+  platforms: string[]
+  scheduled_at: string
+  timezone: string
+  status: 'scheduled' | 'published' | 'failed' | 'cancelled' | 'processing'
+  recurring_pattern?: string
+  recurring_parent_id?: string
+  published_at?: string
+  published_url?: string
+  error_message?: string
+  metadata?: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface ScheduleConflict {
+  schedule_id: string
+  scheduled_at: string
+  platforms: string[]
+  conflict_type: 'time' | 'platform'
+}
+
+export async function schedulePost(request: ScheduleRequest): Promise<ScheduledPost> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/schedule`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to schedule post')
+  }
+  
+  return response.json()
+}
+
+export async function getScheduledPosts(
+  status?: string,
+  startDate?: string,
+  endDate?: string
+): Promise<ScheduledPost[]> {
+  const headers = await getAuthHeader()
+  
+  let url = `${API_URL}/schedule`
+  const params = new URLSearchParams()
+  if (status) params.append('status', status)
+  if (startDate) params.append('start_date', startDate)
+  if (endDate) params.append('end_date', endDate)
+  if (params.toString()) url += `?${params.toString()}`
+  
+  const response = await fetch(url, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch scheduled posts')
+  }
+  
+  return response.json()
+}
+
+export async function getScheduledPost(scheduleId: string): Promise<ScheduledPost> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/schedule/${scheduleId}`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch scheduled post')
+  }
+  
+  return response.json()
+}
+
+export async function updateScheduledPost(
+  scheduleId: string, 
+  updates: Partial<ScheduleRequest>
+): Promise<ScheduledPost> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/schedule/${scheduleId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(updates),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update scheduled post')
+  }
+  
+  return response.json()
+}
+
+export async function cancelScheduledPost(scheduleId: string): Promise<{ message: string }> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/schedule/${scheduleId}/cancel`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to cancel scheduled post')
+  }
+  
+  return response.json()
+}
+
+export async function publishScheduledPost(scheduleId: string): Promise<ScheduledPost> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/schedule/${scheduleId}/publish-now`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to publish now')
+  }
+  
+  return response.json()
+}
+
+export async function checkScheduleConflicts(
+  scheduledAt: string,
+  platforms: string[],
+  excludeId?: string
+): Promise<ScheduleConflict[]> {
+  const headers = await getAuthHeader()
+  
+  const params = new URLSearchParams()
+  params.append('scheduled_at', scheduledAt)
+  platforms.forEach(p => params.append('platforms', p))
+  if (excludeId) params.append('exclude_id', excludeId)
+  
+  const response = await fetch(`${API_URL}/schedule/conflicts?${params.toString()}`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to check conflicts')
+  }
+  
+  return response.json()
+}
+
+export async function getUpcomingPosts(limit: number = 5): Promise<ScheduledPost[]> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/schedule/upcoming?limit=${limit}`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch upcoming posts')
+  }
+  
+  return response.json()
+}
+
+export async function duplicateSchedule(
+  scheduleId: string, 
+  newScheduledAt?: string
+): Promise<ScheduledPost> {
+  const headers = await getAuthHeader()
+  
+  const body: Record<string, string | undefined> = {}
+  if (newScheduledAt) body.scheduled_at = newScheduledAt
+  
+  const response = await fetch(`${API_URL}/schedule/${scheduleId}/duplicate`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to duplicate schedule')
+  }
+  
+  return response.json()
+}
+
+// ============ End Scheduled Publishing ============
+
 // ============ End Advanced Features ============
 
 export interface AnalyticsSummaryData {
@@ -1498,3 +1702,149 @@ export async function emptyTrash(): Promise<{
 }
 
 // ============ End Search & Trash API ============
+
+// ============ Smart Content Editor API ============
+
+export interface RewriteResult {
+  content: string
+  tokens_used: number
+}
+
+export interface ExpandResult {
+  content: string
+  tokens_used: number
+  original_length: number
+  new_length: number
+}
+
+export interface CondenseResult {
+  content: string
+  tokens_used: number
+  reduction_percentage: number
+}
+
+export interface OptimizeResult {
+  content: string
+  tokens_used: number
+  platform: string
+  optimizations_applied: string[]
+}
+
+/**
+ * Rewrite content with different tone and style
+ */
+export async function rewriteContent(
+  content: string,
+  tone: string,
+  style: string
+): Promise<string> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/ai-suggestions/rewrite`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content, tone, style }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to rewrite content')
+  }
+
+  const result: RewriteResult = await response.json()
+  return result.content
+}
+
+/**
+ * Expand content to target length
+ */
+export async function expandContent(
+  content: string,
+  targetLength: number
+): Promise<string> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/ai-suggestions/expand`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content, target_length: targetLength }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to expand content')
+  }
+
+  const result: ExpandResult = await response.json()
+  return result.content
+}
+
+/**
+ * Condense content by percentage
+ */
+export async function condenseContent(
+  content: string,
+  percentage: number
+): Promise<string> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/ai-suggestions/condense`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content, percentage }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to condense content')
+  }
+
+  const result: CondenseResult = await response.json()
+  return result.content
+}
+
+/**
+ * Optimize content for specific platform
+ */
+export async function optimizeContent(
+  content: string,
+  platform: string
+): Promise<string> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/ai-suggestions/optimize`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content, platform }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to optimize content')
+  }
+
+  const result: OptimizeResult = await response.json()
+  return result.content
+}
+
+/**
+ * Update content text
+ */
+export async function updateContent(contentId: string, data: { original_text: string }): Promise<Content> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/content/${contentId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(data),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update content')
+  }
+
+  return response.json()
+}
+
+// ============ End Smart Content Editor API ============

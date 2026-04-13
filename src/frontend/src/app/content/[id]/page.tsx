@@ -2,11 +2,34 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getContent, generateAssets, listAssets, deleteContent, Content, GeneratedAsset, createDistribution, publishNow, getUsageSummary, UsageSummary } from '@/lib/api'
+import { 
+  getContent, 
+  generateAssets, 
+  listAssets, 
+  deleteContent, 
+  updateContent,
+  Content, 
+  GeneratedAsset, 
+  createDistribution, 
+  publishNow, 
+  getUsageSummary, 
+  UsageSummary 
+} from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/Card'
-import { ArrowLeft, Loader2, Sparkles, Trash2, RefreshCw, Send, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Loader2, Sparkles, Trash2, RefreshCw, Send, AlertCircle, Edit3 } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
+import dynamic from 'next/dynamic'
+
+// Dynamic import for SmartEditor to avoid SSR issues
+const SmartEditor = dynamic(() => import('@/components/SmartEditor'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[500px] flex items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+    </div>
+  ),
+})
 
 export default function ContentDetailPage({ params }: { params: { id: string } }) {
   const [content, setContent] = useState<Content | null>(null)
@@ -15,6 +38,8 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
   const [usage, setUsage] = useState<UsageSummary | null>(null)
+  const [activeTab, setActiveTab] = useState<'editor' | 'assets'>('editor')
+  const [editorContent, setEditorContent] = useState('')
   const router = useRouter()
   const { showToast } = useToast()
 
@@ -32,6 +57,7 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
       setContent(contentData)
       setAssets(assetsData)
       setUsage(usageData)
+      setEditorContent(contentData.original_text || '')
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to load content'
       setError(errorMsg)
@@ -85,9 +111,19 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
     }
   }
 
+  async function handleSaveContent(newContent: string) {
+    const updated = await updateContent(params.id, { original_text: newContent })
+    setContent(updated)
+    setEditorContent(newContent)
+    
+    // Update word count
+    const wordCount = newContent.trim().split(/\s+/).filter(Boolean).length
+    setContent(prev => prev ? { ...prev, word_count: wordCount } : null)
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     )
@@ -95,9 +131,9 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
 
   if (!content) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Content not found</p>
+          <p className="text-slate-600 dark:text-slate-400">Content not found</p>
           <Button onClick={() => router.push('/')} className="mt-4">
             Go Home
           </Button>
@@ -110,29 +146,59 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
   const isApproachingLimit = !isLimitReached && usage && usage.stats.remaining !== -1 && usage.stats.remaining <= 3
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <button
                 onClick={() => router.back()}
-                className="mr-4 p-2 hover:bg-gray-100 rounded-lg"
+                className="mr-4 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <div>
-                <h1 className="text-xl font-bold">{content.title}</h1>
-                <p className="text-sm text-gray-500 capitalize">{content.source_type}</p>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{content.title}</h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400 capitalize">{content.source_type}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Tab Switcher */}
+              <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-1 mr-2">
+                <button
+                  onClick={() => setActiveTab('editor')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    activeTab === 'editor'
+                      ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Edit3 className="h-4 w-4" />
+                    Editor
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('assets')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    activeTab === 'assets'
+                      ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Assets ({assets.length})
+                  </span>
+                </button>
+              </div>
+
               <Button
                 variant="outline"
                 onClick={handleDelete}
-                className="flex items-center gap-2 text-red-600 hover:bg-red-50"
+                className="flex items-center gap-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete
@@ -143,20 +209,20 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Usage Warning */}
+        {/* Usage Warnings */}
         {isLimitReached && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-rose-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-red-800">Monthly Limit Reached</p>
-                <p className="text-sm text-red-600 mt-1">
+                <p className="font-medium text-rose-800 dark:text-rose-400">Monthly Limit Reached</p>
+                <p className="text-sm text-rose-600 dark:text-rose-400 mt-1">
                   You&apos;ve used all {usage?.stats.monthly_usage_limit} content generations this month.
                   Upgrade your plan to generate more assets.
                 </p>
                 <button
                   onClick={() => router.push('/dashboard?upgrade=true')}
-                  className="mt-3 text-sm font-medium text-red-700 hover:text-red-800 underline"
+                  className="mt-3 text-sm font-medium text-rose-700 dark:text-rose-400 hover:underline"
                 >
                   Upgrade Plan →
                 </button>
@@ -166,12 +232,12 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
         )}
 
         {isApproachingLimit && (
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-yellow-800">Approaching Limit</p>
-                <p className="text-sm text-yellow-600 mt-1">
+                <p className="font-medium text-amber-800 dark:text-amber-400">Approaching Limit</p>
+                <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
                   You have {usage?.stats.remaining} content generations remaining this month.
                 </p>
               </div>
@@ -180,94 +246,139 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
         )}
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl">
+            <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Original Content */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Original Content</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {content.original_text ? (
-                  <div className="space-y-4">
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium">Word count:</span> {content.word_count || 0}
-                    </div>
-                    <div className="max-h-96 overflow-y-auto">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                        {content.original_text.substring(0, 1000)}
-                        {content.original_text.length > 1000 && '...'}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500">No text extracted yet</p>
-                )}
+        {/* Editor Tab */}
+        {activeTab === 'editor' && (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Smart Editor - Main Area */}
+            <div className="lg:col-span-3">
+              <SmartEditor
+                content={content.original_text || ''}
+                contentId={content.id}
+                onContentChange={setEditorContent}
+                onSave={handleSaveContent}
+              />
+            </div>
 
+            {/* Sidebar */}
+            <div className="lg:col-span-1 space-y-4">
+              {/* Content Info */}
+              <Card variant="glass">
+                <CardHeader>
+                  <CardTitle className="text-sm">Content Info</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 dark:text-slate-400">Status</span>
+                    <span className="capitalize font-medium">{content.status}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 dark:text-slate-400">Word Count</span>
+                    <span className="font-medium">{content.word_count || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 dark:text-slate-400">Source</span>
+                    <span className="capitalize font-medium">{content.source_type}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 dark:text-slate-400">Created</span>
+                    <span className="font-medium">
+                      {new Date(content.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card variant="glass">
+                <CardHeader>
+                  <CardTitle className="text-sm">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={generating || !content.original_text || isLimitReached}
+                    className="w-full"
+                    title={isLimitReached ? 'Monthly usage limit reached' : ''}
+                  >
+                    {generating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Generating...
+                      </>
+                    ) : isLimitReached ? (
+                      <>
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        Limit Reached
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate Assets
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Assets Tab */}
+        {activeTab === 'assets' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Generated Assets</h2>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadContent}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh
+                </Button>
                 <Button
                   onClick={handleGenerate}
                   disabled={generating || !content.original_text || isLimitReached}
-                  className="w-full mt-6 flex items-center justify-center gap-2"
-                  title={isLimitReached ? 'Monthly usage limit reached' : ''}
                 >
                   {generating ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       Generating...
-                    </>
-                  ) : isLimitReached ? (
-                    <>
-                      <AlertCircle className="h-4 w-4" />
-                      Limit Reached
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-4 w-4" />
-                      Generate Assets
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate More
                     </>
                   )}
                 </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Generated Assets */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Generated Assets</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={loadContent}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
-              </Button>
+              </div>
             </div>
 
             {assets.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                <Sparkles className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-4 text-lg font-medium text-gray-900">No assets yet</h3>
-                <p className="mt-2 text-gray-500 max-w-sm mx-auto">
-                  Click &quot;Generate Assets&quot; to transform your content into multiple formats.
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+                <Sparkles className="mx-auto h-12 w-12 text-slate-400" />
+                <h3 className="mt-4 text-lg font-medium text-slate-900 dark:text-slate-100">No assets yet</h3>
+                <p className="mt-2 text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                  Switch to the Editor tab and click &quot;Generate Assets&quot; to transform your content into multiple formats.
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {assets.map((asset) => (
                   <AssetCard key={asset.id} asset={asset} />
                 ))}
               </div>
             )}
           </div>
-        </div>
+        )}
       </main>
     </div>
   )
@@ -289,9 +400,9 @@ function AssetCard({ asset }: { asset: GeneratedAsset }) {
   }
 
   const platformColors: Record<string, string> = {
-    'twitter': 'bg-sky-100 text-sky-700',
-    'linkedin': 'bg-blue-100 text-blue-700',
-    'instagram': 'bg-pink-100 text-pink-700',
+    'twitter': 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
+    'linkedin': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    'instagram': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
   }
 
   const platformDisplayNames: Record<string, string> = {
@@ -335,18 +446,20 @@ function AssetCard({ asset }: { asset: GeneratedAsset }) {
   }
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden" variant="elevated">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="font-medium">{typeLabels[asset.type] || asset.type}</span>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="font-medium text-slate-900 dark:text-slate-100">
+              {typeLabels[asset.type] || asset.type}
+            </span>
             {asset.platform && (
-              <span className={`text-xs px-2 py-1 rounded-full ${platformColors[asset.platform] || 'bg-gray-100 text-gray-700'}`}>
+              <span className={`text-xs px-2 py-1 rounded-full ${platformColors[asset.platform] || 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}`}>
                 {platformDisplayNames[asset.platform] || asset.platform}
               </span>
             )}
             {published && (
-              <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
+              <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                 Published
               </span>
             )}
@@ -385,12 +498,12 @@ function AssetCard({ asset }: { asset: GeneratedAsset }) {
         </div>
         
         {publishError && (
-          <p className="text-xs text-red-600 mt-2">{publishError}</p>
+          <p className="text-xs text-rose-600 dark:text-rose-400 mt-2">{publishError}</p>
         )}
       </CardHeader>
       <CardContent>
-        <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">{asset.content}</p>
+        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 max-h-64 overflow-y-auto">
+          <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{asset.content}</p>
         </div>
       </CardContent>
     </Card>
