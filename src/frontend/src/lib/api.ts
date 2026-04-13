@@ -3939,9 +3939,12 @@ export async function validatePluginPermissions(data: {
 export interface SAMLProvider {
   id: string
   name: string
+  display_name?: string
   entity_id: string
   sso_url: string
   slo_url?: string
+  x509_cert?: string
+  certificate?: string
   metadata_url?: string
   attribute_mapping: Record<string, string>
   is_active: boolean
@@ -3951,11 +3954,14 @@ export interface SAMLProvider {
 
 export interface SAMLProviderCreate {
   name: string
+  display_name?: string
   entity_id: string
   sso_url: string
   slo_url?: string
-  metadata_url?: string
+  x509_cert?: string
   certificate?: string
+  metadata_url?: string
+  is_active?: boolean
   attribute_mapping?: Record<string, string>
 }
 
@@ -4067,7 +4073,8 @@ export async function deleteSAMLProvider(providerId: string): Promise<void> {
   }
 }
 
-export async function fetchSAMLMetadata(metadataUrl: string): Promise<SAMLMetadata> {
+export async function fetchSAMLMetadata(data: { metadata_url: string } | string): Promise<SAMLMetadata> {
+  const metadataUrl = typeof data === 'string' ? data : data.metadata_url
   const headers = await getAuthHeader()
   const response = await fetch(`${API_URL}/saml/providers/metadata/fetch`, {
     method: 'POST',
@@ -4098,10 +4105,14 @@ export async function updateSAMLAttributeMapping(
   return response.json()
 }
 
-export async function initiateSAMLLogin(providerId: string): Promise<SAMLLoginResponse> {
-  const response = await fetch(`${API_URL}/saml/login/${providerId}`, {
+export async function initiateSAMLLogin(data: { provider_id: string; relay_state?: string; redirect_uri?: string } | string): Promise<SAMLLoginResponse> {
+  const providerId = typeof data === 'string' ? data : data.provider_id
+  const body = typeof data === 'string' ? JSON.stringify({}) : JSON.stringify(data)
+  const endpoint = typeof data === 'string' ? `${API_URL}/saml/login/${providerId}` : `${API_URL}/saml/login/public`
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    body,
   })
   if (!response.ok) {
     const error = await response.json()
@@ -4481,107 +4492,3 @@ export async function getMarketplaceAuthorProfile(authorId: string): Promise<{
 
 // ============ End Template Marketplace API ============
 
-// ============ P4: SAML SSO API ============
-
-export interface SAMLProvider {
-  id: string
-  name: string
-  entity_id: string
-  sso_url: string
-  slo_url?: string
-  x509_cert: string
-  metadata_url?: string
-  is_active: boolean
-  attribute_mapping: Record<string, string>
-  created_at: string
-  updated_at: string
-}
-
-export interface SAMLProviderCreate {
-  name: string
-  entity_id: string
-  sso_url: string
-  slo_url?: string
-  x509_cert: string
-  metadata_url?: string
-  attribute_mapping?: Record<string, string>
-}
-
-export interface SAMLMetadataResponse {
-  entity_id: string
-  sso_url: string
-  slo_url?: string
-  x509_cert: string
-  attribute_mapping: Record<string, string>
-}
-
-export interface SAMLLoginResponse {
-  redirect_url: string
-  request_id: string
-}
-
-export async function listSAMLProviders(orgId?: string): Promise<SAMLProvider[]> {
-  const params = orgId ? `?org_id=${orgId}` : ''
-  const response = await fetch(`${API_URL}/saml/providers${params}`, {
-    headers: { ...getAuthHeaders() },
-  })
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.detail || 'Failed to list SAML providers')
-  }
-  return response.json()
-}
-
-export async function createSAMLProvider(data: SAMLProviderCreate): Promise<SAMLProvider> {
-  const response = await fetch(`${API_URL}/saml/providers`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-    body: JSON.stringify(data),
-  })
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.detail || 'Failed to create SAML provider')
-  }
-  return response.json()
-}
-
-export async function fetchSAMLMetadata(data: { metadata_url: string }): Promise<SAMLMetadataResponse> {
-  const response = await fetch(`${API_URL}/saml/metadata/fetch`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-    body: JSON.stringify(data),
-  })
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.detail || 'Failed to fetch SAML metadata')
-  }
-  return response.json()
-}
-
-export async function initiateSAMLLogin(data: { provider_id: string; relay_state?: string }): Promise<SAMLLoginResponse> {
-  const response = await fetch(`${API_URL}/saml/login/public`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.detail || 'Failed to initiate SAML login')
-  }
-  return response.json()
-}
-
-export async function updateSAMLAttributeMapping(providerId: string, attributeMapping: Record<string, string>): Promise<SAMLProvider> {
-  const response = await fetch(`${API_URL}/saml/providers/${providerId}/attribute-mapping`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-    body: JSON.stringify({ attribute_mapping: attributeMapping }),
-  })
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.detail || 'Failed to update attribute mapping')
-  }
-  return response.json()
-}
-
-// ============ End P4: SAML SSO API ============
