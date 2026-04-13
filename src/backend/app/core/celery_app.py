@@ -48,6 +48,14 @@ celery_app.conf.update(
             "task": "app.tasks.email.send_weekly_digests",
             "schedule": 604800.0,  # Weekly
         },
+        "process-scheduled-posts": {
+            "task": "app.services.scheduler_service.process_scheduled_posts",
+            "schedule": 60.0,  # Every minute
+        },
+        "retry-failed-posts": {
+            "task": "app.services.scheduler_service.retry_failed_posts",
+            "schedule": 300.0,  # Every 5 minutes
+        },
     },
 )
 

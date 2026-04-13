@@ -5,7 +5,7 @@ import os
 import sys
 import pytest
 from typing import Generator, Dict
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, MagicMock, patch, AsyncMock
 
 # Add the app directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -23,6 +23,7 @@ os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key"
 os.environ["GROQ_API_KEY"] = "test-groq-api-key"
 os.environ["RATE_LIMIT_REQUESTS"] = "1000"
 os.environ["RATE_LIMIT_WINDOW"] = "3600"
+os.environ["REDIS_URL"] = "redis://localhost:6379/0"
 
 # Create a no-op middleware for testing
 class NoOpMiddleware:
