@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp } from 'lucide-react'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp, Bell, Users2, Target, Zap } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
@@ -15,6 +15,7 @@ import OfflineBanner from './OfflineBanner'
 import Footer from './Footer'
 import SearchModal from './SearchModal'
 import { TrendingTopicsWidget } from './TrendingTopics'
+import { AlertsBell } from './AlertsCenter'
 import { cn } from '@/lib/utils'
 
 // Dynamic imports for code splitting
@@ -29,6 +30,10 @@ const ScheduleTab = lazy(() => import('./ScheduleTab'))
 const RSSTab = lazy(() => import('./RSSTab'))
 const FreshnessDashboard = lazy(() => import('./FreshnessDashboard'))
 const TrendingTopics = lazy(() => import('./TrendingTopics'))
+const AlertsCenter = lazy(() => import('./AlertsCenter'))
+const TeamCalendar = lazy(() => import('./TeamCalendar'))
+const CompetitorAnalysis = lazy(() => import('./CompetitorAnalysis'))
+const IntegrationsPanel = lazy(() => import('./IntegrationsPanel'))
 
 interface DashboardProps {
   user: AuthUser
@@ -56,12 +61,16 @@ export default function Dashboard({ user }: DashboardProps) {
     { id: 'content', name: 'Content', icon: FileText, badge: null },
     { id: 'projects', name: 'Projects', icon: Folder, badge: null },
     { id: 'schedule', name: 'Schedule', icon: Calendar, badge: null },
-    { id: 'rss', name: 'RSS Feeds', icon: Rss, badge: 'New' },
-    { id: 'freshness', name: 'Freshness', icon: Leaf, badge: 'New' },
-    { id: 'trends', name: 'Trends', icon: TrendingUp, badge: 'New' },
+    { id: 'team-calendar', name: 'Team Calendar', icon: Users2, badge: 'New' },
+    { id: 'rss', name: 'RSS Feeds', icon: Rss, badge: null },
+    { id: 'freshness', name: 'Freshness', icon: Leaf, badge: null },
+    { id: 'trends', name: 'Trends', icon: TrendingUp, badge: null },
     { id: 'distributions', name: 'Distributions', icon: Share2, badge: null },
     { id: 'analytics', name: 'Analytics', icon: BarChart3, badge: null },
+    { id: 'competitors', name: 'Competitors', icon: Target, badge: 'New' },
     { id: 'team', name: 'Team', icon: Users, badge: null },
+    { id: 'alerts', name: 'Alerts', icon: Bell, badge: null },
+    { id: 'integrations', name: 'Integrations', icon: Zap, badge: 'New' },
     { id: 'settings', name: 'Settings', icon: Settings, badge: null },
     { id: 'trash', name: 'Trash', icon: Trash2, badge: null },
   ], [])
@@ -178,11 +187,43 @@ export default function Dashboard({ user }: DashboardProps) {
             </Suspense>
           </ErrorBoundary>
         )
+      case 'competitors':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('competitors')}>
+            <Suspense fallback={fallback}>
+              <CompetitorAnalysis />
+            </Suspense>
+          </ErrorBoundary>
+        )
       case 'team':
         return (
           <ErrorBoundary onReset={() => setActiveTab('team')}>
             <Suspense fallback={fallback}>
               <TeamTab user={user} />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'team-calendar':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('team-calendar')}>
+            <Suspense fallback={fallback}>
+              <TeamCalendar />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'alerts':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('alerts')}>
+            <Suspense fallback={fallback}>
+              <AlertsCenter />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'integrations':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('integrations')}>
+            <Suspense fallback={fallback}>
+              <IntegrationsPanel />
             </Suspense>
           </ErrorBoundary>
         )
@@ -278,6 +319,8 @@ export default function Dashboard({ user }: DashboardProps) {
               </Tooltip>
               
               <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+              
+              <AlertsBell onClick={() => setActiveTab('alerts')} />
               
               <Tooltip content="View profile" position="bottom">
                 <button
