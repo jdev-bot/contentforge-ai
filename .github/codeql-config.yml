@@ -1,0 +1,15 @@
+name: CodeQL Configuration
+
+paths-ignore:
+  - '**/test_*.py'
+  - '**/tests/**'
+  - '**/node_modules/**'
+  - '**/venv/**'
+  - '**/.venv/**'
+  - '**/__pycache__/**'
+  - '**/migrations/**'
+  - '**/.next/**'
+
+query-filters:
+  - exclude:
+      id: py/unused-import

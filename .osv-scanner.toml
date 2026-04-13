@@ -1,0 +1,6 @@
+# OSV Scanner configuration
+[[IgnoredVulns]]
+# Add specific CVEs to ignore here if needed
+# Example:
+# id = "CVE-XXXX-XXXXX"
+# reason = "Not applicable to our usage"

@@ -1,0 +1,19 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "contentforge-test-keys"
+description = "Ignore test/placeholder keys in .env.example and template files"
+path = '''\.env\.example$|\.env\.local\.example$|\.env\.production\.template$'''
+
+[[allowlist]]
+paths = [
+  '''tests/''',
+  '''test_.*\.py''',
+  '''conftest\.py''',
+  '''\.env\.example$''',
+  '''\.env\.local\.example$''',
+  '''\.env\.production\.template$''',
+  '''docs/SECURITY_AUDIT_REPORT\.md$''',
+  '''docs/LOCAL_DEPLOYMENT_GUIDE\.md$''',
+]
