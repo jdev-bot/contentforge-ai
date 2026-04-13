@@ -4572,9 +4572,9 @@ export async function trackFunnelEvent(funnelId: string, stepId: string, eventDa
   return response.json()
 }
 
-export async function getFunnelAnalytics(funnelId: string, days?: number): Promise<FunnelAnalyticsData> {
+export async function getFunnelAnalytics(funnelId: string, dateRange?: { start: string; end: string }): Promise<FunnelAnalyticsData> {
   const headers = await getAuthHeader()
-  const params = days ? `?days=${days}` : ''
+  const params = dateRange ? `?start=${dateRange.start}&end=${dateRange.end}` : ''
   const response = await fetch(`${API_URL}/funnels/${funnelId}/analytics${params}`, { headers })
   if (!response.ok) throw new Error('Failed to get funnel analytics')
   return response.json()
@@ -4602,21 +4602,21 @@ export interface TouchpointData {
   created_at?: string
 }
 
-export interface AttributionResultData {
+export type AttributionTouchpoint = TouchpointData
+
+export interface ChannelPerformanceData {
   channel: string
   source: string
   attribution_weight: number
   revenue_attributed: number
   conversion_count: number
+  total_touchpoints?: number
+  total_conversions?: number
 }
 
-export interface ChannelPerformanceData {
-  channel: string
-  total_touchpoints: number
-  total_conversions: number
-  attribution_weights: Record<string, number>
-  revenue_attributed: Record<string, number>
-}
+export type ChannelPerformanceResult = ChannelPerformanceData
+
+export interface AttributionResult extends ChannelPerformanceData {}
 
 export interface TouchpointListResponse {
   touchpoints: TouchpointData[]
@@ -4635,14 +4635,14 @@ export async function recordTouchpoint(data: { content_id: string; channel: stri
   return response.json()
 }
 
-export async function getTouchpoints(contentId: string): Promise<TouchpointListResponse> {
+export async function getTouchpoints(contentId: string): Promise<AttributionTouchpoint[]> {
   const headers = await getAuthHeader()
   const response = await fetch(`${API_URL}/attribution/touchpoints/${contentId}`, { headers })
   if (!response.ok) throw new Error('Failed to get touchpoints')
   return response.json()
 }
 
-export async function calculateAttribution(contentId: string, model: AttributionModel): Promise<AttributionResultData[]> {
+export async function calculateAttribution(contentId: string, model: AttributionModel): Promise<AttributionResult[]> {
   const headers = await getAuthHeader()
   const response = await fetch(`${API_URL}/attribution/calculate`, {
     method: 'POST',
@@ -4653,9 +4653,9 @@ export async function calculateAttribution(contentId: string, model: Attribution
   return response.json()
 }
 
-export async function getChannelPerformance(days?: number): Promise<ChannelPerformanceData[]> {
+export async function getChannelPerformance(dateRange?: { start: string; end: string }): Promise<AttributionResult[]> {
   const headers = await getAuthHeader()
-  const params = days ? `?days=${days}` : ''
+  const params = dateRange ? `?start=${dateRange.start}&end=${dateRange.end}` : ''
   const response = await fetch(`${API_URL}/attribution/channels${params}`, { headers })
   if (!response.ok) throw new Error('Failed to get channel performance')
   return response.json()
@@ -4740,23 +4740,139 @@ export async function acknowledgeSLAAlert(alertId: string): Promise<void> {
   if (!response.ok) throw new Error('Failed to acknowledge SLA alert')
 }
 
+export async function updateSLAPolicy(policyId: string, data: Partial<SLAPolicy>): Promise<SLAPolicy> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sla/policies/${policyId}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error('Failed to update SLA policy')
+  return response.json()
+}
+
+export async function deleteSLAPolicy(policyId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sla/policies/${policyId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) throw new Error('Failed to delete SLA policy')
+}
+
+export interface SLAMetricData {
+  metric_type: string
+  value: number
+  labels?: Record<string, string>
+  timestamp?: string
+}
+
+export async function recordSLAMetric(data: SLAMetricData): Promise<{ success: boolean }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sla/metrics`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error('Failed to record SLA metric')
+  return response.json()
+}
+
+export async function getSLAUptime(days: number = 30): Promise<{ uptime_percentage: number; period_days: number }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sla/uptime?days=${days}`, { headers })
+  if (!response.ok) throw new Error('Failed to get SLA uptime')
+  return response.json()
+}
+
+export async function getSLAResponseTime(days: number = 30): Promise<{ avg_ms: number; p50: number; p95: number; p99: number }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sla/response-time?days=${days}`, { headers })
+  if (!response.ok) throw new Error('Failed to get SLA response time')
+  return response.json()
+}
+
+export async function getSLAErrorRate(days: number = 30): Promise<{ error_rate: number; period_days: number }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sla/error-rate?days=${days}`, { headers })
+  if (!response.ok) throw new Error('Failed to get SLA error rate')
+  return response.json()
+}
+
+export type SLAAlertData = SLAAlert
+
+export interface SLAAlertListResponse {
+  alerts: SLAAlertData[]
+  total: number
+}
+
+// Override getSLAAlerts to return list response
+export async function getSLAAlertsWithResponse(acknowledged?: boolean): Promise<SLAAlertListResponse> {
+  const headers = await getAuthHeader()
+  const params = acknowledged !== undefined ? `?acknowledged=${acknowledged}` : ''
+  const response = await fetch(`${API_URL}/sla/alerts${params}`, { headers })
+  if (!response.ok) throw new Error('Failed to get SLA alerts')
+  return response.json()
+}
+
 // ============ End P4: SLA Monitoring API ============
 
 // ============ P4: Integration Framework API ============
 
-export interface IntegrationConfig {
+export interface IntegrationConfigData {
   id: string
+  user_id: string
   name: string
-  type: 'webhook' | 'api' | 'polling' | 'streaming'
+  type: string
   provider: string
-  credentials: Record<string, string>
+  credentials: Record<string, unknown>
   settings: Record<string, unknown>
   enabled: boolean
   created_at: string
   updated_at: string
 }
 
-export async function registerIntegration(data: { name: string; type: string; provider: string; credentials: Record<string, string>; settings?: Record<string, unknown> }): Promise<IntegrationConfig> {
+export interface IntegrationLogData {
+  id: string
+  config_id: string
+  event_id: string | null
+  level: string
+  message: string
+  created_at: string
+}
+
+export interface IntegrationLogListResponse {
+  logs: IntegrationLogData[]
+  total: number
+}
+
+export interface IntegrationStatusData {
+  config_id: string
+  name: string
+  type: string
+  provider: string
+  enabled: boolean
+  health_status: string
+  total_events_24h: number
+  completed_events_24h: number
+  failed_events_24h: number
+  pending_events: number
+  last_event_at: string | null
+  last_log: { created_at: string; level: string; message: string } | null
+}
+
+export interface IntegrationEventData {
+  id: string
+  user_id: string
+  config_id: string
+  event_type: string
+  payload: Record<string, unknown>
+  status: string
+  retries: number
+  created_at: string
+}
+
+export async function registerIntegration(data: { name: string; type: string; provider: string; credentials: Record<string, unknown>; settings?: Record<string, unknown> }): Promise<IntegrationConfigData> {
   const headers = await getAuthHeader()
   const response = await fetch(`${API_URL}/integration-framework/configs`, {
     method: 'POST',
@@ -4767,20 +4883,21 @@ export async function registerIntegration(data: { name: string; type: string; pr
   return response.json()
 }
 
-export async function listIntegrations(): Promise<IntegrationConfig[]> {
+export async function listIntegrations(): Promise<IntegrationConfigData[]> {
   const headers = await getAuthHeader()
   const response = await fetch(`${API_URL}/integration-framework/configs`, { headers })
   if (!response.ok) throw new Error('Failed to list integrations')
   return response.json()
 }
 
-export async function testIntegration(configId: string): Promise<{ success: boolean; message: string }> {
+export async function updateIntegration(configId: string, data: Record<string, unknown>): Promise<IntegrationConfigData> {
   const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}/test`, {
-    method: 'POST',
+  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}`, {
+    method: 'PUT',
     headers,
+    body: JSON.stringify(data),
   })
-  if (!response.ok) throw new Error('Failed to test integration')
+  if (!response.ok) throw new Error('Failed to update integration')
   return response.json()
 }
 
@@ -4791,6 +4908,51 @@ export async function deleteIntegration(configId: string): Promise<void> {
     headers,
   })
   if (!response.ok) throw new Error('Failed to delete integration')
+}
+
+export async function testIntegration(configId: string): Promise<{ success: boolean; message: string; latency_ms: number }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}/test`, {
+    method: 'POST',
+    headers,
+  })
+  if (!response.ok) throw new Error('Failed to test integration')
+  return response.json()
+}
+
+export async function triggerIntegrationEvent(configId: string, data: { event_type: string; payload: Record<string, unknown> }): Promise<IntegrationEventData> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}/events`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error('Failed to trigger integration event')
+  return response.json()
+}
+
+export async function retryFailedEvent(eventId: string): Promise<{ success: boolean; message: string }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/integration-framework/events/${eventId}/retry`, {
+    method: 'POST',
+    headers,
+  })
+  if (!response.ok) throw new Error('Failed to retry event')
+  return response.json()
+}
+
+export async function getIntegrationLogs(configId: string, limit: number = 100): Promise<IntegrationLogListResponse> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}/logs?limit=${limit}`, { headers })
+  if (!response.ok) throw new Error('Failed to get integration logs')
+  return response.json()
+}
+
+export async function getIntegrationStatus(configId: string): Promise<IntegrationStatusData> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}/status`, { headers })
+  if (!response.ok) throw new Error('Failed to get integration status')
+  return response.json()
 }
 
 // ============ End P4: Integration Framework API ============

@@ -29,16 +29,12 @@ import {
   listSLAPolicies,
   updateSLAPolicy,
   deleteSLAPolicy,
-  recordSLAMetric,
   getSLADashboard,
-  getSLAAlerts,
+  getSLAAlertsWithResponse,
   acknowledgeSLAAlert,
-  getSLAUptime,
-  getSLAResponseTime,
-  getSLAErrorRate,
   type SLAPolicy,
   type SLADashboardData,
-  type SLAAlertData,
+  type SLAAlert as SLAAlertData,
 } from '@/lib/api'
 
 type TimeRange = '24h' | '7d' | '30d'
@@ -88,11 +84,11 @@ export default function SLAMonitoring() {
       const [pol, dash, alrt] = await Promise.all([
         listSLAPolicies(),
         getSLADashboard(),
-        getSLAAlerts(),
+        getSLAAlertsWithResponse(),
       ])
       setPolicies(pol)
       setDashboard(dash)
-      setAlerts(alrt.alerts || [])
+      setAlerts(Array.isArray(alrt) ? alrt : [])
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to load SLA data'
       showToast(message, 'error')
@@ -558,7 +554,7 @@ export default function SLAMonitoring() {
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               SLA Alerts
               {dashboard && dashboard.active_alerts > 0 && (
-                <Badge variant="destructive">{dashboard.active_alerts}</Badge>
+                <Badge variant="error">{dashboard.active_alerts}</Badge>
               )}
             </CardTitle>
             <Button

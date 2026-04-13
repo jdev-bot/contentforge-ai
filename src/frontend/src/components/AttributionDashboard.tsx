@@ -53,8 +53,6 @@ import {
 
 // ── Types ────────────────────────────────────────────────────────
 
-type AttributionModel = 'first_touch' | 'last_touch' | 'linear' | 'time_decay' | 'position_based'
-
 interface ModelOption {
   value: AttributionModel
   label: string

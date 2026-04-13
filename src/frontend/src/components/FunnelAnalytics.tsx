@@ -107,7 +107,7 @@ export default function FunnelAnalytics() {
     setLoading(true)
     try {
       const result = await listFunnels()
-      setFunnels(result)
+      setFunnels(result.funnels)
     } catch (err) {
       showToast('Failed to load funnels', 'error')
     } finally {
@@ -227,10 +227,10 @@ export default function FunnelAnalytics() {
 
     const orderedSteps = [...(selectedFunnel.steps || [])].sort((a, b) => a.order - b.order)
     for (const step of orderedSteps) {
-      const events = analytics.step_conversions[step.id] ?? 0
-      const rateKey = Object.keys(analytics.step_conversions).find(k => k.startsWith(step.id))
+      const events = analytics.step_conversions[step.step_id] ?? 0
+      const rateKey = Object.keys(analytics.step_conversions).find(k => k.startsWith(step.step_id))
       const rate = rateKey ? analytics.step_conversions[rateKey] : '-'
-      rows.push([step.name, step.id, String(events), typeof rate === 'number' ? `${(rate * 100).toFixed(1)}%` : String(rate)])
+      rows.push([step.name, step.step_id, String(events), typeof rate === 'number' ? `${(rate * 100).toFixed(1)}%` : String(rate)])
     }
 
     rows.push([], ['Total Entered', String(analytics.total_entered)])
@@ -338,7 +338,7 @@ export default function FunnelAnalytics() {
                             placeholder="Step name"
                           />
                           <Input
-                            value={step.id}
+                            value={step.step_id}
                             onChange={(e) => handleStepChange(index, 'step_id', e.target.value)}
                             placeholder="Step ID"
                           />
@@ -504,16 +504,16 @@ export default function FunnelAnalytics() {
                 {[...(selectedFunnel.steps || [])]
                   .sort((a, b) => a.order - b.order)
                   .map((step, index) => {
-                    const events = analytics.step_conversions[step.id] ?? 0
+                    const events = analytics.step_conversions[step.step_id] ?? 0
                     const maxEvents = Math.max(...Object.values(analytics.step_conversions).map(Number), 1)
                     const widthPercent = (events / maxEvents) * 100
                     const isLast = index === (selectedFunnel.steps?.length ?? 0) - 1
                     const nextStepId = !isLast ? selectedFunnel.steps?.[index + 1]?.id : null
-                    const stepRateKey = nextStepId ? `${step.id}_to_${nextStepId}` : null
+                    const stepRateKey = nextStepId ? `${step.step_id}_to_${nextStepId}` : null
                     const stepRate = stepRateKey ? analytics.step_conversions[stepRateKey] : null
 
                     return (
-                      <div key={step.id}>
+                      <div key={step.step_id}>
                         <div className="flex items-center gap-4">
                           <div className="w-28 text-right">
                             <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">

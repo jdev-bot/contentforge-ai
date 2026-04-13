@@ -225,73 +225,79 @@ class TestAlertService:
         """Test acknowledging an alert."""
         from app.services.alert_service import alert_service
 
+        mock_client = MagicMock()
         mock_response = Mock()
         mock_response.data = [{"id": "alert-1", "status": "acknowledged"}]
+        mock_client.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
 
-        with patch.object(alert_service.supabase, 'table') as mock_table_method:
-            mock_table = MagicMock()
-            mock_table_method.return_value = mock_table
-            mock_table.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
+        # Set supabase directly (uses the setter property)
+        alert_service.supabase = mock_client
+        try:
             result = await alert_service.acknowledge_alert(uuid4(), uuid4())
             assert result is True
+        finally:
+            alert_service._supabase = None
 
     @pytest.mark.asyncio
     async def test_resolve_alert(self):
         """Test resolving an alert."""
         from app.services.alert_service import alert_service
 
+        mock_client = MagicMock()
         mock_response = Mock()
         mock_response.data = [{"id": "alert-1", "status": "resolved"}]
+        mock_client.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
 
-        with patch.object(alert_service.supabase, 'table') as mock_table_method:
-            mock_table = MagicMock()
-            mock_table_method.return_value = mock_table
-            mock_table.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
+        alert_service.supabase = mock_client
+        try:
             result = await alert_service.resolve_alert(uuid4(), uuid4())
             assert result is True
+        finally:
+            alert_service._supabase = None
 
     @pytest.mark.asyncio
     async def test_get_user_alerts(self):
         """Test getting user alerts."""
         from app.services.alert_service import alert_service
 
+        mock_client = MagicMock()
         mock_response = Mock()
         mock_response.data = [
             {"id": "alert-1", "status": "active"},
             {"id": "alert-2", "status": "acknowledged"},
         ]
+        mock_client.table.return_value.select.return_value.eq.return_value.order.return_value.range.return_value.execute.return_value = mock_response
 
-        with patch.object(alert_service.supabase, 'table') as mock_table_method:
-            mock_table = MagicMock()
-            mock_table_method.return_value = mock_table
-            mock_table.select.return_value.eq.return_value.order.return_value.range.return_value.execute.return_value = mock_response
-
+        alert_service.supabase = mock_client
+        try:
             result = await alert_service.get_user_alerts(uuid4())
             assert len(result) == 2
+        finally:
+            alert_service._supabase = None
 
     @pytest.mark.asyncio
     async def test_get_unread_alert_count(self):
         """Test getting unread alert count."""
         from app.services.alert_service import alert_service
 
+        mock_client = MagicMock()
         mock_response = Mock()
         mock_response.count = 5
+        mock_client.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
 
-        with patch.object(alert_service.supabase, 'table') as mock_table_method:
-            mock_table = MagicMock()
-            mock_table_method.return_value = mock_table
-            mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
+        alert_service.supabase = mock_client
+        try:
             result = await alert_service.get_unread_alert_count(uuid4())
             assert result == 5
+        finally:
+            alert_service._supabase = None
 
     @pytest.mark.asyncio
     async def test_create_alert_rule(self):
         """Test creating an alert rule."""
         from app.services.alert_service import alert_service
 
+        mock_client = MagicMock()
         mock_response = Mock()
         mock_response.data = [{
             "id": "rule-1",
@@ -299,12 +305,10 @@ class TestAlertService:
             "metric_name": "views",
             "threshold_value": 1000,
         }]
+        mock_client.table.return_value.insert.return_value.execute.return_value = mock_response
 
-        with patch.object(alert_service.supabase, 'table') as mock_table_method:
-            mock_table = MagicMock()
-            mock_table_method.return_value = mock_table
-            mock_table.insert.return_value.execute.return_value = mock_response
-
+        alert_service.supabase = mock_client
+        try:
             result = await alert_service.create_alert_rule(
                 user_id=uuid4(),
                 name="Test Rule",
@@ -316,24 +320,25 @@ class TestAlertService:
             )
             assert result is not None
             assert result["name"] == "Test Rule"
+        finally:
+            alert_service._supabase = None
 
     @pytest.mark.asyncio
     async def test_update_alert_rule(self):
         """Test updating an alert rule."""
         from app.services.alert_service import alert_service
 
+        mock_client = MagicMock()
         mock_response = Mock()
         mock_response.data = [{
             "id": "rule-1",
             "name": "Updated Rule",
             "is_enabled": False,
         }]
+        mock_client.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
 
-        with patch.object(alert_service.supabase, 'table') as mock_table_method:
-            mock_table = MagicMock()
-            mock_table_method.return_value = mock_table
-            mock_table.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
+        alert_service.supabase = mock_client
+        try:
             result = await alert_service.update_alert_rule(
                 rule_id=uuid4(),
                 user_id=uuid4(),
@@ -341,22 +346,25 @@ class TestAlertService:
             )
             assert result is not None
             assert result["name"] == "Updated Rule"
+        finally:
+            alert_service._supabase = None
 
     @pytest.mark.asyncio
     async def test_delete_alert_rule(self):
         """Test deleting an alert rule."""
         from app.services.alert_service import alert_service
 
+        mock_client = MagicMock()
         mock_response = Mock()
         mock_response.data = [{"id": "rule-1"}]
+        mock_client.table.return_value.delete.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
 
-        with patch.object(alert_service.supabase, 'table') as mock_table_method:
-            mock_table = MagicMock()
-            mock_table_method.return_value = mock_table
-            mock_table.delete.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
+        alert_service.supabase = mock_client
+        try:
             result = await alert_service.delete_alert_rule(uuid4(), uuid4())
             assert result is True
+        finally:
+            alert_service._supabase = None
 
 
 # ============== API Endpoint Tests ==============
@@ -366,24 +374,30 @@ class TestAlertsAPI:
 
     def test_list_alerts(self, client, auth_headers):
         """Test GET /api/v1/alerts endpoint."""
-        mock_response = Mock()
-        mock_response.data = [
-            {
-                "id": str(uuid4()),
-                "user_id": "test-user-id",
-                "alert_type": "viral",
-                "metric_name": "engagement",
-                "status": "active",
-                "message": "Test alert",
-            }
-        ]
-        mock_response.count = 1
+        with patch("app.routers.alerts.alert_service") as mock_service, \
+             patch("app.routers.alerts.get_supabase_client") as mock_supabase:
+            mock_service.get_user_alerts = AsyncMock(return_value=[
+                {
+                    "id": str(uuid4()),
+                    "user_id": "test-user-id",
+                    "alert_type": "viral",
+                    "content_id": str(uuid4()),
+                    "metric_name": "engagement",
+                    "threshold_value": 3.0,
+                    "current_value": 5.5,
+                    "status": "active",
+                    "message": "Test alert",
+                    "created_at": datetime.utcnow().isoformat(),
+                    "acknowledged_at": None,
+                }
+            ])
+            mock_client = MagicMock()
+            mock_count_response = Mock()
+            mock_count_response.count = 1
+            mock_client.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_count_response
+            mock_supabase.return_value = mock_client
 
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
-        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.range.return_value.execute.return_value = mock_response
-        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
-        response = client.get("/api/v1/alerts", headers=auth_headers)
+            response = client.get("/api/v1/alerts", headers=auth_headers)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -392,10 +406,20 @@ class TestAlertsAPI:
 
     def test_list_alerts_with_filters(self, client, auth_headers):
         """Test GET /api/v1/alerts with status and type filters."""
-        response = client.get(
-            "/api/v1/alerts?status=active&alert_type=viral",
-            headers=auth_headers
-        )
+        with patch("app.routers.alerts.alert_service") as mock_service, \
+             patch("app.routers.alerts.get_supabase_client") as mock_supabase:
+            mock_service.get_user_alerts = AsyncMock(return_value=[])
+            mock_client = MagicMock()
+            mock_count_response = Mock()
+            mock_count_response.count = 0
+            mock_client.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value.execute.return_value = mock_count_response
+            mock_supabase.return_value = mock_client
+
+            response = client.get(
+                "/api/v1/alerts?status=active&alert_type=viral",
+                headers=auth_headers
+            )
+
         assert response.status_code == status.HTTP_200_OK
 
     def test_list_alerts_invalid_status(self, client, auth_headers):
@@ -408,17 +432,14 @@ class TestAlertsAPI:
 
     def test_acknowledge_alert(self, client, auth_headers):
         """Test POST /api/v1/alerts/acknowledge/{id} endpoint."""
-        mock_response = Mock()
-        mock_response.data = [{"id": str(uuid4()), "status": "acknowledged"}]
+        with patch("app.routers.alerts.alert_service") as mock_service:
+            mock_service.acknowledge_alert = AsyncMock(return_value=True)
 
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
-        mock_table.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
-        alert_id = str(uuid4())
-        response = client.post(
-            f"/api/v1/alerts/acknowledge/{alert_id}",
-            headers=auth_headers
-        )
+            alert_id = str(uuid4())
+            response = client.post(
+                f"/api/v1/alerts/acknowledge/{alert_id}",
+                headers=auth_headers
+            )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -426,33 +447,27 @@ class TestAlertsAPI:
 
     def test_acknowledge_alert_not_found(self, client, auth_headers):
         """Test acknowledging a non-existent alert."""
-        mock_response = Mock()
-        mock_response.data = []
+        with patch("app.routers.alerts.alert_service") as mock_service:
+            mock_service.acknowledge_alert = AsyncMock(return_value=False)
 
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
-        mock_table.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
-        alert_id = str(uuid4())
-        response = client.post(
-            f"/api/v1/alerts/acknowledge/{alert_id}",
-            headers=auth_headers
-        )
+            alert_id = str(uuid4())
+            response = client.post(
+                f"/api/v1/alerts/acknowledge/{alert_id}",
+                headers=auth_headers
+            )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_resolve_alert(self, client, auth_headers):
         """Test POST /api/v1/alerts/resolve/{id} endpoint."""
-        mock_response = Mock()
-        mock_response.data = [{"id": str(uuid4()), "status": "resolved"}]
+        with patch("app.routers.alerts.alert_service") as mock_service:
+            mock_service.resolve_alert = AsyncMock(return_value=True)
 
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
-        mock_table.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
-        alert_id = str(uuid4())
-        response = client.post(
-            f"/api/v1/alerts/resolve/{alert_id}",
-            headers=auth_headers
-        )
+            alert_id = str(uuid4())
+            response = client.post(
+                f"/api/v1/alerts/resolve/{alert_id}",
+                headers=auth_headers
+            )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -460,13 +475,10 @@ class TestAlertsAPI:
 
     def test_get_unread_count(self, client, auth_headers):
         """Test GET /api/v1/alerts/unread-count endpoint."""
-        mock_response = Mock()
-        mock_response.count = 5
+        with patch("app.routers.alerts.alert_service") as mock_service:
+            mock_service.get_unread_alert_count = AsyncMock(return_value=5)
 
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
-        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
-        response = client.get("/api/v1/alerts/unread-count", headers=auth_headers)
+            response = client.get("/api/v1/alerts/unread-count", headers=auth_headers)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -475,25 +487,24 @@ class TestAlertsAPI:
 
     def test_list_alert_rules(self, client, auth_headers):
         """Test GET /api/v1/alerts/rules endpoint."""
-        mock_response = Mock()
-        mock_response.data = [
-            {
-                "id": str(uuid4()),
-                "user_id": "test-user-id",
-                "name": "High Views",
-                "alert_type": "milestone",
-                "metric_name": "views",
-                "operator": "greater_than",
-                "threshold_value": 10000,
-                "is_enabled": True,
-                "notification_channels": ["in_app"],
-            }
-        ]
+        with patch("app.routers.alerts.alert_service") as mock_service:
+            mock_service.get_alert_rules = AsyncMock(return_value=[
+                {
+                    "id": str(uuid4()),
+                    "user_id": "test-user-id",
+                    "name": "High Views",
+                    "alert_type": "milestone",
+                    "metric_name": "views",
+                    "operator": "greater_than",
+                    "threshold_value": 10000.0,
+                    "is_enabled": True,
+                    "notification_channels": ["in_app"],
+                    "created_at": datetime.utcnow().isoformat(),
+                    "updated_at": datetime.utcnow().isoformat(),
+                }
+            ])
 
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
-        mock_table.select.return_value.eq.return_value.order.return_value.execute.return_value = mock_response
-
-        response = client.get("/api/v1/alerts/rules", headers=auth_headers)
+            response = client.get("/api/v1/alerts/rules", headers=auth_headers)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -501,34 +512,33 @@ class TestAlertsAPI:
 
     def test_create_alert_rule(self, client, auth_headers):
         """Test POST /api/v1/alerts/rules endpoint."""
-        mock_response = Mock()
-        mock_response.data = [{
-            "id": str(uuid4()),
-            "user_id": "test-user-id",
-            "name": "Test Rule",
-            "alert_type": "milestone",
-            "metric_name": "views",
-            "operator": "greater_than",
-            "threshold_value": 10000,
-            "is_enabled": True,
-            "notification_channels": ["in_app", "email"],
-        }]
-
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
-        mock_table.insert.return_value.execute.return_value = mock_response
-
-        response = client.post(
-            "/api/v1/alerts/rules",
-            headers={**auth_headers, "Content-Type": "application/json"},
-            json={
+        with patch("app.routers.alerts.alert_service") as mock_service:
+            mock_service.create_alert_rule = AsyncMock(return_value={
+                "id": str(uuid4()),
+                "user_id": "test-user-id",
                 "name": "Test Rule",
                 "alert_type": "milestone",
                 "metric_name": "views",
                 "operator": "greater_than",
-                "threshold_value": 10000,
+                "threshold_value": 10000.0,
+                "is_enabled": True,
                 "notification_channels": ["in_app", "email"],
-            }
-        )
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat(),
+            })
+
+            response = client.post(
+                "/api/v1/alerts/rules",
+                headers={**auth_headers, "Content-Type": "application/json"},
+                json={
+                    "name": "Test Rule",
+                    "alert_type": "milestone",
+                    "metric_name": "views",
+                    "operator": "greater_than",
+                    "threshold_value": 10000,
+                    "notification_channels": ["in_app", "email"],
+                }
+            )
 
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
@@ -553,23 +563,27 @@ class TestAlertsAPI:
 
     def test_update_alert_rule(self, client, auth_headers):
         """Test PUT /api/v1/alerts/rules/{id} endpoint."""
-        mock_response = Mock()
-        mock_response.data = [{
-            "id": str(uuid4()),
-            "user_id": "test-user-id",
-            "name": "Updated Rule",
-            "is_enabled": False,
-        }]
+        with patch("app.routers.alerts.alert_service") as mock_service:
+            mock_service.update_alert_rule = AsyncMock(return_value={
+                "id": str(uuid4()),
+                "user_id": "test-user-id",
+                "name": "Updated Rule",
+                "alert_type": "milestone",
+                "metric_name": "views",
+                "operator": "greater_than",
+                "threshold_value": 5000.0,
+                "is_enabled": False,
+                "notification_channels": ["in_app"],
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat(),
+            })
 
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
-        mock_table.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
-        rule_id = str(uuid4())
-        response = client.put(
-            f"/api/v1/alerts/rules/{rule_id}",
-            headers={**auth_headers, "Content-Type": "application/json"},
-            json={"name": "Updated Rule", "is_enabled": False}
-        )
+            rule_id = str(uuid4())
+            response = client.put(
+                f"/api/v1/alerts/rules/{rule_id}",
+                headers={**auth_headers, "Content-Type": "application/json"},
+                json={"name": "Updated Rule", "is_enabled": False}
+            )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -577,31 +591,35 @@ class TestAlertsAPI:
 
     def test_delete_alert_rule(self, client, auth_headers):
         """Test DELETE /api/v1/alerts/rules/{id} endpoint."""
-        mock_response = Mock()
-        mock_response.data = [{"id": str(uuid4())}]
+        with patch("app.routers.alerts.alert_service") as mock_service:
+            mock_service.delete_alert_rule = AsyncMock(return_value=True)
 
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
-        mock_table.delete.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
-        rule_id = str(uuid4())
-        response = client.delete(
-            f"/api/v1/alerts/rules/{rule_id}",
-            headers=auth_headers
-        )
+            rule_id = str(uuid4())
+            response = client.delete(
+                f"/api/v1/alerts/rules/{rule_id}",
+                headers=auth_headers
+            )
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
     def test_check_metrics(self, client, auth_headers):
         """Test POST /api/v1/alerts/check-metrics endpoint."""
-        mock_response = Mock()
-        mock_response.data = [{
-            "id": str(uuid4()),
-            "alert_type": "milestone",
-            "message": "Milestone reached!",
-        }]
-
-        with patch('app.services.alert_service.alert_service.check_content_metrics', new_callable=AsyncMock) as mock_check:
-            mock_check.return_value = mock_response.data
+        with patch("app.routers.alerts.alert_service") as mock_service:
+            mock_service.check_content_metrics = AsyncMock(return_value=[
+                {
+                    "id": str(uuid4()),
+                    "user_id": "test-user-id",
+                    "alert_type": "milestone",
+                    "content_id": str(uuid4()),
+                    "metric_name": "views",
+                    "threshold_value": 10000.0,
+                    "current_value": 15000.0,
+                    "status": "active",
+                    "message": "Milestone reached!",
+                    "created_at": datetime.utcnow().isoformat(),
+                    "acknowledged_at": None,
+                }
+            ])
 
             response = client.post(
                 "/api/v1/alerts/check-metrics",
@@ -612,28 +630,29 @@ class TestAlertsAPI:
                 }
             )
 
-            assert response.status_code == status.HTTP_200_OK
-            data = response.json()
-            assert "triggered_alerts" in data
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "triggered_alerts" in data
 
     def test_list_notifications(self, client, auth_headers):
         """Test GET /api/v1/alerts/notifications endpoint."""
-        mock_response = Mock()
-        mock_response.data = [
-            {
-                "id": str(uuid4()),
-                "user_id": "test-user-id",
-                "title": "Test Notification",
-                "message": "Test message",
-                "type": "info",
-                "is_read": False,
-            }
-        ]
+        with patch("app.routers.alerts.alert_service") as mock_service:
+            mock_service.get_in_app_notifications = AsyncMock(return_value=[
+                {
+                    "id": str(uuid4()),
+                    "user_id": "test-user-id",
+                    "alert_id": str(uuid4()),
+                    "title": "Test Notification",
+                    "message": "Test message",
+                    "type": "info",
+                    "is_read": False,
+                    "created_at": datetime.utcnow().isoformat(),
+                    "read_at": None,
+                }
+            ])
+            mock_service.get_unread_alert_count = AsyncMock(return_value=1)
 
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
-        mock_table.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = mock_response
-
-        response = client.get("/api/v1/alerts/notifications", headers=auth_headers)
+            response = client.get("/api/v1/alerts/notifications", headers=auth_headers)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -642,17 +661,14 @@ class TestAlertsAPI:
 
     def test_mark_notification_read(self, client, auth_headers):
         """Test POST /api/v1/alerts/notifications/{id}/read endpoint."""
-        mock_response = Mock()
-        mock_response.data = [{"id": str(uuid4()), "is_read": True}]
+        with patch("app.routers.alerts.alert_service") as mock_service:
+            mock_service.mark_notification_read = AsyncMock(return_value=True)
 
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
-        mock_table.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
-        notification_id = str(uuid4())
-        response = client.post(
-            f"/api/v1/alerts/notifications/{notification_id}/read",
-            headers=auth_headers
-        )
+            notification_id = str(uuid4())
+            response = client.post(
+                f"/api/v1/alerts/notifications/{notification_id}/read",
+                headers=auth_headers
+            )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -660,16 +676,17 @@ class TestAlertsAPI:
 
     def test_mark_all_notifications_read(self, client, auth_headers):
         """Test POST /api/v1/alerts/notifications/mark-all-read endpoint."""
-        mock_response = Mock()
-        mock_response.data = [{"id": str(uuid4())}, {"id": str(uuid4())}]
+        with patch("app.routers.alerts.get_supabase_client") as mock_supabase:
+            mock_client = MagicMock()
+            mock_response = Mock()
+            mock_response.data = [{"id": str(uuid4())}, {"id": str(uuid4())}]
+            mock_client.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
+            mock_supabase.return_value = mock_client
 
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
-        mock_table.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
-
-        response = client.post(
-            "/api/v1/alerts/notifications/mark-all-read",
-            headers=auth_headers
-        )
+            response = client.post(
+                "/api/v1/alerts/notifications/mark-all-read",
+                headers=auth_headers
+            )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -686,18 +703,20 @@ class TestAlertsIntegration:
         """Test the complete alert flow from metrics to notification."""
         from app.services.alert_service import alert_service
 
-        with patch.object(alert_service.supabase, 'table') as mock_table_method:
-            mock_table = MagicMock()
-            mock_table_method.return_value = mock_table
+        mock_client = MagicMock()
+        mock_table = MagicMock()
+        mock_client.table.return_value = mock_table
 
-            # Setup mock chain
-            mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = Mock(data=[])
-            mock_table.insert.return_value.execute.return_value = Mock(data=[{
-                "id": str(uuid4()),
-                "alert_type": "viral",
-                "message": "Your content is going viral!",
-            }])
+        # Setup mock chain
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = Mock(data=[])
+        mock_table.insert.return_value.execute.return_value = Mock(data=[{
+            "id": str(uuid4()),
+            "alert_type": "viral",
+            "message": "Your content is going viral!",
+        }])
 
+        alert_service.supabase = mock_client
+        try:
             content_id = uuid4()
             user_id = uuid4()
 
@@ -707,33 +726,28 @@ class TestAlertsIntegration:
                 "engagement": 10.0,
             }
 
-            # This would normally trigger viral detection
-            # Note: Mock setup is simplified for this test
+            with patch.object(alert_service, '_check_alert_rules', new_callable=AsyncMock) as mock_rules, \
+                 patch.object(alert_service, '_detect_viral_content', new_callable=AsyncMock) as mock_viral, \
+                 patch.object(alert_service, '_detect_declining_engagement', new_callable=AsyncMock) as mock_decline, \
+                 patch.object(alert_service, '_check_milestones', new_callable=AsyncMock) as mock_milestones, \
+                 patch.object(alert_service, '_store_metrics_history', new_callable=AsyncMock):
+                mock_rules.return_value = []
+                mock_viral.return_value = {"id": "viral-1", "type": "viral"}
+                mock_decline.return_value = None
+                mock_milestones.return_value = []
 
-            result = await alert_service.check_content_metrics(content_id, user_id, metrics)
-            assert isinstance(result, list)
+                result = await alert_service.check_content_metrics(content_id, user_id, metrics)
+                assert isinstance(result, list)
+        finally:
+            alert_service._supabase = None
 
     def test_alert_rule_crud_flow(self, client, auth_headers):
         """Test CRUD operations on alert rules."""
-        # Create
-        create_mock = Mock()
-        create_mock.data = [{
-            "id": str(uuid4()),
-            "name": "CRUD Test Rule",
-            "alert_type": "milestone",
-            "metric_name": "views",
-            "operator": "greater_than",
-            "threshold_value": 5000,
-        }]
+        with patch("app.routers.alerts.alert_service") as mock_service:
+            mock_service.get_alert_rules = AsyncMock(return_value=[])
 
-        mock_client, mock_auth, mock_table, mock_storage, mock_query = client.mock_supabase
+            response = client.get("/api/v1/alerts/rules", headers=auth_headers)
 
-        # Test list (empty initially)
-        list_mock = Mock()
-        list_mock.data = []
-        mock_table.select.return_value.eq.return_value.order.return_value.execute.return_value = list_mock
-
-        response = client.get("/api/v1/alerts/rules", headers=auth_headers)
         assert response.status_code == status.HTTP_200_OK
 
     @pytest.mark.asyncio
@@ -861,11 +875,15 @@ class TestAlertEdgeCases:
         """Test service handles database errors gracefully."""
         from app.services.alert_service import alert_service
 
-        with patch.object(alert_service.supabase, 'table') as mock_table:
-            mock_table.return_value.select.return_value.eq.return_value.execute.side_effect = Exception("Database error")
+        mock_client = MagicMock()
+        mock_client.table.return_value.select.return_value.eq.return_value.execute.side_effect = Exception("Database error")
 
+        alert_service.supabase = mock_client
+        try:
             result = await alert_service.get_user_alerts(uuid4())
             assert result == []
+        finally:
+            alert_service._supabase = None
 
     @pytest.mark.asyncio
     async def test_empty_metrics(self):
@@ -934,7 +952,7 @@ class TestWebSocketPreparation:
         """Test that alert service is prepared for WebSocket integration."""
         from app.services.alert_service import alert_service
 
-        # The service should be able to return alerts that can be sent via WebSocket
+        mock_client = MagicMock()
         mock_response = Mock()
         mock_response.data = [
             {
@@ -945,20 +963,19 @@ class TestWebSocketPreparation:
                 "created_at": datetime.utcnow().isoformat(),
             }
         ]
+        mock_client.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.execute.return_value = mock_response
 
-        with patch.object(alert_service.supabase, 'table') as mock_table_method:
-            mock_table = MagicMock()
-            mock_table_method.return_value = mock_table
-            mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.execute.return_value = mock_response
-
+        alert_service.supabase = mock_client
+        try:
             alerts = await alert_service.get_user_alerts(uuid4(), status="active", limit=10)
             assert isinstance(alerts, list)
-            # Each alert should have necessary fields for WebSocket transmission
             for alert in alerts:
                 assert "id" in alert
                 assert "user_id" in alert
                 assert "alert_type" in alert
                 assert "message" in alert
+        finally:
+            alert_service._supabase = None
 
 
 # Run tests
