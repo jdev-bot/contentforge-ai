@@ -79,6 +79,16 @@ Authorization: Bearer <your_access_token>
 | GET | `/health` | Health check (public) |
 | GET | `/usage` | Get usage statistics |
 
+### AI Content Editor Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/ai/edit/rewrite` | Rewrite content with different tone/style |
+| POST | `/ai/edit/expand` | Expand content with more detail |
+| POST | `/ai/edit/condense` | Condense content to be shorter |
+| POST | `/ai/edit/optimize` | Optimize content for specific platform |
+| GET | `/ai/edit/history` | Get editor operation history |
+
 ---
 
 ## Example Requests & Responses
@@ -181,6 +191,275 @@ curl -X POST "https://api.contentforge.ai/api/v1/auth/login" \
 {
   "detail": "Invalid credentials"
 }
+```
+
+---
+
+## AI Content Editor Examples
+
+### POST /api/v1/ai/edit/rewrite
+
+Rewrite content with a different tone and style.
+
+**Headers:**
+
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+
+```json
+{
+  "content": "Our company provides excellent software development services. We help businesses build scalable applications.",
+  "tone": "witty",
+  "style": "persuasive"
+}
+```
+
+**curl Example:**
+
+```bash
+curl -X POST "https://api.contentforge.ai/api/v1/ai/edit/rewrite" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Our company provides excellent software development services. We help businesses build scalable applications.",
+    "tone": "witty",
+    "style": "persuasive"
+  }'
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "operation": "rewrite",
+  "original_content": "Our company provides excellent software development services...",
+  "rewritten_content": "We're the code wizards your business has been waiting for...",
+  "tone": "witty",
+  "style": "persuasive",
+  "tokens_used": 245,
+  "created_at": "2026-04-13T11:30:00Z"
+}
+```
+
+**Supported Tones:**
+- `casual` - Relaxed, conversational
+- `professional` - Business-appropriate
+- `witty` - Clever and humorous
+- `formal` - Academic and sophisticated
+- `friendly` - Warm and approachable
+- `authoritative` - Confident and expert
+- `enthusiastic` - Excited and energetic
+- `empathetic` - Understanding and compassionate
+
+**Supported Styles:**
+- `neutral` - Balanced and objective
+- `persuasive` - Convincing and compelling
+- `informative` - Educational and factual
+- `storytelling` - Narrative-driven
+- `concise` - Brief and to-the-point
+- `descriptive` - Vivid and sensory
+
+---
+
+### POST /api/v1/ai/edit/expand
+
+Expand content with more detail and depth.
+
+**Request Body:**
+
+```json
+{
+  "content": "We help businesses grow through digital marketing.",
+  "target_length": 3,
+  "focus_areas": ["strategies", "case studies"]
+}
+```
+
+**curl Example:**
+
+```bash
+curl -X POST "https://api.contentforge.ai/api/v1/ai/edit/expand" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "We help businesses grow through digital marketing.",
+    "target_length": 3,
+    "focus_areas": ["strategies", "case studies"]
+  }'
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440001",
+  "operation": "expand",
+  "original_content": "We help businesses grow through digital marketing.",
+  "expanded_content": "At our core, we specialize in helping businesses achieve remarkable growth through comprehensive digital marketing strategies. Our approach combines data-driven insights with creative execution to deliver measurable results...",
+  "target_length": 3,
+  "actual_expansion_ratio": 2.8,
+  "tokens_used": 890,
+  "created_at": "2026-04-13T11:31:00Z"
+}
+```
+
+---
+
+### POST /api/v1/ai/edit/condense
+
+Condense content while preserving key points.
+
+**Request Body:**
+
+```json
+{
+  "content": "Our comprehensive guide to digital marketing covers everything from SEO to social media advertising. We dive deep into keyword research, content strategy, paid campaigns, and analytics. Learn how to optimize your website for search engines, create engaging social media content, run effective ad campaigns, and measure your results using advanced analytics tools.",
+  "target_percentage": 40,
+  "preserve_key_points": true
+}
+```
+
+**curl Example:**
+
+```bash
+curl -X POST "https://api.contentforge.ai/api/v1/ai/edit/condense" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Our comprehensive guide to digital marketing covers everything...",
+    "target_percentage": 40,
+    "preserve_key_points": true
+  }'
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440002",
+  "operation": "condense",
+  "original_content": "Our comprehensive guide to digital marketing covers everything...",
+  "condensed_content": "Master digital marketing with our guide covering SEO, social media, paid campaigns, and analytics. Learn optimization, content creation, ad management, and results measurement.",
+  "target_percentage": 40,
+  "actual_reduction_percentage": 45.2,
+  "tokens_used": 320,
+  "created_at": "2026-04-13T11:32:00Z"
+}
+```
+
+---
+
+### POST /api/v1/ai/edit/optimize
+
+Optimize content for a specific platform.
+
+**Request Body:**
+
+```json
+{
+  "content": "We just launched our new AI-powered content creation tool that helps businesses generate engaging social media posts, newsletters, and blog content in minutes.",
+  "platform": "twitter",
+  "include_hashtags": true,
+  "include_cta": true
+}
+```
+
+**curl Example:**
+
+```bash
+curl -X POST "https://api.contentforge.ai/api/v1/ai/edit/optimize" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "We just launched our new AI-powered content creation tool...",
+    "platform": "twitter",
+    "include_hashtags": true,
+    "include_cta": true
+  }'
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440003",
+  "operation": "optimize",
+  "original_content": "We just launched our new AI-powered content creation tool...",
+  "optimized_content": "🚀 Big news! Our AI content tool is LIVE\n\nCreate engaging posts, newsletters & blogs in MINUTES\n\nNo more writer's block ✨\n\nReady to transform your content game?\n\nTry it free →\n\n#AI #ContentCreation #Marketing",
+  "platform": "twitter",
+  "character_count": 234,
+  "word_count": 32,
+  "tokens_used": 450,
+  "created_at": "2026-04-13T11:33:00Z"
+}
+```
+
+**Supported Platforms:**
+- `twitter` - Up to 280 characters, punchy style
+- `linkedin` - Professional, thought leadership
+- `blog` - SEO-optimized, structured format
+- `newsletter` - Personal, conversational
+- `instagram` - Engaging captions with hashtags
+- `tiktok` - Trendy, authentic style
+
+---
+
+### GET /api/v1/ai/edit/history
+
+Get history of AI editor operations.
+
+**Headers:**
+
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| limit | integer | Number of results (default: 50) |
+| operation | string | Filter by operation type |
+
+**curl Example:**
+
+```bash
+# Get all history
+curl "https://api.contentforge.ai/api/v1/ai/edit/history" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
+
+# Filter by operation type
+curl "https://api.contentforge.ai/api/v1/ai/edit/history?operation=rewrite&limit=10" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
+```
+
+**Success Response (200 OK):**
+
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "content_id": "content-uuid",
+    "operation": "rewrite",
+    "original_preview": "Our company provides...",
+    "result_preview": "We're the code wizards...",
+    "tokens_used": 245,
+    "created_at": "2026-04-13T11:30:00Z"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440003",
+    "operation": "optimize",
+    "original_preview": "We just launched...",
+    "result_preview": "🚀 Big news!...",
+    "tokens_used": 450,
+    "created_at": "2026-04-13T11:33:00Z"
+  }
+]
 ```
 
 ---

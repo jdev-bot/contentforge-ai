@@ -7,7 +7,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import get_settings
-from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user, search, trash
+from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user, search, trash, scheduler, ai_editor
 
 settings = get_settings()
 
@@ -69,11 +69,13 @@ app.include_router(webhooks.router, prefix="/api/v1", tags=["webhooks"])
 app.include_router(analytics.router, prefix="/api/v1", tags=["analytics"])
 app.include_router(stripe_router.router, prefix="/api/v1", tags=["stripe"])
 app.include_router(ai_suggestions.router, prefix="/api/v1", tags=["ai-suggestions"])
+app.include_router(ai_editor.router, prefix="/api/v1", tags=["ai-editor"])
 app.include_router(automation.router, prefix="/api/v1", tags=["automation"])
 app.include_router(notifications.router, prefix="/api/v1", tags=["notifications"])
 app.include_router(user.router, prefix="/api/v1", tags=["user"])
 app.include_router(search.router, prefix="/api/v1", tags=["search"])
 app.include_router(trash.router, prefix="/api/v1", tags=["trash"])
+app.include_router(scheduler.router, prefix="/api/v1", tags=["scheduler"])
 
 
 @app.get("/")

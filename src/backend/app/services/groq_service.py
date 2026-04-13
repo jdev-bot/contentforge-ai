@@ -2,7 +2,7 @@
 Groq AI service for content generation.
 """
 import httpx
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -171,6 +171,228 @@ Script should be 30-60 seconds when read aloud. Include hook, content, CTA, and 
         )
         
         return {"script": result}
+
+    # ===== SMART CONTENT EDITOR METHODS =====
+    
+    async def rewrite_content(
+        self,
+        content: str,
+        tone: str = "professional",
+        style: str = "neutral",
+    ) -> Tuple[str, int]:
+        """Rewrite content with different tone and style."""
+        tone_descriptions = {
+            "casual": "relaxed, conversational, using everyday language",
+            "professional": "business-appropriate, clear, and authoritative",
+            "witty": "clever, humorous, with wordplay and light sarcasm",
+            "formal": "academic, sophisticated vocabulary, no contractions",
+            "friendly": "warm, approachable, supportive tone",
+            "authoritative": "confident, expert-driven, decisive statements",
+            "enthusiastic": "excited, energetic, passionate delivery",
+            "empathetic": "understanding, compassionate, emotionally resonant",
+        }
+        
+        style_descriptions = {
+            "neutral": "balanced and objective, no strong persuasion",
+            "persuasive": "convincing, compelling arguments, action-oriented",
+            "informative": "educational, factual, detailed explanations",
+            "storytelling": "narrative-driven, engaging, with a clear arc",
+            "concise": "brief, to-the-point, no fluff",
+            "descriptive": "vivid imagery, sensory details, immersive",
+        }
+        
+        tone_desc = tone_descriptions.get(tone, tone_descriptions["professional"])
+        style_desc = style_descriptions.get(style, style_descriptions["neutral"])
+        
+        system_prompt = f"""You are an expert content editor. Rewrite the provided content with the following specifications:
+- Tone: {tone_desc}
+- Style: {style_desc}
+
+Maintain the core meaning and key information while adapting the presentation."""
+        
+        prompt = f"""Rewrite the following content:
+
+ORIGINAL CONTENT:
+{content}
+
+REQUIREMENTS:
+- Tone: {tone} ({tone_desc})
+- Style: {style} ({style_desc})
+- Preserve all key information
+- Ensure natural flow and readability
+
+Provide only the rewritten content without explanations."""
+        
+        result = await self.generate_content(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.7,
+            max_tokens=3000,
+        )
+        
+        # Estimate tokens used (rough approximation)
+        estimated_tokens = len(content.split()) + len(result.split())
+        return result.strip(), estimated_tokens
+    
+    async def expand_content(
+        self,
+        content: str,
+        target_length: int = 2,
+        focus_areas: List[str] = None,
+    ) -> Tuple[str, int]:
+        """Expand content with more detail."""
+        focus_areas = focus_areas or []
+        
+        focus_instruction = ""
+        if focus_areas:
+            focus_instruction = f"\n\nFocus on expanding these areas: {', '.join(focus_areas)}"
+        
+        system_prompt = f"""You are an expert content expander. Take the provided content and expand it to approximately {target_length}x its original length.
+Add depth, detail, examples, and elaboration while maintaining coherence and quality."""
+        
+        prompt = f"""Expand the following content to approximately {target_length}x its length:
+
+ORIGINAL CONTENT:
+{content}
+
+REQUIREMENTS:
+- Expand to roughly {target_length}x the original length
+- Add relevant details, examples, and elaboration
+- Maintain the original structure where appropriate
+- Ensure the expanded content flows naturally{focus_instruction}
+
+Provide only the expanded content without explanations."""
+        
+        result = await self.generate_content(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.7,
+            max_tokens=4000,
+        )
+        
+        estimated_tokens = len(content.split()) + len(result.split())
+        return result.strip(), estimated_tokens
+    
+    async def condense_content(
+        self,
+        content: str,
+        target_percentage: int = 50,
+        preserve_key_points: bool = True,
+    ) -> Tuple[str, int]:
+        """Condense content to be shorter."""
+        preserve_instruction = "Ensure all key points and main ideas are preserved." if preserve_key_points else "Condense as needed, prioritizing brevity."
+        
+        system_prompt = f"""You are an expert content condenser. Summarize and condense the provided content to approximately {target_percentage}% of its original length.
+{preserve_instruction} Maintain clarity and coherence."""
+        
+        prompt = f"""Condense the following content to approximately {target_percentage}% of its length:
+
+ORIGINAL CONTENT:
+{content}
+
+REQUIREMENTS:
+- Reduce to roughly {target_percentage}% of original length
+- {preserve_instruction}
+- Remove redundant information and wordiness
+- Keep sentences clear and impactful
+- Maintain the original tone and key messages
+
+Provide only the condensed content without explanations."""
+        
+        result = await self.generate_content(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.6,
+            max_tokens=2500,
+        )
+        
+        estimated_tokens = len(content.split()) + len(result.split())
+        return result.strip(), estimated_tokens
+    
+    async def optimize_content(
+        self,
+        content: str,
+        platform: str,
+        include_hashtags: bool = True,
+        include_cta: bool = True,
+    ) -> Dict[str, Any]:
+        """Optimize content for specific platform."""
+        platform_specs = {
+            "twitter": {
+                "max_length": 280,
+                "style": "concise, punchy, hashtag-friendly",
+                "best_practices": "Hook immediately, use line breaks for readability, 1-2 hashtags max",
+            },
+            "linkedin": {
+                "max_length": 3000,
+                "style": "professional, thought leadership, value-driven",
+                "best_practices": "Start with a hook, use short paragraphs, include a clear takeaway",
+            },
+            "blog": {
+                "max_length": 5000,
+                "style": "informative, SEO-optimized, structured",
+                "best_practices": "Use headers, bullet points, include meta description suggestions",
+            },
+            "newsletter": {
+                "max_length": 2000,
+                "style": "personal, conversational, skimmable",
+                "best_practices": "Subject line suggestion, scannable sections, clear CTA",
+            },
+            "instagram": {
+                "max_length": 2200,
+                "style": "visual-friendly, engaging, community-focused",
+                "best_practices": "Engaging caption, relevant hashtags, emoji usage",
+            },
+            "tiktok": {
+                "max_length": 2200,
+                "style": "trendy, authentic, quick-hitting",
+                "best_practices": "Hook in first 3 seconds, trending sounds reference, punchy text",
+            },
+        }
+        
+        specs = platform_specs.get(platform, platform_specs["blog"])
+        
+        hashtag_instruction = "Include 3-5 relevant hashtags at the end." if include_hashtags else "Do not include hashtags."
+        cta_instruction = "Include a strong call-to-action." if include_cta else "No explicit call-to-action needed."
+        
+        system_prompt = f"""You are a {platform} content optimization expert. Adapt the content for {platform}'s format and audience.
+Platform style: {specs['style']}
+Best practices: {specs['best_practices']}"""
+        
+        prompt = f"""Optimize this content for {platform}:
+
+ORIGINAL CONTENT:
+{content}
+
+REQUIREMENTS:
+- Platform: {platform}
+- Maximum length: {specs['max_length']} characters
+- Style: {specs['style']}
+- Best practices: {specs['best_practices']}
+- {hashtag_instruction}
+- {cta_instruction}
+
+Provide the optimized content ready to publish on {platform}."""
+        
+        result = await self.generate_content(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.7,
+            max_tokens=2000,
+        )
+        
+        # Calculate character count
+        char_count = len(result.strip())
+        word_count = len(result.split())
+        estimated_tokens = len(content.split()) + word_count
+        
+        return {
+            "optimized_content": result.strip(),
+            "platform": platform,
+            "character_count": char_count,
+            "word_count": word_count,
+            "estimated_tokens": estimated_tokens,
+        }
 
 
 # Singleton instance
