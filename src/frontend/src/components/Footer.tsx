@@ -7,6 +7,7 @@ import { Cookie } from 'lucide-react'
 export default function Footer() {
   const [mounted, setMounted] = useState(false)
   
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     setMounted(true)
   }, [])

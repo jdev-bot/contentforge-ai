@@ -12,6 +12,7 @@ function PaymentCancelContent() {
   const [countdown, setCountdown] = useState(5)
   const [autoRedirect, setAutoRedirect] = useState(true)
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     // Check if there's a session_id - if not, it was cancelled before checkout
     const sessionId = searchParams.get('session_id')

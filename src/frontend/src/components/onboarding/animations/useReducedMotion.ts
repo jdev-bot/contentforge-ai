@@ -12,7 +12,9 @@ export function useReducedMotion(): boolean {
   useEffect(() => {
     // Check initial preference
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
+    // Set initial value via callback to avoid effect warning
+    const prefersReduced = mediaQuery.matches;
+    setTimeout(() => setPrefersReducedMotion(prefersReduced), 0);
 
     // Listen for changes
     const handleChange = (event: MediaQueryListEvent) => {

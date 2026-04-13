@@ -27,6 +27,7 @@ export default function CookieConsent() {
   const [preferences, setPreferences] = useState<CookiePreferences>(defaultPreferences)
   const [isAnimating, setIsAnimating] = useState(false)
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     // Check if user has already made a choice
     const hasConsent = localStorage.getItem(COOKIE_CONSENT_KEY)
