@@ -395,5 +395,180 @@ Provide the optimized content ready to publish on {platform}."""
         }
 
 
+    # ===== TRANSLATION METHODS =====
+
+    async def translate_text(
+        self,
+        text: str,
+        target_language: str,
+        preserve_formatting: bool = True,
+    ) -> Dict[str, Any]:
+        """Translate text to target language using Groq AI.
+        
+        Args:
+            text: The text to translate
+            target_language: Target language code (e.g., 'es', 'fr', 'de')
+            preserve_formatting: Whether to preserve original formatting
+            
+        Returns:
+            Dictionary with translated_text, source_language, confidence_score, tokens_used
+        """
+        # Language names for better prompting
+        language_names = {
+            "es": "Spanish",
+            "fr": "French",
+            "de": "German",
+            "zh-cn": "Chinese Simplified",
+            "zh-tw": "Chinese Traditional",
+            "ja": "Japanese",
+            "ko": "Korean",
+            "pt": "Portuguese",
+            "it": "Italian",
+            "ru": "Russian",
+            "ar": "Arabic",
+            "hi": "Hindi",
+            "nl": "Dutch",
+            "pl": "Polish",
+            "tr": "Turkish",
+            "vi": "Vietnamese",
+            "th": "Thai",
+            "sv": "Swedish",
+            "da": "Danish",
+            "no": "Norwegian",
+            "fi": "Finnish",
+            "cs": "Czech",
+            "el": "Greek",
+            "he": "Hebrew",
+        }
+        
+        target_lang_name = language_names.get(target_language, target_language)
+        
+        formatting_instruction = """Preserve all formatting including:
+- Paragraph breaks
+- List structures (bullet points, numbered lists)
+- Line breaks
+- Markdown formatting if present""" if preserve_formatting else "Translate the content naturally, adjusting formatting as needed."
+        
+        system_prompt = f"""You are an expert translator. Translate the provided text into {target_lang_name}.
+
+Requirements:
+- Provide an accurate, natural-sounding translation
+- Maintain the original meaning and tone
+- {formatting_instruction}
+- If the text appears to already be in the target language, return it as-is
+- Detect the source language automatically
+
+Respond in this exact format:
+SOURCE_LANGUAGE: [detected language code, e.g., 'en', 'es', 'fr']
+CONFIDENCE: [confidence score 0.0-1.0]
+TRANSLATION:
+[translated text here]"""
+        
+        prompt = f"""Translate the following text to {target_lang_name}:
+
+{text}"""
+        
+        result = await self.generate_content(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.3,  # Lower temperature for more accurate translation
+            max_tokens=4000,
+        )
+        
+        # Parse the response
+        source_language = "en"  # Default
+        confidence_score = 0.9
+        translated_text = result
+        
+        lines = result.strip().split("\n")
+        for i, line in enumerate(lines):
+            if line.startswith("SOURCE_LANGUAGE:"):
+                source_language = line.split(":", 1)[1].strip().lower() or "en"
+            elif line.startswith("CONFIDENCE:"):
+                try:
+                    confidence_score = float(line.split(":", 1)[1].strip())
+                    confidence_score = max(0.0, min(1.0, confidence_score))
+                except (ValueError, IndexError):
+                    confidence_score = 0.9
+            elif line.startswith("TRANSLATION:"):
+                # Get everything after "TRANSLATION:" line
+                translated_text = "\n".join(lines[i+1:]).strip()
+                if not translated_text:
+                    # Maybe it's on the same line
+                    translated_text = line.split(":", 1)[1].strip()
+                break
+        
+        # If we couldn't parse properly, try to use the whole result
+        if not translated_text or translated_text == result:
+            # Remove metadata lines if present
+            translated_text = result
+            for prefix in ["SOURCE_LANGUAGE:", "CONFIDENCE:", "TRANSLATION:"]:
+                if prefix in translated_text:
+                    parts = translated_text.split(prefix, 1)
+                    if len(parts) > 1:
+                        translated_text = parts[1]
+            # Clean up any remaining prefixes
+            for line in translated_text.split("\n"):
+                if line.strip() and not line.strip().endswith(":"):
+                    translated_text = "\n".join(translated_text.split("\n")[translated_text.split("\n").index(line):])
+                    break
+        
+        # Estimate tokens used
+        estimated_tokens = len(text.split()) + len(translated_text.split()) if translated_text else 0
+        
+        return {
+            "translated_text": translated_text.strip() if translated_text else text,
+            "source_language": source_language,
+            "target_language": target_language,
+            "confidence_score": confidence_score,
+            "tokens_used": estimated_tokens,
+        }
+    
+    async def detect_language(self, text: str) -> Dict[str, Any]:
+        """Detect the language of the given text.
+        
+        Args:
+            text: Text to analyze
+            
+        Returns:
+            Dictionary with detected language code and confidence
+        """
+        system_prompt = """You are a language detection expert. Identify the language of the provided text.
+
+Respond in this exact format:
+LANGUAGE: [ISO 639-1 language code, e.g., 'en', 'es', 'fr', 'de', 'zh-cn', 'ja', etc.]
+CONFIDENCE: [confidence score 0.0-1.0]
+LANGUAGE_NAME: [full language name]"""
+        
+        prompt = f"""Detect the language of this text:
+
+{text[:500]}"""  # Use first 500 chars for detection
+        
+        result = await self.generate_content(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.2,
+            max_tokens=100,
+        )
+        
+        detected_lang = "en"
+        confidence = 0.9
+        
+        for line in result.strip().split("\n"):
+            if line.startswith("LANGUAGE:"):
+                detected_lang = line.split(":", 1)[1].strip().lower() or "en"
+            elif line.startswith("CONFIDENCE:"):
+                try:
+                    confidence = float(line.split(":", 1)[1].strip())
+                    confidence = max(0.0, min(1.0, confidence))
+                except (ValueError, IndexError):
+                    confidence = 0.9
+        
+        return {
+            "language": detected_lang,
+            "confidence": confidence,
+        }
+
+
 # Singleton instance
 groq_service = GroqService()
