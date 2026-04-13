@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getUserProfile, updateUserProfile, getUsageSummary, UserProfile, UsageStats } from '@/lib/api'
+import { useRouter } from 'next/navigation'
+import { getUserProfile, updateUserProfile, getUsageSummary, UserProfile, UsageStats, exportUserData, deleteUserAccount, restoreUserAccount, getDeletionStatus } from '@/lib/api'
 import { getSubscriptionStatus, createPortalSession, SubscriptionStatus, getStripeConfig } from '@/lib/stripe'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -23,7 +24,12 @@ import {
   Sparkles,
   Crown,
   AlertTriangle,
-  X
+  X,
+  Download,
+  Trash2,
+  RefreshCw,
+  Shield,
+  FileText
 } from 'lucide-react'
 
 interface SettingsTabProps {
@@ -35,6 +41,7 @@ interface SettingsTabProps {
 }
 
 export default function SettingsTab({ user }: SettingsTabProps) {
+  const router = useRouter()
   const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -44,6 +51,14 @@ export default function SettingsTab({ user }: SettingsTabProps) {
   const [stripeConfig, setStripeConfig] = useState<{ is_configured: boolean; test_mode: boolean } | null>(null)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const [portalLoading, setPortalLoading] = useState(false)
+  
+  // GDPR states
+  const [exportLoading, setExportLoading] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [restoreLoading, setRestoreLoading] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deletionStatus, setDeletionStatus] = useState<{ deletion_scheduled: boolean; days_remaining?: number } | null>(null)
   
   // Form state
   const [fullName, setFullName] = useState('')
@@ -62,6 +77,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
   useEffect(() => {
     loadSettings()
     loadStripeConfig()
+    loadDeletionStatus()
   }, [])
 
   async function loadSettings() {
@@ -93,6 +109,16 @@ export default function SettingsTab({ user }: SettingsTabProps) {
       setStripeConfig(config)
     } catch (error) {
       console.error('Failed to load Stripe config:', error)
+    }
+  }
+
+  async function loadDeletionStatus() {
+    try {
+      const status = await getDeletionStatus()
+      setDeletionStatus(status)
+    } catch (error) {
+      // Deletion status endpoint may not exist yet, that's OK
+      console.log('Deletion status not available')
     }
   }
 
@@ -136,6 +162,71 @@ export default function SettingsTab({ user }: SettingsTabProps) {
       showToast(errorMessage, 'error')
     } finally {
       setPortalLoading(false)
+    }
+  }
+
+  // GDPR: Export User Data
+  const handleExportData = async () => {
+    try {
+      setExportLoading(true)
+      const exportData = await exportUserData()
+      
+      // Create and download JSON file
+      const blob = new Blob([JSON.stringify(exportData.user_data, null, 2)], { type: 'application/json' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `contentforge-data-export-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      
+      showToast('Your data has been exported successfully', 'success')
+    } catch (error: unknown) {
+      console.error('Failed to export data:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to export data'
+      showToast(errorMessage, 'error')
+    } finally {
+      setExportLoading(false)
+    }
+  }
+
+  // GDPR: Request Account Deletion
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      showToast('Please type DELETE to confirm', 'error')
+      return
+    }
+    
+    try {
+      setDeleteLoading(true)
+      const result = await deleteUserAccount()
+      setDeletionStatus({ deletion_scheduled: true, days_remaining: 30 })
+      setShowDeleteConfirm(false)
+      showToast(result.message, 'success')
+    } catch (error: unknown) {
+      console.error('Failed to delete account:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to request account deletion'
+      showToast(errorMessage, 'error')
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
+  // GDPR: Restore Account
+  const handleRestoreAccount = async () => {
+    try {
+      setRestoreLoading(true)
+      await restoreUserAccount()
+      setDeletionStatus(null)
+      showToast('Account restored successfully', 'success')
+    } catch (error: unknown) {
+      console.error('Failed to restore account:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to restore account'
+      showToast(errorMessage, 'error')
+    } finally {
+      setRestoreLoading(false)
     }
   }
 
@@ -499,6 +590,164 @@ export default function SettingsTab({ user }: SettingsTabProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* GDPR Data & Privacy Section */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+              <Shield className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Data & Privacy</h3>
+              <p className="text-sm text-gray-500">Manage your personal data and privacy settings</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Account Deletion Status Warning */}
+            {deletionStatus?.deletion_scheduled && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-red-900">Account Deletion Scheduled</h4>
+                    <p className="text-sm text-red-700 mt-1">
+                      Your account is scheduled for deletion in {deletionStatus.days_remaining} days. 
+                      You can restore your account before this date by clicking the button below.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRestoreAccount}
+                      disabled={restoreLoading}
+                      className="mt-3"
+                    >
+                      {restoreLoading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Restore Account
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Download My Data */}
+            <div className="flex items-start justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Download My Data
+                </h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  Export all your personal data including content, projects, and activity logs in JSON format.
+                  This is in compliance with GDPR data portability rights.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleExportData}
+                disabled={exportLoading}
+              >
+                {exportLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-2" />
+                )}
+                Export Data
+              </Button>
+            </div>
+
+            {/* Delete Account */}
+            {!deletionStatus?.deletion_scheduled && (
+              <div className="flex items-start justify-between p-4 bg-red-50 rounded-lg border border-red-100">
+                <div>
+                  <h4 className="font-medium text-red-900 flex items-center gap-2">
+                    <Trash2 className="h-4 w-4" />
+                    Delete Account
+                  </h4>
+                  <p className="text-sm text-red-700 mt-1">
+                    Permanently delete your account and all associated data. This action can be undone 
+                    within 30 days. After that, all data will be permanently removed.
+                  </p>
+                </div>
+                <Button
+                  variant="danger"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Account
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
+            </div>
+            
+            <p className="text-gray-600 mb-4">
+              This action will schedule your account for deletion. You will have 30 days to restore 
+              your account. After 30 days, all your data including content, projects, and personal 
+              information will be permanently deleted.
+            </p>
+            
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-red-700 font-medium">This action cannot be undone after 30 days.</p>
+            </div>
+            
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Type DELETE to confirm:
+              </label>
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type DELETE"
+                className="border-red-300 focus:border-red-500 focus:ring-red-500"
+              />
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false)
+                  setDeleteConfirmText('')
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== 'DELETE' || deleteLoading}
+                className="flex-1"
+              >
+                {deleteLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                Delete Account
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Subscription Modal */}
       {showSubscriptionModal && (

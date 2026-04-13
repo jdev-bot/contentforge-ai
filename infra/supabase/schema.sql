@@ -16,6 +16,7 @@ create table if not exists public.profiles (
     stripe_customer_id text,
     stripe_subscription_id text,
     monthly_usage_count integer default 0,
+    is_admin boolean default false, -- Admin flag for webhook/error log access
     
     -- Subscription status check constraint
     constraint chk_subscription_status check (subscription_status in ('inactive', 'active', 'past_due', 'canceled')),
@@ -368,6 +369,43 @@ create index if not exists idx_error_logs_timestamp on public.error_logs(timesta
 create index if not exists idx_error_logs_status_code on public.error_logs(status_code);
 create index if not exists idx_error_logs_user_id on public.error_logs(user_id);
 create index if not exists idx_error_logs_error_type on public.error_logs(error_type);
+
+-- ============================================================================
+-- WEBHOOK LOGS TABLE (for webhook event tracking)
+-- ============================================================================
+create table if not exists public.webhook_logs (
+    id uuid default gen_random_uuid() primary key,
+    webhook_type text not null, -- 'content_processed', 'distribution_completed', 'stripe', etc.
+    event_source text not null, -- 'n8n', 'stripe', 'github', etc.
+    payload jsonb,
+    payload_preview text, -- truncated preview for quick viewing
+    status text not null, -- 'success', 'failed', 'error', 'duplicate'
+    response_data jsonb,
+    idempotency_key text,
+    error_message text,
+    processing_time_ms numeric,
+    created_at timestamptz default now()
+);
+
+-- Enable RLS on webhook_logs
+alter table public.webhook_logs enable row level security;
+
+-- Webhook logs policies (admin only for security)
+create policy "Admin can view webhook logs"
+    on public.webhook_logs for select
+    using (
+        exists (
+            select 1 from public.profiles
+            where id = auth.uid() and is_admin = true
+        )
+    );
+
+-- Create indexes for webhook_logs
+create index if not exists idx_webhook_logs_created_at on public.webhook_logs(created_at desc);
+create index if not exists idx_webhook_logs_webhook_type on public.webhook_logs(webhook_type);
+create index if not exists idx_webhook_logs_event_source on public.webhook_logs(event_source);
+create index if not exists idx_webhook_logs_status on public.webhook_logs(status);
+create index if not exists idx_webhook_logs_idempotency on public.webhook_logs(idempotency_key);
 
 -- ============================================================================
 -- USAGE_TRACKING TABLE (renamed from usage_logs for clarity)

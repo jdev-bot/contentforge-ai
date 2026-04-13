@@ -12,6 +12,7 @@ import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
 import OfflineBanner from './OfflineBanner'
+import Footer from './Footer'
 import { cn } from '@/lib/utils'
 
 // Dynamic imports for code splitting
@@ -473,6 +474,9 @@ export default function Dashboard({ user }: DashboardProps) {
           </main>
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
 
       {/* Upgrade Modal */}
       <UpgradeModal
