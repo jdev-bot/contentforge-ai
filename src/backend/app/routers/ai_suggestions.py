@@ -69,6 +69,54 @@ class ToneAdjustmentResult(BaseModel):
     created_at: datetime
 
 
+# ===== Smart Content Editor Models =====
+
+class RewriteRequest(BaseModel):
+    content: str = Field(..., min_length=10, description="Content to rewrite")
+    tone: str = Field(default="professional", description="casual, professional, witty, formal, friendly, authoritative, enthusiastic, empathetic")
+    style: str = Field(default="engaging", description="engaging, concise, descriptive, persuasive, storytelling, technical")
+
+
+class ExpandRequest(BaseModel):
+    content: str = Field(..., min_length=10, description="Content to expand")
+    target_length: int = Field(default=500, ge=100, le=2000, description="Target word count")
+
+
+class CondenseRequest(BaseModel):
+    content: str = Field(..., min_length=20, description="Content to condense")
+    percentage: int = Field(default=50, ge=10, le=80, description="Reduction percentage")
+
+
+class OptimizeRequest(BaseModel):
+    content: str = Field(..., min_length=10, description="Content to optimize")
+    platform: str = Field(..., description="twitter, linkedin, blog, newsletter, instagram, tiktok, facebook, youtube")
+
+
+class RewriteResult(BaseModel):
+    content: str
+    tokens_used: int
+
+
+class ExpandResult(BaseModel):
+    content: str
+    tokens_used: int
+    original_length: int
+    new_length: int
+
+
+class CondenseResult(BaseModel):
+    content: str
+    tokens_used: int
+    reduction_percentage: float
+
+
+class OptimizeResult(BaseModel):
+    content: str
+    tokens_used: int
+    platform: str
+    optimizations_applied: List[str]
+
+
 @router.post("/ai-suggestions/improve", response_model=AIImprovementSuggestion)
 async def get_content_improvements(
     request: ContentImprovementRequest,
@@ -572,4 +620,131 @@ async def list_tone_adjustments(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
+        )
+
+
+# ===== Smart Content Editor Endpoints =====
+
+@router.post("/ai-suggestions/rewrite", response_model=RewriteResult)
+async def rewrite_content_endpoint(
+    request: RewriteRequest,
+    user=Depends(get_auth_user),
+    _: UsageStats = Depends(enforce_subscription_limit)
+):
+    """Rewrite content with different tone and style."""
+    check_and_increment_usage(str(user.id))
+    
+    try:
+        rewritten_text, tokens_used = await groq_service.rewrite_content(
+            content=request.content,
+            tone=request.tone,
+            style=request.style,
+        )
+        
+        return RewriteResult(
+            content=rewritten_text,
+            tokens_used=tokens_used,
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to rewrite content: {str(e)}"
+        )
+
+
+@router.post("/ai-suggestions/expand", response_model=ExpandResult)
+async def expand_content_endpoint(
+    request: ExpandRequest,
+    user=Depends(get_auth_user),
+    _: UsageStats = Depends(enforce_subscription_limit)
+):
+    """Expand content to target length."""
+    check_and_increment_usage(str(user.id))
+    
+    try:
+        expanded_text, tokens_used = await groq_service.expand_content(
+            content=request.content,
+            target_length=request.target_length,
+            focus_areas=[],
+        )
+        
+        original_words = len(request.content.split())
+        expanded_words = len(expanded_text.split())
+        
+        return ExpandResult(
+            content=expanded_text,
+            tokens_used=tokens_used,
+            original_length=original_words,
+            new_length=expanded_words,
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to expand content: {str(e)}"
+        )
+
+
+@router.post("/ai-suggestions/condense", response_model=CondenseResult)
+async def condense_content_endpoint(
+    request: CondenseRequest,
+    user=Depends(get_auth_user),
+    _: UsageStats = Depends(enforce_subscription_limit)
+):
+    """Condense content by percentage."""
+    check_and_increment_usage(str(user.id))
+    
+    try:
+        condensed_text, tokens_used = await groq_service.condense_content(
+            content=request.content,
+            target_percentage=request.percentage,
+            preserve_key_points=True,
+        )
+        
+        original_words = len(request.content.split())
+        condensed_words = len(condensed_text.split())
+        reduction_pct = ((original_words - condensed_words) / original_words * 100) if original_words > 0 else 0
+        
+        return CondenseResult(
+            content=condensed_text,
+            tokens_used=tokens_used,
+            reduction_percentage=round(reduction_pct, 1),
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to condense content: {str(e)}"
+        )
+
+
+@router.post("/ai-suggestions/optimize", response_model=OptimizeResult)
+async def optimize_content_endpoint(
+    request: OptimizeRequest,
+    user=Depends(get_auth_user),
+    _: UsageStats = Depends(enforce_subscription_limit)
+):
+    """Optimize content for specific platform."""
+    check_and_increment_usage(str(user.id))
+    
+    try:
+        result = await groq_service.optimize_content(
+            content=request.content,
+            platform=request.platform,
+            include_hashtags=True,
+            include_cta=True,
+        )
+        
+        return OptimizeResult(
+            content=result["optimized_content"],
+            tokens_used=result["estimated_tokens"],
+            platform=request.platform,
+            optimizations_applied=result.get("optimizations_applied", ["platform_formatting"]),
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to optimize content: {str(e)}"
         )
