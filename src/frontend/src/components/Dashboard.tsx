@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2 } from 'lucide-react'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
@@ -24,6 +24,7 @@ const AnalyticsTab = lazy(() => import('./AnalyticsTab'))
 const SettingsTab = lazy(() => import('./SettingsTab'))
 const TeamTab = lazy(() => import('./TeamTab'))
 const TrashTab = lazy(() => import('./TrashTab'))
+const ScheduleTab = lazy(() => import('./ScheduleTab'))
 
 interface DashboardProps {
   user: AuthUser
@@ -50,8 +51,9 @@ export default function Dashboard({ user }: DashboardProps) {
   const tabs = useMemo(() => [
     { id: 'content', name: 'Content', icon: FileText, badge: null },
     { id: 'projects', name: 'Projects', icon: Folder, badge: null },
+    { id: 'schedule', name: 'Schedule', icon: Calendar, badge: 'New' },
     { id: 'distributions', name: 'Distributions', icon: Share2, badge: null },
-    { id: 'analytics', name: 'Analytics', icon: BarChart3, badge: 'New' },
+    { id: 'analytics', name: 'Analytics', icon: BarChart3, badge: null },
     { id: 'team', name: 'Team', icon: Users, badge: null },
     { id: 'settings', name: 'Settings', icon: Settings, badge: null },
     { id: 'trash', name: 'Trash', icon: Trash2, badge: null },
@@ -76,7 +78,7 @@ export default function Dashboard({ user }: DashboardProps) {
         router.push('/projects/new')
       }
       // Number keys for tab switching
-      if (e.altKey && e.key >= '1' && e.key <= '7') {
+      if (e.altKey && e.key >= '1' && e.key <= '8') {
         e.preventDefault()
         const tabIndex = parseInt(e.key) - 1
         if (tabs[tabIndex]) {
@@ -126,6 +128,14 @@ export default function Dashboard({ user }: DashboardProps) {
           <ErrorBoundary onReset={() => setActiveTab('distributions')}>
             <Suspense fallback={fallback}>
               <DistributionsTab />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'schedule':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('schedule')}>
+            <Suspense fallback={fallback}>
+              <ScheduleTab />
             </Suspense>
           </ErrorBoundary>
         )
@@ -348,7 +358,7 @@ export default function Dashboard({ user }: DashboardProps) {
                 <div className="flex justify-between items-center">
                   <span>Switch Tab</span>
                   <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 font-mono">
-                    Alt+1-7
+                    Alt+1-8
                   </kbd>
                 </div>
               </div>
@@ -496,6 +506,19 @@ export default function Dashboard({ user }: DashboardProps) {
                     onClick={() => router.push('/projects/new')}
                   >
                     New Project
+                  </Button>
+                )}
+                {activeTab === 'schedule' && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<Plus className="h-4 w-4" />}
+                    onClick={() => {
+                      // Trigger new schedule via the ScheduleTab component
+                      window.dispatchEvent(new CustomEvent('triggerNewSchedule'))
+                    }}
+                  >
+                    New Schedule
                   </Button>
                 )}
               </div>

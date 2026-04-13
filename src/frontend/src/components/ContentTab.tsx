@@ -2,19 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { listContent, deleteContent, Content } from '@/lib/api'
+import { listContent, deleteContent, Content, listAssets, GeneratedAsset } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
-import { 
-  Plus, 
-  FileText, 
-  Trash2, 
+import ScheduleModal from './ScheduleModal'
+import {
+  Plus,
+  FileText,
+  Trash2,
   ExternalLink,
   MoreVertical,
   Loader2,
   Calendar,
+  Clock,
 } from 'lucide-react'
 
 interface ContentTabProps {
@@ -29,12 +31,30 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showMenu, setShowMenu] = useState<string | null>(null)
+  const [assets, setAssets] = useState<Record<string, GeneratedAsset[]>>({})
+
+  // Schedule modal state
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [selectedAsset, setSelectedAsset] = useState<GeneratedAsset | null>(null)
+  const [selectedContentTitle, setSelectedContentTitle] = useState('')
 
   const loadContent = useCallback(async () => {
     try {
       setLoading(true)
       const data = await listContent()
       setContent(data)
+
+      // Load assets for each content item
+      const assetsMap: Record<string, GeneratedAsset[]> = {}
+      for (const item of data) {
+        try {
+          const itemAssets = await listAssets(item.id)
+          assetsMap[item.id] = itemAssets.filter(a => a.status === 'generated' || a.status === 'approved')
+        } catch {
+          // Skip if error
+        }
+      }
+      setAssets(assetsMap)
     } catch (error) {
       console.error('Failed to load content:', error)
       showToast('Failed to load content', 'error')
@@ -76,6 +96,21 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
     }
   }, [])
 
+  const handleSchedule = useCallback((e: React.MouseEvent, contentItem: Content) => {
+    e.stopPropagation()
+    const contentAssets = assets[contentItem.id] || []
+    if (contentAssets.length === 0) {
+      showToast('No generated assets available for scheduling', 'error')
+      return
+    }
+
+    // Use the first available asset
+    setSelectedAsset(contentAssets[0])
+    setSelectedContentTitle(contentItem.title)
+    setShowScheduleModal(true)
+    setShowMenu(null)
+  }, [assets, showToast])
+
   const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -101,7 +136,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
           <Skeleton className="h-8 w-32" />
           <Skeleton className="h-10 w-32" />
         </div>
-        
+
         <div className="space-y-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -129,7 +164,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="text-2xl font-bold text-gray-900">Your Content</h2>
-          <Button 
+          <Button
             className="flex items-center gap-2"
             onClick={() => router.push('/content/new')}
           >
@@ -137,19 +172,19 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
             New Content
           </Button>
         </div>
-        
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center">
           <div className="mx-auto h-12 w-12 text-gray-400">
             <FileText className="h-12 w-12" />
           </div>
-          
+
           <h3 className="mt-4 text-lg font-medium text-gray-900">No content yet</h3>
           <p className="mt-2 text-gray-500 max-w-sm mx-auto">
             Get started by adding your first piece of content. We&apos;ll transform it into multiple formats.
           </p>
-          
+
           <div className="mt-6">
-            <Button 
+            <Button
               className="flex items-center gap-2 mx-auto"
               onClick={() => router.push('/content/new')}
             >
@@ -157,7 +192,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
               Add Content
             </Button>
           </div>
-          
+
           <p className="mt-4 text-xs text-gray-400">
             Press <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-300">Ctrl+N</kbd> to create new content
           </p>
@@ -170,7 +205,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-2xl font-bold text-gray-900">Your Content</h2>
-        <Button 
+        <Button
           className="flex items-center gap-2"
           onClick={() => router.push('/content/new')}
         >
@@ -181,8 +216,8 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
 
       <div className="space-y-4">
         {content.map((item) => (
-          <Card 
-            key={item.id} 
+          <Card
+            key={item.id}
             className="group cursor-pointer hover:shadow-md transition-shadow"
             onClick={() => router.push(`/content/${item.id}`)}
           >
@@ -201,7 +236,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
                         {item.status}
                       </span>
                     </div>
-                    
+
                     {item.original_text && (
                       <p className="mt-2 text-sm text-gray-500 line-clamp-2">
                         {item.original_text.substring(0, 150)}...
@@ -220,7 +255,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
                     </div>
                   </div>
                 </div>
-
+                
                 <div className="relative" onClick={(e) => e.stopPropagation()}>
                   <button
                     className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
@@ -244,6 +279,15 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
                         <ExternalLink className="h-4 w-4" />
                         View Details
                       </button>
+                      {(assets[item.id]?.length || 0) > 0 && (
+                        <button
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-violet-600 hover:bg-violet-50"
+                          onClick={(e) => handleSchedule(e, item)}
+                        >
+                          <Clock className="h-4 w-4" />
+                          Schedule
+                        </button>
+                      )}
                       <button
                         className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                         onClick={() => handleDelete(item.id, item.title)}
@@ -264,6 +308,19 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
                     </div>
                   )}
                 </div>
+                
+                <ScheduleModal
+                  isOpen={showScheduleModal}
+                  onClose={() => {
+                    setShowScheduleModal(false)
+                    setSelectedAsset(null)
+                  }}
+                  asset={selectedAsset || undefined}
+                  contentTitle={selectedContentTitle}
+                  onSuccess={() => {
+                    showToast('Post scheduled successfully', 'success')
+                  }}
+                />
               </div>
             </CardContent>
           </Card>
