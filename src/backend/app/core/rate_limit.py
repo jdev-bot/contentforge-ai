@@ -13,6 +13,7 @@ from uuid import UUID
 
 from app.core.supabase import get_supabase_client
 from app.core.config import get_settings
+from app.tasks.email import send_usage_alert_task
 
 settings = get_settings()
 
@@ -201,6 +202,19 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
         
         # Log usage
         log_usage_event(user_id, "content_generation", 1)
+        
+        # Check if usage crossed 80% threshold and trigger alert
+        usage_percentage = (new_count / usage_limit) * 100 if usage_limit != float("inf") else 0
+        if usage_percentage >= 80 and usage_percentage < 100:
+            try:
+                send_usage_alert_task.delay(
+                    user_id=user_id,
+                    email=profile.get("email", ""),
+                    user_name=profile.get("full_name", ""),
+                )
+            except Exception as email_err:
+                # Log but don't fail the request
+                print(f"Failed to queue usage alert: {email_err}")
         
         remaining = float("inf") if usage_limit == float("inf") else max(0, usage_limit - new_count)
         

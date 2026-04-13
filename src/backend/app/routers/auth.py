@@ -6,6 +6,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 
 from app.core.supabase import get_supabase_client
+from app.tasks.email import send_welcome_email_task
 
 router = APIRouter()
 
@@ -69,7 +70,7 @@ def get_auth_user(request: Request):
 
 @router.post("/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserRegister):
-    """Register a new user."""
+    """Register a new user and trigger welcome email."""
     supabase = get_supabase_client()
     
     try:
@@ -89,6 +90,20 @@ async def register(user_data: UserRegister):
                 detail="Registration failed",
             )
         
+        user_id = str(auth_response.user.id)
+        
+        # Queue welcome email
+        try:
+            send_welcome_email_task.delay(
+                user_id=user_id,
+                email=user_data.email,
+                user_name=user_data.full_name,
+            )
+        except Exception as email_err:
+            # Log error but don't fail registration
+            import logging
+            logging.getLogger(__name__).warning(f"Failed to queue welcome email: {email_err}")
+        
         # Get session for token
         session = auth_response.session
         
@@ -98,7 +113,7 @@ async def register(user_data: UserRegister):
                 access_token="",
                 token_type="bearer",
                 user=UserResponse(
-                    id=str(auth_response.user.id),
+                    id=user_id,
                     email=auth_response.user.email,
                     full_name=user_data.full_name,
                 )
@@ -108,7 +123,7 @@ async def register(user_data: UserRegister):
             access_token=session.access_token,
             token_type="bearer",
             user=UserResponse(
-                id=str(auth_response.user.id),
+                id=user_id,
                 email=auth_response.user.email,
                 full_name=user_data.full_name,
             )

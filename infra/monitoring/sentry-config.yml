@@ -1,0 +1,398 @@
+# =============================================================================
+# ContentForge AI - Sentry Configuration
+# =============================================================================
+# Sentry is configured for error tracking and performance monitoring
+# This file documents the configuration and provides setup guidance
+#
+# Setup Instructions:
+# 1. Create a Sentry account at https://sentry.io
+# 2. Create a new project named "contentforge-ai"
+# 3. Copy your DSN from Project Settings > Client Keys (DSN)
+# 4. Set the environment variables below in your deployment platform
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Backend Configuration (FastAPI)
+# -----------------------------------------------------------------------------
+backend:
+  enabled: true
+  dsn: "${SENTRY_DSN}"  # Set via environment variable
+  environment: "${SENTRY_ENVIRONMENT:production}"
+  release: "${SENTRY_RELEASE:contentforge-ai@1.0.0}"
+  
+  # Sampling rates
+  traces_sample_rate: 0.1        # Performance monitoring sample rate (10%)
+  profiles_sample_rate: 0.1      # Profiling sample rate (10%)
+  
+  # Integrations
+  integrations:
+    - fastapi
+    - sqlalchemy
+    - redis
+    - threading
+    - logging
+  
+  # Error filtering
+  before_send: |
+    def filter_errors(event, hint):
+        # Filter out specific error types
+        if 'error_type' in event:
+            if event['error_type'] in ['HTTPException', 'RateLimitExceeded']:
+                return None
+        return event
+  
+  # Performance settings
+  enable_tracing: true
+  traces_sampler: |
+    def traces_sampler(ctx):
+        # Sample more for critical endpoints
+        path = ctx.get('path', '')
+        if '/api/v1/stripe/' in path:
+            return 1.0  # 100% sampling for Stripe webhooks
+        if '/api/v1/health' in path:
+            return 0.0  # No sampling for health checks
+        return 0.1  # Default 10%
+  
+  # Attachments (for debug symbols, source maps)
+  max_breadcrumbs: 50
+  attach_stacktrace: true
+  send_default_pii: false  # Don't send user IP by default
+  
+  # Logging integration
+  logging:
+    level: INFO
+    event_level: ERROR
+
+# -----------------------------------------------------------------------------
+# Frontend Configuration (Next.js)
+# -----------------------------------------------------------------------------
+frontend:
+  enabled: true
+  dsn: "${NEXT_PUBLIC_SENTRY_DSN}"  # Set via environment variable
+  environment: "${NEXT_PUBLIC_SENTRY_ENVIRONMENT:production}"
+  release: "${NEXT_PUBLIC_SENTRY_RELEASE:contentforge-ai@1.0.0}"
+  
+  # Session Replay
+  replays_session_sample_rate: 0.1      # 10% of sessions
+  replays_on_error_sample_rate: 1.0     # 100% of errors
+  
+  # Performance
+  traces_sample_rate: 0.1
+  
+  # Replay configuration
+  replay:
+    mask_all_text: false
+    block_all_media: false
+    network_detail_allow:
+      - /api/v1/
+      - /api/v1/content
+      - /api/v1/projects
+    network_capture_types:
+      - fetch
+      - xhr
+  
+  # Error filtering
+  before_send: |
+    function filterErrors(event, hint) {
+      // Filter out known benign errors
+      const errorsToIgnore = [
+        'ResizeObserver loop limit exceeded',
+        'Network request failed',
+        'Failed to fetch'
+      ];
+      
+      if (event.exception && event.exception.values) {
+        const errorMessage = event.exception.values[0].value;
+        if (errorsToIgnore.some(e => errorMessage?.includes(e))) {
+          return null;
+        }
+      }
+      
+      return event;
+    }
+
+# -----------------------------------------------------------------------------
+# Alert Rules
+# -----------------------------------------------------------------------------
+alerts:
+  # Critical: Immediate notification
+  critical:
+    - name: "API Downtime"
+      condition: "error_count > 0 AND path = '/api/v1/health'"
+      window: 1m
+      actions:
+        - email
+        - slack
+      
+    - name: "High Error Rate"
+      condition: "error_rate > 5%"
+      window: 5m
+      actions:
+        - email
+        - slack
+      
+    - name: "Database Connection Failure"
+      condition: "error_type = 'DatabaseError'"
+      window: 1m
+      actions:
+        - email
+        - pagerduty
+  
+  # Warning: Digest notification
+  warning:
+    - name: "Elevated Error Rate"
+      condition: "error_rate > 1% AND error_rate <= 5%"
+      window: 15m
+      actions:
+        - email
+    
+    - name: "Slow API Response"
+      condition: "p95_response_time > 2000ms"
+      window: 10m
+      actions:
+        - email
+  
+  # Info: Daily summary
+  info:
+    - name: "Daily Error Summary"
+      schedule: "0 9 * * *"  # Daily at 9 AM
+      actions:
+        - email
+
+# -----------------------------------------------------------------------------
+# Performance Thresholds
+# -----------------------------------------------------------------------------
+performance:
+  # API Response Times (milliseconds)
+  thresholds:
+    p50: 100    # 50th percentile
+    p95: 500    # 95th percentile
+    p99: 1000   # 99th percentile
+  
+  # Database Query Times (milliseconds)
+  db_query_threshold: 100
+  
+  # External API Calls
+  external_apis:
+    groq:
+      timeout: 30000
+      retry_count: 3
+    
+    stripe:
+      timeout: 10000
+      retry_count: 3
+    
+    resend:
+      timeout: 5000
+      retry_count: 3
+  
+  # Apdex threshold (satisfied response time in seconds)
+  apdex_threshold: 0.5
+
+# -----------------------------------------------------------------------------
+# Custom Instrumentation
+# -----------------------------------------------------------------------------
+instrumentation:
+  # Business metrics
+  custom_metrics:
+    - name: "content.generated"
+      type: counter
+      unit: "content"
+      tags:
+        - content_type
+        - platform
+        - user_tier
+    
+    - name: "ai.generation.time"
+      type: timing
+      unit: "millisecond"
+      tags:
+        - model
+        - content_type
+    
+    - name: "user.signup"
+      type: counter
+      unit: "user"
+      tags:
+        - source
+        - tier
+    
+    - name: "stripe.payment.success"
+      type: counter
+      unit: "payment"
+      tags:
+        - tier
+        - amount_range
+    
+    - name: "webhook.processing.time"
+      type: timing
+      unit: "millisecond"
+      tags:
+        - webhook_type
+        - platform
+
+# -----------------------------------------------------------------------------
+# Source Maps (Frontend)
+# -----------------------------------------------------------------------------
+sourcemaps:
+  enabled: true
+  upload:
+    # Vercel integration
+    vercel:
+      enabled: true
+      auth_token: "${SENTRY_AUTH_TOKEN}"
+      org: "${SENTRY_ORG}"
+      project: "${SENTRY_PROJECT}"
+  
+  # Files to upload
+  files:
+    - "**/*.js"
+    - "**/*.js.map"
+    - "**/*.css.map"
+
+# -----------------------------------------------------------------------------
+# Uptime Monitoring
+# -----------------------------------------------------------------------------
+uptime:
+  enabled: true
+  checks:
+    - name: "API Health Check"
+      url: "${API_BASE_URL}/api/v1/health"
+      interval: 60
+      timeout: 10
+      expected_status: 200
+      regions:
+        - us-east-1
+        - eu-west-1
+        - ap-southeast-1
+    
+    - name: "Frontend Check"
+      url: "${APP_URL}"
+      interval: 60
+      timeout: 10
+      expected_status: 200
+      regions:
+        - us-east-1
+        - eu-west-1
+    
+    - name: "API Documentation"
+      url: "${API_BASE_URL}/docs"
+      interval: 300
+      timeout: 10
+      expected_status: 200
+
+# -----------------------------------------------------------------------------
+# Security Monitoring
+# -----------------------------------------------------------------------------
+security:
+  # Detect suspicious patterns
+  detection:
+    - name: "API Key Abuse"
+      pattern: "rate_limit_exceeded AND user_agent != 'contentforge-client'"
+      window: 5m
+      threshold: 10
+    
+    - name: "Webhook Replay Attack"
+      pattern: "webhook.signature_invalid"
+      window: 1m
+      threshold: 5
+    
+    - name: "Auth Brute Force"
+      pattern: "auth.failed"
+      window: 5m
+      threshold: 10
+    
+    - name: "Suspicious Content Pattern"
+      pattern: "content_generation.failed AND error_message CONTAINS 'prompt_injection'"
+      window: 5m
+      threshold: 3
+
+# -----------------------------------------------------------------------------
+# Dashboard Configuration
+# -----------------------------------------------------------------------------
+dashboards:
+  # Main Overview Dashboard
+  overview:
+    widgets:
+      - type: "errors_by_issue"
+        title: "Top Issues"
+        limit: 10
+      
+      - type: "apdex"
+        title: "Apdex Score"
+        period: 24h
+      
+      - type: "throughput"
+        title: "Request Volume"
+        period: 24h
+      
+      - type: "errors_by_release"
+        title: "Errors by Release"
+        period: 24h
+      
+      - type: "slow_transactions"
+        title: "Slowest Transactions"
+        limit: 10
+  
+  # Performance Dashboard
+  performance:
+    widgets:
+      - type: "p95_response_time"
+        title: "P95 Response Time"
+        period: 24h
+      
+      - type: "database_queries"
+        title: "Slow Database Queries"
+        limit: 10
+      
+      - type: "external_api_latency"
+        title: "External API Latency"
+        apis:
+          - groq
+          - stripe
+          - resend
+  
+  # Business Metrics Dashboard
+  business:
+    widgets:
+      - type: "custom_metric"
+        metric: "content.generated"
+        title: "Content Generated"
+        period: 24h
+      
+      - type: "custom_metric"
+        metric: "user.signup"
+        title: "New Signups"
+        period: 24h
+      
+      - type: "custom_metric"
+        metric: "stripe.payment.success"
+        title: "Successful Payments"
+        period: 24h
+
+# -----------------------------------------------------------------------------
+# Environment Variables Reference
+# -----------------------------------------------------------------------------
+# Required for Backend:
+#   SENTRY_DSN              - Your Sentry DSN (e.g., https://xxx@xxx.ingest.sentry.io/xxx)
+#   SENTRY_ENVIRONMENT      - Environment name (development, staging, production)
+#   SENTRY_RELEASE          - Release version (e.g., contentforge-ai@1.0.0)
+#
+# Required for Frontend:
+#   NEXT_PUBLIC_SENTRY_DSN  - Same as SENTRY_DSN but public
+#   NEXT_PUBLIC_SENTRY_ENVIRONMENT  - Same as SENTRY_ENVIRONMENT
+#   NEXT_PUBLIC_SENTRY_RELEASE      - Same as SENTRY_RELEASE
+#
+# Required for Source Maps:
+#   SENTRY_AUTH_TOKEN       - Sentry auth token for uploads
+#   SENTRY_ORG              - Your Sentry organization slug
+#   SENTRY_PROJECT          - Your Sentry project slug
+#
+# Optional:
+#   API_BASE_URL            - Your API base URL for uptime checks
+#   APP_URL                 - Your app base URL for uptime checks
+# -----------------------------------------------------------------------------
+
+# =============================================================================
+# END OF CONFIGURATION
+# =============================================================================

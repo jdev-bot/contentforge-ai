@@ -32,6 +32,15 @@ class Settings(BaseSettings):
     # Resend
     RESEND_API_KEY: Optional[str] = Field(default=None, alias="RESEND_API_KEY")
     
+    # SMTP (Fallback)
+    SMTP_HOST: Optional[str] = Field(default=None, alias="SMTP_HOST")
+    SMTP_PORT: int = Field(default=587, alias="SMTP_PORT")
+    SMTP_USER: Optional[str] = Field(default=None, alias="SMTP_USER")
+    SMTP_PASSWORD: Optional[str] = Field(default=None, alias="SMTP_PASSWORD")
+    
+    # Redis (for Celery)
+    REDIS_URL: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
+    
     # Stripe
     STRIPE_SECRET_KEY: Optional[str] = Field(default=None, alias="STRIPE_SECRET_KEY")
     STRIPE_WEBHOOK_SECRET: Optional[str] = Field(default=None, alias="STRIPE_WEBHOOK_SECRET")

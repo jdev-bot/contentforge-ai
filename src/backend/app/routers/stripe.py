@@ -10,6 +10,7 @@ import logging
 from app.core.config import get_settings
 from app.core.supabase import get_supabase_client, get_supabase_admin_client
 from app.routers.auth import get_auth_user
+from app.tasks.email import send_invoice_receipt_task
 
 router = APIRouter()
 settings = get_settings()
@@ -576,6 +577,47 @@ async def stripe_webhook(request: Request):
                         "subscription_status": "active",
                         "updated_at": "now()"
                     }).eq("id", user_id).execute()
+                    
+                    # Send invoice receipt email
+                    try:
+                        # Get user profile for email
+                        user_result = supabase.table("profiles").select(
+                            "email, full_name"
+                        ).eq("id", user_id).single().execute()
+                        
+                        if user_result.data:
+                            user_email = user_result.data.get("email")
+                            user_name = user_result.data.get("full_name", "")
+                            plan = subscription.metadata.get("plan", "pro")
+                            
+                            # Format amount
+                            amount_cents = invoice.get("amount_paid", 0)
+                            amount = f"${amount_cents / 100:.2f}"
+                            
+                            # Get billing period
+                            period_start = invoice.get("period_start")
+                            period_end = invoice.get("period_end")
+                            billing_period = "Monthly"
+                            if period_start and period_end:
+                                from datetime import datetime
+                                start = datetime.fromtimestamp(period_start)
+                                end = datetime.fromtimestamp(period_end)
+                                days = (end - start).days
+                                if days > 31:
+                                    billing_period = "Yearly"
+                            
+                            send_invoice_receipt_task.delay(
+                                user_id=user_id,
+                                email=user_email,
+                                user_name=user_name,
+                                invoice_number=invoice.get("number", "N/A"),
+                                amount=amount,
+                                plan_name=plan.capitalize(),
+                                billing_period=billing_period,
+                                stripe_invoice_id=invoice.get("id"),
+                            )
+                    except Exception as email_err:
+                        logger.error(f"Failed to queue invoice receipt: {email_err}")
         
         # ============================================================
         # CUSTOMER EVENTS

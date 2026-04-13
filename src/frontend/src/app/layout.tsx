@@ -3,6 +3,7 @@ import "./globals.css";
 import { ToastProvider } from "@/hooks/useToast";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import CookieConsent from "@/components/CookieConsent";
 
 export const metadata: Metadata = {
   title: "ContentForge AI - Content Repurposing Platform",
@@ -53,6 +54,7 @@ export default function RootLayout({
           <ErrorBoundary>
             <ToastProvider>
               {children}
+              <CookieConsent />
             </ToastProvider>
           </ErrorBoundary>
         </ThemeProvider>

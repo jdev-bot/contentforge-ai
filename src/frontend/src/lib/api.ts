@@ -1211,3 +1211,114 @@ export async function leaveOrganization(orgId: string): Promise<void> {
     throw new Error(error.detail || 'Failed to leave organization')
   }
 }
+
+// ============ GDPR / User Data Compliance ============
+
+export interface UserDataExport {
+  export_id: string
+  user_data: {
+    export_metadata: {
+      user_id: string
+      email: string
+      export_date: string
+      version: string
+    }
+    profile: Record<string, unknown>
+    content: Record<string, unknown>[]
+    projects: Record<string, unknown>[]
+    assets: Record<string, unknown>[]
+    distributions: Record<string, unknown>[]
+    organizations: Record<string, unknown>[]
+    usage_logs: Record<string, unknown>[]
+  }
+  generated_at: string
+  expires_at: string
+}
+
+export interface AccountDeletionResponse {
+  message: string
+  deleted_at?: string
+  grace_period_ends?: string
+}
+
+export interface DeletionStatusResponse {
+  deletion_scheduled: boolean
+  status?: string
+  requested_at?: string
+  scheduled_deletion_at?: string
+  days_remaining?: number
+  message?: string
+}
+
+/**
+ * Export all user data for GDPR data portability.
+ * Returns JSON with all user data including content, projects, assets, and distributions.
+ */
+export async function exportUserData(): Promise<UserDataExport> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/user/export-data`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to export user data')
+  }
+  
+  return response.json()
+}
+
+/**
+ * Request account deletion with 30-day grace period (GDPR-compliant soft delete).
+ */
+export async function deleteUserAccount(): Promise<AccountDeletionResponse> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/user/account`, {
+    method: 'DELETE',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to request account deletion')
+  }
+  
+  return response.json()
+}
+
+/**
+ * Restore a user account that was scheduled for deletion (within grace period).
+ */
+export async function restoreUserAccount(): Promise<{ message: string }> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/user/account/restore`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to restore account')
+  }
+  
+  return response.json()
+}
+
+/**
+ * Check the status of an account deletion request.
+ */
+export async function getDeletionStatus(): Promise<DeletionStatusResponse> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/user/deletion-status`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get deletion status')
+  }
+  
+  return response.json()
+}
+
+// ============ End GDPR / User Data Compliance ============
