@@ -336,28 +336,40 @@ jobs:
       - trivy-image
     steps:
       - name: Check security job results
+        env:
+          GITLEAKS: ${{ needs.gitleaks.result }}
+          TRUFFLEHOG: ${{ needs.trufflehog.result }}
+          SEMGREP: ${{ needs.semgrep.result }}
+          CODEQL: ${{ needs.codeql.result }}
+          BANDIT: ${{ needs.bandit.result }}
+          PIP_AUDIT: ${{ needs.pip-audit.result }}
+          NPM_AUDIT: ${{ needs.npm-audit.result }}
+          OSV_SCANNER: ${{ needs.osv-scanner.result }}
+          TRIVY_FS: ${{ needs.trivy-fs.result }}
+          TRIVY_CONFIG: ${{ needs.trivy-config.result }}
+          TRIVY_IMAGE: ${{ needs.trivy-image.result }}
         run: |
           echo "## Security Gate Summary" >> $GITHUB_STEP_SUMMARY
           echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Gitleaks | ${{ needs.gitleaks.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| TruffleHog | ${{ needs.trufflehog.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Semgrep | ${{ needs.semgrep.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| CodeQL | ${{ needs.codeql.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Bandit | ${{ needs.bandit.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| pip-audit | ${{ needs.pip-audit.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| npm-audit | ${{ needs.npm-audit.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| OSV Scanner | ${{ needs.osv-scanner.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Trivy FS | ${{ needs.trivy-fs.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Trivy Config | ${{ needs.trivy-config.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Trivy Image | ${{ needs.trivy-image.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Gitleaks | ${GITLEAKS} |" >> $GITHUB_STEP_SUMMARY
+          echo "| TruffleHog | ${TRUFFLEHOG} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Semgrep | ${SEMGREP} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CodeQL | ${CODEQL} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bandit | ${BANDIT} |" >> $GITHUB_STEP_SUMMARY
+          echo "| pip-audit | ${PIP_AUDIT} |" >> $GITHUB_STEP_SUMMARY
+          echo "| npm-audit | ${NPM_AUDIT} |" >> $GITHUB_STEP_SUMMARY
+          echo "| OSV Scanner | ${OSV_SCANNER} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trivy FS | ${TRIVY_FS} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trivy Config | ${TRIVY_CONFIG} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trivy Image | ${TRIVY_IMAGE} |" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any critical scan failed
           FAILED=""
-          for job in gitleaks trufflehog semgrep codeql bandit trivy-fs trivy-config trivy-image; do
-            result="${{ needs.${job}.result }}"
-            if [ "$result" = "failure" ]; then
-              FAILED="$FAILED $job"
+          for result_var in GITLEAKS TRUFFLEHOG SEMGREP CODEQL BANDIT TRIVY_FS TRIVY_CONFIG TRIVY_IMAGE; do
+            val="${!result_var}"
+            if [ "$val" = "failure" ]; then
+              FAILED="$FAILED $result_var"
             fi
           done
 
