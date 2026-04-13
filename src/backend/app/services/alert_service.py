@@ -66,7 +66,13 @@ class AlertService:
 
     def __init__(self):
         """Initialize the alert service."""
-        self.supabase = get_supabase_client()
+        self._supabase = None
+
+    @property
+    def supabase(self):
+        if self._supabase is None:
+            self._supabase = get_supabase_client()
+        return self._supabase
 
     async def check_content_metrics(
         self,

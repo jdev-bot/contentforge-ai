@@ -84,7 +84,13 @@ class CompetitorService:
     MOCK_MILESTONES = ["1K", "5K", "10K", "50K", "100K", "500K", "1M"]
     
     def __init__(self):
-        self.supabase = get_supabase_client()
+        self._supabase = None
+    
+    @property
+    def supabase(self):
+        if self._supabase is None:
+            self._supabase = get_supabase_client()
+        return self._supabase
     
     # ============ Mock Data Generation ============
     

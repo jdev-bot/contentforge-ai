@@ -54,7 +54,13 @@ class TrendService:
     SOURCES = ["twitter", "reddit", "news", "google_trends", "hackernews", "linkedin"]
     
     def __init__(self):
-        self.supabase = get_supabase_client()
+        self._supabase = None
+    
+    @property
+    def supabase(self):
+        if self._supabase is None:
+            self._supabase = get_supabase_client()
+        return self._supabase
     
     async def fetch_mock_trending_data(self, category: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetch mock trending data from various sources."""

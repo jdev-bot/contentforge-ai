@@ -18,7 +18,13 @@ class AudienceService:
     """Service for audience growth metrics and analysis."""
     
     def __init__(self):
-        self.supabase = get_supabase_client()
+        self._supabase = None
+    
+    @property
+    def supabase(self):
+        if self._supabase is None:
+            self._supabase = get_supabase_client()
+        return self._supabase
     
     def record_metric(
         self,

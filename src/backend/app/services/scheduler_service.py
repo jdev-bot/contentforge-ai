@@ -69,7 +69,13 @@ class SchedulerService:
     """Service for managing scheduled content publishing."""
     
     def __init__(self):
-        self.supabase = get_supabase_client()
+        self._supabase = None
+    
+    @property
+    def supabase(self):
+        if self._supabase is None:
+            self._supabase = get_supabase_client()
+        return self._supabase
     
     def schedule_post(
         self,
