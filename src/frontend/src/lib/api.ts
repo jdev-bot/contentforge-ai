@@ -1847,4 +1847,390 @@ export async function updateContent(contentId: string, data: { original_text: st
   return response.json()
 }
 
+// ============ Translation API ============
+
+export interface Language {
+  code: string
+  name: string
+  flag: string
+  nativeName?: string
+}
+
+export interface TranslationResult {
+  contentId: string
+  targetLanguage: string
+  translatedText: string
+  confidenceScore: number
+  tokensUsed: number
+}
+
+export interface BatchTranslationResponse {
+  results: {
+    content_id: string
+    content_title: string
+    success: boolean
+    translations: Record<string, { text: string; confidence: number }>
+    error?: string
+  }[]
+}
+
+export async function translateContent(
+  contentId: string,
+  targetLanguage: string
+): Promise<TranslationResult> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/translations`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content_id: contentId, target_language: targetLanguage }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to translate content')
+  }
+
+  return response.json()
+}
+
+export async function getSupportedLanguages(): Promise<Language[]> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/translations/languages`, { headers })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch supported languages')
+  }
+
+  return response.json()
+}
+
+export async function batchTranslate(
+  contentIds: string[],
+  languages: string[]
+): Promise<BatchTranslationResponse> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/translations/batch`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content_ids: contentIds, languages }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to batch translate')
+  }
+
+  return response.json()
+}
+
+export interface Translation {
+  id: string
+  content_id: string
+  language_code: string
+  language_name: string
+  translated_text: string
+  confidence_score: number
+  created_at: string
+  updated_at: string
+}
+
+export async function getTranslations(contentId: string): Promise<Translation[]> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/content/${contentId}/translations`, { headers })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch translations')
+  }
+
+  return response.json()
+}
+
+export async function deleteTranslation(translationId: string): Promise<void> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/translations/${translationId}`, {
+    method: 'DELETE',
+    headers,
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete translation')
+  }
+}
+
+// ============ End Translation API ============
+
 // ============ End Smart Content Editor API ============
+
+// ============ RSS Feed API ============
+
+export interface RSSFeed {
+  id: string
+  name: string
+  url: string
+  frequency: 'manual' | 'hourly' | 'daily' | 'weekly'
+  is_active: boolean
+  last_fetched_at?: string
+  last_fetch_status?: 'success' | 'failed' | 'pending'
+  entry_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface RSSFeedRequest {
+  name: string
+  url: string
+  frequency: 'manual' | 'hourly' | 'daily' | 'weekly'
+  is_active?: boolean
+}
+
+export interface RSSEntry {
+  id: string
+  feed_id: string
+  feed_name: string
+  title: string
+  description?: string
+  content?: string
+  link: string
+  published_at: string
+  author?: string
+  categories?: string[]
+  image_url?: string
+  is_imported: boolean
+  imported_as_content_id?: string
+  created_at: string
+}
+
+export interface RSSStats {
+  total_feeds: number
+  active_feeds: number
+  total_entries: number
+  unimported_entries: number
+  recent_entries_count: number
+}
+
+export async function addRSSFeed(feed: RSSFeedRequest): Promise<RSSFeed> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/rss/feeds`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(feed),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to add RSS feed')
+  }
+  
+  return response.json()
+}
+
+export async function getRSSFeeds(): Promise<RSSFeed[]> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/rss/feeds`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch RSS feeds')
+  }
+  
+  return response.json()
+}
+
+export async function updateRSSFeed(id: string, updates: Partial<RSSFeedRequest>): Promise<RSSFeed> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/rss/feeds/${id}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(updates),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update RSS feed')
+  }
+  
+  return response.json()
+}
+
+export async function deleteRSSFeed(id: string): Promise<void> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/rss/feeds/${id}`, {
+    method: 'DELETE',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete RSS feed')
+  }
+}
+
+export async function fetchRSSFeed(id: string): Promise<{ message: string; entries_fetched: number }> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/rss/feeds/${id}/fetch`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch RSS feed')
+  }
+  
+  return response.json()
+}
+
+export async function getRSSEntries(
+  options?: {
+    feedId?: string
+    processed?: boolean
+    limit?: number
+    offset?: number
+    startDate?: string
+    endDate?: string
+  }
+): Promise<RSSEntry[]> {
+  const headers = await getAuthHeader()
+  
+  const params = new URLSearchParams()
+  if (options?.feedId) params.append('feed_id', options.feedId)
+  if (options?.processed !== undefined) params.append('processed', String(options.processed))
+  if (options?.limit) params.append('limit', options.limit.toString())
+  if (options?.offset) params.append('offset', options.offset.toString())
+  if (options?.startDate) params.append('start_date', options.startDate)
+  if (options?.endDate) params.append('end_date', options.endDate)
+  
+  const url = `${API_URL}/rss/entries}${params.toString() ? `?${params.toString()}` : ''}`
+  const response = await fetch(url, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch RSS entries')
+  }
+  
+  return response.json()
+}
+
+export async function importRSSEntry(id: string, projectId?: string): Promise<Content> {
+  const headers = await getAuthHeader()
+  
+  const body: { entry_id: string; project_id?: string } = { entry_id: id }
+  if (projectId) body.project_id = projectId
+  
+  const response = await fetch(`${API_URL}/rss/entries/import`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to import RSS entry')
+  }
+  
+  return response.json()
+}
+
+export async function bulkImportRSSEntries(entryIds: string[], projectId?: string): Promise<{ imported: number; failed: number; content_ids: string[] }> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/rss/entries/bulk-import`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ entry_ids: entryIds, project_id: projectId }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to bulk import entries')
+  }
+  
+  return response.json()
+}
+
+export async function getRSSStats(): Promise<RSSStats> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/rss/stats`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch RSS stats')
+  }
+  
+  return response.json()
+}
+
+export async function getRSSSettings(): Promise<{
+  auto_import: boolean
+  default_project_id?: string
+  notification_email?: boolean
+  notification_in_app: boolean
+}> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/rss/settings`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch RSS settings')
+  }
+  
+  return response.json()
+}
+
+export async function updateRSSSettings(settings: {
+  auto_import?: boolean
+  default_project_id?: string | null
+  notification_email?: boolean
+  notification_in_app?: boolean
+}): Promise<{
+  auto_import: boolean
+  default_project_id?: string
+  notification_email?: boolean
+  notification_in_app: boolean
+}> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/rss/settings`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(settings),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update RSS settings')
+  }
+  
+  return response.json()
+}
+
+export async function markRSSEntryAsRead(id: string): Promise<void> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/rss/entries/${id}/read`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to mark entry as read')
+  }
+}
+
+// ============ End RSS Feed API ============

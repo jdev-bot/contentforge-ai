@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar } from 'lucide-react'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
@@ -25,6 +25,7 @@ const SettingsTab = lazy(() => import('./SettingsTab'))
 const TeamTab = lazy(() => import('./TeamTab'))
 const TrashTab = lazy(() => import('./TrashTab'))
 const ScheduleTab = lazy(() => import('./ScheduleTab'))
+const RSSTab = lazy(() => import('./RSSTab'))
 
 interface DashboardProps {
   user: AuthUser
@@ -51,7 +52,8 @@ export default function Dashboard({ user }: DashboardProps) {
   const tabs = useMemo(() => [
     { id: 'content', name: 'Content', icon: FileText, badge: null },
     { id: 'projects', name: 'Projects', icon: Folder, badge: null },
-    { id: 'schedule', name: 'Schedule', icon: Calendar, badge: 'New' },
+    { id: 'schedule', name: 'Schedule', icon: Calendar, badge: null },
+    { id: 'rss', name: 'RSS Feeds', icon: Rss, badge: 'New' },
     { id: 'distributions', name: 'Distributions', icon: Share2, badge: null },
     { id: 'analytics', name: 'Analytics', icon: BarChart3, badge: null },
     { id: 'team', name: 'Team', icon: Users, badge: null },
@@ -78,7 +80,7 @@ export default function Dashboard({ user }: DashboardProps) {
         router.push('/projects/new')
       }
       // Number keys for tab switching
-      if (e.altKey && e.key >= '1' && e.key <= '8') {
+      if (e.altKey && e.key >= '1' && e.key <= '9') {
         e.preventDefault()
         const tabIndex = parseInt(e.key) - 1
         if (tabs[tabIndex]) {
@@ -136,6 +138,14 @@ export default function Dashboard({ user }: DashboardProps) {
           <ErrorBoundary onReset={() => setActiveTab('schedule')}>
             <Suspense fallback={fallback}>
               <ScheduleTab />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'rss':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('rss')}>
+            <Suspense fallback={fallback}>
+              <RSSTab user={user} />
             </Suspense>
           </ErrorBoundary>
         )
