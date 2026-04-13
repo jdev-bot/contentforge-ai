@@ -23,7 +23,7 @@ class TestEmptyContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "Empty Content Test",
             "source_type": "text",
@@ -41,7 +41,7 @@ class TestEmptyContent:
                 "type": "text",
                 "text": ""
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         # Should accept empty content or return appropriate error
@@ -65,7 +65,7 @@ class TestEmptyContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "Whitespace Test",
             "source_type": "text",
@@ -83,7 +83,7 @@ class TestEmptyContent:
                 "type": "text",
                 "text": whitespace_content
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code in [
@@ -106,7 +106,7 @@ class TestEmptyContent:
                 "type": "text",
                 "text": None
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         # Should reject null content
@@ -126,7 +126,7 @@ class TestEmptyContent:
         
         response = client.post("/api/v1/content", json={
             "title": "Missing Source Test",
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         # Should require source field
@@ -147,7 +147,7 @@ class TestEmptyContent:
                 "type": "text",
                 "text": "Some content"
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         # Should reject empty title
@@ -171,7 +171,7 @@ class TestEmptyContent:
                 "type": "text",
                 "text": "Some content"
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         # Should reject null title
@@ -195,7 +195,7 @@ class TestVeryLongContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "Long Content Test",
             "source_type": "text",
@@ -213,7 +213,7 @@ class TestVeryLongContent:
                 "type": "text",
                 "text": long_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         # Should handle large content
@@ -236,7 +236,7 @@ class TestVeryLongContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "50K Character Test",
             "source_type": "text",
@@ -254,7 +254,7 @@ class TestVeryLongContent:
                 "type": "text",
                 "text": long_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code in [
@@ -276,7 +276,7 @@ class TestVeryLongContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "100K Character Test",
             "source_type": "text",
@@ -294,7 +294,7 @@ class TestVeryLongContent:
                 "type": "text",
                 "text": very_long_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         # Large content may be rejected
@@ -317,7 +317,7 @@ class TestVeryLongContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": long_title,
             "source_type": "text",
@@ -335,7 +335,7 @@ class TestVeryLongContent:
                 "type": "text",
                 "text": "Test content"
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code in [
@@ -355,7 +355,7 @@ class TestVeryLongContent:
         # Return items with long text
         mock_query.execute.return_value = MagicMock(data=[{
             "id": f"content-{i}",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": f"Content {i}",
             "source_type": "text",
@@ -392,7 +392,7 @@ class TestSpecialCharacters:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "HTML Special Chars",
             "source_type": "text",
@@ -410,7 +410,7 @@ class TestSpecialCharacters:
                 "type": "text",
                 "text": html_content
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -431,7 +431,7 @@ class TestSpecialCharacters:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "Control Chars Test",
             "source_type": "text",
@@ -449,7 +449,7 @@ class TestSpecialCharacters:
                 "type": "text",
                 "text": control_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         # Should handle or reject control characters gracefully
@@ -471,7 +471,7 @@ class TestSpecialCharacters:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "JSON Special Chars",
             "source_type": "text",
@@ -489,7 +489,7 @@ class TestSpecialCharacters:
                 "type": "text",
                 "text": json_special
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -518,7 +518,7 @@ class TestSpecialCharacters:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "Markdown Test",
             "source_type": "text",
@@ -536,7 +536,7 @@ class TestSpecialCharacters:
                 "type": "text",
                 "text": markdown_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -560,7 +560,7 @@ class TestSpecialCharacters:
                     "type": "url",
                     "url": url
                 },
-                "project_id": "project-456"
+                "project_id": "123e4567-e89b-12d3-a456-426614174000"
             }, headers={"Authorization": "Bearer test-token"})
             
             # Should either accept or reject, not crash
@@ -587,7 +587,7 @@ class TestUnicodeContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "Emoji Test 👋",
             "source_type": "text",
@@ -605,7 +605,7 @@ class TestUnicodeContent:
                 "type": "text",
                 "text": emoji_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -623,7 +623,7 @@ class TestUnicodeContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "中文标题",
             "source_type": "text",
@@ -641,7 +641,7 @@ class TestUnicodeContent:
                 "type": "text",
                 "text": chinese_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -661,7 +661,7 @@ class TestUnicodeContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "عنوان عربي",
             "source_type": "text",
@@ -679,7 +679,7 @@ class TestUnicodeContent:
                 "type": "text",
                 "text": arabic_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -697,7 +697,7 @@ class TestUnicodeContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "日本語タイトル",
             "source_type": "text",
@@ -715,7 +715,7 @@ class TestUnicodeContent:
                 "type": "text",
                 "text": japanese_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -733,7 +733,7 @@ class TestUnicodeContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "Mixed 🌍 Languages",
             "source_type": "text",
@@ -751,7 +751,7 @@ class TestUnicodeContent:
                 "type": "text",
                 "text": mixed_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -770,7 +770,7 @@ class TestUnicodeContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "Variation Test",
             "source_type": "text",
@@ -788,7 +788,7 @@ class TestUnicodeContent:
                 "type": "text",
                 "text": variation_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -807,7 +807,7 @@ class TestUnicodeContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "ZW Char Test",
             "source_type": "text",
@@ -825,7 +825,7 @@ class TestUnicodeContent:
                 "type": "text",
                 "text": zw_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -843,7 +843,7 @@ class TestUnicodeContent:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "Math Σ Test",
             "source_type": "text",
@@ -861,7 +861,7 @@ class TestUnicodeContent:
                 "type": "text",
                 "text": math_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -920,7 +920,7 @@ class TestConcurrentEdits:
         def create_content(i):
             mock_query.execute.return_value = MagicMock(data=[{
                 "id": f"content-{i}",
-                "project_id": "project-456",
+                "project_id": "123e4567-e89b-12d3-a456-426614174000",
                 "user_id": "test-user-123",
                 "title": f"Content {i}",
                 "source_type": "text",
@@ -938,7 +938,7 @@ class TestConcurrentEdits:
                     "type": "text",
                     "text": f"Content text {i}"
                 },
-                "project_id": "project-456"
+                "project_id": "123e4567-e89b-12d3-a456-426614174000"
             }, headers={"Authorization": "Bearer test-token"})
             
             results.append((i, response.status_code))
@@ -964,7 +964,7 @@ class TestConcurrentEdits:
         # Simulate content being read while being modified
         content_data = {
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "Race Condition Test",
             "source_type": "text",
@@ -1070,7 +1070,7 @@ class TestBoundaryConditions:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "X",
             "source_type": "text",
@@ -1088,7 +1088,7 @@ class TestBoundaryConditions:
                 "type": "text",
                 "text": "X"
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -1107,7 +1107,7 @@ class TestBoundaryConditions:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "Boundary Test",
             "source_type": "text",
@@ -1125,7 +1125,7 @@ class TestBoundaryConditions:
                 "type": "text",
                 "text": boundary_text
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code in [
@@ -1144,7 +1144,7 @@ class TestBoundaryConditions:
         
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "test-user-123",
             "title": "Identical Request",
             "source_type": "text",
@@ -1165,7 +1165,7 @@ class TestBoundaryConditions:
                     "type": "text",
                     "text": "Same content"
                 },
-                "project_id": "project-456"
+                "project_id": "123e4567-e89b-12d3-a456-426614174000"
             }, headers={"Authorization": "Bearer test-token"})
             results.append(response.status_code)
         

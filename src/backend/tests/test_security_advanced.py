@@ -86,7 +86,7 @@ class TestSQLInjection:
         for title in sql_injection_titles:
             mock_query.execute.return_value = MagicMock(data=[{
                 "id": "content-123",
-                "project_id": "project-456",
+                "project_id": "123e4567-e89b-12d3-a456-426614174000",
                 "user_id": "test-user-123",
                 "title": title,  # Should be stored as-is, not executed
                 "source_type": "text",
@@ -104,7 +104,7 @@ class TestSQLInjection:
                     "type": "text",
                     "text": "Test content"
                 },
-                "project_id": "project-456"
+                "project_id": "123e4567-e89b-12d3-a456-426614174000"
             }, headers={"Authorization": "Bearer test-token"})
             
             # Should succeed but SQL shouldn't be executed
@@ -227,7 +227,7 @@ class TestXSSProtection:
         for payload in xss_payloads:
             mock_query.execute.return_value = MagicMock(data=[{
                 "id": "content-123",
-                "project_id": "project-456",
+                "project_id": "123e4567-e89b-12d3-a456-426614174000",
                 "user_id": "test-user-123",
                 "title": payload,
                 "source_type": "text",
@@ -245,7 +245,7 @@ class TestXSSProtection:
                     "type": "text",
                     "text": "Test content"
                 },
-                "project_id": "project-456"
+                "project_id": "123e4567-e89b-12d3-a456-426614174000"
             }, headers={"Authorization": "Bearer test-token"})
             
             if response.status_code == status.HTTP_201_CREATED:
@@ -273,7 +273,7 @@ class TestXSSProtection:
         for payload in xss_payloads:
             mock_query.execute.return_value = MagicMock(data=[{
                 "id": "content-123",
-                "project_id": "project-456",
+                "project_id": "123e4567-e89b-12d3-a456-426614174000",
                 "user_id": "test-user-123",
                 "title": "Test",
                 "source_type": "text",
@@ -291,7 +291,7 @@ class TestXSSProtection:
                     "type": "text",
                     "text": payload
                 },
-                "project_id": "project-456"
+                "project_id": "123e4567-e89b-12d3-a456-426614174000"
             }, headers={"Authorization": "Bearer test-token"})
             
             # Should accept the content or return 404 if endpoint not available
@@ -345,7 +345,7 @@ class TestXSSProtection:
                     "type": "url",
                     "url": url
                 },
-                "project_id": "project-456"
+                "project_id": "123e4567-e89b-12d3-a456-426614174000"
             }, headers={"Authorization": "Bearer test-token"})
             
             # Should validate URL format - may return 404 if endpoint unavailable
@@ -628,7 +628,7 @@ class TestAuthenticationBypass:
         }, json={
             "title": "Test",
             "source": {"type": "text", "text": "test"},
-            "project_id": "project-123"
+            "project_id": "123e4567-e89b-12d3-a456-426614174001"
         })
         
         # Should still process as POST or reject
@@ -651,7 +651,7 @@ class TestInputValidation:
                 "type": "text",
                 "text": "B" * 10000000  # 10MB text
             },
-            "project_id": "project-123"
+            "project_id": "123e4567-e89b-12d3-a456-426614174001"
         }
         
         response = client.post("/api/v1/content", json=large_payload, headers={

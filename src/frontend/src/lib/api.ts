@@ -2244,3 +2244,481 @@ export async function markRSSEntryAsRead(id: string): Promise<void> {
 }
 
 // ============ End RSS Feed API ============
+
+// ============ Version History API ============
+
+export interface ContentVersion {
+  id: string
+  content_id: string
+  version_number: number
+  content_text: string
+  title: string
+  change_summary: string
+  is_auto_version: boolean
+  created_at: string
+  created_by: string
+  word_count: number
+  diff_from_previous?: VersionDiff
+}
+
+export interface VersionDiff {
+  additions: number
+  deletions: number
+  unchanged: number
+  diff_html: string
+}
+
+export interface VersionComparison {
+  old_version: ContentVersion
+  new_version: ContentVersion
+  diff: VersionDiff
+}
+
+export interface VersionHistoryResponse {
+  content_id: string
+  versions: ContentVersion[]
+  total_versions: number
+}
+
+export async function getContentVersions(contentId: string): Promise<VersionHistoryResponse> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/content/${contentId}/versions`, { headers })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch version history')
+  }
+
+  return response.json()
+}
+
+export async function getContentVersion(
+  contentId: string,
+  versionId: string
+): Promise<ContentVersion> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(
+    `${API_URL}/content/${contentId}/versions/${versionId}`,
+    { headers }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch version')
+  }
+
+  return response.json()
+}
+
+export async function compareVersions(
+  contentId: string,
+  oldVersionId: string,
+  newVersionId: string
+): Promise<VersionComparison> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(
+    `${API_URL}/content/${contentId}/versions/compare?old=${oldVersionId}&new=${newVersionId}`,
+    { headers }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to compare versions')
+  }
+
+  return response.json()
+}
+
+export async function restoreContentVersion(
+  contentId: string,
+  versionId: string
+): Promise<Content> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(
+    `${API_URL}/content/${contentId}/versions/${versionId}/restore`,
+    {
+      method: 'POST',
+      headers,
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to restore version')
+  }
+
+  return response.json()
+}
+
+// ============ End Version History API ============
+
+// ============ Audit Logs API ============
+
+export type AuditAction =
+  | 'create'
+  | 'update'
+  | 'delete'
+  | 'restore'
+  | 'publish'
+  | 'schedule'
+  | 'approve'
+  | 'reject'
+  | 'login'
+  | 'logout'
+  | 'invite'
+  | 'export'
+  | 'import'
+
+export type AuditResource =
+  | 'content'
+  | 'project'
+  | 'asset'
+  | 'distribution'
+  | 'schedule'
+  | 'organization'
+  | 'user'
+  | 'rss_feed'
+  | 'automation_rule'
+
+export interface AuditLogEntry {
+  id: string
+  actor_id: string
+  actor_email: string
+  actor_name: string
+  action: AuditAction
+  resource_type: AuditResource
+  resource_id: string
+  resource_name: string
+  details: string
+  ip_address: string
+  user_agent: string
+  metadata?: Record<string, unknown>
+  created_at: string
+}
+
+export interface AuditLogsResponse {
+  logs: AuditLogEntry[]
+  total: number
+  page: number
+  per_page: number
+}
+
+export interface AuditLogsFilters {
+  start_date?: string
+  end_date?: string
+  action?: AuditAction
+  resource_type?: AuditResource
+  actor_search?: string
+  page?: number
+  per_page?: number
+}
+
+export interface AuditLogStats {
+  total_actions_today: number
+  total_actions_week: number
+  top_actors: Array<{ name: string; email: string; count: number }>
+  action_distribution: Array<{ action: string; count: number }>
+  resource_distribution: Array<{ resource: string; count: number }>
+}
+
+export async function getAuditLogs(
+  filters?: AuditLogsFilters
+): Promise<AuditLogsResponse> {
+  const headers = await getAuthHeader()
+
+  const params = new URLSearchParams()
+  if (filters?.start_date) params.append('start_date', filters.start_date)
+  if (filters?.end_date) params.append('end_date', filters.end_date)
+  if (filters?.action) params.append('action', filters.action)
+  if (filters?.resource_type) params.append('resource_type', filters.resource_type)
+  if (filters?.actor_search) params.append('actor_search', filters.actor_search)
+  if (filters?.page) params.append('page', filters.page.toString())
+  if (filters?.per_page) params.append('per_page', filters.per_page.toString())
+
+  const url = `${API_URL}/audit-logs${params.toString() ? `?${params.toString()}` : ''}`
+  const response = await fetch(url, { headers })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch audit logs')
+  }
+
+  return response.json()
+}
+
+export async function getAuditLogStats(): Promise<AuditLogStats> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/audit-logs/stats`, { headers })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch audit log stats')
+  }
+
+  return response.json()
+}
+
+export async function exportAuditLogsCSV(
+  filters?: AuditLogsFilters
+): Promise<Blob> {
+  const headers = await getAuthHeader()
+
+  const params = new URLSearchParams()
+  if (filters?.start_date) params.append('start_date', filters.start_date)
+  if (filters?.end_date) params.append('end_date', filters.end_date)
+  if (filters?.action) params.append('action', filters.action)
+  if (filters?.resource_type) params.append('resource_type', filters.resource_type)
+
+  const url = `${API_URL}/audit-logs/export${params.toString() ? `?${params.toString()}` : ''}`
+  const response = await fetch(url, { headers })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to export audit logs')
+  }
+
+  return response.blob()
+}
+
+// ============ End Audit Logs API ============
+
+// ============ Quality Scoring API ============
+
+export interface QualityDimensionScore {
+  name: string
+  score: number
+  max_score: number
+  suggestions: string[]
+}
+
+export interface QualityScoreResult {
+  id: string
+  content_id: string
+  user_id: string
+  overall_score: number
+  dimensions: QualityDimensionScore[]
+  improvement_suggestions: Array<{
+    id: string
+    text: string
+    priority: 'high' | 'medium' | 'low'
+    dimension: string
+    impact_score: number
+  }>
+  analyzed_at: string
+}
+
+export interface QualityScoreHistory {
+  date: string
+  overall: number
+  readability: number
+  seo: number
+  engagement: number
+  grammar: number
+  brand: number
+}
+
+export interface BatchAnalysisProgress {
+  total: number
+  completed: number
+  failed: number
+  in_progress: number
+  estimated_completion: string
+}
+
+export interface BatchAnalysisResponse {
+  batch_id: string
+  status: 'queued' | 'processing' | 'completed' | 'failed'
+  progress: BatchAnalysisProgress
+  results?: QualityScoreResult[]
+}
+
+export async function analyzeContentQuality(
+  contentId: string
+): Promise<QualityScoreResult> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/quality-scoring/${contentId}/analyze`, {
+    method: 'POST',
+    headers,
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to analyze content quality')
+  }
+
+  return response.json()
+}
+
+export async function getQualityScore(
+  contentId: string
+): Promise<QualityScoreResult> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/quality-scoring/${contentId}`, { headers })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch quality score')
+  }
+
+  return response.json()
+}
+
+export async function getQualityScoreHistory(
+  contentId: string,
+  days: number = 30
+): Promise<QualityScoreHistory[]> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(
+    `${API_URL}/quality-scoring/${contentId}/history?days=${days}`,
+    { headers }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch quality history')
+  }
+
+  return response.json()
+}
+
+export async function batchAnalyzeQuality(
+  contentIds: string[]
+): Promise<BatchAnalysisResponse> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/quality-scoring/batch`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content_ids: contentIds }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to start batch analysis')
+  }
+
+  return response.json()
+}
+
+export async function getBatchAnalysisStatus(
+  batchId: string
+): Promise<BatchAnalysisResponse> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/quality-scoring/batch/${batchId}`, { headers })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch batch status')
+  }
+
+  return response.json()
+}
+
+// ============ End Quality Scoring API ============
+
+// ============ Sentiment Analysis API ============
+
+export interface EmotionScore {
+  emotion: string
+  score: number
+}
+
+export interface ToneDistribution {
+  tone: string
+  percentage: number
+}
+
+export interface AspectSentiment {
+  aspect: string
+  sentiment_score: number
+  sentiment_label: 'positive' | 'negative' | 'neutral'
+  evidence: string[]
+}
+
+export interface SentimentResult {
+  id: string
+  content_id: string
+  user_id: string
+  overall_sentiment: number
+  sentiment_label: 'positive' | 'negative' | 'neutral'
+  emotions: EmotionScore[]
+  tone_distribution: ToneDistribution[]
+  aspect_sentiments: AspectSentiment[]
+  content_distribution: {
+    positive: number
+    negative: number
+    neutral: number
+  }
+  analyzed_at: string
+}
+
+export interface SentimentTrendPoint {
+  date: string
+  sentiment: number
+  positive_count: number
+  negative_count: number
+  neutral_count: number
+}
+
+export async function analyzeSentiment(
+  contentId: string
+): Promise<SentimentResult> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/sentiment/${contentId}/analyze`, {
+    method: 'POST',
+    headers,
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to analyze sentiment')
+  }
+
+  return response.json()
+}
+
+export async function getSentiment(
+  contentId: string
+): Promise<SentimentResult> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(`${API_URL}/sentiment/${contentId}`, { headers })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch sentiment')
+  }
+
+  return response.json()
+}
+
+export async function getSentimentTrend(
+  contentId: string,
+  days: number = 30
+): Promise<SentimentTrendPoint[]> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(
+    `${API_URL}/sentiment/${contentId}/trend?days=${days}`,
+    { headers }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch sentiment trend')
+  }
+
+  return response.json()
+}
+
+// ============ End Sentiment Analysis API ============

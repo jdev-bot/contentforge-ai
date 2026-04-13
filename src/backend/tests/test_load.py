@@ -110,7 +110,7 @@ class TestConcurrentUsers:
             try:
                 mock_query.execute.return_value = MagicMock(data=[{
                     "id": f"content-{i}",
-                    "project_id": "project-456",
+                    "project_id": "123e4567-e89b-12d3-a456-426614174000",
                     "user_id": "test-user-123",
                     "title": f"Content {i}",
                     "source_type": "text",
@@ -128,7 +128,7 @@ class TestConcurrentUsers:
                         "type": "text",
                         "text": f"Content text {i}"
                     },
-                    "project_id": "project-456"
+                    "project_id": "123e4567-e89b-12d3-a456-426614174000"
                 }, headers={"Authorization": "Bearer test-token"})
                 
                 results.append((i, response.status_code))
@@ -391,7 +391,7 @@ class TestResponseTimeBenchmarks:
         mock_query.execute.return_value = MagicMock(data=[
             {
                 "id": f"content-{i}",
-                "project_id": "project-456",
+                "project_id": "123e4567-e89b-12d3-a456-426614174000",
                 "user_id": "test-user-123",
                 "title": f"Content {i}",
                 "source_type": "text",

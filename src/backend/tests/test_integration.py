@@ -66,7 +66,7 @@ class TestFullWorkflow:
         # Step 4: Create content
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "content-789",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "new-user-123",
             "title": "Test Article",
             "source_type": "text",
@@ -84,7 +84,7 @@ class TestFullWorkflow:
                 "type": "text",
                 "text": "This is a test article for ContentForge AI."
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": f"Bearer {token}"})
         
         assert content_response.status_code == status.HTTP_201_CREATED
@@ -179,7 +179,7 @@ class TestFullWorkflow:
             
             mock_query.execute.return_value = MagicMock(data=[{
                 "id": "content-url",
-                "project_id": "project-456",
+                "project_id": "123e4567-e89b-12d3-a456-426614174000",
                 "user_id": "user-123",
                 "title": "URL Content",
                 "source_type": "url",
@@ -197,7 +197,7 @@ class TestFullWorkflow:
                     "type": "url",
                     "url": "https://example.com/article"
                 },
-                "project_id": "project-456"
+                "project_id": "123e4567-e89b-12d3-a456-426614174000"
             }, headers={"Authorization": "Bearer test-token"})
             
             assert response.status_code == status.HTTP_201_CREATED
@@ -229,7 +229,7 @@ class TestFullWorkflow:
                 "type": "text",
                 "text": "Test content"
             },
-            "project_id": "project-456"
+            "project_id": "123e4567-e89b-12d3-a456-426614174000"
         }, headers={"Authorization": "Bearer test-token"})
         
         # Should be rate limited
@@ -408,7 +408,7 @@ class TestSupabaseConnectionFailures:
         response = client.post("/api/v1/content", json={
             "title": "Test",
             "source": {"type": "text", "text": "Content"},
-            "project_id": "project-123"
+            "project_id": "123e4567-e89b-12d3-a456-426614174001"
         }, headers={"Authorization": "Bearer test-token"})
         
         assert response.status_code in [
@@ -561,7 +561,7 @@ class TestThirdPartyServiceFailures:
                     "type": "url",
                     "url": "https://invalid-url-that-does-not-exist.com"
                 },
-                "project_id": "project-456"
+                "project_id": "123e4567-e89b-12d3-a456-426614174000"
             }, headers={"Authorization": "Bearer test-token"})
             
             assert response.status_code in [
@@ -588,7 +588,7 @@ class TestThirdPartyServiceFailures:
                     "type": "youtube",
                     "url": "https://youtube.com/invalid"
                 },
-                "project_id": "project-456"
+                "project_id": "123e4567-e89b-12d3-a456-426614174000"
             }, headers={"Authorization": "Bearer test-token"})
             
             assert response.status_code in [
@@ -646,7 +646,7 @@ class TestErrorRecovery:
         # Main data query succeeds
         mock_query.execute.return_value = MagicMock(data={
             "id": "content-123",
-            "project_id": "project-456",
+            "project_id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "user-123",
             "title": "Test",
             "original_text": "Content"

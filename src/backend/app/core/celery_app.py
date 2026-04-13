@@ -44,6 +44,7 @@ celery_app.conf.update(
         "app.tasks.rss.*": {"queue": "rss"},
         "app.tasks.audience.*": {"queue": "analytics"},
         "app.tasks.trends.*": {"queue": "trends"},
+        "app.tasks.reports.*": {"queue": "reports"},
     },
     # Beat schedule for periodic tasks
     beat_schedule={
@@ -97,6 +98,16 @@ celery_app.conf.update(
         "notify-users-relevant-trends-daily": {
             "task": "app.tasks.trends.notify_users_of_relevant_trends_task",
             "schedule": 86400.0,  # Every 24 hours
+        },
+        # Report scheduling tasks
+        "generate-scheduled-reports-daily": {
+            "task": "app.tasks.reports.generate_scheduled_reports",
+            "schedule": 86400.0,  # Every 24 hours
+        },
+        "cleanup-old-report-runs-monthly": {
+            "task": "app.tasks.reports.cleanup_old_report_runs",
+            "schedule": 2592000.0,  # Every 30 days
+            "kwargs": {"days": 90},
         },
     },
 )

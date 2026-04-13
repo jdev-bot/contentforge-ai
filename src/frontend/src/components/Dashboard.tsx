@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp, Bell, Users2, Target, Zap } from 'lucide-react'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp, Bell, Users2, Target, Zap, Award, Activity } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
@@ -34,6 +34,8 @@ const AlertsCenter = lazy(() => import('./AlertsCenter'))
 const TeamCalendar = lazy(() => import('./TeamCalendar'))
 const CompetitorAnalysis = lazy(() => import('./CompetitorAnalysis'))
 const IntegrationsPanel = lazy(() => import('./IntegrationsPanel'))
+const QualityDashboard = lazy(() => import('./QualityDashboard'))
+const SentimentDashboard = lazy(() => import('./SentimentDashboard'))
 
 interface DashboardProps {
   user: AuthUser
@@ -71,6 +73,8 @@ export default function Dashboard({ user }: DashboardProps) {
     { id: 'team', name: 'Team', icon: Users, badge: null },
     { id: 'alerts', name: 'Alerts', icon: Bell, badge: null },
     { id: 'integrations', name: 'Integrations', icon: Zap, badge: 'New' },
+    { id: 'quality', name: 'Quality', icon: Award, badge: null },
+    { id: 'sentiment', name: 'Sentiment', icon: Activity, badge: null },
     { id: 'settings', name: 'Settings', icon: Settings, badge: null },
     { id: 'trash', name: 'Trash', icon: Trash2, badge: null },
   ], [])
@@ -224,6 +228,22 @@ export default function Dashboard({ user }: DashboardProps) {
           <ErrorBoundary onReset={() => setActiveTab('integrations')}>
             <Suspense fallback={fallback}>
               <IntegrationsPanel />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'quality':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('quality')}>
+            <Suspense fallback={fallback}>
+              <QualityDashboard />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'sentiment':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('sentiment')}>
+            <Suspense fallback={fallback}>
+              <SentimentDashboard />
             </Suspense>
           </ErrorBoundary>
         )

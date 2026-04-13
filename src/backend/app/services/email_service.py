@@ -950,3 +950,7 @@ def get_email_service() -> EmailService:
     if _email_service is None:
         _email_service = EmailService()
     return _email_service
+
+
+# Module-level alias for backward compatibility
+email_service = get_email_service()
