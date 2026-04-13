@@ -74,6 +74,10 @@ class AlertService:
             self._supabase = get_supabase_client()
         return self._supabase
 
+    @supabase.setter
+    def supabase(self, value):
+        self._supabase = value
+
     async def check_content_metrics(
         self,
         content_id: UUID,

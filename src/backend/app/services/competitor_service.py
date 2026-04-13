@@ -91,6 +91,10 @@ class CompetitorService:
         if self._supabase is None:
             self._supabase = get_supabase_client()
         return self._supabase
+
+    @supabase.setter
+    def supabase(self, value):
+        self._supabase = value
     
     # ============ Mock Data Generation ============
     

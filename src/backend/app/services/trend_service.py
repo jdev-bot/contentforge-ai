@@ -61,6 +61,10 @@ class TrendService:
         if self._supabase is None:
             self._supabase = get_supabase_client()
         return self._supabase
+
+    @supabase.setter
+    def supabase(self, value):
+        self._supabase = value
     
     async def fetch_mock_trending_data(self, category: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetch mock trending data from various sources."""

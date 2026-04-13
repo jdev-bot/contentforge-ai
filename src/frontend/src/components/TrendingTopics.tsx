@@ -524,7 +524,7 @@ export default function TrendingTopics() {
             )}
           </div>
           <p className="text-slate-500 dark:text-slate-400">
-            Discover what's trending in your industry and generate content ideas
+Discover what&apos;s trending in your industry and generate content ideas
           </p>
         </div>
 
