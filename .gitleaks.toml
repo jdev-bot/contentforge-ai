@@ -6,7 +6,7 @@ id = "contentforge-test-keys"
 description = "Ignore test/placeholder keys in .env.example and template files"
 path = '''\.env\.example$|\.env\.local\.example$|\.env\.production\.template$'''
 
-[[allowlist]]
+[allowlist]
 paths = [
   '''tests/''',
   '''test_.*\.py''',
