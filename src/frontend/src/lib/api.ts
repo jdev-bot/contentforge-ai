@@ -1322,3 +1322,179 @@ export async function getDeletionStatus(): Promise<DeletionStatusResponse> {
 }
 
 // ============ End GDPR / User Data Compliance ============
+
+// ============ Search & Trash API ============
+
+export interface SearchResult {
+  id: string
+  type: 'content' | 'project' | 'asset'
+  title: string
+  description?: string
+  matched_field: string
+  matched_text: string
+  score: number
+  created_at: string
+  project_id?: string
+  project_name?: string
+}
+
+export interface SearchResponse {
+  query: string
+  total: number
+  results: SearchResult[]
+  filters_applied?: Record<string, string>
+}
+
+export interface SearchSuggestion {
+  text: string
+  type: string
+}
+
+export interface TrashItem {
+  id: string
+  type: 'content' | 'project' | 'asset'
+  original_data: Record<string, unknown>
+  deleted_at: string
+  expires_at: string
+}
+
+export interface TrashStats {
+  total: number
+  content_count: number
+  project_count: number
+  retention_days: number
+}
+
+export async function searchContent(
+  query: string,
+  options?: {
+    type?: 'content' | 'project' | 'asset'
+    projectId?: string
+    status?: string
+    limit?: number
+  }
+): Promise<SearchResponse> {
+  const headers = await getAuthHeader()
+  
+  const params = new URLSearchParams()
+  params.append('q', query)
+  if (options?.type) params.append('type', options.type)
+  if (options?.projectId) params.append('project_id', options.projectId)
+  if (options?.status) params.append('status', options.status)
+  if (options?.limit) params.append('limit', options.limit.toString())
+  
+  const response = await fetch(`${API_URL}/search?${params.toString()}`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Search failed')
+  }
+  
+  return response.json()
+}
+
+export async function getSearchSuggestions(query: string): Promise<{
+  query: string
+  suggestions: SearchSuggestion[]
+}> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/search/suggestions?q=${encodeURIComponent(query)}`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get suggestions')
+  }
+  
+  return response.json()
+}
+
+export async function getTrashItems(type?: 'content' | 'project' | 'asset'): Promise<TrashItem[]> {
+  const headers = await getAuthHeader()
+  
+  let url = `${API_URL}/trash`
+  if (type) url += `?item_type=${type}`
+  
+  const response = await fetch(url, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch trash')
+  }
+  
+  return response.json()
+}
+
+export async function getTrashStats(): Promise<TrashStats> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/trash/stats`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch trash stats')
+  }
+  
+  return response.json()
+}
+
+export async function restoreFromTrash(itemId: string): Promise<{
+  message: string
+  item_id: string
+  restored: boolean
+}> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/trash/${itemId}/restore`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to restore item')
+  }
+  
+  return response.json()
+}
+
+export async function permanentlyDeleteFromTrash(itemId: string): Promise<{
+  message: string
+  item_id: string
+  deleted: boolean
+}> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/trash/${itemId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete item')
+  }
+  
+  return response.json()
+}
+
+export async function emptyTrash(): Promise<{
+  message: string
+  items_deleted: number
+}> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/trash/empty`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to empty trash')
+  }
+  
+  return response.json()
+}
+
+// ============ End Search & Trash API ============

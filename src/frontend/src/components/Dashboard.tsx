@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles } from 'lucide-react'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2 } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
 import OfflineBanner from './OfflineBanner'
 import Footer from './Footer'
+import SearchModal from './SearchModal'
 import { cn } from '@/lib/utils'
 
 // Dynamic imports for code splitting
@@ -22,6 +23,7 @@ const DistributionsTab = lazy(() => import('./DistributionsTab'))
 const AnalyticsTab = lazy(() => import('./AnalyticsTab'))
 const SettingsTab = lazy(() => import('./SettingsTab'))
 const TeamTab = lazy(() => import('./TeamTab'))
+const TrashTab = lazy(() => import('./TrashTab'))
 
 interface DashboardProps {
   user: AuthUser
@@ -31,6 +33,7 @@ export default function Dashboard({ user }: DashboardProps) {
   const [activeTab, setActiveTab] = useState('content')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showSearchModal, setShowSearchModal] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const router = useRouter()
 
@@ -51,11 +54,17 @@ export default function Dashboard({ user }: DashboardProps) {
     { id: 'analytics', name: 'Analytics', icon: BarChart3, badge: 'New' },
     { id: 'team', name: 'Team', icon: Users, badge: null },
     { id: 'settings', name: 'Settings', icon: Settings, badge: null },
+    { id: 'trash', name: 'Trash', icon: Trash2, badge: null },
   ], [])
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + K for search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowSearchModal(true)
+      }
       // Ctrl/Cmd + N for new content
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault()
@@ -67,7 +76,7 @@ export default function Dashboard({ user }: DashboardProps) {
         router.push('/projects/new')
       }
       // Number keys for tab switching
-      if (e.altKey && e.key >= '1' && e.key <= '6') {
+      if (e.altKey && e.key >= '1' && e.key <= '7') {
         e.preventDefault()
         const tabIndex = parseInt(e.key) - 1
         if (tabs[tabIndex]) {
@@ -144,6 +153,14 @@ export default function Dashboard({ user }: DashboardProps) {
             </Suspense>
           </ErrorBoundary>
         )
+      case 'trash':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('trash')}>
+            <Suspense fallback={fallback}>
+              <TrashTab onItemRestored={() => setActiveTab('content')} />
+            </Suspense>
+          </ErrorBoundary>
+        )
       default:
         return (
           <ErrorBoundary onReset={() => setActiveTab('content')}>
@@ -197,6 +214,17 @@ export default function Dashboard({ user }: DashboardProps) {
             
             {/* Desktop Navigation - Right Side */}
             <div className="hidden md:flex items-center gap-4">
+              <Tooltip content="Search (Ctrl+K)" position="bottom">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<Search className="h-4 w-4" />}
+                  onClick={() => setShowSearchModal(true)}
+                >
+                  Search
+                </Button>
+              </Tooltip>
+              
               <Tooltip content="Create new content (Ctrl+N)" position="bottom">
                 <Button
                   variant="primary"
@@ -312,9 +340,15 @@ export default function Dashboard({ user }: DashboardProps) {
                   </kbd>
                 </div>
                 <div className="flex justify-between items-center">
+                  <span>Search</span>
+                  <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 font-mono">
+                    Ctrl+K
+                  </kbd>
+                </div>
+                <div className="flex justify-between items-center">
                   <span>Switch Tab</span>
                   <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 font-mono">
-                    Alt+1-6
+                    Alt+1-7
                   </kbd>
                 </div>
               </div>
@@ -477,6 +511,12 @@ export default function Dashboard({ user }: DashboardProps) {
 
       {/* Footer */}
       <Footer />
+
+      {/* Search Modal */}
+      <SearchModal
+        isOpen={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+      />
 
       {/* Upgrade Modal */}
       <UpgradeModal

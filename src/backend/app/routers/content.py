@@ -13,6 +13,8 @@ from app.routers.auth import get_auth_user
 from app.services.extraction_service import content_extraction_service
 from app.services.groq_service import groq_service
 
+from app.core.trash import soft_delete_content
+
 router = APIRouter()
 
 
@@ -332,26 +334,42 @@ async def upload_file(
 @router.delete("/content/{content_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_content(
     content_id: UUID,
-    user=Depends(get_auth_user)
+    user=Depends(get_auth_user),
+    permanent: bool = False
 ):
-    """Delete content."""
+    """
+    Delete content (soft delete by default).
+    
+    Args:
+        content_id: The content ID to delete
+        permanent: If True, permanently delete. Otherwise soft delete to trash.
+    """
     supabase = get_supabase_client()
     
     try:
-        # Check if content exists and belongs to user
-        existing = supabase.table("content").select("*").eq("id", str(content_id)).eq("user_id", str(user.id)).single().execute()
-        
-        if not existing.data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Content not found",
-            )
-        
-        # Delete related assets first
-        supabase.table("generated_assets").delete().eq("content_id", str(content_id)).execute()
-        
-        # Delete content
-        supabase.table("content").delete().eq("id", str(content_id)).execute()
+        if permanent:
+            # Permanent delete
+            existing = supabase.table("content").select("*").eq("id", str(content_id)).eq("user_id", str(user.id)).single().execute()
+            
+            if not existing.data:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Content not found",
+                )
+            
+            # Delete related assets first
+            supabase.table("generated_assets").delete().eq("content_id", str(content_id)).execute()
+            
+            # Delete content
+            supabase.table("content").delete().eq("id", str(content_id)).execute()
+        else:
+            # Soft delete to trash
+            success = soft_delete_content(str(content_id), str(user.id))
+            if not success:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Content not found",
+                )
         
         return None
         

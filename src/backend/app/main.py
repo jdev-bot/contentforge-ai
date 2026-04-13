@@ -7,7 +7,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import get_settings
-from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user
+from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user, search, trash
 
 settings = get_settings()
 
@@ -34,9 +34,13 @@ app = FastAPI(
 # Import middleware
 from app.core.rate_limit import UsageTrackingMiddleware
 from app.core.error_tracking import ErrorTrackingMiddleware
+from app.middleware.rate_limit_headers import RateLimitHeadersMiddleware
 
 # Error tracking middleware (must be first to catch all errors)
 app.add_middleware(ErrorTrackingMiddleware)
+
+# Rate limit headers middleware (adds X-RateLimit headers)
+app.add_middleware(RateLimitHeadersMiddleware)
 
 # Usage tracking middleware
 app.add_middleware(UsageTrackingMiddleware)
@@ -68,6 +72,8 @@ app.include_router(ai_suggestions.router, prefix="/api/v1", tags=["ai-suggestion
 app.include_router(automation.router, prefix="/api/v1", tags=["automation"])
 app.include_router(notifications.router, prefix="/api/v1", tags=["notifications"])
 app.include_router(user.router, prefix="/api/v1", tags=["user"])
+app.include_router(search.router, prefix="/api/v1", tags=["search"])
+app.include_router(trash.router, prefix="/api/v1", tags=["trash"])
 
 
 @app.get("/")
