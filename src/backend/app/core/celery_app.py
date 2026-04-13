@@ -42,6 +42,8 @@ celery_app.conf.update(
         "app.tasks.analytics.*": {"queue": "analytics"},
         "app.tasks.webhooks.*": {"queue": "webhooks"},
         "app.tasks.rss.*": {"queue": "rss"},
+        "app.tasks.audience.*": {"queue": "analytics"},
+        "app.tasks.trends.*": {"queue": "trends"},
     },
     # Beat schedule for periodic tasks
     beat_schedule={
@@ -69,6 +71,32 @@ celery_app.conf.update(
         "retry-failed-feeds-hourly": {
             "task": "app.tasks.rss.retry_failed_feeds_task",
             "schedule": 3600.0,  # Every hour
+        },
+        "calculate-growth-metrics-daily": {
+            "task": "app.tasks.audience.calculate_growth_metrics",
+            "schedule": 86400.0,  # Every 24 hours
+        },
+        "cleanup-old-audience-metrics-monthly": {
+            "task": "app.tasks.audience.cleanup_old_audience_metrics",
+            "schedule": 2592000.0,  # Every 30 days
+            "kwargs": {"days": 365},
+        },
+        # Trending topics tasks
+        "update-trending-topics-hourly": {
+            "task": "app.tasks.trends.update_trending_topics_task",
+            "schedule": 3600.0,  # Every hour
+        },
+        "cleanup-expired-trends-daily": {
+            "task": "app.tasks.trends.cleanup_expired_trends_task",
+            "schedule": 86400.0,  # Every 24 hours
+        },
+        "generate-trend-suggestions-hourly": {
+            "task": "app.tasks.trends.generate_trend_content_suggestions_task",
+            "schedule": 3600.0,  # Every hour
+        },
+        "notify-users-relevant-trends-daily": {
+            "task": "app.tasks.trends.notify_users_of_relevant_trends_task",
+            "schedule": 86400.0,  # Every 24 hours
         },
     },
 )
