@@ -71,7 +71,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
   // Mock API keys (in production, these would be fetched from secure storage)
   const [apiKeys] = useState({
     stripe: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_live_•••••••••••••••••••••••••••••••••',
-    groq: process.env.NEXT_PUBLIC_GROQ_API_KEY || 'gsk_•••••••••••••••••••••••••••••••••',
+    groq: '•••••••••••••••••••••••••••••••••', // Groq key is server-side only; never exposed to frontend
   })
 
   useEffect(() => {

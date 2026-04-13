@@ -3,7 +3,7 @@ JWT token utilities.
 """
 from datetime import datetime, timedelta
 from typing import Optional
-from jose import JWTError, jwt
+import jwt
 from passlib.context import CryptContext
 
 from app.core.config import get_settings
@@ -40,5 +40,5 @@ def decode_token(token: str) -> Optional[dict]:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         return payload
-    except JWTError:
+    except (jwt.InvalidTokenError, jwt.DecodeError, jwt.ExpiredSignatureError):
         return None

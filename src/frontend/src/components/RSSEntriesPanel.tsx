@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import DOMPurify from 'dompurify'
 import {
   getRSSEntries,
   importRSSEntry,
@@ -556,7 +557,7 @@ export default function RSSEntriesPanel({ selectedFeedId, onImportSuccess }: RSS
                     {expandedEntry === entry.id && entry.content && (
                       <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                         <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
-                          <div dangerouslySetInnerHTML={{ __html: entry.content.substring(0, 2000) }} />
+                          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(entry.content.substring(0, 2000)) }} />
                           {entry.content.length > 2000 && (
                             <p className="text-slate-500 italic">... (content truncated)</p>
                           )}

@@ -3,11 +3,27 @@ Redis caching layer for ContentForge AI.
 Provides caching for frequently accessed data to reduce database load.
 """
 import json
-import pickle
 from typing import Any, Optional, Callable, TypeVar
 from functools import wraps
 from datetime import datetime
 import hashlib
+
+
+class _CacheValue:
+    """Wrapper to make any value JSON-serializable for cache storage."""
+    def __init__(self, value: Any):
+        self.value = value
+
+    def to_dict(self) -> dict:
+        """Serialize to a dict that JSON can handle."""
+        return {"__cache_value__": True, "data": self.value}
+
+    @classmethod
+    def from_dict(cls, d: dict) -> Any:
+        """Deserialize from dict."""
+        if isinstance(d, dict) and d.get("__cache_value__"):
+            return d["data"]
+        return d
 
 from app.core.config import get_settings
 
@@ -56,12 +72,23 @@ class CacheManager:
         return key
     
     def _serialize(self, value: Any) -> bytes:
-        """Serialize value to bytes."""
-        return pickle.dumps(value)
+        """Serialize value to bytes using JSON (pickle removed for security)."""
+        try:
+            return json.dumps(value, default=str).encode('utf-8')
+        except (TypeError, ValueError):
+            # Fallback: convert non-serializable types to strings
+            if isinstance(value, dict):
+                safe = {k: str(v) if not isinstance(v, (str, int, float, bool, list, dict, type(None))) else v for k, v in value.items()}
+                return json.dumps(safe, default=str).encode('utf-8')
+            return json.dumps(str(value)).encode('utf-8')
     
     def _deserialize(self, value: bytes) -> Any:
-        """Deserialize bytes to value."""
-        return pickle.loads(value)
+        """Deserialize bytes to value using JSON (pickle removed for security)."""
+        try:
+            return json.loads(value.decode('utf-8'))
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            print(f"Cache deserialize error: {e}")
+            return None
     
     def get(self, key: str, prefix: str = "") -> Optional[Any]:
         """Get value from cache."""
@@ -197,7 +224,7 @@ def cached(ttl: Optional[int] = None, prefix: str = "", key_func: Optional[Calla
                         key_parts.append(str(arg))
                 for k, v in sorted(kwargs.items()):
                     key_parts.append(f"{k}:{v}")
-                cache_key = hashlib.md5(":".join(key_parts).encode()).hexdigest()
+                cache_key = hashlib.sha256(":".join(key_parts).encode()).hexdigest()
             
             # Check cache
             result = cache.get(cache_key, prefix=prefix)

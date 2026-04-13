@@ -1190,13 +1190,13 @@ export async function updateUserProfile(data: { full_name: string }): Promise<Us
 // API Keys (mock for now - would come from backend)
 export interface ApiKeys {
   stripe_key?: string
-  groq_key?: string
+  groq_key?: string // Server-side only; never exposed to frontend
 }
 
 export async function getApiKeys(): Promise<ApiKeys> {
   return {
     stripe_key: process.env.NEXT_PUBLIC_STRIPE_KEY,
-    groq_key: process.env.NEXT_PUBLIC_GROQ_KEY,
+    groq_key: undefined, // Groq key is server-side only; use backend /api/ai/* endpoints
   }
 }
 
