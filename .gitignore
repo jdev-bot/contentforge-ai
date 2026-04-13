@@ -75,3 +75,25 @@ dmypy.json
 
 # Pyre
 .pyre/
+
+# Security
+*.key
+*.pem
+*.cert
+*.pfx
+*.p12
+
+# Deployment
+.vercel
+.render
+
+# Local development
+temp/
+tmp/
+*.pid
+*.seed
+
+# Coverage reports
+htmlcov/
+.tox/
+.nox/
