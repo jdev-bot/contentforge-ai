@@ -338,8 +338,8 @@ def mock_supabase_client():
 
 @pytest.fixture
 def mock_supabase(mock_supabase_client):
-    """Alias for mock_supabase_client for backward compatibility."""
-    return mock_supabase_client
+    """Alias for mock_supabase_client — returns just the client for backward compatibility."""
+    return mock_supabase_client[0]  # Return just the mock_client, not the tuple
 
 
 @pytest.fixture

@@ -83,7 +83,7 @@ export default function SAMLLogin({ isOpen, onClose, onLoginSuccess }: SAMLLogin
       if (result.length > 0 && !selectedProviderId) {
         setSelectedProviderId(result[0].id)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       showToast('Failed to load SAML providers', 'error')
     } finally {
       setIsLoadingProviders(false)
@@ -104,8 +104,8 @@ export default function SAMLLogin({ isOpen, onClose, onLoginSuccess }: SAMLLogin
       })
       // Redirect to IdP
       window.location.href = result.login_url
-    } catch (error: any) {
-      showToast(error.message || 'SAML login failed', 'error')
+    } catch (error: unknown) {
+      showToast(error instanceof Error ? error.message : 'SAML login failed', 'error')
     } finally {
       setIsLoading(false)
     }
@@ -128,8 +128,8 @@ export default function SAMLLogin({ isOpen, onClose, onLoginSuccess }: SAMLLogin
         certificate: result.certificate || prev.certificate,
       }))
       showToast('Metadata fetched successfully', 'success')
-    } catch (error: any) {
-      showToast(error.message || 'Failed to fetch metadata', 'error')
+    } catch (error: unknown) {
+      showToast(error instanceof Error ? error.message : 'Failed to fetch metadata', 'error')
     } finally {
       setIsFetchingMetadata(false)
     }
@@ -157,8 +157,8 @@ export default function SAMLLogin({ isOpen, onClose, onLoginSuccess }: SAMLLogin
       setConfigForm({ name: '', display_name: '', entity_id: '', sso_url: '', slo_url: '', metadata_url: '', certificate: '' })
       loadProviders()
       setActiveTab('login')
-    } catch (error: any) {
-      showToast(error.message || 'Failed to create provider', 'error')
+    } catch (error: unknown) {
+      showToast(error instanceof Error ? error.message : 'Failed to create provider', 'error')
     } finally {
       setIsLoading(false)
     }
@@ -554,7 +554,7 @@ export default function SAMLLogin({ isOpen, onClose, onLoginSuccess }: SAMLLogin
                           // Update attribute mapping via API
                           import('@/lib/api').then(api => api.updateSAMLAttributeMapping(selectedProviderForMapping, attributeMapping))
                             .then(() => showToast('Attribute mapping updated', 'success'))
-                            .catch((err: any) => showToast(err.message || 'Failed to update mapping', 'error'))
+                            .catch((err: unknown) => showToast(err instanceof Error ? err.message : 'Failed to update mapping', 'error'))
                         }
                       }}
                     >

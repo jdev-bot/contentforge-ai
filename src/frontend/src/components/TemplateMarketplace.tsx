@@ -79,7 +79,7 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
 
   // Detail view state
   const [detailTemplate, setDetailTemplate] = useState<MarketplaceTemplate | null>(null)
-  const [ratings, setRatings] = useState<any[]>([])
+  const [ratings, setRatings] = useState<{ id: string; user: string; rating: number; comment: string }[]>([])
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [userRating, setUserRating] = useState(0)
   const [userReview, setUserReview] = useState('')
@@ -129,7 +129,7 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
       setPopularTags(tags)
       setFeaturedTemplates(featured)
       setTrendingTemplates(trending)
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Categories/tags are non-critical
     }
   }
@@ -147,7 +147,7 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
       })
       setTemplates(result.templates)
       setTotalTemplates(result.total)
-    } catch (error: any) {
+    } catch (error: unknown) {
       showToast('Failed to load templates', 'error')
     } finally {
       setIsLoading(false)
@@ -165,7 +165,7 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
       setRatings(ratingsResult.ratings || [])
       setSelectedTemplateId(templateId)
       setViewMode('detail')
-    } catch (error: any) {
+    } catch (error: unknown) {
       showToast('Failed to load template details', 'error')
     } finally {
       setIsLoadingDetail(false)
@@ -184,8 +184,8 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
       }
       // Refresh detail
       loadTemplateDetail(selectedTemplateId)
-    } catch (error: any) {
-      showToast(error.message || 'Failed to install template', 'error')
+    } catch (error: unknown) {
+      showToast(error instanceof Error ? error.message : 'Failed to install template', 'error')
     } finally {
       setIsInstalling(false)
     }
@@ -206,8 +206,8 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
       const result = await getTemplateRatings(selectedTemplateId, 10, 0)
       setRatings(result.ratings || [])
       loadTemplateDetail(selectedTemplateId)
-    } catch (error: any) {
-      showToast(error.message || 'Failed to submit rating', 'error')
+    } catch (error: unknown) {
+      showToast(error instanceof Error ? error.message : 'Failed to submit rating', 'error')
     } finally {
       setIsSubmittingRating(false)
     }
@@ -234,8 +234,8 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
       setPublishForm({ name: '', description: '', category: 'blog', content: '', tags: '', platforms: '', version: '1.0.0' })
       setViewMode('gallery')
       loadTemplates()
-    } catch (error: any) {
-      showToast(error.message || 'Failed to publish template', 'error')
+    } catch (error: unknown) {
+      showToast(error instanceof Error ? error.message : 'Failed to publish template', 'error')
     } finally {
       setIsPublishing(false)
     }
@@ -413,7 +413,7 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
                           ].map((option) => (
                             <button
                               key={option.id}
-                              onClick={() => { setSortBy(option.id as any); setOffset(0) }}
+                              onClick={() => { setSortBy(option.id); setOffset(0) }}
                               className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
                                 sortBy === option.id
                                   ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
@@ -748,7 +748,7 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
                               <h5 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                                 Recent Reviews
                               </h5>
-                              {ratings.map((rating: any) => (
+                              {ratings.map((rating: { id: string; user: string; rating: number; comment: string }) => (
                                 <Card key={rating.id} variant="outline" padding="sm">
                                   <div className="flex items-center justify-between mb-1">
                                     <div className="flex items-center gap-2">
