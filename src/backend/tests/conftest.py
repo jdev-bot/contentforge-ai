@@ -69,6 +69,10 @@ def _build_mock_supabase_client():
     mock_user.email = "test@example.com"
     mock_user.user_metadata = {"full_name": "Test User"}
     mock_auth.get_user.return_value = MagicMock(user=mock_user)
+    mock_auth.sign_up = MagicMock(return_value=MagicMock(
+        user=mock_user,
+        session=MagicMock(access_token="test-access-token")
+    ))
 
     mock_query = MagicMock()
     mock_query.eq = MagicMock(return_value=mock_query)
@@ -113,10 +117,10 @@ def _build_mock_usage_stats():
     return mock_usage
 
 
-def _safe_patch(target, **kwargs):
+def _safe_patch(target, *args, **kwargs):
     """Patch a target, silently skipping if the attribute doesn't exist."""
     try:
-        p = patch(target, **kwargs)
+        p = patch(target, *args, **kwargs)
         p.start()
         return p
     except (AttributeError, ModuleNotFoundError):
@@ -169,6 +173,20 @@ _SUPABASE_CLIENT_PATCH_TARGETS = [
     "app.core.trash.get_supabase_client",
     "app.core.error_tracking.get_supabase_client",
     "app.tasks.email.get_supabase_client",
+    "app.routers.plugins.get_supabase_client",
+    "app.routers.ws.get_supabase_client",
+    "app.routers.suggestions.get_supabase_client",
+    "app.routers.categorization.get_supabase_client",
+    "app.services.sso_service.get_supabase_client",
+    "app.services.saml_service.get_supabase_client",
+    "app.services.plugin_service.get_supabase_client",
+    "app.services.collaboration_service.get_supabase_client",
+    "app.services.presence_service.get_supabase_client",
+    "app.services.suggestion_service.get_supabase_client",
+    "app.services.categorization_service.get_supabase_client",
+    "app.services.retention_service.get_supabase_client",
+    "app.services.comments_service.get_supabase_client",
+    "app.services.performance_service.get_supabase_client",
 ]
 
 _ADMIN_CLIENT_PATCH_TARGETS = [
@@ -183,6 +201,9 @@ _ADMIN_CLIENT_PATCH_TARGETS = [
     "app.services.rss_service.get_supabase_admin_client",
     "app.services.dashboard_service.get_supabase_admin_client",
     "app.services.report_service.get_supabase_admin_client",
+    "app.services.sso_service.get_supabase_admin_client",
+    "app.services.saml_service.get_supabase_admin_client",
+    "app.services.plugin_service.get_supabase_admin_client",
 ]
 
 # Functions imported from rate_limit by various routers
@@ -196,6 +217,10 @@ _RATE_LIMIT_FUNC_PATCHES = {
         "app.routers.trends",
         "app.routers.sentiment",
         "app.routers.quality_scoring",
+        "app.routers.plugins",
+        "app.routers.sso",
+        "app.routers.suggestions",
+        "app.routers.categorization",
     ],
 }
 
@@ -257,6 +282,35 @@ def client() -> Generator:
     if p:
         active_patches.append(p)
     
+    # Patch Celery tasks to prevent real broker connections
+    _celery_task_mock = MagicMock()
+    _celery_task_mock.delay = MagicMock(return_value=MagicMock(id='test-task-id'))
+    for target in [
+        "app.routers.auth.send_welcome_email_task",
+        "app.routers.rss.fetch_single_feed_task",
+        "app.routers.stripe.send_invoice_receipt_task",
+    ]:
+        p = _safe_patch(target, _celery_task_mock)
+        if p:
+            active_patches.append(p)
+    
+    # Patch Celery task delay method globally
+    try:
+        from app.tasks.email import send_welcome_email_task
+        send_welcome_email_task.delay = MagicMock(return_value=MagicMock(id='test-task-id'))
+    except ImportError:
+        pass
+    try:
+        from app.tasks.rss import fetch_single_feed_task
+        fetch_single_feed_task.delay = MagicMock(return_value=MagicMock(id='test-task-id'))
+    except (ImportError, AttributeError):
+        pass
+    try:
+        from app.tasks.billing import send_invoice_receipt_task
+        send_invoice_receipt_task.delay = MagicMock(return_value=MagicMock(id='test-task-id'))
+    except (ImportError, AttributeError):
+        pass
+    
     # Override FastAPI dependencies
     app.dependency_overrides[get_auth_user] = lambda: default_mock_user
     app.dependency_overrides[enforce_subscription_limit] = lambda: mock_usage
@@ -280,6 +334,12 @@ def mock_supabase_client():
     """Create a mock Supabase client."""
     mock_client, mock_auth, mock_table, mock_storage, mock_query = _build_mock_supabase_client()
     return mock_client, mock_auth, mock_table
+
+
+@pytest.fixture
+def mock_supabase(mock_supabase_client):
+    """Alias for mock_supabase_client for backward compatibility."""
+    return mock_supabase_client
 
 
 @pytest.fixture

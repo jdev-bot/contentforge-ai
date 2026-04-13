@@ -3188,14 +3188,21 @@ export async function getPerformanceTrend(days: number = 30): Promise<TrendDataP
 
 export interface RetentionPolicy {
   id: string
-  name: string
-  description: string
-  data_type: 'content' | 'user_data' | 'analytics' | 'logs'
-  retention_days: number
-  auto_delete: boolean
-  compliance_tags: string[]
+  user_id: string
+  content_type: string
+  archive_after_days: number
+  delete_after_days: number | null
+  description: string | null
+  is_active: boolean
   created_at: string
   updated_at: string
+}
+
+export interface RetentionPolicyListResponse {
+  items: RetentionPolicy[]
+  total: number
+  page: number
+  page_size: number
 }
 
 export interface ComplianceIssue {
@@ -3205,21 +3212,28 @@ export interface ComplianceIssue {
 }
 
 export interface ComplianceReport {
-  score: number
-  compliant_count: number
-  warning_count: number
-  violation_count: number
-  issues: ComplianceIssue[]
+  report_generated_at: string
+  gdpr_article: string
+  compliance_score: number
+  total_content: number
+  content_by_status: Record<string, number>
+  content_by_type: Record<string, number>
+  active_policies: number
+  inactive_policies: number
+  content_covered_by_policy: number
+  content_without_policy: string[]
+  audit_trail_last_30_days: Record<string, number>
+  recommendations: string[]
 }
 
 export interface RetentionAuditEntry {
   id: string
-  action: 'create' | 'update' | 'delete' | 'archive' | 'review'
+  user_id: string
+  action: string
   resource_type: string
   resource_id: string
-  details: string
-  actor: string
-  timestamp: string
+  details: string | null
+  created_at: string
 }
 
 export async function getRetentionPolicies(): Promise<RetentionPolicy[]> {
@@ -3229,16 +3243,16 @@ export async function getRetentionPolicies(): Promise<RetentionPolicy[]> {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch retention policies')
   }
-  return response.json()
+  const result: RetentionPolicyListResponse = await response.json()
+  return result.items
 }
 
 export async function createRetentionPolicy(data: {
-  name: string
+  content_type: string
+  archive_after_days: number
+  delete_after_days?: number
   description?: string
-  data_type: RetentionPolicy['data_type']
-  retention_days: number
-  auto_delete?: boolean
-  compliance_tags?: string[]
+  is_active?: boolean
 }): Promise<RetentionPolicy> {
   const headers = await getAuthHeader()
   const response = await fetch(`${API_URL}/retention/policies`, {
@@ -3255,11 +3269,11 @@ export async function createRetentionPolicy(data: {
 
 export async function updateRetentionPolicy(
   policyId: string,
-  data: Partial<Omit<RetentionPolicy, 'id' | 'created_at' | 'updated_at'>>
+  data: Partial<Omit<RetentionPolicy, 'id' | 'created_at' | 'updated_at' | 'user_id'>>
 ): Promise<RetentionPolicy> {
   const headers = await getAuthHeader()
   const response = await fetch(`${API_URL}/retention/policies/${policyId}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers,
     body: JSON.stringify(data),
   })
@@ -3299,7 +3313,8 @@ export async function getRetentionAuditTrail(): Promise<RetentionAuditEntry[]> {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch audit trail')
   }
-  return response.json()
+  const result = await response.json()
+  return result.items || result
 }
 
 // ============ End P4: Data Retention API ============
