@@ -269,8 +269,8 @@ function CounterWidget({ data, title }: { data: Record<string, unknown>; title: 
       <p className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
         {total.toLocaleString()}
       </p>
-      {data.total_tokens && (
-        <p className="text-xs text-slate-500 mt-2">{String(data.total_tokens)} tokens used</p>
+      {typeof data.total_tokens === 'number' && (
+        <p className="text-xs text-slate-500 mt-2">{data.total_tokens} tokens used</p>
       )}
     </div>
   )

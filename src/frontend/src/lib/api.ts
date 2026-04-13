@@ -2994,3 +2994,312 @@ export async function downloadReport(reportId: string, runId: string): Promise<R
 }
 
 // ============ End Report Scheduling API ============
+
+// ============ P4: Suggestions API ============
+
+export type SuggestionType = 'topic' | 'timing' | 'improvement'
+export type SuggestionPriority = 'high' | 'medium' | 'low'
+
+export interface Suggestion {
+  id: string
+  content_id: string
+  type: SuggestionType
+  title: string
+  description: string
+  priority: SuggestionPriority
+  relevance_score: number
+  content_title?: string
+  created_at: string
+  updated_at: string
+}
+
+export async function getSuggestions(type?: SuggestionType): Promise<Suggestion[]> {
+  const headers = await getAuthHeader()
+  const params = new URLSearchParams()
+  if (type) params.append('type', type)
+  const url = `${API_URL}/suggestions${params.toString() ? `?${params.toString()}` : ''}`
+  const response = await fetch(url, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch suggestions')
+  }
+  return response.json()
+}
+
+export async function acceptSuggestion(suggestionId: string): Promise<{ message: string; suggestion: Suggestion }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/suggestions/${suggestionId}/accept`, {
+    method: 'POST',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to accept suggestion')
+  }
+  return response.json()
+}
+
+export async function dismissSuggestion(suggestionId: string): Promise<{ message: string }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/suggestions/${suggestionId}/dismiss`, {
+    method: 'POST',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to dismiss suggestion')
+  }
+  return response.json()
+}
+
+// ============ End P4: Suggestions API ============
+
+// ============ P4: Categorization API ============
+
+export interface CategoryTag {
+  name: string
+  confidence: number
+  is_auto: boolean
+  order: number
+}
+
+export interface CategorizationResult {
+  content_id: string
+  content_title: string
+  categories: CategoryTag[]
+  categorized_at: string
+}
+
+export async function getCategorization(): Promise<CategorizationResult[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/categorization`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch categorizations')
+  }
+  return response.json()
+}
+
+export async function updateCategories(
+  contentId: string,
+  data: { categories: string[] }
+): Promise<CategorizationResult> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/categorization/${contentId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update categories')
+  }
+  return response.json()
+}
+
+// ============ End P4: Categorization API ============
+
+// ============ P4: Performance API ============
+
+export interface PerformanceOverview {
+  total_views: number
+  engagement_rate: number
+  total_shares: number
+  conversion_rate: number
+}
+
+export interface FunnelStage {
+  stage: string
+  count: number
+  percentage?: number
+}
+
+export interface CohortData {
+  cohort: string
+  engagement: number
+  retention: number
+}
+
+export interface AttributionData {
+  source: string
+  value: number
+}
+
+export interface TrendDataPoint {
+  date: string
+  views: number
+  engagement: number
+  conversions?: number
+}
+
+export async function getPerformanceOverview(): Promise<PerformanceOverview> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/performance/overview`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch performance overview')
+  }
+  return response.json()
+}
+
+export async function getPerformanceFunnel(): Promise<FunnelStage[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/performance/funnel`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch performance funnel')
+  }
+  return response.json()
+}
+
+export async function getPerformanceCohorts(): Promise<CohortData[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/performance/cohorts`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch performance cohorts')
+  }
+  return response.json()
+}
+
+export async function getPerformanceAttribution(): Promise<AttributionData[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/performance/attribution`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch performance attribution')
+  }
+  return response.json()
+}
+
+export async function getPerformanceTrend(days: number = 30): Promise<TrendDataPoint[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/performance/trend?days=${days}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch performance trend')
+  }
+  return response.json()
+}
+
+// ============ End P4: Performance API ============
+
+// ============ P4: Data Retention API ============
+
+export interface RetentionPolicy {
+  id: string
+  name: string
+  description: string
+  data_type: 'content' | 'user_data' | 'analytics' | 'logs'
+  retention_days: number
+  auto_delete: boolean
+  compliance_tags: string[]
+  created_at: string
+  updated_at: string
+}
+
+export interface ComplianceIssue {
+  severity: 'high' | 'medium' | 'low'
+  message: string
+  recommendation?: string
+}
+
+export interface ComplianceReport {
+  score: number
+  compliant_count: number
+  warning_count: number
+  violation_count: number
+  issues: ComplianceIssue[]
+}
+
+export interface RetentionAuditEntry {
+  id: string
+  action: 'create' | 'update' | 'delete' | 'archive' | 'review'
+  resource_type: string
+  resource_id: string
+  details: string
+  actor: string
+  timestamp: string
+}
+
+export async function getRetentionPolicies(): Promise<RetentionPolicy[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/retention/policies`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch retention policies')
+  }
+  return response.json()
+}
+
+export async function createRetentionPolicy(data: {
+  name: string
+  description?: string
+  data_type: RetentionPolicy['data_type']
+  retention_days: number
+  auto_delete?: boolean
+  compliance_tags?: string[]
+}): Promise<RetentionPolicy> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/retention/policies`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create retention policy')
+  }
+  return response.json()
+}
+
+export async function updateRetentionPolicy(
+  policyId: string,
+  data: Partial<Omit<RetentionPolicy, 'id' | 'created_at' | 'updated_at'>>
+): Promise<RetentionPolicy> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/retention/policies/${policyId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update retention policy')
+  }
+  return response.json()
+}
+
+export async function deleteRetentionPolicy(policyId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/retention/policies/${policyId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete retention policy')
+  }
+}
+
+export async function getRetentionCompliance(): Promise<ComplianceReport> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/retention/compliance`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch compliance report')
+  }
+  return response.json()
+}
+
+export async function getRetentionAuditTrail(): Promise<RetentionAuditEntry[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/retention/audit`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch audit trail')
+  }
+  return response.json()
+}
+
+// ============ End P4: Data Retention API ============
