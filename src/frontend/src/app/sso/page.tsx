@@ -67,7 +67,7 @@ type ViewState = 'select' | 'callback' | 'identities' | 'link-success'
 export default function SSOLoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { toast } = useToast()
+  const { showToast } = useToast()
 
   const [providers, setProviders] = useState<AvailableSSOProvider[]>([])
   const [identities, setIdentities] = useState<SSOIdentity[]>([])
@@ -96,11 +96,7 @@ export default function SSOLoginPage() {
       handleCallback(callbackState, callbackCode)
     }
     if (callbackError) {
-      toast({
-        title: 'SSO Login Failed',
-        description: searchParams.get('error_description') || callbackError,
-        variant: 'error',
-      })
+      showToast(searchParams.get('error_description') || callbackError, 'error')
     }
   }, [callbackState, callbackCode, callbackError])
 
@@ -110,7 +106,7 @@ export default function SSOLoginPage() {
       const result = await getAvailableSSOProviders()
       setProviders(result)
     } catch {
-      toast({ title: 'Failed to load SSO providers', variant: 'error' })
+      showToast('Failed to load SSO providers', 'error')
     } finally {
       setLoading(false)
     }
@@ -122,7 +118,7 @@ export default function SSOLoginPage() {
       setIdentities(result)
       setView('identities')
     } catch {
-      toast({ title: 'Failed to load SSO identities', variant: 'error' })
+      showToast('Failed to load SSO identities', 'error')
     }
   }
 
@@ -139,7 +135,7 @@ export default function SSOLoginPage() {
       window.location.href = result.authorization_url
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to initiate SSO login'
-      toast({ title: 'SSO Login Failed', description: message, variant: 'error' })
+      showToast(message, 'error')
       setInitiatingProvider(null)
     }
   }
@@ -152,11 +148,7 @@ export default function SSOLoginPage() {
       setCallbackResult(result)
 
       if (result.action === 'register' || result.action === 'login') {
-        toast({
-          title: result.is_new_user ? 'Account Created' : 'Login Successful',
-          description: `Welcome${result.full_name ? `, ${result.full_name}` : ''}!`,
-          variant: 'success',
-        })
+        showToast(`Welcome${result.full_name ? ", " + result.full_name : ""}!`, 'success')
         // Redirect to dashboard after short delay
         setTimeout(() => {
           router.push('/dashboard')
@@ -164,15 +156,11 @@ export default function SSOLoginPage() {
         }, 1500)
       } else if (result.action === 'linked') {
         setView('link-success')
-        toast({
-          title: 'SSO Account Linked',
-          description: 'Your SSO identity has been linked to your account.',
-          variant: 'success',
-        })
+        showToast('Your SSO identity has been linked to your account.', 'success')
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'SSO callback failed'
-      toast({ title: 'SSO Login Failed', description: message, variant: 'error' })
+      showToast(message, 'error')
       setView('select')
     } finally {
       setLoading(false)
@@ -182,10 +170,10 @@ export default function SSOLoginPage() {
   const handleUnlink = async (identityId: string) => {
     try {
       await unlinkSSOIdentity(identityId)
-      toast({ title: 'SSO Identity Unlinked', variant: 'success' })
+      showToast('SSO Identity Unlinked', 'success')
       loadIdentities()
     } catch {
-      toast({ title: 'Failed to unlink identity', variant: 'error' })
+      showToast('Failed to unlink identity', 'error')
     }
   }
 

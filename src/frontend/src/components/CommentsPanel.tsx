@@ -77,7 +77,7 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
   const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([])
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set())
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
-  const { toast } = useToast()
+  const { showToast } = useToast()
 
   const loadComments = useCallback(async () => {
     try {
@@ -100,7 +100,7 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
       }
       setReactions(reactionMap)
     } catch {
-      toast({ title: 'Failed to load comments', variant: 'error' })
+      showToast('Failed to load comments', 'error')
     } finally {
       setLoading(false)
     }
@@ -123,7 +123,7 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
       setNewComment('')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to add comment'
-      toast({ title: message, variant: 'error' })
+      showToast(message, 'error')
     }
   }
 
@@ -142,7 +142,7 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
       setExpandedThreads(prev => new Set([...prev, parentId]))
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to add reply'
-      toast({ title: message, variant: 'error' })
+      showToast(message, 'error')
     }
   }
 
@@ -159,12 +159,9 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
       setComments(prev =>
         prev.map(c => c.id === commentId ? { ...c, is_resolved: !c.is_resolved } : c)
       )
-      toast({
-        title: comment.is_resolved ? 'Comment reopened' : 'Comment resolved',
-        variant: 'success',
-      })
+      showToast(comment.is_resolved ? 'Comment reopened' : 'Comment resolved', 'success')
     } catch {
-      toast({ title: 'Failed to update comment status', variant: 'error' })
+      showToast('Failed to update comment status', 'error')
     }
   }
 

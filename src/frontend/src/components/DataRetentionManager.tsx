@@ -59,16 +59,14 @@ export default function DataRetentionManager() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingPolicy, setEditingPolicy] = useState<string | null>(null)
 
-  // Form state
+  // Form state - matches backend RetentionPolicyCreate model
   const [formData, setFormData] = useState({
-    name: '',
+    content_type: '',
     description: '',
-    data_type: 'content' as RetentionPolicy['data_type'],
-    retention_days: 365,
-    auto_delete: true,
-    compliance_tags: [] as string[],
+    archive_after_days: 90,
+    delete_after_days: 365,
+    is_active: true,
   })
-  const [tagInput, setTagInput] = useState('')
 
   const { showToast } = useToast()
 
@@ -89,7 +87,7 @@ export default function DataRetentionManager() {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [showToast])
 
   useEffect(() => {
     fetchData()
@@ -103,11 +101,17 @@ export default function DataRetentionManager() {
 
   const handleCreate = async () => {
     try {
-      await createRetentionPolicy(formData)
+      await createRetentionPolicy({
+        content_type: formData.content_type,
+        archive_after_days: formData.archive_after_days,
+        delete_after_days: formData.delete_after_days || undefined,
+        description: formData.description || undefined,
+        is_active: formData.is_active,
+      })
       setShowCreateForm(false)
       resetForm()
       await fetchData()
-      showToast('Retention policy has been created.', 'success')
+      showToast('Retention policy created', 'success')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create policy'
       showToast(message, 'error')
@@ -117,12 +121,11 @@ export default function DataRetentionManager() {
   const handleUpdate = async (policyId: string) => {
     try {
       await updateRetentionPolicy(policyId, {
-        name: formData.name,
-        description: formData.description,
-        data_type: formData.data_type,
-        retention_days: formData.retention_days,
-        auto_delete: formData.auto_delete,
-        compliance_tags: formData.compliance_tags,
+        content_type: formData.content_type,
+        archive_after_days: formData.archive_after_days,
+        delete_after_days: formData.delete_after_days || undefined,
+        description: formData.description || undefined,
+        is_active: formData.is_active,
       })
       setEditingPolicy(null)
       resetForm()
@@ -148,46 +151,26 @@ export default function DataRetentionManager() {
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      content_type: '',
       description: '',
-      data_type: 'content',
-      retention_days: 365,
-      auto_delete: true,
-      compliance_tags: [],
+      archive_after_days: 90,
+      delete_after_days: 365,
+      is_active: true,
     })
-    setTagInput('')
   }
 
   const startEdit = (policy: RetentionPolicy) => {
     setEditingPolicy(policy.id)
     setFormData({
-      name: policy.name,
+      content_type: policy.content_type,
       description: policy.description || '',
-      data_type: policy.data_type,
-      retention_days: policy.retention_days,
-      auto_delete: policy.auto_delete,
-      compliance_tags: policy.compliance_tags || [],
+      archive_after_days: policy.archive_after_days,
+      delete_after_days: policy.delete_after_days || 365,
+      is_active: policy.is_active,
     })
   }
 
-  const addTag = () => {
-    if (tagInput.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        compliance_tags: [...prev.compliance_tags, tagInput.trim()],
-      }))
-      setTagInput('')
-    }
-  }
-
-  const removeTag = (tag: string) => {
-    setFormData(prev => ({
-      ...prev,
-      compliance_tags: prev.compliance_tags.filter(t => t !== tag),
-    }))
-  }
-
-  const dataTypeIcon = (type: RetentionPolicy['data_type']) => {
+  const contentTypeIcon = (type: string) => {
     switch (type) {
       case 'content': return <FileText className="h-4 w-4" />
       case 'user_data': return <Shield className="h-4 w-4" />
@@ -197,7 +180,7 @@ export default function DataRetentionManager() {
     }
   }
 
-  const dataTypeColor = (type: RetentionPolicy['data_type']) => {
+  const contentTypeColor = (type: string) => {
     switch (type) {
       case 'content': return 'text-blue-600 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-500/20'
       case 'user_data': return 'text-rose-600 dark:text-rose-400 bg-rose-500/10 dark:bg-rose-500/20'
@@ -235,19 +218,18 @@ export default function DataRetentionManager() {
           <Button
             variant="primary"
             size="sm"
-            leftIcon={<Plus className="h-4 w-4" />}
             onClick={() => { setShowCreateForm(true); resetForm() }}
           >
+            <Plus className="h-4 w-4 mr-1" />
             New Policy
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            leftIcon={<RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />}
             onClick={handleRefresh}
             disabled={refreshing}
           >
-            Refresh
+            <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
           </Button>
         </div>
       </div>
@@ -287,30 +269,37 @@ export default function DataRetentionManager() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        Policy Name
+                        Content Type
                       </label>
                       <input
                         type="text"
-                        value={formData.name}
-                        onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        value={formData.content_type}
+                        onChange={e => setFormData(prev => ({ ...prev, content_type: e.target.value }))}
                         className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g. GDPR Content Retention"
+                        placeholder="e.g. content, user_data, analytics, logs"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        Data Type
+                        Status
                       </label>
-                      <select
-                        value={formData.data_type}
-                        onChange={e => setFormData(prev => ({ ...prev, data_type: e.target.value as RetentionPolicy['data_type'] }))}
-                        className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="content">Content</option>
-                        <option value="user_data">User Data</option>
-                        <option value="analytics">Analytics</option>
-                        <option value="logs">Logs</option>
-                      </select>
+                      <div className="flex items-center gap-3 h-[42px]">
+                        <button
+                          onClick={() => setFormData(prev => ({ ...prev, is_active: !prev.is_active }))}
+                          className={cn(
+                            'relative w-12 h-6 rounded-full transition-colors',
+                            formData.is_active ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
+                          )}
+                        >
+                          <div className={cn(
+                            'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform',
+                            formData.is_active ? 'left-6' : 'left-0.5'
+                          )} />
+                        </button>
+                        <span className="text-sm text-slate-600 dark:text-slate-400">
+                          {formData.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div>
@@ -328,69 +317,36 @@ export default function DataRetentionManager() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        Retention Period (days)
+                        Archive After (days)
                       </label>
                       <input
                         type="number"
-                        value={formData.retention_days}
-                        onChange={e => setFormData(prev => ({ ...prev, retention_days: parseInt(e.target.value) || 0 }))}
+                        value={formData.archive_after_days}
+                        onChange={e => setFormData(prev => ({ ...prev, archive_after_days: parseInt(e.target.value) || 0 }))}
                         className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         min={1}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        Auto-Delete
+                        Delete After (days)
                       </label>
-                      <div className="flex items-center gap-3 h-[42px]">
-                        <button
-                          onClick={() => setFormData(prev => ({ ...prev, auto_delete: !prev.auto_delete }))}
-                          className={cn(
-                            'relative w-12 h-6 rounded-full transition-colors',
-                            formData.auto_delete ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
-                          )}
-                        >
-                          <div className={cn(
-                            'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform',
-                            formData.auto_delete ? 'left-6' : 'left-0.5'
-                          )} />
-                        </button>
-                        <span className="text-sm text-slate-600 dark:text-slate-400">
-                          {formData.auto_delete ? 'Enabled' : 'Disabled'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Compliance Tags
-                    </label>
-                    <div className="flex items-center gap-2 mb-2">
                       <input
-                        type="text"
-                        value={tagInput}
-                        onChange={e => setTagInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
-                        className="flex-1 px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Add tag..."
+                        type="number"
+                        value={formData.delete_after_days}
+                        onChange={e => setFormData(prev => ({ ...prev, delete_after_days: parseInt(e.target.value) || 0 }))}
+                        className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        min={1}
                       />
-                      <Button variant="outline" size="sm" onClick={addTag}>
-                        Add
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.compliance_tags.map(tag => (
-                        <Badge key={tag} variant="primary" size="sm" removable onRemove={() => removeTag(tag)}>
-                          {tag}
-                        </Badge>
-                      ))}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 pt-2">
-                    <Button variant="primary" size="sm" leftIcon={<Save className="h-4 w-4" />} onClick={handleCreate}>
+                    <Button variant="primary" size="sm" onClick={handleCreate}>
+                      <Save className="h-4 w-4 mr-1" />
                       Create Policy
                     </Button>
-                    <Button variant="ghost" size="sm" leftIcon={<X className="h-4 w-4" />} onClick={() => { setShowCreateForm(false); resetForm() }}>
+                    <Button variant="ghost" size="sm" onClick={() => { setShowCreateForm(false); resetForm() }}>
+                      <X className="h-4 w-4 mr-1" />
                       Cancel
                     </Button>
                   </div>
@@ -436,31 +392,35 @@ export default function DataRetentionManager() {
                         >
                           <div className="flex items-center gap-3">
                             {isExpanded ? <ChevronDown className="h-4 w-4 text-slate-400" /> : <ChevronRight className="h-4 w-4 text-slate-400" />}
-                            <div className={cn('p-2 rounded-lg', dataTypeColor(policy.data_type))}>
-                              {dataTypeIcon(policy.data_type)}
+                            <div className={cn('p-2 rounded-lg', contentTypeColor(policy.content_type))}>
+                              {contentTypeIcon(policy.content_type)}
                             </div>
                             <div className="text-left">
-                              <h3 className="font-semibold text-slate-900 dark:text-slate-100">{policy.name}</h3>
+                              <h3 className="font-semibold text-slate-900 dark:text-slate-100 capitalize">
+                                {policy.content_type.replace('_', ' ')}
+                              </h3>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" size="sm">
-                                  {policy.data_type}
+                                  {policy.content_type}
                                 </Badge>
-                                <Badge variant={policy.auto_delete ? 'success' : 'warning'} size="sm" dot>
-                                  {policy.auto_delete ? 'Auto-delete' : 'Manual'}
+                                <Badge variant={policy.is_active ? 'success' : 'warning'} size="sm">
+                                  {policy.is_active ? 'Active' : 'Inactive'}
                                 </Badge>
                                 <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
-                                  {policy.retention_days} days
+                                  {policy.delete_after_days
+                                    ? `Delete ${policy.delete_after_days}d`
+                                    : `Archive ${policy.archive_after_days}d`}
                                 </span>
                               </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                            <Button variant="ghost" size="sm" leftIcon={<Edit3 className="h-3.5 w-3.5" />} onClick={() => startEdit(policy)}>
-                              Edit
+                            <Button variant="ghost" size="sm" onClick={() => startEdit(policy)}>
+                              <Edit3 className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="sm" leftIcon={<Trash2 className="h-3.5 w-3.5 text-rose-500" />} onClick={() => handleDelete(policy.id)}>
-                              Delete
+                            <Button variant="ghost" size="sm" onClick={() => handleDelete(policy.id)}>
+                              <Trash2 className="h-3.5 w-3.5 text-rose-500" />
                             </Button>
                           </div>
                         </button>
@@ -478,28 +438,18 @@ export default function DataRetentionManager() {
                                 {policy.description && (
                                   <p className="text-sm text-slate-600 dark:text-slate-400">{policy.description}</p>
                                 )}
-                                {policy.compliance_tags && policy.compliance_tags.length > 0 && (
-                                  <div>
-                                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Compliance Tags</p>
-                                    <div className="flex flex-wrap gap-2">
-                                      {policy.compliance_tags.map(tag => (
-                                        <Badge key={tag} variant="primary" size="sm">{tag}</Badge>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                                   <div>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Data Type</p>
-                                    <p className="font-medium text-slate-900 dark:text-slate-100 capitalize">{policy.data_type.replace('_', ' ')}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Content Type</p>
+                                    <p className="font-medium text-slate-900 dark:text-slate-100 capitalize">{policy.content_type.replace('_', ' ')}</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Retention</p>
-                                    <p className="font-medium text-slate-900 dark:text-slate-100">{policy.retention_days} days</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Archive After</p>
+                                    <p className="font-medium text-slate-900 dark:text-slate-100">{policy.archive_after_days} days</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Auto-Delete</p>
-                                    <p className="font-medium text-slate-900 dark:text-slate-100">{policy.auto_delete ? 'Yes' : 'No'}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Delete After</p>
+                                    <p className="font-medium text-slate-900 dark:text-slate-100">{policy.delete_after_days ? `${policy.delete_after_days} days` : 'Never'}</p>
                                   </div>
                                   <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">Created</p>
@@ -521,17 +471,62 @@ export default function DataRetentionManager() {
                               className="overflow-hidden"
                             >
                               <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50 space-y-3">
-                                <input
-                                  type="text"
-                                  value={formData.name}
-                                  onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                  className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Content Type</label>
+                                    <input
+                                      type="text"
+                                      value={formData.content_type}
+                                      onChange={e => setFormData(prev => ({ ...prev, content_type: e.target.value }))}
+                                      className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Archive After (days)</label>
+                                    <input
+                                      type="number"
+                                      value={formData.archive_after_days}
+                                      onChange={e => setFormData(prev => ({ ...prev, archive_after_days: parseInt(e.target.value) || 0 }))}
+                                      className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Delete After (days)</label>
+                                    <input
+                                      type="number"
+                                      value={formData.delete_after_days}
+                                      onChange={e => setFormData(prev => ({ ...prev, delete_after_days: parseInt(e.target.value) || 0 }))}
+                                      className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Active</label>
+                                    <div className="flex items-center gap-2 h-[38px]">
+                                      <button
+                                        onClick={() => setFormData(prev => ({ ...prev, is_active: !prev.is_active }))}
+                                        className={cn(
+                                          'relative w-10 h-5 rounded-full transition-colors',
+                                          formData.is_active ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
+                                        )}
+                                      >
+                                        <div className={cn(
+                                          'absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform',
+                                          formData.is_active ? 'left-5' : 'left-0.5'
+                                        )} />
+                                      </button>
+                                      <span className="text-xs text-slate-500">{formData.is_active ? 'Yes' : 'No'}</span>
+                                    </div>
+                                  </div>
+                                </div>
                                 <div className="flex items-center gap-2">
-                                  <Button variant="primary" size="sm" leftIcon={<Save className="h-3.5 w-3.5" />} onClick={() => handleUpdate(policy.id)}>
+                                  <Button variant="primary" size="sm" onClick={() => handleUpdate(policy.id)}>
+                                    <Save className="h-3.5 w-3.5 mr-1" />
                                     Save
                                   </Button>
-                                  <Button variant="ghost" size="sm" leftIcon={<X className="h-3.5 w-3.5" />} onClick={() => setEditingPolicy(null)}>
+                                  <Button variant="ghost" size="sm" onClick={() => setEditingPolicy(null)}>
+                                    <X className="h-3.5 w-3.5 mr-1" />
                                     Cancel
                                   </Button>
                                 </div>
@@ -559,8 +554,8 @@ export default function DataRetentionManager() {
                   <Check className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{compliance.compliant_count}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Compliant</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{compliance.active_policies}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Active Policies</p>
                 </div>
               </div>
             </Card>
@@ -570,19 +565,19 @@ export default function DataRetentionManager() {
                   <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{compliance.warning_count}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Warnings</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{compliance.content_without_policy?.length || 0}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Without Policy</p>
                 </div>
               </div>
             </Card>
             <Card variant="glass">
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-rose-500/10 to-red-500/10 dark:from-rose-500/20 dark:to-red-500/20">
-                  <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+                <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 dark:from-blue-500/20 dark:to-indigo-500/20">
+                  <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{compliance.violation_count}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Violations</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{compliance.total_content}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Total Content</p>
                 </div>
               </div>
             </Card>
@@ -591,62 +586,58 @@ export default function DataRetentionManager() {
           {/* Compliance Score */}
           <Card variant="glass">
             <CardHeader>
-              <CardTitle>Compliance Score</CardTitle>
+              <CardTitle>GDPR Article 5 Compliance Score</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
                 <div className="relative w-24 h-24">
                   <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="8" className="text-slate-200 dark:text-slate-700" />
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="8" strokeDasharray={`${compliance.score * 2.51} 251`} className={cn(
-                      compliance.score >= 90 ? 'text-emerald-500' : compliance.score >= 70 ? 'text-amber-500' : 'text-rose-500'
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="8" strokeDasharray={`${compliance.compliance_score * 2.51} 251`} className={cn(
+                      compliance.compliance_score >= 90 ? 'text-emerald-500' : compliance.compliance_score >= 70 ? 'text-amber-500' : 'text-rose-500'
                     )} />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{compliance.score}%</span>
+                    <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{compliance.compliance_score}%</span>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {compliance.score >= 90
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                    {compliance.compliance_score >= 90
                       ? 'Your data retention practices are fully compliant.'
-                      : compliance.score >= 70
+                      : compliance.compliance_score >= 70
                         ? 'Some areas need attention to achieve full compliance.'
                         : 'Significant compliance issues detected. Immediate action recommended.'}
                   </p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-500">Content Covered:</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">{compliance.content_covered_by_policy}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-500">Inactive Policies:</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">{compliance.inactive_policies}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Recommendations */}
+              {compliance.recommendations && compliance.recommendations.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Recommendations</p>
+                  <ul className="space-y-1">
+                    {compliance.recommendations.map((rec, i) => (
+                      <li key={i} className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                        <span className="text-amber-500 mt-0.5">•</span>
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </CardContent>
           </Card>
-
-          {/* Issues List */}
-          {compliance.issues && compliance.issues.length > 0 && (
-            <Card variant="glass">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-amber-500" />
-                  Compliance Issues
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {compliance.issues.map((issue, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                      <Badge variant={issue.severity === 'high' ? 'error' : issue.severity === 'medium' ? 'warning' : 'info'} size="sm" dot>
-                        {issue.severity}
-                      </Badge>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{issue.message}</p>
-                        {issue.recommendation && (
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{issue.recommendation}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       )}
 
@@ -688,7 +679,7 @@ export default function DataRetentionManager() {
                             {entry.action} — {entry.resource_type.replace('_', ' ')}
                           </p>
                           <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {entry.details} · {new Date(entry.timestamp).toLocaleString()}
+                            {entry.details || 'No details'} · {new Date(entry.created_at).toLocaleString()}
                           </p>
                         </div>
                       </div>
