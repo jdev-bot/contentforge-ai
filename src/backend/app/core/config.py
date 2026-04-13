@@ -51,6 +51,16 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_REQUESTS: int = Field(default=100, alias="RATE_LIMIT_REQUESTS")
     RATE_LIMIT_WINDOW: int = Field(default=3600, alias="RATE_LIMIT_WINDOW")  # 1 hour
+
+    # SSO / OIDC Providers
+    GOOGLE_CLIENT_ID: Optional[str] = Field(default=None, alias="GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET: Optional[str] = Field(default=None, alias="GOOGLE_CLIENT_SECRET")
+    MICROSOFT_CLIENT_ID: Optional[str] = Field(default=None, alias="MICROSOFT_CLIENT_ID")
+    MICROSOFT_CLIENT_SECRET: Optional[str] = Field(default=None, alias="MICROSOFT_CLIENT_SECRET")
+    OKTA_CLIENT_ID: Optional[str] = Field(default=None, alias="OKTA_CLIENT_ID")
+    OKTA_CLIENT_SECRET: Optional[str] = Field(default=None, alias="OKTA_CLIENT_SECRET")
+    OKTA_DOMAIN: Optional[str] = Field(default=None, alias="OKTA_DOMAIN")
+    SSO_BASE_URL: str = Field(default="http://localhost:3000", alias="SSO_BASE_URL")
     
     class Config:
         env_file = ".env"

@@ -293,7 +293,7 @@ export default function Dashboard({ user }: DashboardProps) {
         return (
           <ErrorBoundary onReset={() => setActiveTab('comments')}>
             <Suspense fallback={fallback}>
-              <CommentsPanel />
+              <CommentsPanel contentId="default" />
             </Suspense>
           </ErrorBoundary>
         )

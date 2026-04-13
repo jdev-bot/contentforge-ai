@@ -104,7 +104,7 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
     } finally {
       setLoading(false)
     }
-  }, [contentId, toast])
+  }, [contentId, showToast])
 
   useEffect(() => {
     loadComments()

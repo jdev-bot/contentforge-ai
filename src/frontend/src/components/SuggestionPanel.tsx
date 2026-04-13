@@ -71,7 +71,7 @@ export default function SuggestionPanel() {
     } finally {
       setLoading(false)
     }
-  }, [filter, toast])
+  }, [filter, showToast])
 
   useEffect(() => {
     fetchSuggestions()

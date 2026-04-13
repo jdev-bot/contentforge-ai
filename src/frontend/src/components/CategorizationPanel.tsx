@@ -53,7 +53,7 @@ export default function CategorizationPanel() {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [showToast])
 
   useEffect(() => {
     fetchCategorizations()

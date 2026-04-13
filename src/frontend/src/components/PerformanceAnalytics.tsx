@@ -87,7 +87,7 @@ export default function PerformanceAnalytics() {
     } finally {
       setLoading(false)
     }
-  }, [dateRange, toast])
+  }, [dateRange, showToast])
 
   useEffect(() => {
     fetchData()
