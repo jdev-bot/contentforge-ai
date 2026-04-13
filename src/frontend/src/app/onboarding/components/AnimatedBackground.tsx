@@ -27,6 +27,7 @@ export function AnimatedBackground() {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [mounted, setMounted] = useState(false);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     setParticles(generateParticles(25));
     setMounted(true);
