@@ -23,6 +23,14 @@ from app.tasks.trends import (
     notify_users_of_relevant_trends_task,
     get_trending_insights_task,
 )
+from app.tasks.competitors import (
+    fetch_competitor_data_task,
+    analyze_content_gaps_task,
+    generate_competitor_insights_task,
+    notify_high_opportunity_gaps_task,
+    cleanup_old_competitor_content_task,
+    competitor_health_check_task,
+)
 
 __all__ = [
     # Email tasks
@@ -46,4 +54,11 @@ __all__ = [
     "generate_trend_content_suggestions_task",
     "notify_users_of_relevant_trends_task",
     "get_trending_insights_task",
+    # Competitor tasks
+    "fetch_competitor_data_task",
+    "analyze_content_gaps_task",
+    "generate_competitor_insights_task",
+    "notify_high_opportunity_gaps_task",
+    "cleanup_old_competitor_content_task",
+    "competitor_health_check_task",
 ]
