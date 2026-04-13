@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import { useSwipe } from '../hooks/useSwipe';
-import { onboardingSteps, getStepById } from '../data/steps';
+import { getStepById } from '../data/steps';
 import { AnimatedBackground, StepBackground } from './AnimatedBackground';
 import { ProgressBar } from './ProgressBar';
 import { NavigationControls } from './NavigationControls';
@@ -18,6 +18,7 @@ export function OnboardingContainer() {
     currentStep,
     direction,
     totalSteps,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     completed,
     hotspotsRevealed,
     goToNext,

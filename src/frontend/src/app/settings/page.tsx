@@ -63,7 +63,7 @@ function ProfileTab({ user, profile, loading, onSave }: {
       setSaving(true)
       await onSave({ full_name: fullName })
       showToast('Profile updated successfully', 'success')
-    } catch (error) {
+    } catch (_error) {
       showToast('Failed to update profile', 'error')
     } finally {
       setSaving(false)
@@ -171,7 +171,7 @@ function ProfileTab({ user, profile, loading, onSave }: {
 }
 
 // Account Tab Component
-function AccountTab({ user }: { user: SettingsTabProps['user'] }) {
+function AccountTab({ user: _user }: { user: SettingsTabProps['user'] }) {
   const { showToast } = useToast()
 
   return (
@@ -277,8 +277,9 @@ function BillingTab({
   onSync: () => Promise<void>
   onUpgrade: () => void
 }) {
-  const { showToast } = useToast()
+  const { showToast: _showToast } = useToast()
   const [portalLoading, setPortalLoading] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [syncLoading, setSyncLoading] = useState(false)
   const currentTier = (profile?.subscription_tier || 'free') as 'free' | 'starter' | 'pro'
 
@@ -294,6 +295,7 @@ function BillingTab({
     setPortalLoading(false)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSync = async () => {
     setSyncLoading(true)
     await onSync()

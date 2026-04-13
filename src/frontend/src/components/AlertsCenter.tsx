@@ -10,22 +10,18 @@ import {
   X, 
   Check, 
   Settings,
-  Filter,
   Clock,
-  AlertTriangle,
   Zap,
-  MoreHorizontal,
-  Eye,
-  EyeOff,
-  Trash2,
-  RefreshCw
+  Filter,
+  RefreshCw,
+  EyeOff
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Badge, CountBadge } from '@/components/ui/Badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { Input, Select } from '@/components/ui/Input'
+import { Input } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
 
 // Types
@@ -440,7 +436,7 @@ export function AlertsPanel({
                         No alerts to display
                       </p>
                       <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
-                        You're all caught up!
+                        You&apos;re all caught up!
                       </p>
                     </div>
                   ) : (

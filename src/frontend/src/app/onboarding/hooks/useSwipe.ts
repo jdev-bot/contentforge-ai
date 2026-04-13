@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, TouchEvent } from 'react';
+import { useState, useCallback, TouchEvent } from 'react';
 
 interface SwipeState {
   startX: number;
@@ -58,7 +58,7 @@ export function useSwipe({
     setTouchState(null);
   }, [touchState, threshold, timeout, onSwipeLeft, onSwipeRight]);
 
-  const onTouchMove = useCallback((e: TouchEvent) => {
+  const onTouchMove = useCallback((_e: TouchEvent) => {
     // Can add logic here to prevent scroll during swipe if needed
   }, []);
 

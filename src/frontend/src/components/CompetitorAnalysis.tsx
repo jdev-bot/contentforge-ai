@@ -8,31 +8,27 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  Users,
   Eye,
   Heart,
   Share2,
   MessageCircle,
-  MoreVertical,
   Trash2,
   RefreshCw,
   Target,
   Zap,
   BarChart3,
   LineChart,
-  ArrowUpRight,
-  ArrowDownRight,
   Filter,
-  ExternalLink,
   Clock,
-  AlertCircle
+  AlertCircle,
+  ExternalLink
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/Card'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { Input, Select } from '@/components/ui/Input'
+import { Input } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
 
 // Types
@@ -240,7 +236,7 @@ export default function CompetitorAnalysis() {
             Competitor Analysis
           </h2>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Track and analyze your competitors' content performance
+            Track and analyze your competitors&apos; content performance
           </p>
         </div>
         

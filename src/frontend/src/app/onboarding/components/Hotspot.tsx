@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
-import * as LucideIcons from 'lucide-react';
 
 interface HotspotProps {
   id: string;

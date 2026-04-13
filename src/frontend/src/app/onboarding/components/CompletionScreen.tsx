@@ -166,6 +166,7 @@ function ConfettiEffect() {
         const delay = Math.random() * 2;
         const duration = 2 + Math.random() * 2;
         const startX = 50 + (Math.random() - 0.5) * 100; // Spread from center
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const endX = startX + (Math.random() - 0.5) * 200;
         const rotation = Math.random() * 720 - 360;
 

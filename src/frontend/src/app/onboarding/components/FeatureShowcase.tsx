@@ -5,7 +5,7 @@ import {
   LayoutDashboard, FileInput, Wand2, FolderOpen, Users, BarChart3, 
   CreditCard, Settings, Check, Sparkles, FileText, Link, Upload, 
   Video, Image, Type, Share2, MessageSquare, TrendingUp, Eye,
-  Zap, Crown, Building2, Bell, Palette, Key, UserCircle, Rocket
+  Zap, Crown, Building2, Bell, Palette, Key, Rocket
 } from 'lucide-react';
 import { OnboardingStep } from '../data/steps';
 import { HotspotDemo } from './Hotspot';
@@ -358,7 +358,7 @@ function AnalyticsContent() {
           { label: 'Views', value: '24.5K', change: '+12%' },
           { label: 'Engagement', value: '8.2%', change: '+5%' },
           { label: 'Shares', value: '1.2K', change: '+18%' }
-        ].map((stat, i) => (
+        ].map((stat) => (
           <div key={stat.label} className="text-center">
             <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
@@ -371,7 +371,7 @@ function AnalyticsContent() {
       <div className="h-32 flex items-end justify-between gap-2">
         {[40, 65, 45, 80, 55, 90, 70].map((height, i) => (
           <motion.div
-            key={i}
+            key={`bar-${i}`}
             initial={{ height: 0 }}
             animate={{ height: `${height}%` }}
             transition={{ delay: i * 0.1, duration: 0.5 }}
