@@ -312,7 +312,28 @@ def client() -> Generator:
         pass
     
     # Override FastAPI dependencies
-    app.dependency_overrides[get_auth_user] = lambda: default_mock_user
+    # get_auth_user override: returns mock user when Authorization header is present,
+    # otherwise raises 401 — this makes "unauthorized" tests work while still
+    # providing a logged-in user for normal authenticated endpoint tests.
+    def _auth_user_override(request: Request = None):
+        from fastapi import HTTPException, status as http_status
+        # Check if the request has a valid auth header
+        # When called as a FastAPI dependency, request is injected automatically
+        has_auth = False
+        if request is not None:
+            auth_header = request.headers.get("authorization", "")
+            if auth_header and auth_header.startswith("Bearer "):
+                has_auth = True
+        if has_auth or request is None:
+            # Authenticated or called without request context (legacy)
+            return default_mock_user
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    app.dependency_overrides[get_auth_user] = _auth_user_override
     app.dependency_overrides[enforce_subscription_limit] = lambda: mock_usage
     app.dependency_overrides[rate_limit_dependency] = lambda: True
     

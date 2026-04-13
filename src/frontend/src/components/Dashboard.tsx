@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp, Bell, Users2, Target, Zap, Award, Activity, Lightbulb, Tag, Shield, MessageSquare } from 'lucide-react'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp, Bell, Users2, Target, Zap, Award, Activity, Lightbulb, Tag, Shield, MessageSquare, GitBranch, ScrollText, LayoutDashboard, Puzzle, Store, Filter, PieChart, Heart, Network } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
@@ -41,6 +41,15 @@ const CategorizationPanel = lazy(() => import('./CategorizationPanel'))
 const PerformanceAnalytics = lazy(() => import('./PerformanceAnalytics'))
 const DataRetentionManager = lazy(() => import('./DataRetentionManager'))
 const CommentsPanel = lazy(() => import('./CommentsPanel'))
+const VersionHistory = lazy(() => import('./VersionHistory'))
+const AuditLogs = lazy(() => import('./AuditLogs'))
+const CustomDashboards = lazy(() => import('./CustomDashboards'))
+const PluginManager = lazy(() => import('./PluginManager'))
+const TemplateMarketplace = lazy(() => import('./TemplateMarketplace'))
+const FunnelAnalytics = lazy(() => import('./FunnelAnalytics'))
+const AttributionDashboard = lazy(() => import('./AttributionDashboard'))
+const SLAMonitoring = lazy(() => import('./SLAMonitoring'))
+const IntegrationHub = lazy(() => import('./IntegrationHub'))
 
 interface DashboardProps {
   user: AuthUser
@@ -85,6 +94,15 @@ export default function Dashboard({ user }: DashboardProps) {
     { id: 'performance', name: 'Performance', icon: BarChart3, badge: null },
     { id: 'retention', name: 'Retention', icon: Shield, badge: null },
     { id: 'comments', name: 'Comments', icon: MessageSquare, badge: null },
+    { id: 'version-history', name: 'History', icon: GitBranch, badge: 'New' },
+    { id: 'audit-logs', name: 'Audit', icon: ScrollText, badge: 'New' },
+    { id: 'custom-dashboards', name: 'Dashboards', icon: LayoutDashboard, badge: 'New' },
+    { id: 'plugins', name: 'Plugins', icon: Puzzle, badge: 'New' },
+    { id: 'marketplace', name: 'Marketplace', icon: Store, badge: 'New' },
+    { id: 'funnels', name: 'Funnels', icon: Filter, badge: 'New' },
+    { id: 'attribution', name: 'Attribution', icon: PieChart, badge: 'New' },
+    { id: 'sla', name: 'SLA', icon: Heart, badge: 'New' },
+    { id: 'integration-hub', name: 'Integrations Hub', icon: Network, badge: 'New' },
     { id: 'settings', name: 'Settings', icon: Settings, badge: null },
     { id: 'trash', name: 'Trash', icon: Trash2, badge: null },
   ], [])
@@ -294,6 +312,78 @@ export default function Dashboard({ user }: DashboardProps) {
           <ErrorBoundary onReset={() => setActiveTab('comments')}>
             <Suspense fallback={fallback}>
               <CommentsPanel contentId="default" />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'version-history':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('version-history')}>
+            <Suspense fallback={fallback}>
+              <VersionHistory contentId="default" />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'audit-logs':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('audit-logs')}>
+            <Suspense fallback={fallback}>
+              <AuditLogs />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'custom-dashboards':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('custom-dashboards')}>
+            <Suspense fallback={fallback}>
+              <CustomDashboards />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'plugins':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('plugins')}>
+            <Suspense fallback={fallback}>
+              <PluginManager organizationId="default" />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'marketplace':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('marketplace')}>
+            <Suspense fallback={fallback}>
+              <TemplateMarketplace isOpen={true} onClose={() => setActiveTab('content')} />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'funnels':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('funnels')}>
+            <Suspense fallback={fallback}>
+              <FunnelAnalytics />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'attribution':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('attribution')}>
+            <Suspense fallback={fallback}>
+              <AttributionDashboard />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'sla':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('sla')}>
+            <Suspense fallback={fallback}>
+              <SLAMonitoring />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'integration-hub':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('integration-hub')}>
+            <Suspense fallback={fallback}>
+              <IntegrationHub />
             </Suspense>
           </ErrorBoundary>
         )

@@ -826,6 +826,7 @@ class TestIntegrationEditor:
         with patch("app.routers.ai_editor.get_supabase_client") as mock_supabase:
             mock_client = MagicMock()
             mock_query = MagicMock()
+            mock_query.select = MagicMock(return_value=mock_query)
             mock_query.eq = MagicMock(return_value=mock_query)
             mock_query.order = MagicMock(return_value=mock_query)
             mock_query.limit = MagicMock(return_value=mock_query)

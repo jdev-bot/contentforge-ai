@@ -7,7 +7,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import get_settings
-from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user, search, trash, scheduler, ai_editor, rss, freshness, audience, trends, integrations, alerts, competitors, version_history, audit_logs, quality_scoring, sentiment, dashboards, reports, retention, comments, suggestions, categorization, performance, sso, saml, marketplace, ws, presence, collaboration, plugins
+from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user, search, trash, scheduler, ai_editor, rss, freshness, audience, trends, integrations, alerts, competitors, version_history, audit_logs, quality_scoring, sentiment, dashboards, reports, retention, comments, suggestions, categorization, performance, sso, saml, marketplace, ws, presence, collaboration, plugins, sla, integration_framework, funnel, attribution
 
 settings = get_settings()
 
@@ -106,6 +106,10 @@ app.include_router(presence.router, prefix="/api/v1", tags=["presence"])
 app.include_router(collaboration.router, prefix="/api/v1", tags=["collaboration"])
 app.include_router(ws.router, tags=["websocket"])
 app.include_router(plugins.router, prefix="/api/v1", tags=["plugins"])
+app.include_router(sla.router, prefix="/api/v1", tags=["sla"])
+app.include_router(integration_framework.router, prefix="/api/v1", tags=["integration-framework"])
+app.include_router(funnel.router, prefix="/api/v1", tags=["funnels"])
+app.include_router(attribution.router, prefix="/api/v1", tags=["attribution"])
 
 
 @app.get("/")

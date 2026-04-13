@@ -45,6 +45,7 @@ import {
   type MarketplaceTemplate,
   type MarketplaceCategory,
   type MarketplaceTag,
+  type MarketplaceRating,
 } from '@/lib/api'
 
 type ViewMode = 'gallery' | 'detail' | 'publish'
@@ -79,7 +80,7 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
 
   // Detail view state
   const [detailTemplate, setDetailTemplate] = useState<MarketplaceTemplate | null>(null)
-  const [ratings, setRatings] = useState<{ id: string; user: string; rating: number; comment: string }[]>([])
+  const [ratings, setRatings] = useState<MarketplaceRating[]>([])
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [userRating, setUserRating] = useState(0)
   const [userReview, setUserReview] = useState('')
@@ -413,7 +414,7 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
                           ].map((option) => (
                             <button
                               key={option.id}
-                              onClick={() => { setSortBy(option.id); setOffset(0) }}
+                              onClick={() => { setSortBy(option.id as 'newest' | 'popular' | 'rating'); setOffset(0) }}
                               className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
                                 sortBy === option.id
                                   ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
@@ -748,7 +749,7 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
                               <h5 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                                 Recent Reviews
                               </h5>
-                              {ratings.map((rating: { id: string; user: string; rating: number; comment: string }) => (
+                              {ratings.map((rating) => (
                                 <Card key={rating.id} variant="outline" padding="sm">
                                   <div className="flex items-center justify-between mb-1">
                                     <div className="flex items-center gap-2">

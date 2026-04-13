@@ -261,6 +261,7 @@ class TestAuthMe:
     @pytest.mark.unit
     def test_get_current_user_success(self, client):
         """Test getting current authenticated user."""
+        from app.routers.auth import get_auth_user
         headers = create_auth_headers("valid-token")
         
         mock_user = create_mock_auth_user(
@@ -284,14 +285,21 @@ class TestAuthMe:
         mock_client.auth.get_user.return_value = Mock(user=mock_user)
         mock_client.table.return_value = mock_table
         
-        with patch('app.routers.auth.get_supabase_client', return_value=mock_client):
-            response = client.get("/api/v1/auth/me", headers=headers)
-            
-            assert response.status_code == status.HTTP_200_OK
-            data = response.json()
-            assert data["email"] == "current@example.com"
-            assert data["full_name"] == "Current User"
-            assert data["is_active"] is True
+        # Override get_auth_user to return our custom user for this test
+        original_override = client.app.dependency_overrides.get(get_auth_user)
+        client.app.dependency_overrides[get_auth_user] = lambda: mock_user
+        try:
+            with patch('app.routers.auth.get_supabase_client', return_value=mock_client):
+                response = client.get("/api/v1/auth/me", headers=headers)
+                
+                assert response.status_code == status.HTTP_200_OK
+                data = response.json()
+                assert data["email"] == "current@example.com"
+                assert data["full_name"] == "Current User"
+                assert data["is_active"] is True
+        finally:
+            if original_override is not None:
+                client.app.dependency_overrides[get_auth_user] = original_override
     
     @pytest.mark.unit
     def test_get_current_user_no_token(self, client):
@@ -303,19 +311,27 @@ class TestAuthMe:
     @pytest.mark.unit
     def test_get_current_user_invalid_token(self, client):
         """Test getting current user with invalid token."""
+        from app.routers.auth import get_auth_user
         headers = create_auth_headers("invalid-token")
         
         mock_client = MagicMock()
         mock_client.auth.get_user.side_effect = Exception("Invalid token")
         
-        with patch('app.routers.auth.get_supabase_client', return_value=mock_client):
-            response = client.get("/api/v1/auth/me", headers=headers)
-            
-            assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        # Remove auth override so real get_auth_user runs (which will call supabase.auth.get_user)
+        original_override = client.app.dependency_overrides.pop(get_auth_user, None)
+        try:
+            with patch('app.routers.auth.get_supabase_client', return_value=mock_client):
+                response = client.get("/api/v1/auth/me", headers=headers)
+                
+                assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        finally:
+            if original_override is not None:
+                client.app.dependency_overrides[get_auth_user] = original_override
     
     @pytest.mark.unit
     def test_get_current_user_expired_token(self, client):
         """Test getting current user with expired token."""
+        from app.routers.auth import get_auth_user
         headers = create_auth_headers("expired-token")
         
         mock_client = MagicMock()
@@ -323,10 +339,16 @@ class TestAuthMe:
         mock_user_response.user = None
         mock_client.auth.get_user.return_value = mock_user_response
         
-        with patch('app.routers.auth.get_supabase_client', return_value=mock_client):
-            response = client.get("/api/v1/auth/me", headers=headers)
-            
-            assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        # Remove auth override so real get_auth_user runs
+        original_override = client.app.dependency_overrides.pop(get_auth_user, None)
+        try:
+            with patch('app.routers.auth.get_supabase_client', return_value=mock_client):
+                response = client.get("/api/v1/auth/me", headers=headers)
+                
+                assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        finally:
+            if original_override is not None:
+                client.app.dependency_overrides[get_auth_user] = original_override
     
     @pytest.mark.unit
     def test_get_current_user_malformed_header(self, client):

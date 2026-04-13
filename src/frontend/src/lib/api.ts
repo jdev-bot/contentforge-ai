@@ -4492,3 +4492,306 @@ export async function getMarketplaceAuthorProfile(authorId: string): Promise<{
 
 // ============ End Template Marketplace API ============
 
+// ============ P4: Funnel Analytics API ============
+
+export interface FunnelStep {
+  id: string
+  step_id: string
+  name: string
+  order: number
+  description?: string
+}
+
+export interface FunnelResponse {
+  id: string
+  name: string
+  description?: string
+  steps: FunnelStep[]
+  created_at: string
+  updated_at: string
+}
+
+export interface FunnelAnalyticsData {
+  funnel_id: string
+  step_conversions: Record<string, number>
+  step_conversion_rates: Record<string, number>
+  total_entered: number
+  total_completed: number
+  conversion_rate: number
+  drop_off_steps: Array<{
+    step_id: string
+    step_name: string
+    drop_off_rate: number
+    users_entered: number
+    users_exited: number
+    drop_off_count: number
+  }>
+}
+
+export interface FunnelListResponse {
+  funnels: FunnelResponse[]
+}
+
+export async function createFunnel(data: {
+  name: string
+  description?: string
+  steps: Array<{ step_id: string; name: string; order: number; description?: string }>
+}): Promise<FunnelResponse> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/funnels`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error('Failed to create funnel')
+  return response.json()
+}
+
+export async function getFunnel(funnelId: string): Promise<FunnelResponse> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/funnels/${funnelId}`, { headers })
+  if (!response.ok) throw new Error('Failed to get funnel')
+  return response.json()
+}
+
+export async function listFunnels(): Promise<FunnelListResponse> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/funnels`, { headers })
+  if (!response.ok) throw new Error('Failed to list funnels')
+  return response.json()
+}
+
+export async function trackFunnelEvent(funnelId: string, stepId: string, eventData?: Record<string, unknown>): Promise<{ success: boolean }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/funnels/${funnelId}/events`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ step_id: stepId, event_data: eventData }),
+  })
+  if (!response.ok) throw new Error('Failed to track funnel event')
+  return response.json()
+}
+
+export async function getFunnelAnalytics(funnelId: string, days?: number): Promise<FunnelAnalyticsData> {
+  const headers = await getAuthHeader()
+  const params = days ? `?days=${days}` : ''
+  const response = await fetch(`${API_URL}/funnels/${funnelId}/analytics${params}`, { headers })
+  if (!response.ok) throw new Error('Failed to get funnel analytics')
+  return response.json()
+}
+
+export async function deleteFunnel(funnelId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/funnels/${funnelId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) throw new Error('Failed to delete funnel')
+}
+
+// ============ End P4: Funnel Analytics API ============
+
+// ============ P4: Attribution API ============
+
+export interface TouchpointData {
+  id: string
+  content_id: string
+  channel: string
+  source: string
+  campaign?: string
+  created_at?: string
+}
+
+export interface AttributionResultData {
+  channel: string
+  source: string
+  attribution_weight: number
+  revenue_attributed: number
+  conversion_count: number
+}
+
+export interface ChannelPerformanceData {
+  channel: string
+  total_touchpoints: number
+  total_conversions: number
+  attribution_weights: Record<string, number>
+  revenue_attributed: Record<string, number>
+}
+
+export interface TouchpointListResponse {
+  touchpoints: TouchpointData[]
+}
+
+export type AttributionModel = 'first_touch' | 'last_touch' | 'linear' | 'time_decay' | 'position_based'
+
+export async function recordTouchpoint(data: { content_id: string; channel: string; source: string; campaign?: string }): Promise<TouchpointData> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/attribution/touchpoints`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error('Failed to record touchpoint')
+  return response.json()
+}
+
+export async function getTouchpoints(contentId: string): Promise<TouchpointListResponse> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/attribution/touchpoints/${contentId}`, { headers })
+  if (!response.ok) throw new Error('Failed to get touchpoints')
+  return response.json()
+}
+
+export async function calculateAttribution(contentId: string, model: AttributionModel): Promise<AttributionResultData[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/attribution/calculate`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content_id: contentId, model }),
+  })
+  if (!response.ok) throw new Error('Failed to calculate attribution')
+  return response.json()
+}
+
+export async function getChannelPerformance(days?: number): Promise<ChannelPerformanceData[]> {
+  const headers = await getAuthHeader()
+  const params = days ? `?days=${days}` : ''
+  const response = await fetch(`${API_URL}/attribution/channels${params}`, { headers })
+  if (!response.ok) throw new Error('Failed to get channel performance')
+  return response.json()
+}
+
+// ============ End P4: Attribution API ============
+
+// ============ P4: SLA Monitoring API ============
+
+export interface SLAPolicy {
+  id: string
+  name: string
+  metric: string
+  threshold: number
+  window_minutes: number
+  severity: string
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface SLAAlert {
+  id: string
+  policy_id: string
+  metric_type: string
+  current_value: number
+  threshold: number
+  severity: string
+  message: string
+  created_at: string
+  acknowledged: boolean
+}
+
+export interface SLADashboardData {
+  uptime_percentage: number
+  avg_response_time_ms: number
+  error_rate: number
+  throughput_rps: number
+  active_alerts: number
+  policy_compliance: Record<string, boolean>
+}
+
+export async function createSLAPolicy(data: { name: string; metric: string; threshold: number; window_minutes: number; severity: string }): Promise<SLAPolicy> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sla/policies`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error('Failed to create SLA policy')
+  return response.json()
+}
+
+export async function listSLAPolicies(): Promise<SLAPolicy[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sla/policies`, { headers })
+  if (!response.ok) throw new Error('Failed to list SLA policies')
+  return response.json()
+}
+
+export async function getSLADashboard(): Promise<SLADashboardData> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sla/dashboard`, { headers })
+  if (!response.ok) throw new Error('Failed to get SLA dashboard')
+  return response.json()
+}
+
+export async function getSLAAlerts(acknowledged?: boolean): Promise<SLAAlert[]> {
+  const headers = await getAuthHeader()
+  const params = acknowledged !== undefined ? `?acknowledged=${acknowledged}` : ''
+  const response = await fetch(`${API_URL}/sla/alerts${params}`, { headers })
+  if (!response.ok) throw new Error('Failed to get SLA alerts')
+  return response.json()
+}
+
+export async function acknowledgeSLAAlert(alertId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sla/alerts/${alertId}/acknowledge`, {
+    method: 'PUT',
+    headers,
+  })
+  if (!response.ok) throw new Error('Failed to acknowledge SLA alert')
+}
+
+// ============ End P4: SLA Monitoring API ============
+
+// ============ P4: Integration Framework API ============
+
+export interface IntegrationConfig {
+  id: string
+  name: string
+  type: 'webhook' | 'api' | 'polling' | 'streaming'
+  provider: string
+  credentials: Record<string, string>
+  settings: Record<string, unknown>
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export async function registerIntegration(data: { name: string; type: string; provider: string; credentials: Record<string, string>; settings?: Record<string, unknown> }): Promise<IntegrationConfig> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/integration-framework/configs`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error('Failed to register integration')
+  return response.json()
+}
+
+export async function listIntegrations(): Promise<IntegrationConfig[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/integration-framework/configs`, { headers })
+  if (!response.ok) throw new Error('Failed to list integrations')
+  return response.json()
+}
+
+export async function testIntegration(configId: string): Promise<{ success: boolean; message: string }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}/test`, {
+    method: 'POST',
+    headers,
+  })
+  if (!response.ok) throw new Error('Failed to test integration')
+  return response.json()
+}
+
+export async function deleteIntegration(configId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) throw new Error('Failed to delete integration')
+}
+
+// ============ End P4: Integration Framework API ============
+
