@@ -1849,6 +1849,136 @@ export async function updateContent(contentId: string, data: { original_text: st
 
 // ============ End Smart Content Editor API ============
 
+// ============ Freshness API ============
+
+export interface FreshnessAnalysis {
+  content_id: string
+  freshness_score: number
+  last_updated: string
+  recommendations: string[]
+  trend: 'up' | 'down' | 'stable'
+  trend_value: number
+}
+
+export interface FreshnessMetrics {
+  average_score: number
+  total_content: number
+  stale_count: number
+  fresh_count: number
+  needs_attention: number
+  last_scan: string
+}
+
+export async function analyzeFreshness(contentId: string): Promise<FreshnessAnalysis> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/freshness/${contentId}/analyze`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to analyze freshness')
+  }
+  
+  return response.json()
+}
+
+export async function getStaleContent(): Promise<Content[]> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/freshness/stale`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch stale content')
+  }
+  
+  return response.json()
+}
+
+export async function getFreshnessMetrics(): Promise<FreshnessMetrics> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/freshness/metrics`, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch freshness metrics')
+  }
+  
+  return response.json()
+}
+
+export async function bulkRefreshContent(contentIds?: string[]): Promise<{ refreshed: number }> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/freshness/bulk-refresh`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content_ids: contentIds }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to bulk refresh')
+  }
+  
+  return response.json()
+}
+
+// ============ Trending Topics API ============
+
+export interface Trend {
+  id: string
+  title: string
+  category: string
+  velocity: number
+  relevance_score: number
+  mention_count: number
+  growth_rate: number
+  is_hot: boolean
+  is_cold: boolean
+  timestamp: string
+  related_hashtags: string[]
+  description?: string
+}
+
+export async function getTrendingTopics(category?: string): Promise<Trend[]> {
+  const headers = await getAuthHeader()
+  
+  let url = `${API_URL}/trends`
+  if (category) {
+    url += `?category=${category}`
+  }
+  
+  const response = await fetch(url, { headers })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch trending topics')
+  }
+  
+  return response.json()
+}
+
+export async function generateFromTrend(topicId: string): Promise<Content> {
+  const headers = await getAuthHeader()
+  
+  const response = await fetch(`${API_URL}/trends/${topicId}/generate`, {
+    method: 'POST',
+    headers,
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to generate content from trend')
+  }
+  
+  return response.json()
+}
+
 // ============ RSS Feed API ============
 
 export interface RSSFeed {

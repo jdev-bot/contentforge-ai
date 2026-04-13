@@ -16,6 +16,13 @@ from app.tasks.rss import (
     cleanup_old_rss_entries_task,
     retry_failed_feeds_task,
 )
+from app.tasks.trends import (
+    update_trending_topics_task,
+    cleanup_expired_trends_task,
+    generate_trend_content_suggestions_task,
+    notify_users_of_relevant_trends_task,
+    get_trending_insights_task,
+)
 
 __all__ = [
     # Email tasks
@@ -33,4 +40,10 @@ __all__ = [
     "process_rss_entry_task",
     "cleanup_old_rss_entries_task",
     "retry_failed_feeds_task",
+    # Trends tasks
+    "update_trending_topics_task",
+    "cleanup_expired_trends_task",
+    "generate_trend_content_suggestions_task",
+    "notify_users_of_relevant_trends_task",
+    "get_trending_insights_task",
 ]

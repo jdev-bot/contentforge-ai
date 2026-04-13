@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss } from 'lucide-react'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
 import OfflineBanner from './OfflineBanner'
 import Footer from './Footer'
 import SearchModal from './SearchModal'
+import { TrendingTopicsWidget } from './TrendingTopics'
 import { cn } from '@/lib/utils'
 
 // Dynamic imports for code splitting
@@ -26,6 +27,8 @@ const TeamTab = lazy(() => import('./TeamTab'))
 const TrashTab = lazy(() => import('./TrashTab'))
 const ScheduleTab = lazy(() => import('./ScheduleTab'))
 const RSSTab = lazy(() => import('./RSSTab'))
+const FreshnessDashboard = lazy(() => import('./FreshnessDashboard'))
+const TrendingTopics = lazy(() => import('./TrendingTopics'))
 
 interface DashboardProps {
   user: AuthUser
@@ -54,6 +57,8 @@ export default function Dashboard({ user }: DashboardProps) {
     { id: 'projects', name: 'Projects', icon: Folder, badge: null },
     { id: 'schedule', name: 'Schedule', icon: Calendar, badge: null },
     { id: 'rss', name: 'RSS Feeds', icon: Rss, badge: 'New' },
+    { id: 'freshness', name: 'Freshness', icon: Leaf, badge: 'New' },
+    { id: 'trends', name: 'Trends', icon: TrendingUp, badge: 'New' },
     { id: 'distributions', name: 'Distributions', icon: Share2, badge: null },
     { id: 'analytics', name: 'Analytics', icon: BarChart3, badge: null },
     { id: 'team', name: 'Team', icon: Users, badge: null },
@@ -146,6 +151,22 @@ export default function Dashboard({ user }: DashboardProps) {
           <ErrorBoundary onReset={() => setActiveTab('rss')}>
             <Suspense fallback={fallback}>
               <RSSTab user={user} />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'freshness':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('freshness')}>
+            <Suspense fallback={fallback}>
+              <FreshnessDashboard />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'trends':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('trends')}>
+            <Suspense fallback={fallback}>
+              <TrendingTopics />
             </Suspense>
           </ErrorBoundary>
         )
@@ -339,6 +360,23 @@ export default function Dashboard({ user }: DashboardProps) {
             {/* Glass Card - Usage Stats */}
             <div className="mt-6 p-4 rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
               <UsageCounter onUpgrade={() => setShowUpgradeModal(true)} />
+            </div>
+            
+            {/* Trending Topics Widget */}
+            <div className="mt-6 p-4 rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-blue-500" />
+                  Trending Now
+                </h3>
+                <button
+                  onClick={() => setActiveTab('trends')}
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  View all
+                </button>
+              </div>
+              <TrendingTopicsWidget />
             </div>
             
             {/* Keyboard Shortcuts Info */}
