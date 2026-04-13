@@ -17,9 +17,7 @@ import {
   Loader2,
   Calendar,
   Clock,
-  Languages,
 } from 'lucide-react'
-import BatchTranslationModal from './BatchTranslationModal'
 
 interface ContentTabProps {
   router?: ReturnType<typeof import('next/navigation').useRouter>
@@ -39,10 +37,6 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState<GeneratedAsset | null>(null)
   const [selectedContentTitle, setSelectedContentTitle] = useState('')
-
-  // Batch translation modal state
-  const [showBatchTranslationModal, setShowBatchTranslationModal] = useState(false)
-  const [selectedContentIds, setSelectedContentIds] = useState<string[]>([])
 
   const loadContent = useCallback(async () => {
     try {
@@ -285,17 +279,6 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
                         <ExternalLink className="h-4 w-4" />
                         View Details
                       </button>
-                      <button
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50"
-                        onClick={() => {
-                          setSelectedContentIds([item.id])
-                          setShowBatchTranslationModal(true)
-                          setShowMenu(null)
-                        }}
-                      >
-                        <Languages className="h-4 w-4" />
-                        Translate
-                      </button>
                       {(assets[item.id]?.length || 0) > 0 && (
                         <button
                           className="w-full flex items-center gap-2 px-4 py-2 text-sm text-violet-600 hover:bg-violet-50"
@@ -336,18 +319,6 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
                   contentTitle={selectedContentTitle}
                   onSuccess={() => {
                     showToast('Post scheduled successfully', 'success')
-                  }}
-                />
-                <BatchTranslationModal
-                  isOpen={showBatchTranslationModal}
-                  onClose={() => {
-                    setShowBatchTranslationModal(false)
-                    setSelectedContentIds([])
-                  }}
-                  preselectedContentIds={selectedContentIds}
-                  onComplete={(results) => {
-                    const successCount = results.filter(r => r.success).length
-                    showToast(`Batch translation complete: ${successCount} successful`, 'success')
                   }}
                 />
               </div>
