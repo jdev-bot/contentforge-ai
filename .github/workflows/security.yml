@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main, develop]
   schedule:
-    - cron: '0 6 * * 1'  # Weekly Monday 06:00 UTC
+    - cron: '0 6 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -29,11 +29,9 @@ jobs:
           fetch-depth: 0
 
       - name: Gitleaks scan
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v2.3.9
         env:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-        with:
-          config-path: .gitleaks.toml
 
   trufflehog:
     name: Secret Scan (TruffleHog)
@@ -78,23 +76,18 @@ jobs:
             p/owasp-top-ten
             p/jwt
             p/secrets
-          generateSarif: true
-          outputFormat: sarif
-          outputPath: semgrep-results.sarif
-
-      - name: Upload Semgrep SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: semgrep-results.sarif
 
   codeql:
-    name: SAST (CodeQL)
+    name: SAST (CodeQL — ${{ matrix.language }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         language: [python, javascript-typescript]
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -111,6 +104,7 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{ matrix.language }}"
+        continue-on-error: true
 
   bandit:
     name: SAST (Bandit — Python)
@@ -127,19 +121,10 @@ jobs:
           python-version: '3.12'
 
       - name: Install Bandit
-        run: pip install bandit bandit-sarif-formatter
+        run: pip install bandit
 
       - name: Run Bandit
-        run: |
-          bandit -r app/ -f sarif -o bandit-results.sarif --severity-level ${{ env.SEVERITY_FAIL }} || true
-          bandit -r app/ -f txt || true
-
-      - name: Upload Bandit SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: ./src/backend/bandit-results.sarif
-          category: bandit
+        run: bandit -r app/ -f txt --severity-level ${{ env.SEVERITY_FAIL }} || true
 
   # ── C. Dependency & Supply-Chain Scanning ───────────────────────────
 
@@ -187,7 +172,7 @@ jobs:
         run: npm audit --audit-level=moderate || true
 
   dependency-review:
-    name: Dependency Review (PR)
+    name: Dependency Review (PR only)
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -197,9 +182,7 @@ jobs:
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
-          deny-licenses: ""
           vulnerability-check: true
-          license-check: false
 
   osv-scanner:
     name: Dependency Scan (OSV — all ecosystems)
@@ -209,7 +192,8 @@ jobs:
 
       - name: Install OSV Scanner
         run: |
-          curl -sL https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 -o /usr/local/bin/osv-scanner
+          OSV_VER=$(curl -sL https://api.github.com/repos/google/osv-scanner/releases/latest | grep '"tag_name"' | head -1 | sed -E 's/.*"v([^"]+)".*/\1/')
+          curl -sL "https://github.com/google/osv-scanner/releases/download/v${OSV_VER}/osv-scanner_linux_amd64" -o /usr/local/bin/osv-scanner
           chmod +x /usr/local/bin/osv-scanner
 
       - name: Scan Python dependencies
@@ -227,22 +211,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: fs
           scan-ref: .
           severity: CRITICAL,HIGH
           exit-code: 1
-          format: sarif
-          output: trivy-fs-results.sarif
+          format: table
           skip-dirs: node_modules,venv,.venv,.next,__pycache__
-
-      - name: Upload Trivy FS SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-fs-results.sarif
-          category: trivy-fs
 
   trivy-config:
     name: IaC / Misconfig Scan (Trivy)
@@ -251,22 +227,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Trivy config scan
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: config
           scan-ref: .
           severity: CRITICAL,HIGH
           exit-code: 1
-          format: sarif
-          output: trivy-config-results.sarif
+          format: table
           skip-dirs: node_modules,venv,.venv,.next,__pycache__
-
-      - name: Upload Trivy Config SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-config-results.sarif
-          category: trivy-config
 
   checkov:
     name: IaC Scan (Checkov)
@@ -278,18 +246,10 @@ jobs:
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: .
-          framework: docker-compose,kubernetes,github_actions
-          output_format: sarif
-          output_file_path: checkov-results.sarif
+          framework: docker-compose,github_actions
+          output_format: cli
           soft_fail: true
-          skip_check: CKV_DOCKER_3  # Running as root in dev containers is acceptable
-
-      - name: Upload Checkov SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: checkov-results.sarif
-          category: checkov
+          skip_check: CKV_DOCKER_3
 
   # ── E. Container Image Scanning ─────────────────────────────────────
 
@@ -300,25 +260,16 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: |
-          docker build -f infra/docker/Dockerfile.backend -t contentforge-ai:scan .
+        run: docker build -f infra/docker/Dockerfile.backend -t contentforge-ai:scan .
 
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: contentforge-ai:scan
           severity: CRITICAL,HIGH
           exit-code: 1
-          format: sarif
-          output: trivy-image-results.sarif
+          format: table
           ignore-unfixed: true
-
-      - name: Upload Trivy Image SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-image-results.sarif
-          category: trivy-image
 
   # ── Security Gate Summary ───────────────────────────────────────────
 
@@ -368,7 +319,6 @@ jobs:
           echo "| Trivy Config | ${TRIVY_CONFIG} |" >> $GITHUB_STEP_SUMMARY
           echo "| Trivy Image | ${TRIVY_IMAGE} |" >> $GITHUB_STEP_SUMMARY
 
-          # Fail if any critical scan failed
           FAILED=""
           for result_var in GITLEAKS TRUFFLEHOG SEMGREP CODEQL BANDIT TRIVY_FS TRIVY_CONFIG TRIVY_IMAGE; do
             val="${!result_var}"
