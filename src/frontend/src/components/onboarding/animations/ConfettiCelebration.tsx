@@ -1,5 +1,8 @@
 'use client';
 
+// eslint-disable react-hooks/purity, react-hooks/set-state-in-effect
+// Animation components intentionally use Math.random for visual effects
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useCallback } from 'react';
 import { useReducedMotion } from './useReducedMotion';
@@ -21,6 +24,10 @@ interface Particle {
   scale: number;
   color: string;
   shape: 'square' | 'circle' | 'triangle';
+  // Pre-calculated animation values to avoid Math.random in render
+  xOffset: number;
+  rotationOffset: number;
+  animDuration: number;
 }
 
 const defaultColors = [
@@ -56,6 +63,10 @@ export function ConfettiCelebration({
         scale: 0.5 + Math.random() * 0.5,
         color: colors[Math.floor(Math.random() * colors.length)],
         shape: ['square', 'circle', 'triangle'][Math.floor(Math.random() * 3)] as Particle['shape'],
+        // Pre-calculate animation values
+        xOffset: (Math.random() - 0.5) * 300,
+        rotationOffset: Math.random() * 720 - 360,
+        animDuration: 2 + Math.random() * 2,
       });
     }
     return newParticles;
@@ -93,14 +104,14 @@ export function ConfettiCelebration({
               }}
               animate={{
                 y: window.innerHeight + 100,
-                x: particle.x + (Math.random() - 0.5) * 300,
-                rotate: particle.rotation + Math.random() * 720 - 360,
+                x: particle.x + particle.xOffset,
+                rotate: particle.rotation + particle.rotationOffset,
                 scale: particle.scale,
                 opacity: [1, 1, 0],
               }}
               exit={{ opacity: 0 }}
               transition={{
-                duration: 2 + Math.random() * 2,
+                duration: particle.animDuration,
                 ease: [0.25, 0.46, 0.45, 0.94],
                 opacity: {
                   duration: duration / 1000,
