@@ -134,19 +134,11 @@ _SUPABASE_CLIENT_PATCH_TARGETS = [
     "app.routers.distributions.get_supabase_client",
     "app.routers.health.get_supabase_client",
     "app.routers.trends.get_supabase_client",
-    "app.routers.dashboards.get_supabase_client",
-    "app.routers.reports.get_supabase_client",
 
-    "app.routers.dashboards.get_supabase_client",
-    "app.routers.reports.get_supabase_client",
     "app.routers.sentiment.get_supabase_client",
     "app.routers.quality_scoring.get_supabase_client",
-    "app.routers.audit_logs.get_supabase_client",
-    "app.routers.version_history.get_supabase_client",
-    "app.routers.translation.get_supabase_client",
-    "app.routers.trash.get_supabase_client",
-    "app.routers.docs.get_supabase_client",
-    "app.routers.usage.get_supabase_client",
+    "app.routers.dashboards.get_supabase_client",
+    "app.routers.reports.get_supabase_client",
     "app.services.audience_service.get_supabase_client",
     "app.services.freshness_service.get_supabase_client",
     "app.services.scheduler_service.get_supabase_client",
@@ -155,6 +147,10 @@ _SUPABASE_CLIENT_PATCH_TARGETS = [
     "app.services.dashboard_service.get_supabase_client",
     "app.services.report_service.get_supabase_client",
     "app.services.competitor_service.get_supabase_client",
+    "app.services.version_service.get_supabase_client",
+    "app.services.audit_service.get_supabase_client",
+    "app.services.quality_service.get_supabase_client",
+    "app.services.sentiment_service.get_supabase_client",
     "app.core.trash.get_supabase_client",
     "app.core.error_tracking.get_supabase_client",
     "app.tasks.email.get_supabase_client",
@@ -221,21 +217,34 @@ def client() -> Generator:
     patches = []
     
     # Patch all get_supabase_client references
+    # Use safe patching that skips targets where the attribute doesn't exist
     for target in _SUPABASE_CLIENT_PATCH_TARGETS:
-        p = patch(target, return_value=mock_client)
-        patches.append(p)
+        try:
+            p = patch(target, return_value=mock_client)
+            p.start()
+            patches.append(p)
+        except AttributeError:
+            pass  # Module doesn't have this attribute — skip
     
     # Patch all get_supabase_admin_client references
     for target in _ADMIN_CLIENT_PATCH_TARGETS:
-        p = patch(target, return_value=mock_client)
-        patches.append(p)
+        try:
+            p = patch(target, return_value=mock_client)
+            p.start()
+            patches.append(p)
+        except AttributeError:
+            pass  # Module doesn't have this attribute — skip
     
     # Patch rate limit enforcement to bypass auth/subscription checks
     for func_name, modules in _RATE_LIMIT_PATCH_TARGETS.items():
         for mod in modules:
             target = f"{mod}.{func_name}"
-            p = patch(target, return_value=mock_usage)
-            patches.append(p)
+            try:
+                p = patch(target, return_value=mock_usage)
+                p.start()
+                patches.append(p)
+            except AttributeError:
+                pass  # Module doesn't have this attribute — skip
     
     # Patch usage stats functions at the source module
     patches.append(patch("app.core.rate_limit.get_user_usage_stats", return_value=mock_usage))
