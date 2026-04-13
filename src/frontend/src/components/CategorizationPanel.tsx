@@ -193,7 +193,7 @@ export default function CategorizationPanel() {
               <Tag className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
               <p className="text-slate-500 dark:text-slate-400 text-lg font-medium">No categorizations yet</p>
               <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">
-                Content will be automatically categorized as it's created
+                Content will be automatically categorized as it&apos;s created
               </p>
             </motion.div>
           ) : (
