@@ -233,18 +233,18 @@ def get_trash_stats(user_id: str) -> dict:
     try:
         result = supabase.table("trash").select("type", count="exact").eq(
             "user_id", user_id
-        ).is("restored_at", None).execute()
+        ).is_("restored_at", None).execute()
         
         total = result.count or 0
         
         # Get breakdown by type
         content_count = len(supabase.table("trash").select("id").eq(
             "user_id", user_id
-        ).eq("type", "content").is("restored_at", None).execute().data or [])
+        ).eq("type", "content").is_("restored_at", None).execute().data or [])
         
         project_count = len(supabase.table("trash").select("id").eq(
             "user_id", user_id
-        ).eq("type", "project").is("restored_at", None).execute().data or [])
+        ).eq("type", "project").is_("restored_at", None).execute().data or [])
         
         return {
             "total": total,
@@ -269,7 +269,7 @@ def cleanup_expired_trash() -> int:
         # Get expired items
         result = supabase.table("trash").select("id, user_id, type").lt(
             "expires_at", now
-        ).is("restored_at", None).execute()
+        ).is_("restored_at", None).execute()
         
         items = result.data or []
         count = 0
