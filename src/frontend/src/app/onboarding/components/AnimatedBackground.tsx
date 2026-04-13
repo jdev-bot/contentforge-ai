@@ -28,7 +28,7 @@ export function AnimatedBackground() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
+     
     setParticles(generateParticles(25));
     setMounted(true);
   }, []);;

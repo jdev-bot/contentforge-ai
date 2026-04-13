@@ -17,9 +17,11 @@ import {
 } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/Card'
-import { ArrowLeft, Loader2, Sparkles, Trash2, RefreshCw, Send, AlertCircle, Edit3 } from 'lucide-react'
+import { ArrowLeft, Loader2, Sparkles, Trash2, RefreshCw, Send, AlertCircle, Edit3, Languages } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import dynamic from 'next/dynamic'
+import TranslationSidebar from '@/components/TranslationSidebar'
+import BatchTranslationModal from '@/components/BatchTranslationModal'
 
 // Dynamic import for SmartEditor to avoid SSR issues
 const SmartEditor = dynamic(() => import('@/components/SmartEditor'), {
@@ -40,6 +42,7 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
   const [usage, setUsage] = useState<UsageSummary | null>(null)
   const [activeTab, setActiveTab] = useState<'editor' | 'assets'>('editor')
   const [editorContent, setEditorContent] = useState('')
+  const [showBatchTranslationModal, setShowBatchTranslationModal] = useState(false)
   const router = useRouter()
   const { showToast } = useToast()
 
@@ -197,6 +200,15 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
 
               <Button
                 variant="outline"
+                onClick={() => setShowBatchTranslationModal(true)}
+                className="flex items-center gap-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              >
+                <Languages className="h-4 w-4" />
+                Translate
+              </Button>
+
+              <Button
+                variant="outline"
                 onClick={handleDelete}
                 className="flex items-center gap-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"
               >
@@ -293,6 +305,12 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
                 </CardContent>
               </Card>
 
+              {/* Translation Sidebar */}
+              <TranslationSidebar
+                contentId={content.id}
+                originalText={content.original_text || ''}
+              />
+
               {/* Quick Actions */}
               <Card variant="glass">
                 <CardHeader>
@@ -379,6 +397,17 @@ export default function ContentDetailPage({ params }: { params: { id: string } }
             )}
           </div>
         )}
+
+        {/* Batch Translation Modal */}
+        <BatchTranslationModal
+          isOpen={showBatchTranslationModal}
+          onClose={() => setShowBatchTranslationModal(false)}
+          preselectedContentIds={[params.id]}
+          onComplete={(results) => {
+            const successCount = results.filter(r => r.success).length
+            showToast(`Batch translation complete: ${successCount} successful`, 'success')
+          }}
+        />
       </main>
     </div>
   )

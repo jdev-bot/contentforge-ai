@@ -41,6 +41,7 @@ celery_app.conf.update(
         "app.tasks.email.*": {"queue": "email"},
         "app.tasks.analytics.*": {"queue": "analytics"},
         "app.tasks.webhooks.*": {"queue": "webhooks"},
+        "app.tasks.rss.*": {"queue": "rss"},
     },
     # Beat schedule for periodic tasks
     beat_schedule={
@@ -55,6 +56,19 @@ celery_app.conf.update(
         "retry-failed-posts": {
             "task": "app.services.scheduler_service.retry_failed_posts",
             "schedule": 300.0,  # Every 5 minutes
+        },
+        "fetch-rss-feeds-hourly": {
+            "task": "app.tasks.rss.fetch_rss_feeds_task",
+            "schedule": 3600.0,  # Every hour
+        },
+        "cleanup-old-rss-entries-daily": {
+            "task": "app.tasks.rss.cleanup_old_rss_entries_task",
+            "schedule": 86400.0,  # Every 24 hours
+            "kwargs": {"days": 30},
+        },
+        "retry-failed-feeds-hourly": {
+            "task": "app.tasks.rss.retry_failed_feeds_task",
+            "schedule": 3600.0,  # Every hour
         },
     },
 )

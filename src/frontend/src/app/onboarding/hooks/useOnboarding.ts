@@ -48,7 +48,7 @@ export function useOnboarding(): UseOnboardingReturn {
   });
 
   // Load state from localStorage on mount
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+   
   useEffect(() => {
     setMounted(true);
     try {
@@ -169,7 +169,7 @@ export function useOnboarding(): UseOnboardingReturn {
 export function useHasSeenOnboarding(): boolean {
   const [hasSeen, setHasSeen] = useState(false);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+   
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
