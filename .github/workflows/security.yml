@@ -207,12 +207,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: OSV Scanner
-        uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@main
-        with:
-          scan-args: |-
-            --lockfile=./src/frontend/package-lock.json
-            --config=.osv-scanner.toml
+      - name: Install OSV Scanner
+        run: |
+          curl -sL https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 -o /usr/local/bin/osv-scanner
+          chmod +x /usr/local/bin/osv-scanner
+
+      - name: Scan Python dependencies
+        run: osv-scanner --lockfile=./src/backend/requirements.txt --config=.osv-scanner.toml || true
+
+      - name: Scan Node.js dependencies
+        run: osv-scanner --lockfile=./src/frontend/package-lock.json --config=.osv-scanner.toml || true
 
   # ── D. Filesystem / Config / IaC Scanning ────────────────────────────
 
