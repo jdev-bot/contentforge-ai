@@ -696,7 +696,7 @@ function SettingsContent({ user }: SettingsTabProps) {
         <SubscriptionModal
           isOpen={showSubscriptionModal}
           onClose={() => setShowSubscriptionModal(false)}
-          currentTier={(profile?.subscription_tier as string) || 'free'}
+          currentTier={profile?.subscription_tier || 'free'}
         />
       )}
     </div>
