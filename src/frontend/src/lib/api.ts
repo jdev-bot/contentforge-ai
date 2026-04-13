@@ -3303,3 +3303,618 @@ export async function getRetentionAuditTrail(): Promise<RetentionAuditEntry[]> {
 }
 
 // ============ End P4: Data Retention API ============
+
+// ============ P4: SSO / OIDC API ============
+
+export interface AvailableSSOProvider {
+  name: string
+  display_name: string
+  is_active: boolean
+}
+
+export interface SSOProvider {
+  id: string
+  name: string
+  display_name: string
+  client_id: string
+  discovery_url: string | null
+  authorization_url: string | null
+  token_url: string | null
+  userinfo_url: string | null
+  scopes: string
+  domain: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface SSOInitiateResponse {
+  authorization_url: string
+  state: string
+}
+
+export interface SSOCallbackResponse {
+  action: 'login' | 'register' | 'linked'
+  user_id: string
+  email: string
+  full_name: string | null
+  is_new_user: boolean
+}
+
+export interface SSOIdentity {
+  id: string
+  provider: string
+  email: string | null
+  full_name: string | null
+  created_at: string
+}
+
+export async function getAvailableSSOProviders(): Promise<AvailableSSOProvider[]> {
+  const response = await fetch(`${API_URL}/sso/available`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch SSO providers')
+  }
+  return response.json()
+}
+
+export async function getSSOProviders(): Promise<SSOProvider[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sso/providers`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch SSO providers')
+  }
+  return response.json()
+}
+
+export async function getSSOProvider(providerId: string): Promise<SSOProvider> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sso/providers/${providerId}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch SSO provider')
+  }
+  return response.json()
+}
+
+export async function createSSOProvider(data: {
+  name: string
+  display_name: string
+  client_id: string
+  client_secret: string
+  discovery_url?: string
+  authorization_url?: string
+  token_url?: string
+  userinfo_url?: string
+  scopes?: string
+  domain?: string
+  is_active?: boolean
+}): Promise<SSOProvider> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sso/providers`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create SSO provider')
+  }
+  return response.json()
+}
+
+export async function updateSSOProvider(
+  providerId: string,
+  data: Partial<Omit<SSOProvider, 'id' | 'created_at' | 'updated_at'>>
+): Promise<SSOProvider> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sso/providers/${providerId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update SSO provider')
+  }
+  return response.json()
+}
+
+export async function deleteSSOProvider(providerId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sso/providers/${providerId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete SSO provider')
+  }
+}
+
+export async function initiateSSOLogin(data: {
+  provider: string
+  redirect_uri: string
+  link_user?: boolean
+}): Promise<SSOInitiateResponse> {
+  const headers = await getAuthHeader()
+  // Use public endpoint if no session (will still work with auth headers)
+  const response = await fetch(`${API_URL}/sso/login/public`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to initiate SSO login')
+  }
+  return response.json()
+}
+
+export async function handleSSOCallback(data: {
+  state: string
+  code: string
+}): Promise<SSOCallbackResponse> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sso/callback`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'SSO callback failed')
+  }
+  return response.json()
+}
+
+export async function getUserSSOIdentities(): Promise<SSOIdentity[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sso/identities`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch SSO identities')
+  }
+  return response.json()
+}
+
+export async function unlinkSSOIdentity(identityId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/sso/identities/${identityId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to unlink SSO identity')
+  }
+}
+
+// ============ End P4: SSO / OIDC API ============
+
+// ============ P4: Comments API ============
+
+export interface ContentComment {
+  id: string
+  user_id: string
+  content_id: string
+  text: string
+  position_start: number | null
+  position_end: number | null
+  parent_id: string | null
+  is_resolved: boolean
+  resolved_at: string | null
+  resolved_by: string | null
+  created_at: string
+  updated_at: string
+  mentions: string[]
+}
+
+export interface CommentListResponse {
+  items: ContentComment[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface CommentThread {
+  parent: ContentComment
+  replies: ContentComment[]
+  reply_count: number
+}
+
+export interface CommentReaction {
+  emoji: string
+  user_ids: string[]
+  count: number
+}
+
+export interface MentionUser {
+  id: string
+  full_name: string | null
+  email: string | null
+}
+
+export async function getComments(
+  contentId: string,
+  options?: {
+    parentId?: string
+    isResolved?: boolean
+    page?: number
+    pageSize?: number
+  }
+): Promise<CommentListResponse> {
+  const headers = await getAuthHeader()
+  const params = new URLSearchParams()
+  if (options?.parentId) params.set('parent_id', options.parentId)
+  if (options?.isResolved !== undefined) params.set('is_resolved', String(options.isResolved))
+  if (options?.page) params.set('page', String(options.page))
+  if (options?.pageSize) params.set('page_size', String(options.pageSize))
+  const qs = params.toString() ? `?${params.toString()}` : ''
+  const response = await fetch(`${API_URL}/content/${contentId}/comments${qs}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch comments')
+  }
+  return response.json()
+}
+
+export async function createComment(
+  contentId: string,
+  data: {
+    text: string
+    position_start?: number
+    position_end?: number
+    parent_id?: string
+  }
+): Promise<ContentComment> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/content/${contentId}/comments`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create comment')
+  }
+  return response.json()
+}
+
+export async function updateComment(
+  commentId: string,
+  data: { text: string }
+): Promise<ContentComment> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/content/comments/${commentId}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update comment')
+  }
+  return response.json()
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/content/comments/${commentId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete comment')
+  }
+}
+
+export async function getCommentThread(commentId: string): Promise<CommentThread> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/content/comments/${commentId}/thread`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch comment thread')
+  }
+  return response.json()
+}
+
+export async function resolveComment(commentId: string): Promise<ContentComment> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/content/comments/${commentId}/resolve`, {
+    method: 'PUT',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to resolve comment')
+  }
+  return response.json()
+}
+
+export async function unresolveComment(commentId: string): Promise<ContentComment> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/content/comments/${commentId}/unresolve`, {
+    method: 'PUT',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to unresolve comment')
+  }
+  return response.json()
+}
+
+export async function lookupMentions(query: string): Promise<MentionUser[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/comments/mentions/lookup?q=${encodeURIComponent(query)}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to lookup mentions')
+  }
+  return response.json()
+}
+
+export async function addCommentReaction(
+  commentId: string,
+  emoji: string
+): Promise<Record<string, unknown>> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/content/comments/${commentId}/reactions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ emoji }),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to add reaction')
+  }
+  return response.json()
+}
+
+export async function removeCommentReaction(
+  commentId: string,
+  emoji: string
+): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/content/comments/${commentId}/reactions?emoji=${encodeURIComponent(emoji)}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to remove reaction')
+  }
+}
+
+export async function getCommentReactions(commentId: string): Promise<CommentReaction[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/content/comments/${commentId}/reactions`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch reactions')
+  }
+  return response.json()
+}
+
+// ============ End P4: Comments API ============
+
+// ============ P4: Plugin System API ============
+
+export interface PluginRegistryItem {
+  id: string
+  name: string
+  slug: string
+  description: string
+  version: string
+  category: string
+  author_id: string
+  icon_url?: string
+  homepage_url?: string
+  repository_url?: string
+  permissions: string[]
+  hooks: string[]
+  config_schema: Record<string, unknown>
+  default_config: Record<string, unknown>
+  is_official: boolean
+  status: string
+  downloads: number
+  rating_avg: number
+  rating_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface PluginListResponse {
+  plugins: PluginRegistryItem[]
+  total: number
+}
+
+export interface InstalledPlugin {
+  id: string
+  plugin_id: string
+  organization_id: string
+  installed_by: string
+  config: Record<string, unknown>
+  is_enabled: boolean
+  installed_at: string
+  updated_at: string
+  plugin?: PluginRegistryItem
+}
+
+export interface InstalledPluginListResponse {
+  plugins: InstalledPlugin[]
+  total: number
+}
+
+export interface PluginMeta {
+  hooks: Array<{ value: string; label: string }>
+  permissions: Array<{ value: string; label: string }>
+}
+
+export async function listPlugins(options?: {
+  category?: string
+  search?: string
+  is_official?: boolean
+  limit?: number
+  offset?: number
+}): Promise<PluginListResponse> {
+  const headers = await getAuthHeader()
+  const params = new URLSearchParams()
+  if (options?.category) params.append('category', options.category)
+  if (options?.search) params.append('search', options.search)
+  if (options?.is_official !== undefined) params.append('is_official', String(options.is_official))
+  if (options?.limit) params.append('limit', options.limit.toString())
+  if (options?.offset) params.append('offset', options.offset.toString())
+  const url = `${API_URL}/plugins${params.toString() ? `?${params.toString()}` : ''}`
+  const response = await fetch(url, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch plugins')
+  }
+  return response.json()
+}
+
+export async function getPlugin(pluginId: string): Promise<PluginRegistryItem> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/plugins/${pluginId}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch plugin')
+  }
+  return response.json()
+}
+
+export async function getPluginMeta(): Promise<PluginMeta> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/plugins/meta`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch plugin metadata')
+  }
+  return response.json()
+}
+
+export async function listInstalledPlugins(
+  organizationId: string,
+  isEnabled?: boolean
+): Promise<InstalledPluginListResponse> {
+  const headers = await getAuthHeader()
+  const params = new URLSearchParams()
+  if (isEnabled !== undefined) params.append('is_enabled', String(isEnabled))
+  const url = `${API_URL}/organizations/${organizationId}/plugins${params.toString() ? `?${params.toString()}` : ''}`
+  const response = await fetch(url, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch installed plugins')
+  }
+  return response.json()
+}
+
+export async function installPlugin(
+  pluginId: string,
+  organizationId: string,
+  customConfig?: Record<string, unknown>
+): Promise<InstalledPlugin> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/organizations/${organizationId}/plugins/install`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      plugin_id: pluginId,
+      organization_id: organizationId,
+      custom_config: customConfig || {},
+    }),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to install plugin')
+  }
+  return response.json()
+}
+
+export async function uninstallPlugin(
+  installId: string,
+  organizationId: string
+): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/organizations/${organizationId}/plugins/${installId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to uninstall plugin')
+  }
+}
+
+export async function getPluginConfig(
+  installId: string,
+  organizationId: string
+): Promise<{ config: Record<string, unknown> }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/organizations/${organizationId}/plugins/${installId}/config`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch plugin config')
+  }
+  return response.json()
+}
+
+export async function updatePluginConfig(
+  installId: string,
+  organizationId: string,
+  config: Record<string, unknown>
+): Promise<InstalledPlugin> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/organizations/${organizationId}/plugins/${installId}/config`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({ config }),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update plugin config')
+  }
+  return response.json()
+}
+
+export async function togglePlugin(
+  installId: string,
+  organizationId: string,
+  isEnabled: boolean
+): Promise<InstalledPlugin> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/organizations/${organizationId}/plugins/${installId}/toggle`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ is_enabled: isEnabled }),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to toggle plugin')
+  }
+  return response.json()
+}
+
+export async function validatePluginPermissions(data: {
+  name: string
+  permissions: string[]
+  hooks: string[]
+}): Promise<{ valid: boolean; errors: string[] }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/plugins/validate-permissions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to validate permissions')
+  }
+  return response.json()
+}
+
+// ============ End P4: Plugin System API ============

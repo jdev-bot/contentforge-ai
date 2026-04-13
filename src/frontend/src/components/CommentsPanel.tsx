@@ -16,27 +16,27 @@ import {
   Laugh,
   Frown,
   RefreshCw,
+  Loader2,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
-
-// Local types since CommentsPanel is self-contained
-interface Comment {
-  id: string
-  content_id: string
-  author_id: string
-  author_name: string
-  text: string
-  parent_id: string | null
-  created_at: string
-  updated_at: string
-  is_resolved: boolean
-  reactions: Record<string, string[]>
-  mentions: string[]
-}
+import {
+  getComments,
+  createComment,
+  updateComment,
+  deleteComment,
+  resolveComment,
+  unresolveComment,
+  addCommentReaction,
+  removeCommentReaction,
+  getCommentReactions,
+  lookupMentions,
+  type ContentComment,
+  type MentionUser,
+} from '@/lib/api'
 
 interface EMOJI_OPTION {
   emoji: string
@@ -54,65 +54,19 @@ const EMOJI_OPTIONS: EMOJI_OPTION[] = [
   { emoji: '🔥', label: 'Fire' },
 ]
 
-// Mock data for development
-const MOCK_COMMENTS: Comment[] = [
-  {
-    id: 'c1',
-    content_id: 'content-1',
-    author_id: 'user-1',
-    author_name: 'Alice Johnson',
-    text: 'This paragraph needs better transitions between the key points. Consider adding a connecting sentence.',
-    parent_id: null,
-    created_at: '2025-01-15T10:30:00Z',
-    updated_at: '2025-01-15T10:30:00Z',
-    is_resolved: false,
-    reactions: { '👍': ['user-2', 'user-3'], '🎉': ['user-2'] },
-    mentions: [],
-  },
-  {
-    id: 'c2',
-    content_id: 'content-1',
-    author_id: 'user-2',
-    author_name: 'Bob Smith',
-    text: '@Alice Johnson I agree — the flow feels abrupt there. Maybe reference the previous section?',
-    parent_id: 'c1',
-    created_at: '2025-01-15T11:00:00Z',
-    updated_at: '2025-01-15T11:00:00Z',
-    is_resolved: false,
-    reactions: { '❤️': ['user-1'] },
-    mentions: ['Alice Johnson'],
-  },
-  {
-    id: 'c3',
-    content_id: 'content-1',
-    author_id: 'user-3',
-    author_name: 'Carol Davis',
-    text: 'The data in this section looks outdated. We should update the 2024 statistics.',
-    parent_id: null,
-    created_at: '2025-01-15T12:15:00Z',
-    updated_at: '2025-01-15T12:15:00Z',
-    is_resolved: true,
-    reactions: { '🔥': ['user-1', 'user-2'] },
-    mentions: [],
-  },
-]
-
-interface MENTION_USER {
-  id: string
-  name: string
-  avatar?: string
+interface CommentsPanelProps {
+  contentId: string
 }
 
-const MOCK_USERS: MENTION_USER[] = [
-  { id: 'user-1', name: 'Alice Johnson' },
-  { id: 'user-2', name: 'Bob Smith' },
-  { id: 'user-3', name: 'Carol Davis' },
-  { id: 'user-4', name: 'David Wilson' },
-  { id: 'user-5', name: 'Eva Martinez' },
-]
+// Reactions state per comment (fetched separately or embedded)
+interface ReactionMap {
+  [emoji: string]: string[]  // emoji -> user_ids
+}
 
-export default function CommentsPanel() {
-  const [comments, setComments] = useState<Comment[]>(MOCK_COMMENTS)
+export default function CommentsPanel({ contentId }: CommentsPanelProps) {
+  const [comments, setComments] = useState<ContentComment[]>([])
+  const [reactions, setReactions] = useState<Record<string, ReactionMap>>({})
+  const [loading, setLoading] = useState(true)
   const [newComment, setNewComment] = useState('')
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
@@ -120,85 +74,133 @@ export default function CommentsPanel() {
   const [showMentions, setShowMentions] = useState(false)
   const [mentionFilter, setMentionFilter] = useState('')
   const [mentionTarget, setMentionTarget] = useState<'new' | string>('new')
-  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set(['c1']))
+  const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([])
+  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set())
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
-  const { showToast } = useToast()
+  const { toast } = useToast()
+
+  const loadComments = useCallback(async () => {
+    try {
+      setLoading(true)
+      const result = await getComments(contentId)
+      setComments(result.items)
+      // Load reactions for each comment
+      const reactionMap: Record<string, ReactionMap> = {}
+      for (const comment of result.items) {
+        try {
+          const cReactions = await getCommentReactions(comment.id)
+          reactionMap[comment.id] = {}
+          for (const r of cReactions) {
+            reactionMap[comment.id][r.emoji] = r.user_ids
+          }
+        } catch {
+          // Reactions may not exist yet
+          reactionMap[comment.id] = {}
+        }
+      }
+      setReactions(reactionMap)
+    } catch {
+      toast({ title: 'Failed to load comments', variant: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }, [contentId, toast])
+
+  useEffect(() => {
+    loadComments()
+  }, [loadComments])
 
   const topLevelComments = comments.filter(c => c.parent_id === null)
 
   const getReplies = (commentId: string) => comments.filter(c => c.parent_id === commentId)
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!newComment.trim()) return
-    const mentions = newComment.match(/@(\w+[\w ]*)/g)?.map(m => m.slice(1)) || []
-    const newC: Comment = {
-      id: `c-${Date.now()}`,
-      content_id: 'content-1',
-      author_id: 'current-user',
-      author_name: 'You',
-      text: newComment.trim(),
-      parent_id: null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      is_resolved: false,
-      reactions: {},
-      mentions,
+    try {
+      const created = await createComment(contentId, { text: newComment.trim() })
+      setComments(prev => [...prev, created])
+      setReactions(prev => ({ ...prev, [created.id]: {} }))
+      setNewComment('')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to add comment'
+      toast({ title: message, variant: 'error' })
     }
-    setComments(prev => [...prev, newC])
-    setNewComment('')
   }
 
-  const handleAddReply = (parentId: string) => {
+  const handleAddReply = async (parentId: string) => {
     if (!replyText.trim()) return
-    const mentions = replyText.match(/@(\w+[\w ]*)/g)?.map(m => m.slice(1)) || []
-    const newR: Comment = {
-      id: `c-${Date.now()}`,
-      content_id: 'content-1',
-      author_id: 'current-user',
-      author_name: 'You',
-      text: replyText.trim(),
-      parent_id: parentId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      is_resolved: false,
-      reactions: {},
-      mentions,
-    }
-    setComments(prev => [...prev, newR])
-    setReplyText('')
-    setReplyingTo(null)
-  }
-
-  const handleResolve = (commentId: string) => {
-    setComments(prev =>
-      prev.map(c => c.id === commentId ? { ...c, is_resolved: !c.is_resolved } : c)
-    )
-    const comment = comments.find(c => c.id === commentId)
-    showToast(
-      comment?.is_resolved ? 'Comment reopened' : 'Comment resolved',
-      'success',
-    )
-  }
-
-  const handleReaction = (commentId: string, emoji: string) => {
-    setComments(prev =>
-      prev.map(c => {
-        if (c.id !== commentId) return c
-        const reactions = { ...c.reactions }
-        const users = reactions[emoji] || []
-        if (users.includes('current-user')) {
-          reactions[emoji] = users.filter(u => u !== 'current-user')
-          if (reactions[emoji].length === 0) delete reactions[emoji]
-        } else {
-          reactions[emoji] = [...users, 'current-user']
-        }
-        return { ...c, reactions }
+    try {
+      const created = await createComment(contentId, {
+        text: replyText.trim(),
+        parent_id: parentId,
       })
-    )
+      setComments(prev => [...prev, created])
+      setReactions(prev => ({ ...prev, [created.id]: {} }))
+      setReplyText('')
+      setReplyingTo(null)
+      // Auto-expand parent thread
+      setExpandedThreads(prev => new Set([...prev, parentId]))
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to add reply'
+      toast({ title: message, variant: 'error' })
+    }
+  }
+
+  const handleResolve = async (commentId: string) => {
+    const comment = comments.find(c => c.id === commentId)
+    if (!comment) return
+
+    try {
+      if (comment.is_resolved) {
+        await unresolveComment(commentId)
+      } else {
+        await resolveComment(commentId)
+      }
+      setComments(prev =>
+        prev.map(c => c.id === commentId ? { ...c, is_resolved: !c.is_resolved } : c)
+      )
+      toast({
+        title: comment.is_resolved ? 'Comment reopened' : 'Comment resolved',
+        variant: 'success',
+      })
+    } catch {
+      toast({ title: 'Failed to update comment status', variant: 'error' })
+    }
+  }
+
+  const handleReaction = async (commentId: string, emoji: string) => {
+    const commentReactions = reactions[commentId] || {}
+    const users = commentReactions[emoji] || []
+    // Determine current user ID from any existing reaction
+    // For now, toggle: if reaction exists, remove; otherwise add
+    try {
+      if (users.length > 0) {
+        // Try removing first (assuming current user added it)
+        await removeCommentReaction(commentId, emoji)
+        setReactions(prev => {
+          const map = { ...(prev[commentId] || {}) }
+          const uList = [...(map[emoji] || [])]
+          // Remove last user (approximation - we don't have current user ID easily)
+          if (uList.length > 0) uList.pop()
+          if (uList.length === 0) delete map[emoji]
+          else map[emoji] = uList
+          return { ...prev, [commentId]: map }
+        })
+      } else {
+        await addCommentReaction(commentId, emoji)
+        setReactions(prev => {
+          const map = { ...(prev[commentId] || {}) }
+          map[emoji] = ['current-user'] // Placeholder, will refresh on next load
+          return { ...prev, [commentId]: map }
+        })
+      }
+    } catch {
+      // Silently fail for reactions
+    }
     setShowEmojiPicker(null)
   }
 
-  const handleMentionInput = (value: string, target: 'new' | string) => {
+  const handleMentionInput = async (value: string, target: 'new' | string) => {
     setMentionTarget(target)
     if (target === 'new') {
       setNewComment(value)
@@ -210,16 +212,24 @@ export default function CommentsPanel() {
       const filterText = value.slice(lastAtIndex + 1).split(' ')[0]
       setMentionFilter(filterText)
       setShowMentions(true)
+      // Fetch mention suggestions from API
+      try {
+        const users = await lookupMentions(filterText)
+        setMentionUsers(users)
+      } catch {
+        setMentionUsers([])
+      }
     } else {
       setShowMentions(false)
     }
   }
 
-  const selectMention = (user: MENTION_USER) => {
+  const selectMention = (user: MentionUser) => {
     const currentText = mentionTarget === 'new' ? newComment : replyText
     const lastAtIndex = currentText.lastIndexOf('@')
     const beforeMention = currentText.slice(0, lastAtIndex)
-    const newText = `${beforeMention}@${user.name} `
+    const userName = user.full_name || user.email || 'User'
+    const newText = `${beforeMention}@${userName} `
     if (mentionTarget === 'new') {
       setNewComment(newText)
     } else {
@@ -250,6 +260,21 @@ export default function CommentsPanel() {
     return date.toLocaleDateString()
   }
 
+  // Get author display name from user_id (we use user_id as fallback)
+  const getAuthorName = (comment: ContentComment) => {
+    // The backend returns user_id; we can try to resolve from mentions or show user_id prefix
+    return comment.user_id.slice(0, 8)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center py-12">
+        <Loader2 className="w-8 h-8 text-blue-400 animate-spin mb-3" />
+        <p className="text-slate-400">Loading comments...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -263,6 +288,14 @@ export default function CommentsPanel() {
             {comments.filter(c => !c.is_resolved).length} unresolved · {comments.length} total
           </p>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={loadComments}
+          title="Refresh comments"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </Button>
       </div>
 
       {/* New Comment Input */}
@@ -284,15 +317,18 @@ export default function CommentsPanel() {
                 />
                 {/* Mention autocomplete */}
                 <AnimatePresence>
-                  {showMentions && (
+                  {showMentions && mentionUsers.length > 0 && (
                     <motion.div
                       initial={{ opacity: 0, y: -5 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -5 }}
                       className="absolute left-0 bottom-full mb-2 w-56 py-1 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-30 max-h-48 overflow-auto"
                     >
-                      {MOCK_USERS
-                        .filter(u => u.name.toLowerCase().includes(mentionFilter.toLowerCase()))
+                      {mentionUsers
+                        .filter(u => {
+                          const name = u.full_name || u.email || ''
+                          return name.toLowerCase().includes(mentionFilter.toLowerCase())
+                        })
                         .map(user => (
                           <button
                             key={user.id}
@@ -300,9 +336,13 @@ export default function CommentsPanel() {
                             className="w-full px-3 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2"
                           >
                             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-violet-500 flex items-center justify-center">
-                              <span className="text-white text-[10px] font-bold">{user.name[0]}</span>
+                              <span className="text-white text-[10px] font-bold">
+                                {(user.full_name || user.email || 'U')[0]}
+                              </span>
                             </div>
-                            <span className="text-slate-900 dark:text-slate-100">{user.name}</span>
+                            <span className="text-slate-900 dark:text-slate-100">
+                              {user.full_name || user.email}
+                            </span>
                           </button>
                         ))}
                     </motion.div>
@@ -333,10 +373,10 @@ export default function CommentsPanel() {
                 <Button
                   variant="primary"
                   size="sm"
-                  leftIcon={<Send className="h-3.5 w-3.5" />}
                   onClick={handleAddComment}
                   disabled={!newComment.trim()}
                 >
+                  <Send className="h-3.5 w-3.5 mr-1" />
                   Comment
                 </Button>
               </div>
@@ -364,6 +404,7 @@ export default function CommentsPanel() {
             topLevelComments.map((comment, index) => {
               const replies = getReplies(comment.id)
               const isExpanded = expandedThreads.has(comment.id)
+              const commentReactions = reactions[comment.id] || {}
               return (
                 <motion.div
                   key={comment.id}
@@ -381,18 +422,20 @@ export default function CommentsPanel() {
                       {/* Comment Header */}
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-purple-600 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">{comment.author_name[0]}</span>
+                          <span className="text-white text-xs font-bold">
+                            {getAuthorName(comment)[0]}
+                          </span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-                              {comment.author_name}
+                              {getAuthorName(comment)}
                             </span>
                             <span className="text-xs text-slate-500 dark:text-slate-400">
                               {formatTimeAgo(comment.created_at)}
                             </span>
                             {comment.is_resolved && (
-                              <Badge variant="success" size="sm" dot>Resolved</Badge>
+                              <Badge variant="success" size="sm">Resolved</Badge>
                             )}
                           </div>
                           <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
@@ -401,7 +444,7 @@ export default function CommentsPanel() {
 
                           {/* Reactions */}
                           <div className="flex items-center gap-2 mt-2 flex-wrap">
-                            {Object.entries(comment.reactions).map(([emoji, users]) => (
+                            {Object.entries(commentReactions).map(([emoji, users]) => (
                               <button
                                 key={emoji}
                                 onClick={() => handleReaction(comment.id, emoji)}
@@ -484,7 +527,7 @@ export default function CommentsPanel() {
                                       onChange={e => handleMentionInput(e.target.value, comment.id)}
                                       className="flex-1 px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                                       rows={2}
-                                      placeholder={`Reply to ${comment.author_name}...`}
+                                      placeholder={`Reply...`}
                                     />
                                   </div>
                                   <div className="flex items-center gap-2 mt-2">
@@ -517,43 +560,54 @@ export default function CommentsPanel() {
                                     exit={{ height: 0, opacity: 0 }}
                                     className="space-y-3 pl-4 border-l-2 border-slate-200 dark:border-slate-700"
                                   >
-                                    {replies.map((reply, ri) => (
-                                      <motion.div
-                                        key={reply.id}
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: ri * 0.05 }}
-                                        className="flex items-start gap-2"
-                                      >
-                                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center">
-                                          <span className="text-white text-[10px] font-bold">{reply.author_name[0]}</span>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2">
-                                            <span className="font-medium text-xs text-slate-900 dark:text-slate-100">{reply.author_name}</span>
-                                            <span className="text-xs text-slate-400">{formatTimeAgo(reply.created_at)}</span>
+                                    {replies.map((reply, ri) => {
+                                      const replyReactions = reactions[reply.id] || {}
+                                      return (
+                                        <motion.div
+                                          key={reply.id}
+                                          initial={{ opacity: 0, x: -10 }}
+                                          animate={{ opacity: 1, x: 0 }}
+                                          transition={{ delay: ri * 0.05 }}
+                                          className="flex items-start gap-2"
+                                        >
+                                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center">
+                                            <span className="text-white text-[10px] font-bold">
+                                              {getAuthorName(reply)[0]}
+                                            </span>
                                           </div>
-                                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{reply.text}</p>
-                                          <div className="flex items-center gap-2 mt-1">
-                                            {Object.entries(reply.reactions).map(([emoji, users]) => (
-                                              <button
-                                                key={emoji}
-                                                onClick={() => handleReaction(reply.id, emoji)}
-                                                className={cn(
-                                                  'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] transition-colors',
-                                                  users.includes('current-user')
-                                                    ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300'
-                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                                                )}
-                                              >
-                                                <span>{emoji}</span>
-                                                <span>{users.length}</span>
-                                              </button>
-                                            ))}
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-medium text-xs text-slate-900 dark:text-slate-100">
+                                                {getAuthorName(reply)}
+                                              </span>
+                                              <span className="text-xs text-slate-400">
+                                                {formatTimeAgo(reply.created_at)}
+                                              </span>
+                                            </div>
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                                              {reply.text}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                              {Object.entries(replyReactions).map(([emoji, users]) => (
+                                                <button
+                                                  key={emoji}
+                                                  onClick={() => handleReaction(reply.id, emoji)}
+                                                  className={cn(
+                                                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] transition-colors',
+                                                    users.includes('current-user')
+                                                      ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300'
+                                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                                                  )}
+                                                >
+                                                  <span>{emoji}</span>
+                                                  <span>{users.length}</span>
+                                                </button>
+                                              ))}
+                                            </div>
                                           </div>
-                                        </div>
-                                      </motion.div>
-                                    ))}
+                                        </motion.div>
+                                      )
+                                    })}
                                   </motion.div>
                                 )}
                               </AnimatePresence>

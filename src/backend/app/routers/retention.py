@@ -265,3 +265,50 @@ async def get_compliance_report(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate compliance report: {exc}",
         )
+
+
+class RetentionAuditEntryResponse(BaseModel):
+    """Response model for a retention audit entry."""
+    id: str
+    user_id: str
+    action: str
+    resource_type: str
+    resource_id: str
+    details: Optional[str] = None
+    created_at: datetime
+
+
+class RetentionAuditListResponse(BaseModel):
+    """Paginated list of audit entries."""
+    items: List[RetentionAuditEntryResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+@router.get("/retention/audit", response_model=RetentionAuditListResponse)
+async def get_retention_audit_trail(
+    action: Optional[str] = Query(None, description="Filter by action type"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user=Depends(get_auth_user),
+):
+    """Get the retention audit trail for the authenticated user."""
+    try:
+        result = retention_service.get_audit_trail(
+            user_id=user.id,
+            action=action,
+            page=page,
+            page_size=page_size,
+        )
+        return RetentionAuditListResponse(
+            items=[RetentionAuditEntryResponse(**e) for e in result["items"]],
+            total=result["total"],
+            page=result["page"],
+            page_size=result["page_size"],
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        )

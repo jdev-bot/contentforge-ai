@@ -7,9 +7,12 @@ from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import get_settings
-from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user, search, trash, scheduler, ai_editor, rss, freshness, audience, trends, integrations, alerts, competitors, version_history, audit_logs, quality_scoring, sentiment, dashboards, reports, retention, comments, suggestions, categorization, performance, sso
+from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user, search, trash, scheduler, ai_editor, rss, freshness, audience, trends, integrations, alerts, competitors, version_history, audit_logs, quality_scoring, sentiment, dashboards, reports, retention, comments, suggestions, categorization, performance, sso, ws, presence, collaboration, plugins
 
 settings = get_settings()
+
+
+from app.services.websocket_manager import websocket_manager
 
 
 @asynccontextmanager
@@ -17,8 +20,10 @@ async def lifespan(app: FastAPI):
     """Application lifespan events."""
     # Startup
     print(f"🚀 Starting {settings.APP_NAME} in {settings.APP_ENV} mode")
+    await websocket_manager.start()
     yield
     # Shutdown
+    await websocket_manager.stop()
     print(f"🛑 Shutting down {settings.APP_NAME}")
 
 
@@ -52,7 +57,7 @@ app.add_middleware(
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-API-Key"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-API-Key", "Upgrade", "Connection", "Sec-WebSocket-Key", "Sec-WebSocket-Version"],
 )
 
 # Routers
@@ -95,6 +100,10 @@ app.include_router(suggestions.router, prefix="/api/v1", tags=["suggestions"])
 app.include_router(categorization.router, prefix="/api/v1", tags=["categorization"])
 app.include_router(performance.router, prefix="/api/v1", tags=["performance"])
 app.include_router(sso.router, prefix="/api/v1", tags=["sso"])
+app.include_router(presence.router, prefix="/api/v1", tags=["presence"])
+app.include_router(collaboration.router, prefix="/api/v1", tags=["collaboration"])
+app.include_router(ws.router, tags=["websocket"])
+app.include_router(plugins.router, prefix="/api/v1", tags=["plugins"])
 
 
 @app.get("/")
