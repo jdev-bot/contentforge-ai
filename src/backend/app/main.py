@@ -7,7 +7,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import get_settings
-from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user, search, trash, scheduler, ai_editor, rss, freshness, audience, trends, integrations, alerts, competitors, version_history, audit_logs, quality_scoring, sentiment, dashboards, reports, performance
+from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user, search, trash, scheduler, ai_editor, rss, freshness, audience, trends, integrations, alerts, competitors, version_history, audit_logs, quality_scoring, sentiment, dashboards, reports, retention, comments, suggestions, categorization, performance
 
 settings = get_settings()
 
@@ -89,6 +89,10 @@ app.include_router(quality_scoring.router, prefix="/api/v1", tags=["quality-scor
 app.include_router(sentiment.router, prefix="/api/v1", tags=["sentiment"])
 app.include_router(dashboards.router, prefix="/api/v1", tags=["dashboards"])
 app.include_router(reports.router, prefix="/api/v1", tags=["reports"])
+app.include_router(retention.router, prefix="/api/v1", tags=["retention"])
+app.include_router(comments.router, prefix="/api/v1", tags=["comments"])
+app.include_router(suggestions.router, prefix="/api/v1", tags=["suggestions"])
+app.include_router(categorization.router, prefix="/api/v1", tags=["categorization"])
 app.include_router(performance.router, prefix="/api/v1", tags=["performance"])
 
 

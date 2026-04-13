@@ -2722,3 +2722,275 @@ export async function getSentimentTrend(
 }
 
 // ============ End Sentiment Analysis API ============
+
+// ============ Custom Dashboards API ============
+
+export interface DashboardWidget {
+  id: string
+  dashboard_id: string
+  widget_type: string
+  title: string
+  data_source: string
+  refresh_interval: number
+  size: { w: number; h: number }
+  position: number
+  config: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface Dashboard {
+  id: string
+  user_id: string
+  name: string
+  description?: string
+  layout_config: Record<string, unknown>
+  is_default: boolean
+  widgets: DashboardWidget[]
+  created_at: string
+  updated_at: string
+}
+
+export interface WidgetLiveData {
+  widget_id: string
+  widget_type: string
+  title: string
+  data_source: string
+  refresh_interval: number
+  data: Record<string, unknown>
+}
+
+export async function listDashboards(): Promise<Dashboard[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/dashboards`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch dashboards')
+  }
+  return response.json()
+}
+
+export async function createDashboard(data: { name: string; description?: string; is_default?: boolean }): Promise<Dashboard> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/dashboards`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create dashboard')
+  }
+  return response.json()
+}
+
+export async function getDashboard(dashboardId: string): Promise<Dashboard> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/dashboards/${dashboardId}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch dashboard')
+  }
+  return response.json()
+}
+
+export async function updateDashboard(dashboardId: string, data: { name?: string; description?: string; layout_config?: Record<string, unknown>; is_default?: boolean }): Promise<Dashboard> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/dashboards/${dashboardId}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update dashboard')
+  }
+  return response.json()
+}
+
+export async function deleteDashboard(dashboardId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/dashboards/${dashboardId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete dashboard')
+  }
+}
+
+export async function addWidget(dashboardId: string, data: { widget_type: string; title: string; data_source: string; refresh_interval: number; size?: Record<string, number>; position?: number; config?: Record<string, unknown> }): Promise<DashboardWidget> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/dashboards/${dashboardId}/widgets`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to add widget')
+  }
+  return response.json()
+}
+
+export async function updateWidget(dashboardId: string, widgetId: string, data: Record<string, unknown>): Promise<DashboardWidget> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/dashboards/${dashboardId}/widgets/${widgetId}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update widget')
+  }
+  return response.json()
+}
+
+export async function deleteWidget(dashboardId: string, widgetId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/dashboards/${dashboardId}/widgets/${widgetId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete widget')
+  }
+}
+
+export async function getDashboardData(dashboardId: string): Promise<{ dashboard_id: string; widgets: WidgetLiveData[]; fetched_at: string }> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/dashboards/${dashboardId}/data`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch dashboard data')
+  }
+  return response.json()
+}
+
+// ============ End Custom Dashboards API ============
+
+// ============ Report Scheduling API ============
+
+export interface ScheduledReport {
+  id: string
+  user_id: string
+  name: string
+  description?: string
+  report_type: string
+  schedule: string
+  format: string
+  recipients: string[]
+  filters: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface ReportRun {
+  id: string
+  report_id: string
+  status: string
+  format: string
+  storage_path?: string
+  file_name?: string
+  generated_at: string
+  error_message?: string
+  download_url?: string
+}
+
+export async function listReports(): Promise<ScheduledReport[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/reports`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch reports')
+  }
+  return response.json()
+}
+
+export async function createReport(data: { name: string; report_type: string; schedule: string; format?: string; description?: string; recipients?: string[]; filters?: Record<string, unknown> }): Promise<ScheduledReport> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/reports`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create report')
+  }
+  return response.json()
+}
+
+export async function getReport(reportId: string): Promise<ScheduledReport> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/reports/${reportId}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch report')
+  }
+  return response.json()
+}
+
+export async function updateReport(reportId: string, data: Record<string, unknown>): Promise<ScheduledReport> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/reports/${reportId}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update report')
+  }
+  return response.json()
+}
+
+export async function deleteReport(reportId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/reports/${reportId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete report')
+  }
+}
+
+export async function generateReport(reportId: string): Promise<ReportRun> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/reports/${reportId}/generate`, {
+    method: 'POST',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to generate report')
+  }
+  return response.json()
+}
+
+export async function getReportHistory(reportId: string): Promise<ReportRun[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/reports/${reportId}/history`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch report history')
+  }
+  return response.json()
+}
+
+export async function downloadReport(reportId: string, runId: string): Promise<ReportRun> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/reports/${reportId}/download/${runId}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to download report')
+  }
+  return response.json()
+}
+
+// ============ End Report Scheduling API ============

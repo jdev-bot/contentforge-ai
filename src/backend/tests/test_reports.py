@@ -25,7 +25,7 @@ def sample_report():
         "name": "Weekly Summary",
         "description": "Weekly content summary report",
         "report_type": "content_summary",
-        "schedule": "0 9 * * 1",  # Every Monday at 9 AM
+        "schedule": "0 9 * * 1",
         "format": "html",
         "recipients": ["test@example.com"],
         "filters": {},
@@ -50,6 +50,27 @@ def sample_report_run():
     }
 
 
+def build_mock_query_chain(return_data=None):
+    """Build a mock that supports chained query calls."""
+    mock_query = MagicMock()
+    mock_query.eq = MagicMock(return_value=mock_query)
+    mock_query.neq = MagicMock(return_value=mock_query)
+    mock_query.gt = MagicMock(return_value=mock_query)
+    mock_query.gte = MagicMock(return_value=mock_query)
+    mock_query.lt = MagicMock(return_value=mock_query)
+    mock_query.lte = MagicMock(return_value=mock_query)
+    mock_query.order = MagicMock(return_value=mock_query)
+    mock_query.limit = MagicMock(return_value=mock_query)
+    mock_query.offset = MagicMock(return_value=mock_query)
+    mock_query.single = MagicMock(return_value=mock_query)
+    mock_query.maybe_single = MagicMock(return_value=mock_query)
+    mock_query.insert = MagicMock(return_value=mock_query)
+    mock_query.update = MagicMock(return_value=mock_query)
+    mock_query.delete = MagicMock(return_value=mock_query)
+    mock_query.execute = MagicMock(return_value=Mock(data=return_data or []))
+    return mock_query
+
+
 # ── Report Service Tests ───────────────────────────────────────────
 
 class TestReportService:
@@ -60,8 +81,12 @@ class TestReportService:
         from app.services.report_service import ReportService
         service = ReportService()
         mock_supabase = MagicMock()
-        mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = Mock(
-            data=[sample_report]
+        mock_query = build_mock_query_chain([sample_report])
+        mock_supabase.table.return_value = MagicMock(
+            select=MagicMock(return_value=mock_query),
+            insert=MagicMock(return_value=mock_query),
+            update=MagicMock(return_value=mock_query),
+            delete=MagicMock(return_value=mock_query),
         )
         service.supabase = mock_supabase
 
@@ -74,8 +99,12 @@ class TestReportService:
         from app.services.report_service import ReportService
         service = ReportService()
         mock_supabase = MagicMock()
-        mock_supabase.table.return_value.insert.return_value.execute.return_value = Mock(
-            data=[{"id": "new-report", "name": "New Report", "report_type": "content_summary"}]
+        mock_query = build_mock_query_chain([{"id": "new-report", "name": "New Report", "report_type": "content_summary"}])
+        mock_supabase.table.return_value = MagicMock(
+            select=MagicMock(return_value=mock_query),
+            insert=MagicMock(return_value=mock_query),
+            update=MagicMock(return_value=mock_query),
+            delete=MagicMock(return_value=mock_query),
         )
         service.supabase = mock_supabase
 
@@ -122,8 +151,12 @@ class TestReportService:
         from app.services.report_service import ReportService
         service = ReportService()
         mock_supabase = MagicMock()
-        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.maybe_single.return_value.execute.return_value = Mock(
-            data=sample_report
+        mock_query = build_mock_query_chain(sample_report)
+        mock_supabase.table.return_value = MagicMock(
+            select=MagicMock(return_value=mock_query),
+            insert=MagicMock(return_value=mock_query),
+            update=MagicMock(return_value=mock_query),
+            delete=MagicMock(return_value=mock_query),
         )
         service.supabase = mock_supabase
 
@@ -138,8 +171,12 @@ class TestReportService:
 
         with patch.object(service, 'get_report', return_value=sample_report):
             mock_supabase = MagicMock()
-            mock_supabase.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = Mock(
-                data=[{**sample_report, "name": "Updated Report"}]
+            mock_query = build_mock_query_chain([{**sample_report, "name": "Updated Report"}])
+            mock_supabase.table.return_value = MagicMock(
+                select=MagicMock(return_value=mock_query),
+                insert=MagicMock(return_value=mock_query),
+                update=MagicMock(return_value=mock_query),
+                delete=MagicMock(return_value=mock_query),
             )
             service.supabase = mock_supabase
 
@@ -161,7 +198,13 @@ class TestReportService:
         from app.services.report_service import ReportService
         service = ReportService()
         mock_supabase = MagicMock()
-        mock_supabase.table.return_value.delete.return_value.eq.return_value.execute.return_value = Mock(data=[])
+        mock_query = build_mock_query_chain([])
+        mock_supabase.table.return_value = MagicMock(
+            select=MagicMock(return_value=mock_query),
+            insert=MagicMock(return_value=mock_query),
+            update=MagicMock(return_value=mock_query),
+            delete=MagicMock(return_value=mock_query),
+        )
 
         with patch.object(service, 'get_report', return_value=sample_report):
             service.supabase = mock_supabase
@@ -182,16 +225,22 @@ class TestReportService:
         from app.services.report_service import ReportService
         service = ReportService()
         mock_supabase = MagicMock()
+        mock_query = build_mock_query_chain([{"id": "run-1", "status": "completed"}])
+
+        def table_side_effect(name):
+            return MagicMock(
+                select=MagicMock(return_value=mock_query),
+                insert=MagicMock(return_value=mock_query),
+                update=MagicMock(return_value=mock_query),
+                delete=MagicMock(return_value=mock_query),
+            )
+        mock_supabase.table = MagicMock(side_effect=table_side_effect)
 
         with patch.object(service, 'get_report', return_value=sample_report), \
              patch.object(service, '_gather_report_data', return_value={"total_content": 42}), \
              patch.object(service, '_store_report', return_value="reports/test.html"), \
              patch.object(service, '_send_report_email'):
-            mock_supabase.table.return_value.insert.return_value.execute.return_value = Mock(
-                data=[{"id": "run-1", "status": "completed"}]
-            )
             service.supabase = mock_supabase
-
             result = service.generate_report("report-1", mock_user.id)
             assert result is not None
             assert result["status"] == "completed"
@@ -201,8 +250,12 @@ class TestReportService:
         from app.services.report_service import ReportService
         service = ReportService()
         mock_supabase = MagicMock()
-        mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = Mock(
-            data=[sample_report_run]
+        mock_query = build_mock_query_chain([sample_report_run])
+        mock_supabase.table.return_value = MagicMock(
+            select=MagicMock(return_value=mock_query),
+            insert=MagicMock(return_value=mock_query),
+            update=MagicMock(return_value=mock_query),
+            delete=MagicMock(return_value=mock_query),
         )
 
         with patch.object(service, 'get_report', return_value=sample_report):
@@ -215,14 +268,7 @@ class TestReportService:
 # ── Report Router Tests ────────────────────────────────────────────
 
 class TestReportRouter:
-    """Tests for the report router endpoints."""
-
-    @pytest.fixture
-    def client(self):
-        """Create a test client."""
-        from fastapi.testclient import TestClient
-        from app.main import app
-        return TestClient(app)
+    """Tests for the report router endpoints using conftest client fixture."""
 
     def test_list_reports_endpoint(self, client, mock_user):
         """Test GET /api/v1/reports."""
@@ -346,13 +392,19 @@ class TestReportTasks:
 
     def test_generate_scheduled_reports(self):
         """Test the generate_scheduled_reports task."""
-        with patch("app.tasks.reports.get_supabase_admin_client") as mock_get_client, \
+        mock_client = MagicMock()
+        mock_query = build_mock_query_chain([
+            {"id": "report-1", "user_id": "user-1", "schedule": "0 9 * * 1", "name": "Weekly"}
+        ])
+        mock_client.table.return_value = MagicMock(
+            select=MagicMock(return_value=mock_query),
+            insert=MagicMock(return_value=mock_query),
+            update=MagicMock(return_value=mock_query),
+            delete=MagicMock(return_value=mock_query),
+        )
+
+        with patch("app.core.supabase.get_supabase_admin_client", return_value=mock_client), \
              patch("app.tasks.reports.report_service") as mock_service:
-            mock_client = MagicMock()
-            mock_client.table.return_value.select.return_value.execute.return_value = Mock(
-                data=[{"id": "report-1", "user_id": "user-1", "schedule": "0 9 * * 1", "name": "Weekly"}]
-            )
-            mock_get_client.return_value = mock_client
             mock_service.generate_report.return_value = {"id": "run-1", "status": "completed"}
 
             from app.tasks.reports import generate_scheduled_reports
@@ -371,13 +423,16 @@ class TestReportTasks:
 
     def test_cleanup_old_report_runs_task(self):
         """Test the cleanup_old_report_runs task."""
-        with patch("app.tasks.reports.get_supabase_admin_client") as mock_get_client:
-            mock_client = MagicMock()
-            mock_client.table.return_value.delete.return_value.lt.return_value.execute.return_value = Mock(
-                data=[{"id": "old-run-1"}, {"id": "old-run-2"}]
-            )
-            mock_get_client.return_value = mock_client
+        mock_client = MagicMock()
+        mock_query = build_mock_query_chain([{"id": "old-run-1"}, {"id": "old-run-2"}])
+        mock_client.table.return_value = MagicMock(
+            select=MagicMock(return_value=mock_query),
+            insert=MagicMock(return_value=mock_query),
+            update=MagicMock(return_value=mock_query),
+            delete=MagicMock(return_value=mock_query),
+        )
 
+        with patch("app.core.supabase.get_supabase_admin_client", return_value=mock_client):
             from app.tasks.reports import cleanup_old_report_runs
             result = cleanup_old_report_runs(days=90)
             assert result["success"] is True

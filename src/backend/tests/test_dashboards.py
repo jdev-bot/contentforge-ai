@@ -49,6 +49,27 @@ def sample_widget():
     }
 
 
+def build_mock_query_chain(return_data=None):
+    """Build a mock that supports .select().eq().order().execute() chains."""
+    mock_query = MagicMock()
+    mock_query.eq = MagicMock(return_value=mock_query)
+    mock_query.neq = MagicMock(return_value=mock_query)
+    mock_query.gt = MagicMock(return_value=mock_query)
+    mock_query.gte = MagicMock(return_value=mock_query)
+    mock_query.lt = MagicMock(return_value=mock_query)
+    mock_query.lte = MagicMock(return_value=mock_query)
+    mock_query.order = MagicMock(return_value=mock_query)
+    mock_query.limit = MagicMock(return_value=mock_query)
+    mock_query.offset = MagicMock(return_value=mock_query)
+    mock_query.single = MagicMock(return_value=mock_query)
+    mock_query.maybe_single = MagicMock(return_value=mock_query)
+    mock_query.insert = MagicMock(return_value=mock_query)
+    mock_query.update = MagicMock(return_value=mock_query)
+    mock_query.delete = MagicMock(return_value=mock_query)
+    mock_query.execute = MagicMock(return_value=Mock(data=return_data or []))
+    return mock_query
+
+
 # ── Dashboard Service Tests ────────────────────────────────────────
 
 class TestDashboardService:
@@ -59,8 +80,12 @@ class TestDashboardService:
         from app.services.dashboard_service import DashboardService
         service = DashboardService()
         mock_supabase = MagicMock()
-        mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = Mock(
-            data=[sample_dashboard]
+        mock_query = build_mock_query_chain([sample_dashboard])
+        mock_supabase.table.return_value = MagicMock(
+            select=MagicMock(return_value=mock_query),
+            insert=MagicMock(return_value=mock_query),
+            update=MagicMock(return_value=mock_query),
+            delete=MagicMock(return_value=mock_query),
         )
         service.supabase = mock_supabase
 
@@ -73,11 +98,13 @@ class TestDashboardService:
         from app.services.dashboard_service import DashboardService
         service = DashboardService()
         mock_supabase = MagicMock()
-        mock_supabase.table.return_value.insert.return_value.execute.return_value = Mock(
-            data=[{"id": "new-dash", "user_id": mock_user.id, "name": "New Dashboard"}]
+        mock_query = build_mock_query_chain([{"id": "new-dash", "user_id": mock_user.id, "name": "New Dashboard"}])
+        mock_supabase.table.return_value = MagicMock(
+            select=MagicMock(return_value=mock_query),
+            insert=MagicMock(return_value=mock_query),
+            update=MagicMock(return_value=mock_query),
+            delete=MagicMock(return_value=mock_query),
         )
-        # Mock _unset_default (table update chain)
-        mock_supabase.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = Mock(data=[])
         service.supabase = mock_supabase
 
         result = service.create_dashboard(mock_user.id, "New Dashboard", is_default=True)
@@ -90,15 +117,20 @@ class TestDashboardService:
         service = DashboardService()
         mock_supabase = MagicMock()
 
-        # Dashboard query
-        dash_resp = Mock(data=sample_dashboard)
-        # Widgets query
-        widgets_resp = Mock(data=[sample_widget])
+        # Build two distinct query chains: one for dashboard, one for widgets
+        dash_query = build_mock_query_chain(sample_dashboard)
+        widgets_query = build_mock_query_chain([sample_widget])
 
-        mock_supabase.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = dash_resp
-        # Second call for widgets (after .order)
-        mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = widgets_resp
+        # First .table() call returns dashboard chain, second returns widgets chain
+        call_count = [0]
+        def table_side_effect(name):
+            if name == "dashboards":
+                return MagicMock(select=MagicMock(return_value=dash_query))
+            elif name == "dashboard_widgets":
+                return MagicMock(select=MagicMock(return_value=widgets_query))
+            return MagicMock()
 
+        mock_supabase.table = MagicMock(side_effect=table_side_effect)
         service.supabase = mock_supabase
 
         result = service.get_dashboard("dash-1", mock_user.id)
@@ -110,12 +142,15 @@ class TestDashboardService:
         """Test updating a dashboard."""
         from app.services.dashboard_service import DashboardService
         service = DashboardService()
-        mock_supabase = MagicMock()
 
-        # get_dashboard returns something
         with patch.object(service, 'get_dashboard', return_value=sample_dashboard):
-            mock_supabase.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = Mock(
-                data=[{**sample_dashboard, "name": "Updated Dashboard"}]
+            mock_supabase = MagicMock()
+            mock_query = build_mock_query_chain([{**sample_dashboard, "name": "Updated Dashboard"}])
+            mock_supabase.table.return_value = MagicMock(
+                select=MagicMock(return_value=mock_query),
+                insert=MagicMock(return_value=mock_query),
+                update=MagicMock(return_value=mock_query),
+                delete=MagicMock(return_value=mock_query),
             )
             service.supabase = mock_supabase
 
@@ -137,11 +172,16 @@ class TestDashboardService:
         from app.services.dashboard_service import DashboardService
         service = DashboardService()
         mock_supabase = MagicMock()
+        mock_query = build_mock_query_chain([{"id": "dash-1"}])
+        mock_supabase.table.return_value = MagicMock(
+            select=MagicMock(return_value=mock_query),
+            insert=MagicMock(return_value=mock_query),
+            update=MagicMock(return_value=mock_query),
+            delete=MagicMock(return_value=mock_query),
+        )
 
         with patch.object(service, 'get_dashboard', return_value=sample_dashboard):
-            mock_supabase.table.return_value.delete.return_value.eq.return_value.execute.return_value = Mock(data=[{"id": "dash-1"}])
             service.supabase = mock_supabase
-
             result = service.delete_dashboard("dash-1", mock_user.id)
             assert result is True
 
@@ -189,13 +229,16 @@ class TestDashboardService:
         from app.services.dashboard_service import DashboardService
         service = DashboardService()
         mock_supabase = MagicMock()
-        mock_supabase.table.return_value.insert.return_value.execute.return_value = Mock(
-            data=[{"id": "widget-1", "widget_type": "metric_card", "title": "Total Content"}]
+        mock_query = build_mock_query_chain([{"id": "widget-1", "widget_type": "metric_card", "title": "Total Content"}])
+        mock_supabase.table.return_value = MagicMock(
+            select=MagicMock(return_value=mock_query),
+            insert=MagicMock(return_value=mock_query),
+            update=MagicMock(return_value=mock_query),
+            delete=MagicMock(return_value=mock_query),
         )
 
         with patch.object(service, 'get_dashboard', return_value=sample_dashboard):
             service.supabase = mock_supabase
-
             result = service.add_widget(
                 dashboard_id="dash-1",
                 user_id=mock_user.id,
@@ -212,28 +255,38 @@ class TestDashboardService:
         from app.services.dashboard_service import DashboardService
         service = DashboardService()
         mock_supabase = MagicMock()
-        mock_supabase.table.return_value.delete.return_value.eq.return_value.eq.return_value.execute.return_value = Mock(
-            data=[{"id": "widget-1"}]
+        mock_query = build_mock_query_chain([{"id": "widget-1"}])
+        mock_supabase.table.return_value = MagicMock(
+            select=MagicMock(return_value=mock_query),
+            insert=MagicMock(return_value=mock_query),
+            update=MagicMock(return_value=mock_query),
+            delete=MagicMock(return_value=mock_query),
         )
 
         with patch.object(service, 'get_dashboard', return_value=sample_dashboard):
             service.supabase = mock_supabase
-
             result = service.delete_widget("dash-1", "widget-1", mock_user.id)
             assert result is True
+
+    def test_get_dashboard_data(self, mock_user, sample_dashboard, sample_widget):
+        """Test getting live data for a dashboard."""
+        from app.services.dashboard_service import DashboardService
+        service = DashboardService()
+
+        dashboard_with_widgets = {**sample_dashboard, "widgets": [sample_widget]}
+        with patch.object(service, 'get_dashboard', return_value=dashboard_with_widgets), \
+             patch.object(service, '_fetch_widget_data', return_value={"total": 42}):
+            result = service.get_dashboard_data("dash-1", mock_user.id)
+            assert result is not None
+            assert "widgets" in result
+            assert result["widgets"][0]["data"] == {"total": 42}
+            assert "fetched_at" in result
 
 
 # ── Dashboard Router Tests ─────────────────────────────────────────
 
 class TestDashboardRouter:
-    """Tests for the dashboard router endpoints."""
-
-    @pytest.fixture
-    def client(self):
-        """Create a test client."""
-        from fastapi.testclient import TestClient
-        from app.main import app
-        return TestClient(app)
+    """Tests for the dashboard router endpoints using conftest client fixture."""
 
     def test_list_dashboards_endpoint(self, client, mock_user):
         """Test GET /api/v1/dashboards."""

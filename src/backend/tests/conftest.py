@@ -38,6 +38,12 @@ with patch('app.core.rate_limit.UsageTrackingMiddleware', NoOpMiddleware):
     with patch('app.core.error_tracking.ErrorTrackingMiddleware', NoOpMiddleware):
         from app.main import app
         from app.core.config import get_settings
+        from app.routers.auth import get_auth_user
+        from app.core.rate_limit import (
+            enforce_subscription_limit, check_and_increment_usage,
+            rate_limit_dependency, UsageStats, check_subscription_limit,
+            get_user_usage_stats, check_monthly_reset,
+        )
 
 
 def create_mock_auth_user(
@@ -99,12 +105,22 @@ def _build_mock_supabase_client():
 
 def _build_mock_usage_stats():
     """Build mock usage stats for rate limiting."""
-    mock_usage = MagicMock()
+    mock_usage = MagicMock(spec=UsageStats)
     mock_usage.remaining = 100
     mock_usage.monthly_usage_count = 10
     mock_usage.monthly_usage_limit = 100
     mock_usage.subscription_tier = "free"
     return mock_usage
+
+
+def _safe_patch(target, **kwargs):
+    """Patch a target, silently skipping if the attribute doesn't exist."""
+    try:
+        p = patch(target, **kwargs)
+        p.start()
+        return p
+    except (AttributeError, ModuleNotFoundError):
+        return None
 
 
 # All module paths that import get_supabase_client from app.core.supabase
@@ -134,7 +150,6 @@ _SUPABASE_CLIENT_PATCH_TARGETS = [
     "app.routers.distributions.get_supabase_client",
     "app.routers.health.get_supabase_client",
     "app.routers.trends.get_supabase_client",
-
     "app.routers.sentiment.get_supabase_client",
     "app.routers.quality_scoring.get_supabase_client",
     "app.routers.dashboards.get_supabase_client",
@@ -170,17 +185,8 @@ _ADMIN_CLIENT_PATCH_TARGETS = [
     "app.services.report_service.get_supabase_admin_client",
 ]
 
-_RATE_LIMIT_PATCH_TARGETS = {
-    "enforce_subscription_limit": [
-        "app.routers.ai_suggestions",
-        "app.routers.automation",
-        "app.routers.competitors",
-        "app.routers.content",
-        "app.routers.ai_editor",
-        "app.routers.trends",
-        "app.routers.sentiment",
-        "app.routers.quality_scoring",
-    ],
+# Functions imported from rate_limit by various routers
+_RATE_LIMIT_FUNC_PATCHES = {
     "check_and_increment_usage": [
         "app.routers.ai_suggestions",
         "app.routers.automation",
@@ -190,10 +196,6 @@ _RATE_LIMIT_PATCH_TARGETS = {
         "app.routers.trends",
         "app.routers.sentiment",
         "app.routers.quality_scoring",
-    ],
-    "rate_limit_dependency": [
-        "app.routers.rss",
-        "app.routers.scheduler",
     ],
 }
 
@@ -212,49 +214,53 @@ def client() -> Generator:
     
     mock_client, mock_auth, mock_table, mock_storage, mock_query = _build_mock_supabase_client()
     mock_usage = _build_mock_usage_stats()
+    
+    # Create a default mock user for dependency override
+    default_mock_user = MagicMock()
+    default_mock_user.id = "test-user-id-123"
+    default_mock_user.email = "test@example.com"
+    default_mock_user.user_metadata = {"full_name": "Test User"}
 
-    # Build context managers for all patches
-    patches = []
+    active_patches = []
     
     # Patch all get_supabase_client references
-    # Use safe patching that skips targets where the attribute doesn't exist
     for target in _SUPABASE_CLIENT_PATCH_TARGETS:
-        try:
-            p = patch(target, return_value=mock_client)
-            p.start()
-            patches.append(p)
-        except AttributeError:
-            pass  # Module doesn't have this attribute — skip
+        p = _safe_patch(target, return_value=mock_client)
+        if p:
+            active_patches.append(p)
     
     # Patch all get_supabase_admin_client references
     for target in _ADMIN_CLIENT_PATCH_TARGETS:
-        try:
-            p = patch(target, return_value=mock_client)
-            p.start()
-            patches.append(p)
-        except AttributeError:
-            pass  # Module doesn't have this attribute — skip
+        p = _safe_patch(target, return_value=mock_client)
+        if p:
+            active_patches.append(p)
     
-    # Patch rate limit enforcement to bypass auth/subscription checks
-    for func_name, modules in _RATE_LIMIT_PATCH_TARGETS.items():
+    # Patch rate limit functions in routers that import them directly
+    for func_name, modules in _RATE_LIMIT_FUNC_PATCHES.items():
         for mod in modules:
             target = f"{mod}.{func_name}"
-            try:
-                p = patch(target, return_value=mock_usage)
-                p.start()
-                patches.append(p)
-            except AttributeError:
-                pass  # Module doesn't have this attribute — skip
+            p = _safe_patch(target, return_value=mock_usage)
+            if p:
+                active_patches.append(p)
     
     # Patch usage stats functions at the source module
-    patches.append(patch("app.core.rate_limit.get_user_usage_stats", return_value=mock_usage))
-    patches.append(patch("app.core.rate_limit.check_and_increment_usage", return_value=mock_usage))
-    patches.append(patch("app.core.rate_limit.check_subscription_limit", return_value=mock_usage))
-    patches.append(patch("app.core.rate_limit.check_monthly_reset", return_value=None))
+    for name, ret in [
+        ("get_user_usage_stats", mock_usage),
+        ("check_and_increment_usage", mock_usage),
+        ("check_subscription_limit", mock_usage),
+    ]:
+        p = _safe_patch(f"app.core.rate_limit.{name}", return_value=ret)
+        if p:
+            active_patches.append(p)
     
-    # Start all patches
-    for p in patches:
-        p.start()
+    p = _safe_patch("app.core.rate_limit.check_monthly_reset", return_value=None)
+    if p:
+        active_patches.append(p)
+    
+    # Override FastAPI dependencies
+    app.dependency_overrides[get_auth_user] = lambda: default_mock_user
+    app.dependency_overrides[enforce_subscription_limit] = lambda: mock_usage
+    app.dependency_overrides[rate_limit_dependency] = lambda: True
     
     try:
         with TestClient(app) as test_client:
@@ -262,8 +268,10 @@ def client() -> Generator:
             test_client.mock_supabase = (mock_client, mock_auth, mock_table, mock_storage, mock_query)
             yield test_client
     finally:
+        # Clean up dependency overrides
+        app.dependency_overrides.clear()
         # Stop all patches
-        for p in patches:
+        for p in active_patches:
             p.stop()
 
 

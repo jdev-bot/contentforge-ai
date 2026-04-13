@@ -37,6 +37,7 @@ import {
   GripVertical,
   X,
   ChevronDown,
+  AlertCircle,
 } from 'lucide-react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
@@ -131,7 +132,7 @@ function MetricCardWidget({ data, title }: { data: Record<string, unknown>; titl
     <div className="flex flex-col items-center justify-center h-full p-4">
       <p className="text-sm text-slate-400 mb-1">{title}</p>
       <p className="text-3xl font-bold text-white">{total.toLocaleString()}</p>
-      {data.by_status && typeof data.by_status === 'object' && (
+      {data.by_status && typeof data.by_status === 'object' ? (
         <div className="flex gap-2 mt-2 flex-wrap justify-center">
           {Object.entries(data.by_status as Record<string, number>).map(([status, count]) => (
             <span key={status} className="text-xs px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-300">

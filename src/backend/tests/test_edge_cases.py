@@ -22,9 +22,9 @@ class TestEmptyContent:
         mock_auth.get_user.return_value = MagicMock(user=mock_user)
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "Empty Content Test",
             "source_type": "text",
             "source_url": None,
@@ -64,9 +64,9 @@ class TestEmptyContent:
         whitespace_content = "   \n\t\r   "
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "Whitespace Test",
             "source_type": "text",
             "source_url": None,
@@ -194,9 +194,9 @@ class TestVeryLongContent:
         long_text = " ".join([f"word{i}" for i in range(10000)])
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "Long Content Test",
             "source_type": "text",
             "source_url": None,
@@ -235,9 +235,9 @@ class TestVeryLongContent:
         long_text = "A" * 50000
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "50K Character Test",
             "source_type": "text",
             "source_url": None,
@@ -275,9 +275,9 @@ class TestVeryLongContent:
         very_long_text = "Word " * 20000  # ~100k chars
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "100K Character Test",
             "source_type": "text",
             "source_url": None,
@@ -316,9 +316,9 @@ class TestVeryLongContent:
         long_title = "A" * 500  # 500 char title
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": long_title,
             "source_type": "text",
             "source_url": None,
@@ -356,7 +356,7 @@ class TestVeryLongContent:
         mock_query.execute.return_value = MagicMock(data=[{
             "id": f"content-{i}",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": f"Content {i}",
             "source_type": "text",
             "source_url": None,
@@ -391,9 +391,9 @@ class TestSpecialCharacters:
         html_content = "<div>Test & Example \u003e Other \u003c/script\u003e 'quotes' \"double\""
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "HTML Special Chars",
             "source_type": "text",
             "source_url": None,
@@ -430,9 +430,9 @@ class TestSpecialCharacters:
         control_text = "Line1\x00Line2\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D"
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "Control Chars Test",
             "source_type": "text",
             "source_url": None,
@@ -470,9 +470,9 @@ class TestSpecialCharacters:
         json_special = '{"key": "value", "array": [1,2,3], "nested": {"a": "b"}}'
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "JSON Special Chars",
             "source_type": "text",
             "source_url": None,
@@ -517,9 +517,9 @@ class TestSpecialCharacters:
 > Blockquote"""
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "Markdown Test",
             "source_type": "text",
             "source_url": None,
@@ -586,9 +586,9 @@ class TestUnicodeContent:
         emoji_text = "Hello 👋 World 🌍! Testing 🚀 emojis 🎉"
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "Emoji Test 👋",
             "source_type": "text",
             "source_url": None,
@@ -622,9 +622,9 @@ class TestUnicodeContent:
         chinese_text = "中文内容测试，这是一个示例。Hello 世界！"
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "中文标题",
             "source_type": "text",
             "source_url": None,
@@ -660,9 +660,9 @@ class TestUnicodeContent:
         arabic_text = "اختبار المحتوى باللغة العربية"
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "عنوان عربي",
             "source_type": "text",
             "source_url": None,
@@ -696,9 +696,9 @@ class TestUnicodeContent:
         japanese_text = "日本語のテスト内容です。これはサンプルです。"
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "日本語タイトル",
             "source_type": "text",
             "source_url": None,
@@ -732,9 +732,9 @@ class TestUnicodeContent:
         mixed_text = "Hello 世界! Bonjour le monde! ¡Hola mundo! 今日は世界!"
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "Mixed 🌍 Languages",
             "source_type": "text",
             "source_url": None,
@@ -769,9 +769,9 @@ class TestUnicodeContent:
         variation_text = "🎨\ufe0e vs 🎨\ufe0f"  # Emoji with text vs emoji style
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "Variation Test",
             "source_type": "text",
             "source_url": None,
@@ -806,9 +806,9 @@ class TestUnicodeContent:
         zw_text = "Test\u200bContent\u200cHere\u200d"  # ZWNJ, ZWJ, ZWSP
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "ZW Char Test",
             "source_type": "text",
             "source_url": None,
@@ -842,9 +842,9 @@ class TestUnicodeContent:
         math_text = "E = mc² Σᵢₙ₌₁ ∞ ∂/∂x ∈ ∀ ∃ ∅"
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "Math Σ Test",
             "source_type": "text",
             "source_url": None,
@@ -884,8 +884,8 @@ class TestConcurrentEdits:
         def update_content(i):
             # Mock ownership check
             mock_query.execute.return_value = MagicMock(data={
-                "id": "content-123",
-                "user_id": "test-user-123",
+                "id": "123e4567-e89b-12d3-a456-426614174002",
+                "user_id": "123e4567-e89b-12d3-a456-426614174001",
                 "title": f"Updated by thread {i}"
             })
             
@@ -921,7 +921,7 @@ class TestConcurrentEdits:
             mock_query.execute.return_value = MagicMock(data=[{
                 "id": f"content-{i}",
                 "project_id": "123e4567-e89b-12d3-a456-426614174000",
-                "user_id": "test-user-123",
+                "user_id": "123e4567-e89b-12d3-a456-426614174001",
                 "title": f"Content {i}",
                 "source_type": "text",
                 "source_url": None,
@@ -963,9 +963,9 @@ class TestConcurrentEdits:
         
         # Simulate content being read while being modified
         content_data = {
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "Race Condition Test",
             "source_type": "text",
             "source_url": None,
@@ -1000,8 +1000,8 @@ class TestConcurrentEdits:
         
         # Mock content exists
         mock_query.execute.return_value = MagicMock(data={
-            "id": "content-123",
-            "user_id": "test-user-123"
+            "id": "123e4567-e89b-12d3-a456-426614174002",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001"
         })
         
         # Delete operation
@@ -1027,8 +1027,8 @@ class TestConcurrentEdits:
         
         # Mock content retrieval
         mock_query.execute.return_value = MagicMock(data={
-            "id": "content-123",
-            "user_id": "test-user-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "original_text": "Test content for generation"
         })
         
@@ -1069,9 +1069,9 @@ class TestBoundaryConditions:
         mock_auth.get_user.return_value = MagicMock(user=mock_user)
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "X",
             "source_type": "text",
             "source_url": None,
@@ -1106,9 +1106,9 @@ class TestBoundaryConditions:
         boundary_text = "A" * 65535  # Common text limit
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "Boundary Test",
             "source_type": "text",
             "source_url": None,
@@ -1143,9 +1143,9 @@ class TestBoundaryConditions:
         mock_auth.get_user.return_value = MagicMock(user=mock_user)
         
         mock_query.execute.return_value = MagicMock(data=[{
-            "id": "content-123",
+            "id": "123e4567-e89b-12d3-a456-426614174002",
             "project_id": "123e4567-e89b-12d3-a456-426614174000",
-            "user_id": "test-user-123",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
             "title": "Identical Request",
             "source_type": "text",
             "source_url": None,
