@@ -198,7 +198,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
                 <Sparkles className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium text-blue-900">
-                    You're currently on the <span className="capitalize">{currentTier}</span> plan
+                    You&apos;re currently on the <span className="capitalize">{currentTier}</span> plan
                   </p>
                   {subscription?.current_period_end && (
                     <p className="text-sm text-blue-700 mt-1">
@@ -369,7 +369,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
             <div className="text-sm text-yellow-800">
               <p className="font-medium">Secure Payment Processing</p>
               <p className="mt-1">
-                All payments are processed securely through Stripe. You'll be redirected to Stripe's secure checkout page to complete your subscription.
+                All payments are processed securely through Stripe. You&apos;ll be redirected to Stripe&apos;s secure checkout page to complete your subscription.
               </p>
             </div>
           </div>

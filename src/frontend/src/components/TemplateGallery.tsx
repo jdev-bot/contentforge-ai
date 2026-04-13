@@ -694,7 +694,7 @@ export default function TemplateGallery({
                     </label>
                     <select
                       value={customForm.category}
-                      onChange={(e) => setCustomForm(prev => ({ ...prev, category: e.target.value as any }))}
+                      onChange={(e) => setCustomForm(prev => ({ ...prev, category: e.target.value as string }))}
                       className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
                     >
                       <option value="blog">Blog Post</option>

@@ -73,7 +73,7 @@ export function CompletionScreen({ onComplete }: CompletionScreenProps) {
           variants={staggerItem}
           className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4"
         >
-          You're All Set!
+          You&apos;re All Set!
         </motion.h1>
 
         {/* Description */}
