@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp, Bell, Users2, Target, Zap, Award, Activity } from 'lucide-react'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp, Bell, Users2, Target, Zap, Award, Activity, Lightbulb, Tag, Shield, MessageSquare } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
@@ -36,6 +36,11 @@ const CompetitorAnalysis = lazy(() => import('./CompetitorAnalysis'))
 const IntegrationsPanel = lazy(() => import('./IntegrationsPanel'))
 const QualityDashboard = lazy(() => import('./QualityDashboard'))
 const SentimentDashboard = lazy(() => import('./SentimentDashboard'))
+const SuggestionPanel = lazy(() => import('./SuggestionPanel'))
+const CategorizationPanel = lazy(() => import('./CategorizationPanel'))
+const PerformanceAnalytics = lazy(() => import('./PerformanceAnalytics'))
+const DataRetentionManager = lazy(() => import('./DataRetentionManager'))
+const CommentsPanel = lazy(() => import('./CommentsPanel'))
 
 interface DashboardProps {
   user: AuthUser
@@ -75,6 +80,11 @@ export default function Dashboard({ user }: DashboardProps) {
     { id: 'integrations', name: 'Integrations', icon: Zap, badge: 'New' },
     { id: 'quality', name: 'Quality', icon: Award, badge: null },
     { id: 'sentiment', name: 'Sentiment', icon: Activity, badge: null },
+    { id: 'suggestions', name: 'Suggestions', icon: Lightbulb, badge: 'New' },
+    { id: 'categorization', name: 'Categories', icon: Tag, badge: 'New' },
+    { id: 'performance', name: 'Performance', icon: BarChart3, badge: null },
+    { id: 'retention', name: 'Retention', icon: Shield, badge: null },
+    { id: 'comments', name: 'Comments', icon: MessageSquare, badge: null },
     { id: 'settings', name: 'Settings', icon: Settings, badge: null },
     { id: 'trash', name: 'Trash', icon: Trash2, badge: null },
   ], [])
@@ -244,6 +254,46 @@ export default function Dashboard({ user }: DashboardProps) {
           <ErrorBoundary onReset={() => setActiveTab('sentiment')}>
             <Suspense fallback={fallback}>
               <SentimentDashboard />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'suggestions':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('suggestions')}>
+            <Suspense fallback={fallback}>
+              <SuggestionPanel />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'categorization':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('categorization')}>
+            <Suspense fallback={fallback}>
+              <CategorizationPanel />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'performance':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('performance')}>
+            <Suspense fallback={fallback}>
+              <PerformanceAnalytics />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'retention':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('retention')}>
+            <Suspense fallback={fallback}>
+              <DataRetentionManager />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      case 'comments':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('comments')}>
+            <Suspense fallback={fallback}>
+              <CommentsPanel />
             </Suspense>
           </ErrorBoundary>
         )
