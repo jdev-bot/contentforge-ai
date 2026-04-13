@@ -552,7 +552,7 @@ export default function SAMLLogin({ isOpen, onClose, onLoginSuccess }: SAMLLogin
                       onClick={() => {
                         if (selectedProviderForMapping) {
                           // Update attribute mapping via API
-                          import('@/lib/api').then(api => api.updateSAMLAttributeMapping(selectedProviderForMapping, attribute_mapping))
+                          import('@/lib/api').then(api => api.updateSAMLAttributeMapping(selectedProviderForMapping, attributeMapping))
                             .then(() => showToast('Attribute mapping updated', 'success'))
                             .catch((err: any) => showToast(err.message || 'Failed to update mapping', 'error'))
                         }

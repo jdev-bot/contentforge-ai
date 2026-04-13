@@ -7,7 +7,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import get_settings
-from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user, search, trash, scheduler, ai_editor, rss, freshness, audience, trends, integrations, alerts, competitors, version_history, audit_logs, quality_scoring, sentiment, dashboards, reports, retention, comments, suggestions, categorization, performance, sso, ws, presence, collaboration, plugins
+from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user, search, trash, scheduler, ai_editor, rss, freshness, audience, trends, integrations, alerts, competitors, version_history, audit_logs, quality_scoring, sentiment, dashboards, reports, retention, comments, suggestions, categorization, performance, sso, saml, marketplace, ws, presence, collaboration, plugins
 
 settings = get_settings()
 
@@ -100,6 +100,8 @@ app.include_router(suggestions.router, prefix="/api/v1", tags=["suggestions"])
 app.include_router(categorization.router, prefix="/api/v1", tags=["categorization"])
 app.include_router(performance.router, prefix="/api/v1", tags=["performance"])
 app.include_router(sso.router, prefix="/api/v1", tags=["sso"])
+app.include_router(saml.router, prefix="/api/v1", tags=["saml"])
+app.include_router(marketplace.router, prefix="/api/v1", tags=["marketplace"])
 app.include_router(presence.router, prefix="/api/v1", tags=["presence"])
 app.include_router(collaboration.router, prefix="/api/v1", tags=["collaboration"])
 app.include_router(ws.router, tags=["websocket"])

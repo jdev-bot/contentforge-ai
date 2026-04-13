@@ -3933,3 +3933,655 @@ export async function validatePluginPermissions(data: {
 }
 
 // ============ End P4: Plugin System API ============
+
+// ============ SAML SSO API ============
+
+export interface SAMLProvider {
+  id: string
+  name: string
+  entity_id: string
+  sso_url: string
+  slo_url?: string
+  metadata_url?: string
+  attribute_mapping: Record<string, string>
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface SAMLProviderCreate {
+  name: string
+  entity_id: string
+  sso_url: string
+  slo_url?: string
+  metadata_url?: string
+  certificate?: string
+  attribute_mapping?: Record<string, string>
+}
+
+export interface SAMLProviderUpdate {
+  name?: string
+  entity_id?: string
+  sso_url?: string
+  slo_url?: string
+  metadata_url?: string
+  certificate?: string
+  attribute_mapping?: Record<string, string>
+  is_active?: boolean
+}
+
+export interface SAMLMetadata {
+  entity_id: string
+  sso_url: string
+  slo_url?: string
+  certificate: string
+  valid_until?: string
+}
+
+export interface SAMLLoginResponse {
+  login_url: string
+  request_id: string
+  provider_id: string
+}
+
+export interface SAMLCallbackResult {
+  user_id: string
+  email: string
+  full_name?: string
+  is_new_user: boolean
+  session_token: string
+}
+
+export interface SAMLSLOResponse {
+  logout_url: string
+  request_id: string
+}
+
+export interface SAMLIdentity {
+  id: string
+  provider_id: string
+  provider_name: string
+  name_id: string
+  name_id_format: string
+  attributes: Record<string, string[]>
+  created_at: string
+}
+
+export async function createSAMLProvider(data: SAMLProviderCreate): Promise<SAMLProvider> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/saml/providers`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create SAML provider')
+  }
+  return response.json()
+}
+
+export async function listSAMLProviders(): Promise<SAMLProvider[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/saml/providers`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to list SAML providers')
+  }
+  return response.json()
+}
+
+export async function getSAMLProvider(providerId: string): Promise<SAMLProvider> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/saml/providers/${providerId}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get SAML provider')
+  }
+  return response.json()
+}
+
+export async function updateSAMLProvider(providerId: string, data: SAMLProviderUpdate): Promise<SAMLProvider> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/saml/providers/${providerId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update SAML provider')
+  }
+  return response.json()
+}
+
+export async function deleteSAMLProvider(providerId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/saml/providers/${providerId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete SAML provider')
+  }
+}
+
+export async function fetchSAMLMetadata(metadataUrl: string): Promise<SAMLMetadata> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/saml/providers/metadata/fetch`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ metadata_url: metadataUrl }),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch SAML metadata')
+  }
+  return response.json()
+}
+
+export async function updateSAMLAttributeMapping(
+  providerId: string,
+  attributeMapping: Record<string, string>
+): Promise<SAMLProvider> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/saml/providers/${providerId}/attribute-mapping`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({ attribute_mapping: attributeMapping }),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update attribute mapping')
+  }
+  return response.json()
+}
+
+export async function initiateSAMLLogin(providerId: string): Promise<SAMLLoginResponse> {
+  const response = await fetch(`${API_URL}/saml/login/${providerId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to initiate SAML login')
+  }
+  return response.json()
+}
+
+export async function initiateSAMLLogout(providerId: string): Promise<SAMLSLOResponse> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/saml/logout/${providerId}`, {
+    method: 'POST',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to initiate SAML logout')
+  }
+  return response.json()
+}
+
+export async function listSAMLIdentities(): Promise<SAMLIdentity[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/saml/identities`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to list SAML identities')
+  }
+  return response.json()
+}
+
+export async function unlinkSAMLIdentity(identityId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/saml/identities/${identityId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to unlink SAML identity')
+  }
+}
+
+export async function listAvailableSAMLProviders(): Promise<Array<{ id: string; name: string }>> {
+  const response = await fetch(`${API_URL}/saml/providers/available`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to list available SAML providers')
+  }
+  return response.json()
+}
+
+// ============ End SAML SSO API ============
+
+// ============ Template Marketplace API ============
+
+export interface MarketplaceTemplate {
+  id: string
+  name: string
+  description: string
+  content: string
+  category: string
+  tags: string[]
+  platforms: string[]
+  version: string
+  is_published: boolean
+  is_featured: boolean
+  author_id: string
+  author?: {
+    id: string
+    email: string
+    full_name?: string
+    avatar_url?: string
+    template_count: number
+    total_installs: number
+    avg_rating: number
+  }
+  install_count: number
+  avg_rating: number
+  rating_count: number
+  review_count: number
+  downloads: number
+  created_at: string
+  updated_at: string
+  published_at?: string
+}
+
+export interface MarketplaceCategory {
+  id: string
+  name: string
+  slug: string
+  icon: string
+  description?: string
+  template_count: number
+}
+
+export interface MarketplaceTag {
+  name: string
+  count: number
+}
+
+export interface MarketplaceTemplateListResponse {
+  templates: MarketplaceTemplate[]
+  total: number
+}
+
+export interface MarketplaceRating {
+  id: string
+  template_id: string
+  user_id: string
+  user?: {
+    id: string
+    full_name?: string
+    email: string
+  }
+  rating: number
+  review?: string
+  created_at: string
+}
+
+export interface MarketplaceRatingSubmit {
+  rating: number
+  review?: string
+}
+
+export interface MarketplaceTemplateCreate {
+  name: string
+  description: string
+  content: string
+  category: string
+  tags?: string[]
+  platforms?: string[]
+  version?: string
+  is_published?: boolean
+}
+
+export interface MarketplaceTemplateUpdate {
+  name?: string
+  description?: string
+  content?: string
+  category?: string
+  tags?: string[]
+  platforms?: string[]
+  version?: string
+}
+
+export interface MarketplaceInstallResult {
+  template_id: string
+  already_installed: boolean
+  install_count: number
+}
+
+export interface MarketplaceRatingsResponse {
+  ratings: MarketplaceRating[]
+  total: number
+}
+
+export interface MarketplaceVersion {
+  version: string
+  changelog?: string
+  published_at: string
+}
+
+export async function listMarketplaceTemplates(options?: {
+  category?: string
+  search?: string
+  tags?: string[]
+  sort?: 'newest' | 'popular' | 'rating'
+  limit?: number
+  offset?: number
+}): Promise<MarketplaceTemplateListResponse> {
+  const headers = await getAuthHeader()
+  const params = new URLSearchParams()
+  if (options?.category) params.append('category', options.category)
+  if (options?.search) params.append('search', options.search)
+  if (options?.tags && options.tags.length > 0) params.append('tags', options.tags.join(','))
+  if (options?.sort) params.append('sort', options.sort)
+  if (options?.limit) params.append('limit', options.limit.toString())
+  if (options?.offset) params.append('offset', options.offset.toString())
+  const url = `${API_URL}/marketplace/templates${params.toString() ? `?${params.toString()}` : ''}`
+  const response = await fetch(url, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to list marketplace templates')
+  }
+  return response.json()
+}
+
+export async function getMarketplaceTemplate(templateId: string): Promise<MarketplaceTemplate> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get template')
+  }
+  return response.json()
+}
+
+export async function createMarketplaceTemplate(data: MarketplaceTemplateCreate): Promise<MarketplaceTemplate> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/marketplace/templates`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create template')
+  }
+  return response.json()
+}
+
+export async function updateMarketplaceTemplate(templateId: string, data: MarketplaceTemplateUpdate): Promise<MarketplaceTemplate> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update template')
+  }
+  return response.json()
+}
+
+export async function deleteMarketplaceTemplate(templateId: string): Promise<void> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete template')
+  }
+}
+
+export async function publishMarketplaceTemplate(templateId: string): Promise<MarketplaceTemplate> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}/publish`, {
+    method: 'POST',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to publish template')
+  }
+  return response.json()
+}
+
+export async function unpublishMarketplaceTemplate(templateId: string): Promise<MarketplaceTemplate> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}/unpublish`, {
+    method: 'POST',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to unpublish template')
+  }
+  return response.json()
+}
+
+export async function getMarketplaceCategories(): Promise<MarketplaceCategory[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/marketplace/categories`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch categories')
+  }
+  return response.json()
+}
+
+export async function getMarketplaceTags(limit?: number): Promise<MarketplaceTag[]> {
+  const headers = await getAuthHeader()
+  const params = limit ? `?limit=${limit}` : ''
+  const response = await fetch(`${API_URL}/marketplace/tags${params}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch tags')
+  }
+  return response.json()
+}
+
+export async function installMarketplaceTemplate(templateId: string): Promise<MarketplaceInstallResult> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}/install`, {
+    method: 'POST',
+    headers,
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to install template')
+  }
+  return response.json()
+}
+
+export async function rateMarketplaceTemplate(templateId: string, data: MarketplaceRatingSubmit): Promise<MarketplaceRating> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}/ratings`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to rate template')
+  }
+  return response.json()
+}
+
+export async function getTemplateRatings(templateId: string, limit?: number, offset?: number): Promise<MarketplaceRatingsResponse> {
+  const headers = await getAuthHeader()
+  const params = new URLSearchParams()
+  if (limit) params.append('limit', limit.toString())
+  if (offset) params.append('offset', offset.toString())
+  const url = `${API_URL}/marketplace/templates/${templateId}/ratings${params.toString() ? `?${params.toString()}` : ''}`
+  const response = await fetch(url, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch template ratings')
+  }
+  return response.json()
+}
+
+export async function getFeaturedTemplates(limit?: number): Promise<MarketplaceTemplate[]> {
+  const headers = await getAuthHeader()
+  const params = limit ? `?limit=${limit}` : ''
+  const response = await fetch(`${API_URL}/marketplace/featured${params}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch featured templates')
+  }
+  return response.json()
+}
+
+export async function getTrendingTemplates(limit?: number): Promise<MarketplaceTemplate[]> {
+  const headers = await getAuthHeader()
+  const params = limit ? `?limit=${limit}` : ''
+  const response = await fetch(`${API_URL}/marketplace/trending${params}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch trending templates')
+  }
+  return response.json()
+}
+
+export async function getTemplateVersions(templateId: string): Promise<MarketplaceVersion[]> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}/versions`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch template versions')
+  }
+  return response.json()
+}
+
+export async function getMarketplaceAuthorProfile(authorId: string): Promise<{
+  id: string
+  email: string
+  full_name?: string
+  avatar_url?: string
+  template_count: number
+  total_installs: number
+  avg_rating: number
+  templates: MarketplaceTemplate[]
+}> {
+  const headers = await getAuthHeader()
+  const response = await fetch(`${API_URL}/marketplace/authors/${authorId}`, { headers })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch author profile')
+  }
+  return response.json()
+}
+
+// ============ End Template Marketplace API ============
+
+// ============ P4: SAML SSO API ============
+
+export interface SAMLProvider {
+  id: string
+  name: string
+  entity_id: string
+  sso_url: string
+  slo_url?: string
+  x509_cert: string
+  metadata_url?: string
+  is_active: boolean
+  attribute_mapping: Record<string, string>
+  created_at: string
+  updated_at: string
+}
+
+export interface SAMLProviderCreate {
+  name: string
+  entity_id: string
+  sso_url: string
+  slo_url?: string
+  x509_cert: string
+  metadata_url?: string
+  attribute_mapping?: Record<string, string>
+}
+
+export interface SAMLMetadataResponse {
+  entity_id: string
+  sso_url: string
+  slo_url?: string
+  x509_cert: string
+  attribute_mapping: Record<string, string>
+}
+
+export interface SAMLLoginResponse {
+  redirect_url: string
+  request_id: string
+}
+
+export async function listSAMLProviders(orgId?: string): Promise<SAMLProvider[]> {
+  const params = orgId ? `?org_id=${orgId}` : ''
+  const response = await fetch(`${API_URL}/saml/providers${params}`, {
+    headers: { ...getAuthHeaders() },
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to list SAML providers')
+  }
+  return response.json()
+}
+
+export async function createSAMLProvider(data: SAMLProviderCreate): Promise<SAMLProvider> {
+  const response = await fetch(`${API_URL}/saml/providers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create SAML provider')
+  }
+  return response.json()
+}
+
+export async function fetchSAMLMetadata(data: { metadata_url: string }): Promise<SAMLMetadataResponse> {
+  const response = await fetch(`${API_URL}/saml/metadata/fetch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch SAML metadata')
+  }
+  return response.json()
+}
+
+export async function initiateSAMLLogin(data: { provider_id: string; relay_state?: string }): Promise<SAMLLoginResponse> {
+  const response = await fetch(`${API_URL}/saml/login/public`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to initiate SAML login')
+  }
+  return response.json()
+}
+
+export async function updateSAMLAttributeMapping(providerId: string, attributeMapping: Record<string, string>): Promise<SAMLProvider> {
+  const response = await fetch(`${API_URL}/saml/providers/${providerId}/attribute-mapping`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify({ attribute_mapping: attributeMapping }),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update attribute mapping')
+  }
+  return response.json()
+}
+
+// ============ End P4: SAML SSO API ============

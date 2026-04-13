@@ -379,7 +379,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
                     </div>
 
                     {/* Hooks */}
-                    {plugin?.hooks?.length > 0 && (
+                    {plugin?.hooks && plugin.hooks.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
                         <span className="text-[10px] text-gray-400">Hooks:</span>
                         {plugin.hooks.map((hook: string) => (
