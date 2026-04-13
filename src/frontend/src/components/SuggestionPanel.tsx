@@ -58,7 +58,7 @@ export default function SuggestionPanel() {
   const [filter, setFilter] = useState<FilterType>('all')
   const [filterOpen, setFilterOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const { toast } = useToast()
+  const { showToast } = useToast()
 
   const fetchSuggestions = useCallback(async () => {
     try {
@@ -67,7 +67,7 @@ export default function SuggestionPanel() {
       setSuggestions(data)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch suggestions'
-      toast({ title: 'Error', description: message, variant: 'error' })
+      showToast(message, 'error')
     } finally {
       setLoading(false)
     }
@@ -87,10 +87,10 @@ export default function SuggestionPanel() {
     try {
       await acceptSuggestion(suggestionId)
       setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
-      toast({ title: 'Suggestion accepted', description: 'The suggestion has been applied.', variant: 'success' })
+      showToast('The suggestion has been applied.', 'success')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to accept suggestion'
-      toast({ title: 'Error', description: message, variant: 'error' })
+      showToast(message, 'error')
     }
   }
 
@@ -98,10 +98,10 @@ export default function SuggestionPanel() {
     try {
       await dismissSuggestion(suggestionId)
       setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
-      toast({ title: 'Suggestion dismissed', variant: 'info' })
+      showToast('Suggestion dismissed', 'info')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to dismiss suggestion'
-      toast({ title: 'Error', description: message, variant: 'error' })
+      showToast(message, 'error')
     }
   }
 

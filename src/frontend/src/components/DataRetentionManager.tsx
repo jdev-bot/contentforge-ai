@@ -70,7 +70,7 @@ export default function DataRetentionManager() {
   })
   const [tagInput, setTagInput] = useState('')
 
-  const { toast } = useToast()
+  const { showToast } = useToast()
 
   const fetchData = useCallback(async () => {
     try {
@@ -85,7 +85,7 @@ export default function DataRetentionManager() {
       setAuditTrail(audit)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch retention data'
-      toast({ title: 'Error', description: message, variant: 'error' })
+      showToast(message, 'error')
     } finally {
       setLoading(false)
     }
@@ -107,10 +107,10 @@ export default function DataRetentionManager() {
       setShowCreateForm(false)
       resetForm()
       await fetchData()
-      toast({ title: 'Policy created', description: 'Retention policy has been created.', variant: 'success' })
+      showToast('Retention policy has been created.', 'success')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create policy'
-      toast({ title: 'Error', description: message, variant: 'error' })
+      showToast(message, 'error')
     }
   }
 
@@ -127,10 +127,10 @@ export default function DataRetentionManager() {
       setEditingPolicy(null)
       resetForm()
       await fetchData()
-      toast({ title: 'Policy updated', variant: 'success' })
+      showToast('Policy updated', 'success')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to update policy'
-      toast({ title: 'Error', description: message, variant: 'error' })
+      showToast(message, 'error')
     }
   }
 
@@ -139,10 +139,10 @@ export default function DataRetentionManager() {
     try {
       await deleteRetentionPolicy(policyId)
       await fetchData()
-      toast({ title: 'Policy deleted', variant: 'info' })
+      showToast('Policy deleted', 'info')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete policy'
-      toast({ title: 'Error', description: message, variant: 'error' })
+      showToast(message, 'error')
     }
   }
 

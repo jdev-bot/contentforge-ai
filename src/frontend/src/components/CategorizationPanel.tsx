@@ -40,7 +40,7 @@ export default function CategorizationPanel() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editCategories, setEditCategories] = useState<string>('')
-  const { toast } = useToast()
+  const { showToast } = useToast()
 
   const fetchCategorizations = useCallback(async () => {
     try {
@@ -49,7 +49,7 @@ export default function CategorizationPanel() {
       setCategorizations(data)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch categorizations'
-      toast({ title: 'Error', description: message, variant: 'error' })
+      showToast(message, 'error')
     } finally {
       setLoading(false)
     }
@@ -76,10 +76,10 @@ export default function CategorizationPanel() {
         )
       )
       setEditingId(null)
-      toast({ title: 'Categories updated', description: 'Manual override saved.', variant: 'success' })
+      showToast('Manual override saved.', 'success')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to update categories'
-      toast({ title: 'Error', description: message, variant: 'error' })
+      showToast(message, 'error')
     }
   }
 

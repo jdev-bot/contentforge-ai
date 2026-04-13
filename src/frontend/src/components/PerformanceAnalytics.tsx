@@ -64,7 +64,7 @@ export default function PerformanceAnalytics() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('30d')
-  const { toast } = useToast()
+  const { showToast } = useToast()
 
   const fetchData = useCallback(async () => {
     try {
@@ -83,7 +83,7 @@ export default function PerformanceAnalytics() {
       setTrend(tr)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch performance data'
-      toast({ title: 'Error', description: message, variant: 'error' })
+      showToast(message, 'error')
     } finally {
       setLoading(false)
     }

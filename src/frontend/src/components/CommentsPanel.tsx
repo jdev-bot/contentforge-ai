@@ -122,7 +122,7 @@ export default function CommentsPanel() {
   const [mentionTarget, setMentionTarget] = useState<'new' | string>('new')
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set(['c1']))
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
-  const { toast } = useToast()
+  const { showToast } = useToast()
 
   const topLevelComments = comments.filter(c => c.parent_id === null)
 
@@ -174,10 +174,10 @@ export default function CommentsPanel() {
       prev.map(c => c.id === commentId ? { ...c, is_resolved: !c.is_resolved } : c)
     )
     const comment = comments.find(c => c.id === commentId)
-    toast({
-      title: comment?.is_resolved ? 'Comment reopened' : 'Comment resolved',
-      variant: 'success',
-    })
+    showToast(
+      comment?.is_resolved ? 'Comment reopened' : 'Comment resolved',
+      'success',
+    )
   }
 
   const handleReaction = (commentId: string, emoji: string) => {
