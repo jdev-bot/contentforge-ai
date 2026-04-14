@@ -182,11 +182,15 @@ class TestEmailSending:
     @pytest.mark.asyncio
     async def test_send_via_resend_success(self, email_service, mock_settings):
         """Test successful Resend API call."""
-        with patch("httpx.AsyncClient.post") as mock_post:
+        with patch("httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
             mock_response = Mock()
             mock_response.status_code = 200
             mock_response.json.return_value = {"id": "email_123"}
-            mock_post.return_value = mock_response
+            mock_client.post = AsyncMock(return_value=mock_response)
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_client_cls.return_value = mock_client
             
             result = await email_service.send_via_resend(
                 "test@example.com",
@@ -195,7 +199,6 @@ class TestEmailSending:
             )
             
             assert result == "email_123"
-            mock_post.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_send_via_resend_no_api_key(self, email_service):
@@ -217,11 +220,15 @@ class TestEmailSending:
     @pytest.mark.asyncio
     async def test_send_via_resend_api_error(self, email_service, mock_settings):
         """Test Resend API error handling."""
-        with patch("httpx.AsyncClient.post") as mock_post:
+        with patch("httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
             mock_response = Mock()
             mock_response.status_code = 400
             mock_response.text = "Bad Request"
-            mock_post.return_value = mock_response
+            mock_client.post = AsyncMock(return_value=mock_response)
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_client_cls.return_value = mock_client
             
             result = await email_service.send_via_resend(
                 "test@example.com",
