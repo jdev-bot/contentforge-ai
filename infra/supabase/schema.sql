@@ -151,8 +151,12 @@ create policy "Users can view own usage logs"
     using (auth.uid() = user_id);
 
 -- ============================================================================-- ORGANIZATIONS TABLE (for multi-tenant team support)-- ============================================================================create type organization_role_enum as enum ('admin', 'member');
-create table if not exists public.organizations (    id uuid default gen_random_uuid() primary key,    name text not null,    owner_id uuid references auth.users on delete cascade not null,
-    created_at timestamptz default now());
+create table if not exists public.organizations (
+    id uuid default gen_random_uuid() primary key,
+    name text not null,
+    owner_id uuid references auth.users on delete cascade not null,
+    created_at timestamptz default now()
+);
 
 -- Enable RLS on organizations
 alter table public.organizations enable row level security;
