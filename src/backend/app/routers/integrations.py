@@ -5,7 +5,7 @@ Includes Zapier, webhooks, and WordPress integrations.
 from fastapi import APIRouter, HTTPException, status, Depends, Request, BackgroundTasks, Header
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 import uuid
 import json
@@ -239,8 +239,8 @@ async def create_integration(
         "name": integration_data.name,
         "config": integration_data.config,
         "is_active": integration_data.is_active,
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
     result = supabase.table("integrations").insert(new_integration).execute()
@@ -304,7 +304,7 @@ async def update_integration(
             )
     
     # Build update data
-    update_data = {"updated_at": datetime.utcnow().isoformat()}
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
     
     if integration_data.name is not None:
         update_data["name"] = integration_data.name
@@ -431,7 +431,7 @@ async def test_integration(
     # Update last_used_at timestamp
     if success:
         supabase.table("integrations").update({
-            "last_used_at": datetime.utcnow().isoformat()
+            "last_used_at": datetime.now(timezone.utc).isoformat()
         }).eq("id", str(integration_id)).execute()
     
     return IntegrationTestResponse(
@@ -507,15 +507,15 @@ async def incoming_webhook(
             "payload": event_data,
             "status": "delivered",
             "attempts": 1,
-            "delivered_at": datetime.utcnow().isoformat(),
-            "created_at": datetime.utcnow().isoformat()
+            "delivered_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
         }).execute()
     except Exception as e:
         print(f"[Incoming Webhook] Failed to log delivery: {e}")
     
     # Update last_used_at
     supabase.table("integrations").update({
-        "last_used_at": datetime.utcnow().isoformat()
+        "last_used_at": datetime.now(timezone.utc).isoformat()
     }).eq("id", integration["id"]).execute()
     
     return IncomingWebhookResponse(
@@ -693,7 +693,7 @@ async def trigger_integration_event(
     # Update last_used_at
     if success:
         supabase.table("integrations").update({
-            "last_used_at": datetime.utcnow().isoformat()
+            "last_used_at": datetime.now(timezone.utc).isoformat()
         }).eq("id", str(integration_id)).execute()
     
     return {

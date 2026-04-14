@@ -2,7 +2,7 @@
 Celery tasks for trending topics detection and updates.
 """
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
@@ -83,7 +83,7 @@ def cleanup_expired_trends_task(self):
         return {
             "status": "success",
             "deleted_count": deleted_count,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
     except Exception as exc:
@@ -141,7 +141,7 @@ def generate_trend_content_suggestions_task(self):
         return {
             "status": "success",
             "suggestions_created": suggestions_created,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
     except Exception as exc:
@@ -203,7 +203,7 @@ def notify_users_of_relevant_trends_task(self):
         return {
             "status": "success",
             "users_notified": notified_count,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
     except Exception as exc:
@@ -233,7 +233,7 @@ def get_trending_insights_task():
         return {
             "status": "success",
             "insights": insights,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
     except Exception as exc:
@@ -241,5 +241,5 @@ def get_trending_insights_task():
         return {
             "status": "error",
             "error": str(exc),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }

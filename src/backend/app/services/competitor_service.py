@@ -11,7 +11,7 @@ Provides functionality for:
 import random
 import re
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
 
@@ -103,7 +103,7 @@ class CompetitorService:
         templates = self.MOCK_CONTENT_TEMPLATES.get(platform, self.MOCK_CONTENT_TEMPLATES["blog"])
         content_list = []
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         for i in range(count):
             template = random.choice(templates)
@@ -194,7 +194,7 @@ class CompetitorService:
             "description": description or f"{name} on {platform}",
             "profile_url": profile_url or f"https://{platform}.com/{handle}",
             "is_active": True,
-            "last_synced_at": datetime.utcnow().isoformat(),
+            "last_synced_at": datetime.now(timezone.utc).isoformat(),
         }
         
         result = self.supabase.table("competitors").insert(competitor_data).execute()
@@ -269,7 +269,7 @@ class CompetitorService:
         
         # Update last_synced_at
         self.supabase.table("competitors").update({
-            "last_synced_at": datetime.utcnow().isoformat()
+            "last_synced_at": datetime.now(timezone.utc).isoformat()
         }).eq("id", competitor_id).execute()
         
         return {
@@ -310,7 +310,7 @@ class CompetitorService:
         
         for comp in competitors:
             # Get recent content stats
-            recent_content = self.supabase.table("competitor_content").select("*").eq("competitor_id", comp["id"]).gte("published_at", (datetime.utcnow() - timedelta(days=30)).isoformat()).execute()
+            recent_content = self.supabase.table("competitor_content").select("*").eq("competitor_id", comp["id"]).gte("published_at", (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()).execute()
             
             content_count = len(recent_content.data) if recent_content.data else 0
             
@@ -421,7 +421,7 @@ class CompetitorService:
         topic_content_counts = {}
         
         for comp in competitors:
-            content_result = self.supabase.table("competitor_content").select("topics").eq("competitor_id", comp["id"]).gte("published_at", (datetime.utcnow() - timedelta(days=60)).isoformat()).execute()
+            content_result = self.supabase.table("competitor_content").select("topics").eq("competitor_id", comp["id"]).gte("published_at", (datetime.now(timezone.utc) - timedelta(days=60)).isoformat()).execute()
             
             for item in content_result.data or []:
                 for topic in item.get("topics", []):
@@ -625,7 +625,7 @@ class CompetitorService:
             "success": True,
             "competitors_updated": updated_count,
             "total_new_content": total_new_content,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     
     async def generate_gap_analysis_for_all_users(self) -> Dict[str, Any]:
@@ -650,7 +650,7 @@ class CompetitorService:
             "success": True,
             "users_processed": processed_count,
             "total_gaps_identified": total_gaps,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
 

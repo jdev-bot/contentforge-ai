@@ -2,7 +2,7 @@
 Tests for Version History service and router.
 """
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 from unittest.mock import Mock, patch, MagicMock
 
@@ -48,7 +48,7 @@ def sample_version():
             "word_count_delta": 0,
         },
         "created_by": str(uuid4()),
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -71,7 +71,7 @@ class TestVersionService:
                 "body": "body2",
                 "metadata": {},
                 "created_by": str(mock_user.id),
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             },
             {
                 "id": str(uuid4()),
@@ -82,7 +82,7 @@ class TestVersionService:
                 "body": "body1",
                 "metadata": {},
                 "created_by": str(mock_user.id),
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             },
         ]
         mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.range.return_value.execute.return_value = mock_response
@@ -136,7 +136,7 @@ class TestVersionService:
             "body": "New body text",
             "metadata": {"change_summary": "Manual save", "word_count": 3, "word_count_delta": -2},
             "created_by": str(mock_user.id),
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }]
         mock_supabase.table.return_value.insert.return_value.execute.return_value = insert_mock
 
@@ -182,7 +182,7 @@ class TestVersionService:
             "body": "Fetched body",
             "metadata": {"change_summary": "Version 1", "word_count": 2, "word_count_delta": 0},
             "created_by": str(mock_user.id),
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }]
         mock_supabase.table.return_value.insert.return_value.execute.return_value = insert_mock
 
@@ -207,14 +207,14 @@ class TestVersionService:
             "version_number": 1, "title": "v1",
             "body": "Line one\nLine two\nLine three",
             "metadata": {}, "created_by": str(mock_user.id),
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }
         v2_data = {
             "id": v2_id, "content_id": content_id,
             "version_number": 2, "title": "v2",
             "body": "Line one\nLine modified\nLine three",
             "metadata": {}, "created_by": str(mock_user.id),
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
         # Mock get_version
@@ -247,14 +247,14 @@ class TestVersionService:
             "version_number": 1, "title": "v1",
             "body": "Original text here",
             "metadata": {}, "created_by": str(mock_user.id),
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }
         v2_data = {
             "id": v2_id, "content_id": content_id,
             "version_number": 2, "title": "v2",
             "body": "Modified text here",
             "metadata": {}, "created_by": str(mock_user.id),
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
         with patch.object(version_svc, "get_version") as mock_get:
@@ -284,7 +284,7 @@ class TestVersionService:
             "body": "Restored body",
             "metadata": {},
             "created_by": str(mock_user.id),
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
         with patch.object(version_svc, "get_version", return_value=version_data), \
@@ -352,7 +352,7 @@ class TestVersionHistoryRouter:
                     "body": "body1",
                     "metadata": {},
                     "created_by": str(mock_user.id),
-                    "created_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
                 }
             ]
 
@@ -378,7 +378,7 @@ class TestVersionHistoryRouter:
                 "body": "Saved body",
                 "metadata": {"change_summary": "Manual savepoint", "word_count": 2, "word_count_delta": 0},
                 "created_by": str(mock_user.id),
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
 
             response = client.post(
@@ -398,8 +398,8 @@ class TestVersionHistoryRouter:
 
         with patch("app.routers.version_history.version_service") as mock_svc:
             mock_svc.compute_diff.return_value = {
-                "version_1": {"id": v1, "version_number": 1, "created_at": datetime.utcnow().isoformat()},
-                "version_2": {"id": v2, "version_number": 2, "created_at": datetime.utcnow().isoformat()},
+                "version_1": {"id": v1, "version_number": 1, "created_at": datetime.now(timezone.utc).isoformat()},
+                "version_2": {"id": v2, "version_number": 2, "created_at": datetime.now(timezone.utc).isoformat()},
                 "format": "unified",
                 "diff": "--- v1\n+++ v2\n@@ -1 +1 @@\n-old\n+new",
             }
@@ -460,7 +460,7 @@ class TestVersionHistoryRouter:
                 "body": "body2",
                 "metadata": {},
                 "created_by": str(mock_user.id),
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
 
             response = client.get(

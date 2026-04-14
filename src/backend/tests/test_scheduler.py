@@ -8,7 +8,7 @@ Unit tests for:
 - Retry logic
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, MagicMock, patch
 from uuid import UUID
 import pytz
@@ -74,7 +74,7 @@ class TestSchedulerService:
         """Test scheduling a post successfully."""
         
         # Mock successful insert
-        future_time = datetime.utcnow() + timedelta(hours=1)
+        future_time = datetime.now(timezone.utc) + timedelta(hours=1)
         mock_supabase.execute.return_value = MagicMock(data=[{
             "id": "test-post-id",
             "user_id": "test-user-id",
@@ -87,8 +87,8 @@ class TestSchedulerService:
             "timezone": "UTC",
             "retry_count": 0,
             "max_retries": 3,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
             "published_at": None,
             "error_message": None,
             "external_id": None,
@@ -116,7 +116,7 @@ class TestSchedulerService:
     def test_schedule_post_past_time(self, scheduler_service):
         """Test scheduling a post in the past fails."""
         
-        past_time = datetime.utcnow() - timedelta(hours=1)
+        past_time = datetime.now(timezone.utc) - timedelta(hours=1)
         request = ScheduleRequest(
             content_id="test-content-id",
             platform="twitter",
@@ -146,8 +146,8 @@ class TestSchedulerService:
             "timezone": "America/New_York",
             "retry_count": 0,
             "max_retries": 3,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
             "published_at": None,
             "error_message": None,
             "external_id": None,
@@ -178,15 +178,15 @@ class TestSchedulerService:
                 "user_id": "test-user-id",
                 "content_id": "content-1",
                 "platform": "twitter",
-                "scheduled_at": (datetime.utcnow() + timedelta(hours=1)).isoformat(),
+                "scheduled_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
                 "status": "pending",
                 "asset_type": "post",
                 "settings": {},
                 "timezone": "UTC",
                 "retry_count": 0,
                 "max_retries": 3,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "published_at": None,
                 "error_message": None,
                 "external_id": None,
@@ -221,14 +221,14 @@ class TestSchedulerService:
                 "status": "pending",
                 "content_id": "content-1",
                 "platform": "twitter",
-                "scheduled_at": (datetime.utcnow() + timedelta(hours=1)).isoformat(),
+                "scheduled_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
                 "asset_type": "post",
                 "settings": {},
                 "timezone": "UTC",
                 "retry_count": 0,
                 "max_retries": 3,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "published_at": None,
                 "error_message": None,
                 "external_id": None,
@@ -251,15 +251,15 @@ class TestSchedulerService:
             "status": "published",
             "content_id": "content-1",
             "platform": "twitter",
-            "scheduled_at": datetime.utcnow().isoformat(),
+            "scheduled_at": datetime.now(timezone.utc).isoformat(),
             "asset_type": "post",
             "settings": {},
             "timezone": "UTC",
             "retry_count": 0,
             "max_retries": 3,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
-            "published_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "published_at": datetime.now(timezone.utc).isoformat(),
             "error_message": None,
             "external_id": "ext-123",
             "published_url": "https://twitter.com/post/123",
@@ -272,7 +272,7 @@ class TestSchedulerService:
     
     def test_get_pending_posts_due(self, scheduler_service, mock_supabase):
         """Test getting pending posts that are due."""
-        past_time = datetime.utcnow() - timedelta(minutes=5)
+        past_time = datetime.now(timezone.utc) - timedelta(minutes=5)
         mock_supabase.execute.return_value = MagicMock(data=[
             {
                 "id": "post-1",
@@ -286,8 +286,8 @@ class TestSchedulerService:
                 "timezone": "UTC",
                 "retry_count": 0,
                 "max_retries": 3,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "published_at": None,
                 "error_message": None,
                 "external_id": None,
@@ -315,22 +315,22 @@ class TestSchedulerService:
         """Test updating a scheduled post."""
         from app.services.scheduler_service import ScheduleUpdateRequest
         
-        future_time = datetime.utcnow() + timedelta(hours=2)
+        future_time = datetime.now(timezone.utc) + timedelta(hours=2)
         mock_supabase.execute.side_effect = [
             MagicMock(data=[{
                 "id": "post-1",
                 "user_id": "test-user-id",
                 "content_id": "content-1",
                 "platform": "twitter",
-                "scheduled_at": (datetime.utcnow() + timedelta(hours=1)).isoformat(),
+                "scheduled_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
                 "status": "pending",
                 "asset_type": "post",
                 "settings": {},
                 "timezone": "UTC",
                 "retry_count": 0,
                 "max_retries": 3,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "published_at": None,
                 "error_message": None,
                 "external_id": None,
@@ -350,8 +350,8 @@ class TestSchedulerService:
                 "timezone": "UTC",
                 "retry_count": 0,
                 "max_retries": 3,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "published_at": None,
                 "error_message": None,
                 "external_id": None,
@@ -432,7 +432,7 @@ class TestSchedulerAPI:
         """Test POST /api/v1/schedule endpoint."""
         mock_client, mock_auth, mock_table, _, mock_query = client.mock_supabase
         
-        future_time = (datetime.utcnow() + timedelta(hours=1)).isoformat()
+        future_time = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
         mock_query.execute.return_value = MagicMock(data=[{
             "id": "test-post-id",
             "user_id": "test-user-id",
@@ -445,8 +445,8 @@ class TestSchedulerAPI:
             "timezone": "UTC",
             "retry_count": 0,
             "max_retries": 3,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
             "published_at": None,
             "error_message": None,
             "external_id": None,
@@ -476,7 +476,7 @@ class TestSchedulerAPI:
     
     def test_create_schedule_past_time_fails(self, client, auth_headers):
         """Test scheduling in the past returns error."""
-        past_time = (datetime.utcnow() - timedelta(hours=1)).isoformat()
+        past_time = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
         
         response = client.post(
             "/api/v1/schedule",
@@ -494,8 +494,8 @@ class TestSchedulerAPI:
     
     def test_list_schedules_endpoint(self, client, auth_headers):
         """Test GET /api/v1/schedule endpoint."""
-        future_time = (datetime.utcnow() + timedelta(hours=1)).isoformat()
-        now_time = datetime.utcnow().isoformat()
+        future_time = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+        now_time = datetime.now(timezone.utc).isoformat()
         mock_posts = [
             ScheduledPostItem(
                 id="post-1",
@@ -522,8 +522,8 @@ class TestSchedulerAPI:
     
     def test_get_schedule_endpoint(self, client, auth_headers):
         """Test GET /api/v1/schedule/{id} endpoint."""
-        future_time = (datetime.utcnow() + timedelta(hours=1)).isoformat()
-        now_time = datetime.utcnow().isoformat()
+        future_time = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+        now_time = datetime.now(timezone.utc).isoformat()
         mock_post = ScheduledPostItem(
             id="post-1",
             user_id="test-user-id",
@@ -558,14 +558,14 @@ class TestSchedulerAPI:
                 "status": "pending",
                 "content_id": "content-1",
                 "platform": "twitter",
-                "scheduled_at": (datetime.utcnow() + timedelta(hours=1)).isoformat(),
+                "scheduled_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
                 "asset_type": "post",
                 "settings": {},
                 "timezone": "UTC",
                 "retry_count": 0,
                 "max_retries": 3,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "published_at": None,
                 "error_message": None,
                 "external_id": None,
@@ -582,8 +582,8 @@ class TestSchedulerAPI:
     
     def test_publish_now_endpoint(self, client, auth_headers):
         """Test POST /api/v1/schedule/{id}/publish-now endpoint."""
-        future_time = (datetime.utcnow() + timedelta(hours=1)).isoformat()
-        now_time = datetime.utcnow().isoformat()
+        future_time = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+        now_time = datetime.now(timezone.utc).isoformat()
         mock_post = ScheduledPostItem(
             id="post-1",
             user_id="test-user-id",
@@ -644,7 +644,7 @@ class TestTimezoneHandling:
         utc_time = service._to_utc(naive_time, "America/New_York")
         
         # Should be converted to UTC
-        assert utc_time.tzinfo is None  # Should be naive UTC
+        assert utc_time.tzinfo is not None  # Should be timezone-aware UTC
     
     def test_unknown_timezone_defaults_to_utc(self):
         """Test that unknown timezone defaults to UTC."""
@@ -710,7 +710,7 @@ class TestRetryLogic:
         service = SchedulerService()
         service.supabase = mock_supabase
         
-        past_time = datetime.utcnow() - timedelta(hours=1)
+        past_time = datetime.now(timezone.utc) - timedelta(hours=1)
         mock_result = MagicMock(data=[
             {
                 "id": "post-1",
@@ -724,8 +724,8 @@ class TestRetryLogic:
                 "timezone": "UTC",
                 "retry_count": 1,
                 "max_retries": 3,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "published_at": None,
                 "error_message": "Network error",
                 "external_id": None,
@@ -796,7 +796,7 @@ class TestBulkOperations:
         """Test bulk creating multiple scheduled posts."""
         mock_client = client.mock_supabase
         
-        future_time = (datetime.utcnow() + timedelta(hours=1)).isoformat()
+        future_time = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
         
         # Mock successful insert for each
         mock_client.execute.return_value = MagicMock(data=[{
@@ -811,8 +811,8 @@ class TestBulkOperations:
             "timezone": "UTC",
             "retry_count": 0,
             "max_retries": 3,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
             "published_at": None,
             "error_message": None,
             "external_id": None,
@@ -876,7 +876,7 @@ class TestCeleryTasks:
         with patch("app.services.scheduler_service.get_supabase_client", return_value=mock_supabase):
             from app.services.scheduler_service import process_scheduled_posts
             
-            past_time = datetime.utcnow() - timedelta(minutes=5)
+            past_time = datetime.now(timezone.utc) - timedelta(minutes=5)
             mock_supabase.execute.return_value = MagicMock(data=[
                 {
                     "id": "post-1",
@@ -890,8 +890,8 @@ class TestCeleryTasks:
                     "timezone": "UTC",
                     "retry_count": 0,
                     "max_retries": 3,
-                    "created_at": datetime.utcnow().isoformat(),
-                    "updated_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
                     "published_at": None,
                     "error_message": None,
                     "external_id": None,
@@ -913,7 +913,7 @@ class TestCeleryTasks:
         """Test the retry_failed_posts Celery task."""
         from app.services.scheduler_service import retry_failed_posts, SchedulerService
         
-        past_time = datetime.utcnow() - timedelta(hours=1)
+        past_time = datetime.now(timezone.utc) - timedelta(hours=1)
         
         # Set up the mock chain for get_failed_posts_for_retry
         mock_result = MagicMock(data=[
@@ -929,8 +929,8 @@ class TestCeleryTasks:
                 "timezone": "UTC",
                 "retry_count": 1,
                 "max_retries": 3,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "published_at": None,
                 "error_message": "Network error",
                 "external_id": None,

@@ -2,7 +2,7 @@
 Tests for report scheduling API.
 """
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 from unittest.mock import Mock, patch, MagicMock
 
@@ -29,8 +29,8 @@ def sample_report():
         "format": "html",
         "recipients": ["test@example.com"],
         "filters": {},
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -45,7 +45,7 @@ def sample_report_run():
         "format": "html",
         "storage_path": "reports/content_summary_20240101.html",
         "file_name": "content_summary_20240101_090000.html",
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "error_message": None,
     }
 
@@ -363,7 +363,7 @@ class TestReportRouter:
         with patch("app.routers.reports.get_auth_user", return_value=mock_user), \
              patch("app.routers.reports.report_service") as mock_service:
             mock_service.get_report_history.return_value = [
-                {"id": "run-1", "status": "completed", "generated_at": datetime.utcnow().isoformat()}
+                {"id": "run-1", "status": "completed", "generated_at": datetime.now(timezone.utc).isoformat()}
             ]
 
             response = client.get("/api/v1/reports/report-1/history", headers={"Authorization": "Bearer test"})

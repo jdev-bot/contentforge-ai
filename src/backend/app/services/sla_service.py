@@ -8,7 +8,7 @@ This service handles:
 - Alert generation and lifecycle management
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Any
 from uuid import UUID
 from enum import Enum
@@ -262,7 +262,7 @@ class SLAService:
             updates.pop("id", None)
             updates.pop("user_id", None)
             updates.pop("created_at", None)
-            updates["updated_at"] = datetime.utcnow().isoformat()
+            updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 
             result = self.supabase.table("sla_policies").update(updates).eq(
                 "id", str(policy_id)
@@ -353,7 +353,7 @@ class SLAService:
             window_minutes = policy["window_minutes"]
 
             # Get recent metrics for this metric type within the window
-            cutoff = (datetime.utcnow() - timedelta(minutes=window_minutes)).isoformat()
+            cutoff = (datetime.now(timezone.utc) - timedelta(minutes=window_minutes)).isoformat()
             metrics_result = self.supabase.table("sla_metrics").select("value").eq(
                 "user_id", str(user_id)
             ).eq("metric_type", metric).gte("created_at", cutoff).execute()
@@ -412,7 +412,7 @@ class SLAService:
         """
         try:
             # Get uptime over last 24 hours
-            cutoff_24h = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+            cutoff_24h = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
             uptime_metrics = self.supabase.table("sla_metrics").select("value").eq(
                 "user_id", str(user_id)
             ).eq("metric_type", SLAMetricType.UPTIME.value).gte("created_at", cutoff_24h).execute()
@@ -525,7 +525,7 @@ class SLAService:
         try:
             result = self.supabase.table("sla_alerts").update({
                 "acknowledged": True,
-                "acknowledged_at": datetime.utcnow().isoformat(),
+                "acknowledged_at": datetime.now(timezone.utc).isoformat(),
             }).eq("id", str(alert_id)).eq("user_id", str(user_id)).execute()
             return len(result.data or []) > 0
         except Exception as e:
@@ -544,7 +544,7 @@ class SLAService:
             Dict with uptime_percentage and daily_data
         """
         try:
-            cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
             result = self.supabase.table("sla_metrics").select("value, created_at").eq(
                 "user_id", str(user_id)
             ).eq("metric_type", SLAMetricType.UPTIME.value).gte("created_at", cutoff).order(
@@ -595,7 +595,7 @@ class SLAService:
             Dict with percentiles and daily averages
         """
         try:
-            cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
             result = self.supabase.table("sla_metrics").select("value, created_at").eq(
                 "user_id", str(user_id)
             ).eq("metric_type", SLAMetricType.RESPONSE_TIME.value).gte("created_at", cutoff).order(
@@ -660,7 +660,7 @@ class SLAService:
             Dict with error rate trend data
         """
         try:
-            cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
             result = self.supabase.table("sla_metrics").select("value, created_at").eq(
                 "user_id", str(user_id)
             ).eq("metric_type", SLAMetricType.ERROR_RATE.value).gte("created_at", cutoff).order(

@@ -6,7 +6,7 @@ Scheduled tasks:
 - Weekly content gap analysis
 """
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
@@ -149,7 +149,7 @@ def generate_competitor_insights_task(self):
                     content_result = supabase.table("competitor_content").select("*").eq(
                         "competitor_id", competitor["id"]
                     ).gte(
-                        "published_at", (datetime.utcnow() - timedelta(days=7)).isoformat()
+                        "published_at", (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
                     ).execute()
                     
                     if content_result.data:
@@ -176,7 +176,7 @@ def generate_competitor_insights_task(self):
         return {
             "status": "success",
             "insights_generated": insights_generated,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
     except Exception as exc:
@@ -236,7 +236,7 @@ def notify_high_opportunity_gaps_task(self):
             "status": "success",
             "users_notified": notified_count,
             "total_gaps": len(gaps),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
     except Exception as exc:
@@ -262,7 +262,7 @@ def cleanup_old_competitor_content_task(self):
         supabase = get_supabase_client()
         
         # Delete content older than 90 days
-        cutoff_date = (datetime.utcnow() - timedelta(days=90)).isoformat()
+        cutoff_date = (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
         
         result = supabase.table("competitor_content").delete().lt(
             "published_at", cutoff_date
@@ -275,7 +275,7 @@ def cleanup_old_competitor_content_task(self):
             "status": "success",
             "deleted_count": deleted_count,
             "cutoff_date": cutoff_date,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
     except Exception as exc:
@@ -307,7 +307,7 @@ def competitor_health_check_task():
         active_count = active_result.count or 0
         
         # Get stale competitors (not synced in 48 hours)
-        stale_cutoff = (datetime.utcnow() - timedelta(hours=48)).isoformat()
+        stale_cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
         stale_result = supabase.table("competitors").select("id", count="exact").eq(
             "is_active", True
         ).lt(
@@ -327,7 +327,7 @@ def competitor_health_check_task():
             "health_status": health_status,
             "active_competitors": active_count,
             "stale_competitors": stale_count,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
     except Exception as exc:
@@ -335,5 +335,5 @@ def competitor_health_check_task():
         return {
             "status": "error",
             "error": str(exc),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }

@@ -5,7 +5,7 @@ import logging
 import httpx
 import feedparser
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from app.core.supabase import get_supabase_admin_client
@@ -142,7 +142,7 @@ class RSSService:
                 
                 # Update feed last_fetched_at and clear error
                 supabase.table("rss_feeds").update({
-                    "last_fetched_at": datetime.utcnow().isoformat(),
+                    "last_fetched_at": datetime.now(timezone.utc).isoformat(),
                     "status": "active",
                     "error_message": None
                 }).eq("id", feed_id).execute()
@@ -339,7 +339,7 @@ class RSSService:
                 
                 if last_fetched:
                     last_fetched_dt = datetime.fromisoformat(last_fetched.replace('Z', '+00:00'))
-                    minutes_since_fetch = (datetime.utcnow() - last_fetched_dt.replace(tzinfo=None)).total_seconds() / 60
+                    minutes_since_fetch = (datetime.now(timezone.utc) - last_fetched_dt.replace(tzinfo=None)).total_seconds() / 60
                     
                     if frequency == "hourly" and minutes_since_fetch < 60:
                         continue

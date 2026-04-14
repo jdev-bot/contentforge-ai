@@ -4,7 +4,7 @@ Analyzes user content history and patterns to provide AI-powered suggestions
 for topics, posting times, and content improvements.
 """
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
 
 from app.core.supabase import get_supabase_client
@@ -336,7 +336,7 @@ Format your response as JSON:
                 "suggestion_type": suggestion_type,
                 "suggestions": suggestions,
                 "metadata": metadata or {},
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
             result = self.supabase.table("auto_suggestions").insert(data).execute()
             if result.data:
@@ -402,7 +402,7 @@ Format your response as JSON:
             "topics": topics,
             "posting_times": posting_times,
             "content_improvements": improvements,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
         }
 
         # Save each type

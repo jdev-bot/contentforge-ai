@@ -4,7 +4,7 @@ Dashboard Service
 Handles custom dashboard and widget management with live data fetching.
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
 from uuid import uuid4
 
@@ -139,7 +139,7 @@ class DashboardService:
         if not updates:
             return existing
 
-        updates["updated_at"] = datetime.utcnow().isoformat()
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         response = (
             self.supabase.table("dashboards")
             .update(updates)
@@ -257,7 +257,7 @@ class DashboardService:
         if not updates:
             return widget_resp.data
 
-        updates["updated_at"] = datetime.utcnow().isoformat()
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         response = (
             self.supabase.table("dashboard_widgets")
             .update(updates)
@@ -305,7 +305,7 @@ class DashboardService:
         return {
             "dashboard_id": dashboard_id,
             "widgets": widgets_data,
-            "fetched_at": datetime.utcnow().isoformat(),
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
         }
 
     def _fetch_widget_data(self, data_source: str, user_id: str) -> Dict[str, Any]:
@@ -430,7 +430,7 @@ class DashboardService:
 
     def _fetch_team_activity(self, user_id: str) -> Dict[str, Any]:
         """Fetch team activity data."""
-        seven_days_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
+        seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
         try:
             resp = (
                 self.supabase.table("content")

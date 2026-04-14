@@ -7,7 +7,7 @@ import logging
 import io
 import csv
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
 from uuid import uuid4
 
@@ -304,7 +304,7 @@ class ReportService:
         if not updates:
             return existing
 
-        updates["updated_at"] = datetime.utcnow().isoformat()
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         response = (
             self.supabase.table("scheduled_reports")
             .update(updates)
@@ -337,14 +337,14 @@ class ReportService:
         data = self._gather_report_data(report["report_type"], user_id, report.get("filters", {}))
 
         # Render report
-        generated_at = datetime.utcnow().isoformat()
+        generated_at = datetime.now(timezone.utc).isoformat()
         report_format = report.get("format", "html")
         content, content_type, storage_path = self._render_report(
             report["report_type"], data, report_format, generated_at,
         )
 
         # Store in Supabase storage
-        file_name = f"{report['report_type']}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.{report_format}"
+        file_name = f"{report['report_type']}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.{report_format}"
         storage_path = self._store_report(file_name, content, content_type)
 
         # Record run
@@ -566,7 +566,7 @@ class ReportService:
 
     def _gather_team_activity(self, user_id: str, filters: Dict) -> Dict[str, Any]:
         """Gather team activity data."""
-        seven_days_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
+        seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
         try:
             resp = (
                 self.supabase.table("content")

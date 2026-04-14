@@ -3,7 +3,7 @@ Celery tasks for audience growth metrics.
 """
 import logging
 from celery import shared_task
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.services.audience_service import audience_service
 from app.core.supabase import get_supabase_admin_client
@@ -28,7 +28,7 @@ def calculate_growth_metrics(self):
         # Get distinct user IDs from recent audience metrics
         result = supabase.table("audience_metrics")\
             .select("user_id")\
-            .gte("recorded_at", (datetime.utcnow() - timedelta(days=30)).isoformat())\
+            .gte("recorded_at", (datetime.now(timezone.utc) - timedelta(days=30)).isoformat())\
             .execute()
         
         user_ids = list(set(row.get("user_id") for row in result.data or []))
@@ -141,7 +141,7 @@ def cleanup_old_audience_metrics(days: int = 365):
     try:
         supabase = get_supabase_admin_client()
         
-        cutoff_date = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        cutoff_date = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         
         result = supabase.table("audience_metrics")\
             .delete()\
@@ -151,7 +151,7 @@ def cleanup_old_audience_metrics(days: int = 365):
         deleted_count = len(result.data) if result.data else 0
         
         # Also clean up old snapshots (keep last 12 months)
-        snapshot_cutoff = (datetime.utcnow() - timedelta(days=365)).isoformat()
+        snapshot_cutoff = (datetime.now(timezone.utc) - timedelta(days=365)).isoformat()
         supabase.table("growth_snapshots")\
             .delete()\
             .lt("recorded_at", snapshot_cutoff)\

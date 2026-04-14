@@ -5,7 +5,7 @@ Handles version creation, diff computation, restoration, and auto-versioning for
 """
 import logging
 import difflib
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 from uuid import UUID
 
@@ -137,7 +137,7 @@ class VersionService:
             "body": body,
             "metadata": metadata,
             "created_by": user_id,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
         result = self.supabase.table("content_versions").insert(data).execute()
@@ -214,7 +214,7 @@ class VersionService:
         self.supabase.table("content").update({
             "title": version["title"],
             "original_text": version["body"],
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", content_id).eq("user_id", user_id).execute()
 
         # Create a new version reflecting the restoration

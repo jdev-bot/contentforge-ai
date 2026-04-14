@@ -142,6 +142,8 @@ class SAMLService:
         data = {k: v for k, v in data.items() if v is not None}
 
         result = self.supabase.table("saml_providers").insert(data).execute()
+        if not result.data:
+            raise ValueError("Failed to create SAML provider: no data returned")
         return result.data[0]
 
     def update_provider(self, provider_id: str, **fields) -> Optional[Dict[str, Any]]:

@@ -349,7 +349,7 @@ def test_integration_update_model(t):
 
 @runner.test("WebhookDeliveryResponse model validates correctly")
 def test_webhook_delivery_response_model(t):
-    from datetime import datetime
+    from datetime import datetime, timezone
     from app.routers.integrations import WebhookDeliveryResponse
     import uuid
     
@@ -360,8 +360,8 @@ def test_webhook_delivery_response_model(t):
         "status": "delivered",
         "attempts": 1,
         "response_status": 200,
-        "delivered_at": datetime.utcnow(),
-        "created_at": datetime.utcnow()
+        "delivered_at": datetime.now(timezone.utc),
+        "created_at": datetime.now(timezone.utc)
     }
     model = WebhookDeliveryResponse(**data)
     t.assert_equal(model.status, "delivered")

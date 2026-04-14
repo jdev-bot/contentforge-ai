@@ -4,7 +4,7 @@ Automation Rules router for auto-generate, auto-publish, webhook triggers, and s
 from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from enum import Enum
 
@@ -170,9 +170,9 @@ async def create_automation_rule(
             if rule_data.schedule_config.frequency == "once" and rule_data.schedule_config.run_at:
                 next_run_at = rule_data.schedule_config.run_at
             elif rule_data.schedule_config.frequency == "hourly":
-                next_run_at = datetime.utcnow() + timedelta(hours=1)
+                next_run_at = datetime.now(timezone.utc) + timedelta(hours=1)
             elif rule_data.schedule_config.frequency == "daily":
-                next_run_at = datetime.utcnow() + timedelta(days=1)
+                next_run_at = datetime.now(timezone.utc) + timedelta(days=1)
         
         rule_record = {
             "name": rule_data.name,

@@ -45,8 +45,8 @@ class CommentResponse(BaseModel):
     position_end: Optional[int]
     parent_id: Optional[str]
     is_resolved: bool
-    resolved_at: Optional[datetime]
-    resolved_by: Optional[str]
+    resolved_at: Optional[datetime] = None
+    resolved_by: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     mentions: List[str] = []

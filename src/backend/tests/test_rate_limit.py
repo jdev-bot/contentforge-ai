@@ -397,13 +397,13 @@ class TestUsageStatsModel:
     def test_usage_stats_model_creation(self):
         """Test UsageStats model creation."""
         from app.core.rate_limit import UsageStats
-        from datetime import datetime
+        from datetime import datetime, timezone
         
         stats = UsageStats(
             monthly_usage_count=50,
             monthly_usage_limit=100,
             remaining=50,
-            reset_at=datetime.utcnow()
+            reset_at=datetime.now(timezone.utc)
         )
         
         assert stats.monthly_usage_count == 50

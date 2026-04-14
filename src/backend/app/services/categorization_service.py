@@ -3,7 +3,7 @@ Smart Categorization service for ContentForge AI.
 Auto-categorizes and tags content using AI, supports content clustering.
 """
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
 from app.core.supabase import get_supabase_client
@@ -364,7 +364,7 @@ Format your response as JSON:
                 "clusters": clusters,
                 "total_content": len(content_items),
                 "num_clusters": len(clusters),
-                "generated_at": datetime.utcnow().isoformat(),
+                "generated_at": datetime.now(timezone.utc).isoformat(),
             }
 
             # Save cluster results
@@ -374,7 +374,7 @@ Format your response as JSON:
                     "cluster_type": "thematic",
                     "clusters": clusters,
                     "total_content": len(content_items),
-                    "created_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
                 }
                 self.supabase.table("content_clusters").insert(cluster_data).execute()
             except Exception as e:
@@ -637,7 +637,7 @@ Format your response as JSON:
                 "relevance_score": categorization.get("relevance_score", 50),
                 "target_audience": categorization.get("target_audience", "General audience"),
                 "tone": categorization.get("tone", "professional"),
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
             result = self.supabase.table("content_categorizations").insert(data).execute()
             cache.delete_pattern("", prefix=f"categorization:{user_id}")
@@ -663,7 +663,7 @@ Format your response as JSON:
                 "long_tail_keywords": tags.get("long_tail_keywords", []),
                 "entity_tags": tags.get("entity_tags", []),
                 "sentiment": tags.get("sentiment", "neutral"),
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
             result = self.supabase.table("content_tags").insert(data).execute()
             return result.data[0] if result.data else None
@@ -680,7 +680,7 @@ Format your response as JSON:
         try:
             update_data = {
                 "category": categorization.get("category", "general"),
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             }
             self.supabase.table("content").update(update_data).eq("id", content_id).execute()
             return True
@@ -722,6 +722,8 @@ Format your response as JSON:
             return data
         except (json.JSONDecodeError, IndexError, KeyError) as e:
             print(f"Failed to parse JSON response: {e}")
+            if key == "clusters":
+                return []
             return {}
 
 

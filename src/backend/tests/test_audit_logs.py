@@ -2,7 +2,7 @@
 Tests for Audit Logs service and router.
 """
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 from unittest.mock import Mock, patch, MagicMock
 
@@ -45,7 +45,7 @@ def sample_audit_log():
         "details": {"title": "Test Content"},
         "ip_address": "127.0.0.1",
         "user_agent": "TestAgent/1.0",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -68,7 +68,7 @@ class TestAuditService:
             "details": {"title": "Test"},
             "ip_address": "127.0.0.1",
             "user_agent": "TestAgent/1.0",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }]
         mock_supabase.table.return_value.insert.return_value.execute.return_value = mock_response
 
@@ -100,7 +100,7 @@ class TestAuditService:
             "details": {},
             "ip_address": None,
             "user_agent": None,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }]
         mock_supabase.table.return_value.insert.return_value.execute.return_value = mock_response
 
@@ -129,7 +129,7 @@ class TestAuditService:
                 "details": {},
                 "ip_address": None,
                 "user_agent": None,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         ]
         # Set up chained query
@@ -229,7 +229,7 @@ class TestAuditService:
                 "details": {"title": "Test"},
                 "ip_address": "127.0.0.1",
                 "user_agent": "TestAgent/1.0",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         ]
         mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = mock_response
@@ -310,7 +310,7 @@ class TestAuditLogsRouter:
                     "details": {},
                     "ip_address": None,
                     "user_agent": None,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             ]
 
@@ -348,7 +348,7 @@ class TestAuditLogsRouter:
                 "details": {},
                 "ip_address": "127.0.0.1",
                 "user_agent": "Mozilla/5.0",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
             response = client.get(f"/api/v1/audit-logs/{log_id}")

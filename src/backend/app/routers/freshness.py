@@ -198,55 +198,6 @@ async def analyze_content_freshness(
         )
 
 
-@router.get("/freshness/{content_id}", response_model=FreshnessScoreResponse)
-async def get_freshness_score(
-    content_id: UUID,
-    user=Depends(get_auth_user)
-):
-    """
-    Get freshness score for specific content.
-    
-    - **content_id**: UUID of the content
-    
-    Returns stored freshness score or 404 if not analyzed yet.
-    """
-    supabase = get_supabase_client()
-    
-    try:
-        result = supabase.table("content_freshness_scores").select("*").eq("content_id", str(content_id)).eq("user_id", str(user.id)).single().execute()
-        
-        if not result.data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Freshness score not found. Use POST /freshness/analyze/{content_id} to analyze.",
-            )
-        
-        score_data = result.data
-        status_label = freshness_service.get_freshness_status(score_data["freshness_score"])
-        
-        return FreshnessScoreResponse(
-            id=score_data["id"],
-            content_id=score_data["content_id"],
-            user_id=score_data["user_id"],
-            freshness_score=score_data["freshness_score"],
-            age_days=score_data["age_days"],
-            status=status_label,
-            last_analyzed_at=score_data["last_analyzed_at"],
-            factors=FreshnessFactorsResponse(**score_data["factors"]),
-            recommendations=score_data["recommendations"],
-            created_at=score_data["created_at"],
-            updated_at=score_data["updated_at"],
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
-        )
-
-
 @router.get("/freshness/stale", response_model=StaleContentListResponse)
 async def list_stale_content(
     threshold: int = Query(default=50, ge=0, le=100, description="Freshness score threshold (content below this score is considered stale)"),
@@ -512,6 +463,55 @@ async def get_freshness_dashboard(
             recommendations_summary=recommendations_summary,
         )
         
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+@router.get("/freshness/{content_id}", response_model=FreshnessScoreResponse)
+async def get_freshness_score(
+    content_id: UUID,
+    user=Depends(get_auth_user)
+):
+    """
+    Get freshness score for specific content.
+    
+    - **content_id**: UUID of the content
+    
+    Returns stored freshness score or 404 if not analyzed yet.
+    """
+    supabase = get_supabase_client()
+    
+    try:
+        result = supabase.table("content_freshness_scores").select("*").eq("content_id", str(content_id)).eq("user_id", str(user.id)).single().execute()
+        
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Freshness score not found. Use POST /freshness/analyze/{content_id} to analyze.",
+            )
+        
+        score_data = result.data
+        status_label = freshness_service.get_freshness_status(score_data["freshness_score"])
+        
+        return FreshnessScoreResponse(
+            id=score_data["id"],
+            content_id=score_data["content_id"],
+            user_id=score_data["user_id"],
+            freshness_score=score_data["freshness_score"],
+            age_days=score_data["age_days"],
+            status=status_label,
+            last_analyzed_at=score_data["last_analyzed_at"],
+            factors=FreshnessFactorsResponse(**score_data["factors"]),
+            recommendations=score_data["recommendations"],
+            created_at=score_data["created_at"],
+            updated_at=score_data["updated_at"],
+        )
+        
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

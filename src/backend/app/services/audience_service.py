@@ -4,7 +4,7 @@ Audience Growth Metrics Service
 Handles growth analysis, calculations, and insights for audience metrics.
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
 from uuid import UUID
 
@@ -46,7 +46,7 @@ class AudienceService:
             "metric_type": metric_type,
             "value": value,
             "period": period,
-            "recorded_at": recorded_at or datetime.utcnow().isoformat()
+            "recorded_at": recorded_at or datetime.now(timezone.utc).isoformat()
         }
         
         result = self.supabase.table("audience_metrics").insert(data).execute()
@@ -59,7 +59,7 @@ class AudienceService:
         days: int = 30
     ) -> Dict[str, Any]:
         """Get growth metrics for a user."""
-        since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         
         query = self.supabase.table("audience_metrics")\
             .select("*")\
@@ -99,7 +99,7 @@ class AudienceService:
         days: int = 30
     ) -> List[Dict[str, Any]]:
         """Get metrics grouped by platform."""
-        since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         
         result = self.supabase.table("audience_metrics")\
             .select("*")\
@@ -147,7 +147,7 @@ class AudienceService:
         days: int = 90
     ) -> List[Dict[str, Any]]:
         """Get historical metric data."""
-        since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         
         query = self.supabase.table("audience_metrics")\
             .select("*")\
@@ -195,7 +195,7 @@ class AudienceService:
             "new_followers_30d": new_followers_30d,
             "engagement_rate": engagement_rate,
             "top_performing_content": top_content,
-            "recorded_at": datetime.utcnow().isoformat()
+            "recorded_at": datetime.now(timezone.utc).isoformat()
         }
         
         # Store snapshot
@@ -259,7 +259,7 @@ class AudienceService:
         days_ago: int
     ) -> int:
         """Get follower count at a specific date."""
-        date = datetime.utcnow() - timedelta(days=days_ago)
+        date = datetime.now(timezone.utc) - timedelta(days=days_ago)
         
         query = self.supabase.table("audience_metrics")\
             .select("value")\
@@ -360,7 +360,7 @@ class AudienceService:
         user_id: str
     ) -> float:
         """Calculate overall engagement rate."""
-        since = (datetime.utcnow() - timedelta(days=30)).isoformat()
+        since = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
         
         result = self.supabase.table("audience_metrics")\
             .select("*")\
@@ -386,7 +386,7 @@ class AudienceService:
         result = self.supabase.table("content")\
             .select("id, title, created_at, distributions(*)")\
             .eq("user_id", user_id)\
-            .gte("created_at", (datetime.utcnow() - timedelta(days=30)).isoformat())\
+            .gte("created_at", (datetime.now(timezone.utc) - timedelta(days=30)).isoformat())\
             .execute()
         
         content_items = result.data or []

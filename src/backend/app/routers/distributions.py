@@ -4,7 +4,7 @@ Distributions router with full implementation.
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from app.core.supabase import get_supabase_client
@@ -167,7 +167,7 @@ async def publish_now(
         # Update status to publishing
         update_result = supabase.table("distributions").update({
             "status": "publishing",
-            "scheduled_at": datetime.utcnow().isoformat(),
+            "scheduled_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", str(distribution_id)).execute()
         
         # TODO: Trigger actual platform publishing via n8n webhook
@@ -176,7 +176,7 @@ async def publish_now(
         # Update to published
         published_result = supabase.table("distributions").update({
             "status": "published",
-            "published_at": datetime.utcnow().isoformat(),
+            "published_at": datetime.now(timezone.utc).isoformat(),
             "published_url": f"https://example.com/post/{distribution_id}",  # Placeholder
         }).eq("id", str(distribution_id)).execute()
         

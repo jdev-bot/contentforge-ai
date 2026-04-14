@@ -10,7 +10,7 @@ This service handles:
 - Health status monitoring
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Any
 from uuid import UUID
 from enum import Enum
@@ -250,7 +250,7 @@ class IntegrationFrameworkService:
             updates.pop("id", None)
             updates.pop("user_id", None)
             updates.pop("created_at", None)
-            updates["updated_at"] = datetime.utcnow().isoformat()
+            updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 
             result = self.supabase.table("integration_configs").update(updates).eq(
                 "id", str(config_id)
@@ -625,7 +625,7 @@ class IntegrationFrameworkService:
             config = config_result.data[0]
 
             # Count recent events by status
-            cutoff = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+            cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
 
             total_events_result = self.supabase.table("integration_events").select("id", count="exact").eq(
                 "config_id", config_id

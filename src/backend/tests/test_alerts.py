@@ -9,7 +9,7 @@ This module tests:
 - In-app notifications
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch, MagicMock, AsyncMock
 from uuid import uuid4, UUID
 
@@ -32,7 +32,7 @@ def mock_alert_data():
         "current_value": 5.5,
         "status": "active",
         "message": "Your content is going viral!",
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "acknowledged_at": None,
     }
 
@@ -50,8 +50,8 @@ def mock_alert_rule_data():
         "threshold_value": 10000.0,
         "is_enabled": True,
         "notification_channels": ["in_app", "email"],
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -66,7 +66,7 @@ def mock_notification_data():
         "message": "Your content is going viral! Engagement increased 5.5x",
         "type": "success",
         "is_read": False,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "read_at": None,
     }
 
@@ -128,8 +128,8 @@ class TestAlertService:
              patch.object(alert_service, '_save_alert', new_callable=AsyncMock) as mock_save:
 
             mock_history.return_value = [
-                {"value": 100, "recorded_at": (datetime.utcnow() - timedelta(hours=12)).isoformat()},
-                {"value": 500, "recorded_at": datetime.utcnow().isoformat()},
+                {"value": 100, "recorded_at": (datetime.now(timezone.utc) - timedelta(hours=12)).isoformat()},
+                {"value": 500, "recorded_at": datetime.now(timezone.utc).isoformat()},
             ]
             mock_exists.return_value = False
             mock_save.return_value = {"id": "viral-alert", "type": "viral"}
@@ -167,10 +167,10 @@ class TestAlertService:
 
             # Need enough data points for declining detection (at least 4)
             mock_history.return_value = [
-                {"value": 1000, "recorded_at": (datetime.utcnow() - timedelta(days=7)).isoformat()},
-                {"value": 900, "recorded_at": (datetime.utcnow() - timedelta(days=6)).isoformat()},
-                {"value": 800, "recorded_at": (datetime.utcnow() - timedelta(days=5)).isoformat()},
-                {"value": 300, "recorded_at": (datetime.utcnow() - timedelta(days=1)).isoformat()},
+                {"value": 1000, "recorded_at": (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()},
+                {"value": 900, "recorded_at": (datetime.now(timezone.utc) - timedelta(days=6)).isoformat()},
+                {"value": 800, "recorded_at": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat()},
+                {"value": 300, "recorded_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()},
             ]
             mock_exists.return_value = False
             mock_save.return_value = {"id": "declining-alert", "type": "declining"}
@@ -390,7 +390,7 @@ class TestAlertsAPI:
                     "current_value": 5.5,
                     "status": "active",
                     "message": "Test alert",
-                    "created_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
                     "acknowledged_at": None,
                 }
             ])
@@ -510,8 +510,8 @@ class TestAlertsAPI:
                     "threshold_value": 10000.0,
                     "is_enabled": True,
                     "notification_channels": ["in_app"],
-                    "created_at": datetime.utcnow().isoformat(),
-                    "updated_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
                 }
             ])
 
@@ -534,8 +534,8 @@ class TestAlertsAPI:
                 "threshold_value": 10000.0,
                 "is_enabled": True,
                 "notification_channels": ["in_app", "email"],
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             })
 
             response = client.post(
@@ -585,8 +585,8 @@ class TestAlertsAPI:
                 "threshold_value": 5000.0,
                 "is_enabled": False,
                 "notification_channels": ["in_app"],
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             })
 
             rule_id = str(uuid4())
@@ -627,7 +627,7 @@ class TestAlertsAPI:
                     "current_value": 15000.0,
                     "status": "active",
                     "message": "Milestone reached!",
-                    "created_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
                     "acknowledged_at": None,
                 }
             ])
@@ -657,7 +657,7 @@ class TestAlertsAPI:
                     "message": "Test message",
                     "type": "info",
                     "is_read": False,
-                    "created_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
                     "read_at": None,
                 }
             ])
@@ -974,7 +974,7 @@ class TestWebSocketPreparation:
                     "user_id": str(uuid4()),
                     "alert_type": "viral",
                     "message": "Test message",
-                    "created_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
                 }
             ]
 

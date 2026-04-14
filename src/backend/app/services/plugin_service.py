@@ -5,7 +5,7 @@ Handles plugin registry CRUD, lifecycle hooks, configuration, and permissions.
 import json
 import uuid
 from typing import Optional, Dict, Any, List, Callable
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 from app.core.supabase import get_supabase_client, get_supabase_admin_client
@@ -137,7 +137,7 @@ class PluginService:
 
     async def create_plugin(self, data: Dict[str, Any], author_id: str) -> Dict[str, Any]:
         """Register a new plugin in the marketplace."""
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         plugin = {
             "id": str(uuid.uuid4()),
             "name": data["name"],
@@ -175,7 +175,7 @@ class PluginService:
         if existing["author_id"] != author_id:
             raise PermissionError("Only the plugin author can update it")
 
-        update_data = {"updated_at": datetime.utcnow().isoformat()}
+        update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
         for field in ("name", "slug", "description", "version", "category",
                        "icon_url", "homepage_url", "repository_url", "status"):
             if field in data:
@@ -242,7 +242,7 @@ class PluginService:
             default_config = json.loads(default_config)
         final_config = {**(default_config or {}), **(custom_config or {})}
 
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         install = {
             "id": str(uuid.uuid4()),
             "plugin_id": plugin_id,
@@ -339,7 +339,7 @@ class PluginService:
 
         update_data = {
             "config": json.dumps(config),
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
         result = (
             self.supabase.table("installed_plugins")
@@ -367,7 +367,7 @@ class PluginService:
             self.supabase.table("installed_plugins")
             .update({
                 "is_enabled": is_enabled,
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             })
             .eq("id", install_id)
             .eq("organization_id", organization_id)
@@ -477,7 +477,7 @@ class PluginService:
                 "payload": json.dumps(payload),
                 "status": "pending",
                 "attempts": 0,
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
             try:
                 self.admin_supabase.table("plugin_hook_events").insert(event).execute()

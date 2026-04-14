@@ -2,7 +2,7 @@
 Trash/Recycle Bin functionality for ContentForge AI.
 Implements soft delete with recovery and permanent deletion.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel
@@ -46,7 +46,7 @@ def soft_delete_content(content_id: str, user_id: str) -> bool:
         content_data = result.data
         
         # Insert into trash
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         expires = now + timedelta(days=TRASH_RETENTION_DAYS)
         
         supabase.table("trash").insert({
@@ -84,7 +84,7 @@ def soft_delete_project(project_id: str, user_id: str) -> bool:
             return False
         
         project_data = result.data
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         expires = now + timedelta(days=TRASH_RETENTION_DAYS)
         
         # Store project in trash
@@ -138,7 +138,7 @@ def restore_from_trash(item_id: str, user_id: str) -> bool:
         item_type = trash_item["type"]
         original_data = trash_item["original_data"]
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         if item_type == "content":
             # Restore content
@@ -263,7 +263,7 @@ def cleanup_expired_trash() -> int:
     Returns number of items cleaned up.
     """
     supabase = get_supabase_client()
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     
     try:
         # Get expired items

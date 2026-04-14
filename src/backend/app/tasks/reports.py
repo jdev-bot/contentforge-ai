@@ -2,7 +2,7 @@
 Celery tasks for scheduled report generation.
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.celery_app import celery_app
 from app.services.report_service import report_service
@@ -85,7 +85,7 @@ def cleanup_old_report_runs(self, days: int = 90):
 
     try:
         admin = get_supabase_admin_client()
-        cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         response = (
             admin.table("report_runs")
             .delete()

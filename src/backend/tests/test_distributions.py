@@ -3,7 +3,7 @@ Tests for the distributions router.
 """
 import pytest
 from uuid import UUID, uuid4
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
 
@@ -82,8 +82,8 @@ class TestDistributions:
             "external_id": None,
             "error_message": None,
             "retry_count": 0,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }]
         mock_supabase.table.return_value.insert.return_value.execute.return_value = insert_result
         
@@ -132,13 +132,13 @@ class TestDistributions:
             "user_id": str(user.id),
             "platform": "linkedin",
             "status": "scheduled",
-            "scheduled_at": (datetime.utcnow() + timedelta(days=1)).isoformat(),
+            "scheduled_at": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
             "published_url": None,
             "external_id": None,
             "error_message": None,
             "retry_count": 0,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }]
         mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = list_result
         
@@ -164,13 +164,13 @@ class TestDistributions:
             "user_id": str(user.id),
             "platform": "instagram",
             "status": "published",
-            "scheduled_at": datetime.utcnow().isoformat(),
+            "scheduled_at": datetime.now(timezone.utc).isoformat(),
             "published_url": "https://instagram.com/p/abc123",
             "external_id": None,
             "error_message": None,
             "retry_count": 0,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
         mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.single.return_value.execute.return_value = get_result
         

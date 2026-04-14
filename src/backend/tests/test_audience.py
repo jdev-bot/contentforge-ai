@@ -2,7 +2,7 @@
 Tests for audience growth metrics API.
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from unittest.mock import Mock, patch, MagicMock
 
@@ -49,7 +49,7 @@ class TestAudienceService:
             "metric_type": "followers",
             "value": 1000,
             "period": "daily",
-            "recorded_at": datetime.utcnow().isoformat()
+            "recorded_at": datetime.now(timezone.utc).isoformat()
         }]
         mock_supabase.table.return_value.insert.return_value.execute.return_value = mock_response
         
@@ -78,7 +78,7 @@ class TestAudienceService:
                 "platform": "twitter",
                 "metric_type": "followers",
                 "value": 1000,
-                "recorded_at": datetime.utcnow().isoformat()
+                "recorded_at": datetime.now(timezone.utc).isoformat()
             }
         ]
         mock_supabase.table.return_value.select.return_value.eq.return_value.gte.return_value.order.return_value.execute.return_value = mock_response
@@ -122,7 +122,7 @@ class TestAudienceService:
         # Arrange
         mock_response = Mock()
         mock_response.data = [
-            {"recorded_at": (datetime.utcnow() - timedelta(days=i)).isoformat(), "value": 1000 + i}
+            {"recorded_at": (datetime.now(timezone.utc) - timedelta(days=i)).isoformat(), "value": 1000 + i}
             for i in range(10)
         ]
         mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.gte.return_value.order.return_value.execute.return_value = mock_response
@@ -150,7 +150,7 @@ class TestAudienceService:
             "new_followers_30d": 200,
             "engagement_rate": 3.5,
             "top_performing_content": [],
-            "recorded_at": datetime.utcnow().isoformat()
+            "recorded_at": datetime.now(timezone.utc).isoformat()
         }]
         mock_supabase.table.return_value.insert.return_value.execute.return_value = mock_response
         
@@ -336,7 +336,7 @@ class TestAudienceRouter:
         with patch("app.routers.audience.audience_service") as mock_service:
             
             mock_service.get_historical_data.return_value = [
-                {"recorded_at": datetime.utcnow().isoformat(), "value": 1000}
+                {"recorded_at": datetime.now(timezone.utc).isoformat(), "value": 1000}
             ]
             
             response = client.get("/api/v1/audience/history?days=90&metric_type=followers")
@@ -356,7 +356,7 @@ class TestAudienceRouter:
                 "metric_type": "followers",
                 "value": 1500,
                 "period": "daily",
-                "recorded_at": datetime.utcnow().isoformat()
+                "recorded_at": datetime.now(timezone.utc).isoformat()
             }
             
             payload = {

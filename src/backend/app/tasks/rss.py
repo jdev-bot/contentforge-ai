@@ -3,7 +3,7 @@ Celery tasks for RSS feed fetching and processing.
 """
 import logging
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from celery import shared_task
 from celery.exceptions import MaxRetriesExceededError
@@ -52,7 +52,7 @@ def fetch_rss_feeds_task(self):
             "total_feeds": total_feeds,
             "processed": processed,
             "results": result.get("results", []),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
     except Exception as e:
@@ -96,7 +96,7 @@ def fetch_single_feed_task(self, feed_id: str, user_id: str):
             "entries_fetched": result.get("entries_fetched", 0),
             "entries_new": result.get("entries_new", 0),
             "message": result.get("message", ""),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
     except Exception as e:
@@ -141,7 +141,7 @@ def process_rss_entry_task(self, entry_id: str, user_id: str, project_id: Option
             "entry_id": entry_id,
             "content_id": result.get("content_id"),
             "message": result.get("message", ""),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         
     except Exception as e:
@@ -170,7 +170,7 @@ def cleanup_old_rss_entries_task(days: int = 30):
         
         # Calculate cutoff date
         from datetime import timedelta
-        cutoff_date = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        cutoff_date = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         
         # Delete old processed entries
         result = supabase.table("rss_entries").delete().lt("created_at", cutoff_date).eq("processed", True).execute()

@@ -9,7 +9,7 @@ This service handles:
 - Managing alert lifecycle
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Any, Tuple
 from uuid import UUID
 from enum import Enum
@@ -513,7 +513,7 @@ class AlertService:
                     "user_id": str(user_id),
                     "metric_name": metric_name,
                     "value": value,
-                    "recorded_at": datetime.utcnow().isoformat(),
+                    "recorded_at": datetime.now(timezone.utc).isoformat(),
                 }
                 self.supabase.table("alert_metrics_history").insert(record).execute()
 
@@ -538,11 +538,11 @@ class AlertService:
                 query = query.eq("metric_name", metric_name)
 
             if hours:
-                cutoff = datetime.utcnow() - timedelta(hours=hours)
+                cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
                 query = query.gte("recorded_at", cutoff.isoformat())
 
             if days:
-                cutoff = datetime.utcnow() - timedelta(days=days)
+                cutoff = datetime.now(timezone.utc) - timedelta(days=days)
                 query = query.gte("recorded_at", cutoff.isoformat())
 
             result = query.execute()
@@ -588,7 +588,7 @@ class AlertService:
         try:
             result = self.supabase.table("content_alerts").update({
                 "status": AlertStatus.ACKNOWLEDGED.value,
-                "acknowledged_at": datetime.utcnow().isoformat(),
+                "acknowledged_at": datetime.now(timezone.utc).isoformat(),
             }).eq("id", str(alert_id)).eq("user_id", str(user_id)).execute()
 
             return len(result.data or []) > 0
@@ -861,7 +861,7 @@ class AlertService:
         try:
             result = self.supabase.table("in_app_notifications").update({
                 "is_read": True,
-                "read_at": datetime.utcnow().isoformat(),
+                "read_at": datetime.now(timezone.utc).isoformat(),
             }).eq("id", str(notification_id)).eq("user_id", str(user_id)).execute()
 
             return len(result.data or []) > 0

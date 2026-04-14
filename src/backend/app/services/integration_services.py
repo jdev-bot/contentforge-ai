@@ -9,7 +9,7 @@ import time
 import uuid
 import requests
 from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from abc import ABC, abstractmethod
 
 from app.core.config import get_settings
@@ -63,8 +63,8 @@ class BaseIntegrationService(ABC):
                 "response_status": response_status,
                 "response_body": response_body[:5000] if response_body else None,
                 "error_message": error_message,
-                "delivered_at": datetime.utcnow().isoformat() if status == "delivered" else None,
-                "created_at": datetime.utcnow().isoformat()
+                "delivered_at": datetime.now(timezone.utc).isoformat() if status == "delivered" else None,
+                "created_at": datetime.now(timezone.utc).isoformat()
             }
             self.supabase.table("webhook_deliveries").insert(delivery_data).execute()
         except Exception as e:
@@ -94,7 +94,7 @@ class ZapierService(BaseIntegrationService):
         
         test_payload = {
             "event": "test.ping",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "data": {"message": "Connection test from ContentForge AI"}
         }
         
@@ -104,7 +104,7 @@ class ZapierService(BaseIntegrationService):
         """Send event to Zapier webhook."""
         zapier_payload = {
             "event": event_type,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "data": payload
         }
         return await self._send_payload(zapier_payload, event_type=event_type)
@@ -214,7 +214,7 @@ class WebhookService(BaseIntegrationService):
         
         test_payload = {
             "event": "test.ping",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "data": {"message": "Connection test from ContentForge AI"}
         }
         
@@ -231,7 +231,7 @@ class WebhookService(BaseIntegrationService):
         
         webhook_payload = {
             "event": event_type,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "data": transformed_payload
         }
         

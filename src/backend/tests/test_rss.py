@@ -3,7 +3,7 @@ Tests for RSS feed functionality.
 """
 import pytest
 from unittest.mock import Mock, MagicMock, patch, AsyncMock
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4, UUID
 
 # Mock feedparser before importing RSS modules
@@ -59,13 +59,13 @@ def sample_rss_feed():
         "user_id": str(uuid4()),
         "name": "Test Blog Feed",
         "url": "https://example.com/feed.xml",
-        "last_fetched_at": datetime.utcnow().isoformat(),
+        "last_fetched_at": datetime.now(timezone.utc).isoformat(),
         "fetch_frequency": "hourly",
         "auto_create_content": False,
         "status": "active",
         "error_message": None,
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -79,10 +79,10 @@ def sample_rss_entry():
         "title": "Test Entry",
         "link": "https://example.com/entry1",
         "content": "Test content",
-        "published_at": datetime.utcnow().isoformat(),
+        "published_at": datetime.now(timezone.utc).isoformat(),
         "processed": False,
         "content_id": None,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -98,8 +98,8 @@ def sample_content():
         "original_text": "Test content",
         "word_count": 2,
         "status": "completed",
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -129,8 +129,8 @@ async def test_create_feed_success(client, auth_headers):
             "fetch_frequency": "hourly",
             "auto_create_content": False,
             "status": "active",
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }]
         mock_table.insert.return_value.execute.return_value = mock_result
         mock_client.table.return_value = mock_table

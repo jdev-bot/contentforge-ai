@@ -3,7 +3,7 @@ Trend detection and analysis service using AI and mock data.
 """
 import json
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
 
@@ -95,8 +95,8 @@ class TrendService:
                     "velocity": round(velocity, 2),
                     "trend_score": round(trend_score, 2),
                     "source": random.choice(self.SOURCES),
-                    "discovered_at": datetime.utcnow().isoformat(),
-                    "expires_at": (datetime.utcnow() + timedelta(hours=24)).isoformat(),
+                    "discovered_at": datetime.now(timezone.utc).isoformat(),
+                    "expires_at": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
                     "related_keywords": self._generate_related_keywords(keyword, cat),
                     "sample_content": self._generate_sample_content(keyword, cat),
                 }
@@ -262,7 +262,7 @@ Format your response as JSON:
                         "trend_score": trend["trend_score"],
                         "mention_count": trend["mention_count"],
                         "velocity": trend["velocity"],
-                        "updated_at": datetime.utcnow().isoformat(),
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
                     }
                     self.supabase.table("trending_topics").update(update_data).eq("id", trend_id).execute()
                 else:
@@ -561,7 +561,7 @@ CTA:
                 "success": True,
                 "trends_analyzed": len(enriched_trends),
                 "trends_saved": saved_count,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
             
         except Exception as e:
@@ -569,13 +569,13 @@ CTA:
             return {
                 "success": False,
                 "error": str(e),
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
     
     async def _cleanup_expired_trends(self) -> int:
         """Remove expired trending topics."""
         try:
-            result = self.supabase.table("trending_topics").delete().lt("expires_at", datetime.utcnow().isoformat()).execute()
+            result = self.supabase.table("trending_topics").delete().lt("expires_at", datetime.now(timezone.utc).isoformat()).execute()
             return len(result.data or [])
         except Exception as e:
             print(f"Failed to cleanup expired trends: {e}")

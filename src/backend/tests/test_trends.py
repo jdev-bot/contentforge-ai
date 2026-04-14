@@ -3,7 +3,7 @@ Tests for trending topics feature.
 """
 import pytest
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from uuid import uuid4, UUID
 
@@ -21,8 +21,8 @@ def mock_trend_data():
         "mention_count": 15000,
         "velocity": 12.3,
         "source": "twitter",
-        "discovered_at": datetime.utcnow().isoformat(),
-        "expires_at": (datetime.utcnow() + timedelta(hours=24)).isoformat(),
+        "discovered_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
         "related_keywords": ["machine learning", "LLM", "ChatGPT"],
         "sample_content": [
             {"source": "twitter", "text": "AI is changing everything!"},
@@ -38,7 +38,7 @@ def mock_user_interest():
         "user_id": str(uuid4()),
         "topic_id": str(uuid4()),
         "relevance_score": 0.85,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -518,7 +518,7 @@ class TestTrendsCeleryTasks:
                 "success": True,
                 "trends_analyzed": 20,
                 "trends_saved": 5,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
             mock_loop.close = MagicMock()
             mock_asyncio.new_event_loop.return_value = mock_loop
@@ -641,7 +641,7 @@ class TestTrendsEdgeCases:
         from app.services.trend_service import trend_service
         
         trends = [
-            {"topic": "AI", "category": "tech", "trend_score": 90, "mention_count": 1000, "velocity": 10.0, "source": "twitter", "discovered_at": datetime.utcnow().isoformat(), "expires_at": (datetime.utcnow() + timedelta(hours=24)).isoformat(), "related_keywords": [], "sample_content": []},
+            {"topic": "AI", "category": "tech", "trend_score": 90, "mention_count": 1000, "velocity": 10.0, "source": "twitter", "discovered_at": datetime.now(timezone.utc).isoformat(), "expires_at": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(), "related_keywords": [], "sample_content": []},
         ]
         
         # First call - no existing
@@ -723,13 +723,13 @@ class TestTrendsPerformance:
             for i in range(100)
         ]
         
-        start = datetime.utcnow()
+        start = datetime.now(timezone.utc)
         
         with patch("app.services.trend_service.groq_service") as mock_groq:
             mock_groq.generate_content = AsyncMock(return_value='{"trends": []}')
             analyzed = await trend_service.analyze_trends_with_ai(large_data)
         
-        duration = (datetime.utcnow() - start).total_seconds()
+        duration = (datetime.now(timezone.utc) - start).total_seconds()
         
         # Should complete in reasonable time
         assert duration < 5.0

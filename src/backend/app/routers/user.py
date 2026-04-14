@@ -4,7 +4,7 @@ User management router for GDPR compliance and account operations.
 from fastapi import APIRouter, HTTPException, status, Request, Depends
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 
 from app.core.supabase import get_supabase_client, get_supabase_admin_client
@@ -98,7 +98,7 @@ async def export_user_data(user=Depends(get_auth_user)):
             "export_metadata": {
                 "user_id": user_id,
                 "email": user.email,
-                "export_date": datetime.utcnow().isoformat(),
+                "export_date": datetime.now(timezone.utc).isoformat(),
                 "version": "1.0",
             },
             "profile": {
@@ -119,13 +119,13 @@ async def export_user_data(user=Depends(get_auth_user)):
         }
         
         # Generate unique export ID
-        export_id = f"export_{user_id}_{int(datetime.utcnow().timestamp())}"
+        export_id = f"export_{user_id}_{int(datetime.now(timezone.utc).timestamp())}"
         
         return DataExportResponse(
             export_id=export_id,
             user_data=export_data,
-            generated_at=datetime.utcnow().isoformat(),
-            expires_at=(datetime.utcnow() + timedelta(days=30)).isoformat(),
+            generated_at=datetime.now(timezone.utc).isoformat(),
+            expires_at=(datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
         )
         
     except Exception as e:
@@ -160,13 +160,13 @@ async def delete_user_account(user=Depends(get_auth_user)):
             )
         
         # Calculate deletion date (30 days from now)
-        deletion_date = datetime.utcnow() + timedelta(days=30)
+        deletion_date = datetime.now(timezone.utc) + timedelta(days=30)
         
         # Create deletion request record
         deletion_request = {
             "user_id": user_id,
             "email": user.email,
-            "requested_at": datetime.utcnow().isoformat(),
+            "requested_at": datetime.now(timezone.utc).isoformat(),
             "scheduled_deletion_at": deletion_date.isoformat(),
             "status": "pending",
             "content_deleted": False,
@@ -180,7 +180,7 @@ async def delete_user_account(user=Depends(get_auth_user)):
         supabase.table("profiles").update({
             "deletion_pending": True,
             "deletion_scheduled_at": deletion_date.isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", user_id).execute()
         
         # Note: Actual data deletion happens after grace period via scheduled job
@@ -188,7 +188,7 @@ async def delete_user_account(user=Depends(get_auth_user)):
         
         return AccountDeletionResponse(
             message="Account scheduled for deletion. You have 30 days to restore your account by logging in.",
-            deleted_at=datetime.utcnow().isoformat(),
+            deleted_at=datetime.now(timezone.utc).isoformat(),
             grace_period_ends=deletion_date.isoformat(),
         )
         
@@ -222,14 +222,14 @@ async def restore_user_account(user=Depends(get_auth_user)):
         # Cancel the deletion
         supabase.table("deletion_requests").update({
             "status": "cancelled",
-            "cancelled_at": datetime.utcnow().isoformat(),
+            "cancelled_at": datetime.now(timezone.utc).isoformat(),
         }).eq("user_id", user_id).eq("status", "pending").execute()
         
         # Restore the profile
         supabase.table("profiles").update({
             "deletion_pending": False,
             "deletion_scheduled_at": None,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", user_id).execute()
         
         return {"message": "Account restored successfully"}
@@ -266,7 +266,7 @@ async def get_deletion_status(user=Depends(get_auth_user)):
             "status": deletion.get("status"),
             "requested_at": deletion.get("requested_at"),
             "scheduled_deletion_at": deletion.get("scheduled_deletion_at"),
-            "days_remaining": max(0, 30 - (datetime.utcnow() - datetime.fromisoformat(deletion.get("requested_at").replace("Z", "+00:00"))).days),
+            "days_remaining": max(0, 30 - (datetime.now(timezone.utc) - datetime.fromisoformat(deletion.get("requested_at").replace("Z", "+00:00"))).days),
         }
         
     except Exception as e:

@@ -107,6 +107,8 @@ class SSOService:
         data = {k: v for k, v in data.items() if v is not None}
 
         result = self.supabase.table("sso_providers").insert(data).execute()
+        if not result.data:
+            raise ValueError("Failed to create SSO provider: no data returned")
         return result.data[0]
 
     def update_provider(self, provider_id: str, **fields) -> Optional[Dict[str, Any]]:

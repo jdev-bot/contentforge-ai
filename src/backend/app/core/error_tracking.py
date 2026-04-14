@@ -4,7 +4,7 @@ Error tracking middleware and utilities for logging 4xx/5xx errors.
 import time
 import traceback
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import Request, HTTPException
@@ -57,7 +57,7 @@ def log_error_to_database(
         
         error_data = {
             "id": str(uuid4()),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "status_code": status_code,
             "error_type": error_type,
             "message": message,
@@ -213,7 +213,7 @@ def get_error_summary(hours: int = 24) -> Dict[str, Any]:
         
         # Get time threshold
         from datetime import timedelta
-        threshold = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
+        threshold = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
         
         result = supabase.table("error_logs").select(
             "*"

@@ -4,7 +4,7 @@ Admin router for system management endpoints.
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from app.routers.auth import get_auth_user
@@ -95,7 +95,7 @@ async def get_admin_errors(
             # Convert to ErrorLogEntry
             entry = ErrorLogEntry(
                 id=UUID(error.get("id", str(uuid.uuid4()))),
-                timestamp=datetime.fromisoformat(error.get("timestamp").replace("Z", "+00:00")) if error.get("timestamp") else datetime.utcnow(),
+                timestamp=datetime.fromisoformat(error.get("timestamp").replace("Z", "+00:00")) if error.get("timestamp") else datetime.now(timezone.utc),
                 status_code=error.get("status_code", 0),
                 error_type=error.get("error_type", "unknown"),
                 message=error.get("message", ""),

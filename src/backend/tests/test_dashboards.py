@@ -2,7 +2,7 @@
 Tests for custom dashboards API.
 """
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 from unittest.mock import Mock, patch, MagicMock
 
@@ -26,8 +26,8 @@ def sample_dashboard():
         "description": "Test dashboard",
         "layout_config": {"columns": 12},
         "is_default": False,
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -44,8 +44,8 @@ def sample_widget():
         "size": {"w": 4, "h": 3},
         "position": 0,
         "config": {},
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -409,7 +409,7 @@ class TestDashboardRouter:
                 "widgets": [
                     {"widget_id": "w1", "data": {"total": 42}}
                 ],
-                "fetched_at": datetime.utcnow().isoformat(),
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
             }
 
             response = client.get("/api/v1/dashboards/dash-1/data", headers={"Authorization": "Bearer test"})

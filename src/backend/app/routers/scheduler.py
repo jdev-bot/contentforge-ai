@@ -3,7 +3,7 @@ Scheduler router for automated content publishing.
 Provides endpoints for scheduling, managing, and monitoring scheduled posts.
 """
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, status as http_status, Depends, Query
 from pydantic import BaseModel, Field
@@ -374,7 +374,7 @@ async def get_upcoming_scheduled_posts(
     try:
         from datetime import timedelta
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         future = now + timedelta(hours=hours)
         
         # Get all pending posts

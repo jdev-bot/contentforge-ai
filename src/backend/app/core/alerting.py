@@ -3,7 +3,7 @@ Alerting system for monitoring and notifications.
 Supports email alerts via Resend and webhook notifications.
 """
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 import httpx
 from enum import Enum
@@ -117,7 +117,7 @@ class AlertManager:
                         
                         <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #d1d5db;">
                             <p style="color: #6b7280; font-size: 12px;">
-                                Timestamp: {datetime.utcnow().isoformat()} UTC<br>
+                                Timestamp: {datetime.now(timezone.utc).isoformat()} UTC<br>
                                 Severity: {severity.value}<br>
                                 Source: ContentForge AI
                             </p>
@@ -170,7 +170,7 @@ class AlertManager:
                         "subject": subject,
                         "message": message,
                         "details": details or {},
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
                         "source": "contentforge-ai"
                     },
                     headers={"Content-Type": "application/json"}

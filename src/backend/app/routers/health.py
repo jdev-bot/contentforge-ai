@@ -4,7 +4,7 @@ Includes database, Redis, Groq, Stripe, and n8n connectivity checks.
 """
 from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 import httpx
 import time
@@ -94,7 +94,7 @@ async def health_check():
     """
     return HealthResponse(
         status="healthy",
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
         version="0.1.0",
     )
 
@@ -114,7 +114,7 @@ async def readiness_check():
         
         return HealthResponse(
             status="ready",
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             version="0.1.0",
         )
     except Exception as e:
@@ -122,7 +122,7 @@ async def readiness_check():
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={
                 "status": "not_ready",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "error": str(e)
             }
         )
@@ -162,7 +162,7 @@ async def detailed_health_check():
             response_time_ms=round(db_response_time, 2),
             message="Supabase connection established",
             details={"type": "supabase-postgresql"},
-            last_checked=datetime.utcnow().isoformat()
+            last_checked=datetime.now(timezone.utc).isoformat()
         )
     except Exception as e:
         overall_status = "degraded"
@@ -170,7 +170,7 @@ async def detailed_health_check():
             status="unhealthy",
             message=f"Database connection failed: {str(e)}",
             details={"type": "supabase-postgresql"},
-            last_checked=datetime.utcnow().isoformat()
+            last_checked=datetime.now(timezone.utc).isoformat()
         )
         alerts.append("Database connection failed")
     
@@ -191,14 +191,14 @@ async def detailed_health_check():
                 response_time_ms=round(redis_response_time, 2),
                 message="Redis connection established",
                 details={"url": redis_url.replace("//", "//***@") if "@" in redis_url else redis_url},
-                last_checked=datetime.utcnow().isoformat()
+                last_checked=datetime.now(timezone.utc).isoformat()
             )
         except ImportError:
             components["redis"] = ComponentStatus(
                 status="unknown",
                 message="Redis library not installed",
                 details={"url": redis_url.replace("//", "//***@") if "@" in redis_url else redis_url},
-                last_checked=datetime.utcnow().isoformat()
+                last_checked=datetime.now(timezone.utc).isoformat()
             )
     except Exception as e:
         overall_status = "degraded"
@@ -206,7 +206,7 @@ async def detailed_health_check():
             status="unhealthy",
             message=f"Redis connection failed: {str(e)}",
             details={"url": redis_url.replace("//", "//***@") if "@" in redis_url else redis_url},
-            last_checked=datetime.utcnow().isoformat()
+            last_checked=datetime.now(timezone.utc).isoformat()
         )
         alerts.append("Redis connection failed")
     
@@ -226,7 +226,7 @@ async def detailed_health_check():
                     response_time_ms=round(groq_response_time, 2),
                     message="Groq API accessible",
                     details={"model": settings.GROQ_MODEL},
-                    last_checked=datetime.utcnow().isoformat()
+                    last_checked=datetime.now(timezone.utc).isoformat()
                 )
             else:
                 overall_status = "degraded"
@@ -234,7 +234,7 @@ async def detailed_health_check():
                     status="unhealthy",
                     message=f"Groq API returned status {response.status_code}",
                     details={"model": settings.GROQ_MODEL},
-                    last_checked=datetime.utcnow().isoformat()
+                    last_checked=datetime.now(timezone.utc).isoformat()
                 )
                 alerts.append(f"Groq API returned status {response.status_code}")
     except Exception as e:
@@ -243,7 +243,7 @@ async def detailed_health_check():
             status="unhealthy",
             message=f"Groq API check failed: {str(e)}",
             details={"model": settings.GROQ_MODEL},
-            last_checked=datetime.utcnow().isoformat()
+            last_checked=datetime.now(timezone.utc).isoformat()
         )
         alerts.append("Groq API unavailable")
     
@@ -270,7 +270,7 @@ async def detailed_health_check():
                             "charges_enabled": account_data.get("charges_enabled"),
                             "payouts_enabled": account_data.get("payouts_enabled")
                         },
-                        last_checked=datetime.utcnow().isoformat()
+                        last_checked=datetime.now(timezone.utc).isoformat()
                     )
                 else:
                     overall_status = "degraded"
@@ -278,7 +278,7 @@ async def detailed_health_check():
                         status="unhealthy",
                         message=f"Stripe API returned status {response.status_code}",
                         details={"status_code": response.status_code},
-                        last_checked=datetime.utcnow().isoformat()
+                        last_checked=datetime.now(timezone.utc).isoformat()
                     )
                     alerts.append(f"Stripe API returned status {response.status_code}")
         except Exception as e:
@@ -286,14 +286,14 @@ async def detailed_health_check():
             components["stripe"] = ComponentStatus(
                 status="unhealthy",
                 message=f"Stripe API check failed: {str(e)}",
-                last_checked=datetime.utcnow().isoformat()
+                last_checked=datetime.now(timezone.utc).isoformat()
             )
             alerts.append("Stripe API unavailable")
     else:
         components["stripe"] = ComponentStatus(
             status="unknown",
             message="Stripe not configured",
-            last_checked=datetime.utcnow().isoformat()
+            last_checked=datetime.now(timezone.utc).isoformat()
         )
     
     # Check n8n (if configured)
@@ -311,14 +311,14 @@ async def detailed_health_check():
                         status="healthy",
                         response_time_ms=round(n8n_response_time, 2),
                         message="n8n workflow engine accessible",
-                        last_checked=datetime.utcnow().isoformat()
+                        last_checked=datetime.now(timezone.utc).isoformat()
                     )
                 else:
                     overall_status = "degraded"
                     components["n8n"] = ComponentStatus(
                         status="degraded",
                         message=f"n8n returned status {response.status_code}",
-                        last_checked=datetime.utcnow().isoformat()
+                        last_checked=datetime.now(timezone.utc).isoformat()
                     )
                     alerts.append(f"n8n returned status {response.status_code}")
         except Exception as e:
@@ -326,14 +326,14 @@ async def detailed_health_check():
             components["n8n"] = ComponentStatus(
                 status="unhealthy",
                 message=f"n8n check failed: {str(e)}",
-                last_checked=datetime.utcnow().isoformat()
+                last_checked=datetime.now(timezone.utc).isoformat()
             )
             alerts.append("n8n workflow engine unavailable")
     else:
         components["n8n"] = ComponentStatus(
             status="unknown",
             message="n8n not configured",
-            last_checked=datetime.utcnow().isoformat()
+            last_checked=datetime.now(timezone.utc).isoformat()
         )
     
     # Check Disk Space
@@ -342,7 +342,7 @@ async def detailed_health_check():
         status=disk_info.get("status", "unknown"),
         message=f"Disk usage: {disk_info.get('percent_used', 0):.1f}%",
         details=disk_info,
-        last_checked=datetime.utcnow().isoformat()
+        last_checked=datetime.now(timezone.utc).isoformat()
     )
     
     if disk_info.get("status") == "unhealthy":
@@ -369,7 +369,7 @@ async def detailed_health_check():
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=DetailedHealthResponse(
                 status="unhealthy",
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=datetime.now(timezone.utc).isoformat(),
                 version="0.1.0",
                 environment=settings.APP_ENV,
                 uptime_seconds=uptime_seconds,
@@ -380,7 +380,7 @@ async def detailed_health_check():
     
     return DetailedHealthResponse(
         status=overall_status,
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
         version="0.1.0",
         environment=settings.APP_ENV,
         uptime_seconds=uptime_seconds,
@@ -397,7 +397,7 @@ async def system_metrics():
     Returns detailed metrics for monitoring and alerting systems.
     """
     metrics = {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "database": {},
         "external_apis": {}
     }

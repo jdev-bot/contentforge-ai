@@ -3,7 +3,7 @@ Rate limiting and usage tracking middleware.
 """
 import time
 from typing import Dict, Optional, Literal
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 from collections import defaultdict
 
@@ -197,7 +197,7 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
         new_count = usage_count + 1
         supabase.table("profiles").update({
             "monthly_usage_count": new_count,
-            "updated_at": datetime.utcnow().isoformat()
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }).eq("id", user_id).execute()
         
         # Log usage
@@ -243,7 +243,7 @@ def log_usage_event(user_id: str, event_type: str, tokens_used: Optional[int] = 
             "user_id": user_id,
             "event_type": event_type,
             "tokens_used": tokens_used,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }
         supabase.table("usage_logs").insert(log_data).execute()
     except Exception as e:

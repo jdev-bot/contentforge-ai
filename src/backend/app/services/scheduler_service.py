@@ -3,7 +3,7 @@ Scheduler service for automated content publishing.
 Handles timezone-aware scheduling, retry logic, and Celery beat integration.
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 
@@ -93,7 +93,7 @@ class SchedulerService:
             scheduled_at_utc = self._to_utc(request.scheduled_at, request.timezone)
             
             # Ensure scheduled time is in the future
-            if scheduled_at_utc <= datetime.utcnow():
+            if scheduled_at_utc <= datetime.now(timezone.utc):
                 raise ValueError("Scheduled time must be in the future")
             
             data = {
@@ -189,10 +189,10 @@ class SchedulerService:
             update_data = {}
             
             if request.scheduled_at is not None:
-                timezone = request.timezone or current.timezone
-                scheduled_at_utc = self._to_utc(request.scheduled_at, timezone)
+                tz_name = request.timezone or current.timezone
+                scheduled_at_utc = self._to_utc(request.scheduled_at, tz_name)
                 
-                if scheduled_at_utc <= datetime.utcnow():
+                if scheduled_at_utc <= datetime.now(timezone.utc):
                     raise ValueError("Scheduled time must be in the future")
                 
                 update_data["scheduled_at"] = scheduled_at_utc.isoformat()
@@ -248,7 +248,7 @@ class SchedulerService:
             
             # Update to trigger immediate processing
             result = self.supabase.table("scheduled_posts").update({
-                "scheduled_at": datetime.utcnow().isoformat(),
+                "scheduled_at": datetime.now(timezone.utc).isoformat(),
                 "status": "pending"
             }).eq("id", post_id).eq("user_id", user_id).execute()
             
@@ -266,7 +266,7 @@ class SchedulerService:
     def get_pending_posts_due(self, batch_size: int = 100) -> List[ScheduledPostResponse]:
         """Get pending posts that are due for publishing."""
         try:
-            now = datetime.utcnow().isoformat()
+            now = datetime.now(timezone.utc).isoformat()
             
             result = self.supabase.table("scheduled_posts").select("*").eq("status", "pending").lte("scheduled_at", now).limit(batch_size).execute()
             
@@ -287,16 +287,16 @@ class SchedulerService:
             logger.error(f"Failed to get retry posts: {e}")
             return []
     
-    def _to_utc(self, dt: datetime, timezone: str) -> datetime:
+    def _to_utc(self, dt: datetime, tz_name: str) -> datetime:
         """Convert datetime to UTC."""
         try:
-            tz = pytz.timezone(timezone)
+            tz = pytz.timezone(tz_name)
             if dt.tzinfo is None:
                 dt = tz.localize(dt)
-            return dt.astimezone(pytz.UTC).replace(tzinfo=None)
+            return dt.astimezone(pytz.UTC)
         except pytz.UnknownTimeZoneError:
-            logger.warning(f"Unknown timezone {timezone}, defaulting to UTC")
-            return dt if dt.tzinfo is None else dt.replace(tzinfo=None)
+            logger.warning(f"Unknown timezone {tz_name}, defaulting to UTC")
+            return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
     
     def get_scheduler_stats(self, user_id: str) -> Dict[str, Any]:
         """Get scheduler statistics for a user."""
@@ -310,7 +310,7 @@ class SchedulerService:
                 stats[status] = result.count if hasattr(result, 'count') else 0
             
             # Get upcoming posts (next 24 hours)
-            tomorrow = (datetime.utcnow() + timedelta(days=1)).isoformat()
+            tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
             upcoming = self.supabase.table("scheduled_posts").select("id", count="exact").eq("user_id", user_id).eq("status", "pending").lte("scheduled_at", tomorrow).execute()
             stats["upcoming_24h"] = upcoming.count if hasattr(upcoming, 'count') else 0
             
@@ -356,13 +356,13 @@ def publish_scheduled_post(self: Task, post_id: str) -> Dict[str, Any]:
         content = post.get("content", "")
         
         # Mock successful publish
-        external_id = f"{platform}_{post_id[:8]}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        external_id = f"{platform}_{post_id[:8]}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
         published_url = f"https://{platform}.com/post/{external_id}"
         
         # Update as published
         supabase.table("scheduled_posts").update({
             "status": "published",
-            "published_at": datetime.utcnow().isoformat(),
+            "published_at": datetime.now(timezone.utc).isoformat(),
             "external_id": external_id,
             "published_url": published_url,
             "error_message": None
@@ -455,7 +455,10 @@ def retry_failed_posts() -> Dict[str, Any]:
             }).eq("id", post.id).execute()
             
             # Re-queue for immediate processing if due
-            if post.scheduled_at <= datetime.utcnow():
+            scheduled = post.scheduled_at
+            if scheduled.tzinfo is None:
+                scheduled = scheduled.replace(tzinfo=timezone.utc)
+            if scheduled <= datetime.now(timezone.utc):
                 task = publish_scheduled_post.delay(post.id)
                 task_ids.append({"post_id": post.id, "task_id": task.id})
         

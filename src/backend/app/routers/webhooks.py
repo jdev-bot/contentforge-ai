@@ -5,7 +5,7 @@ Includes signature verification, idempotency, retry logic, and event logging.
 from fastapi import APIRouter, Header, HTTPException, status, Depends, Request, BackgroundTasks
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 import uuid
 import hmac
@@ -135,7 +135,7 @@ def check_idempotency(idempotency_key: str, webhook_type: str, timeout_minutes: 
         if result.data:
             # Key exists - check if within timeout
             created_at = datetime.fromisoformat(result.data[0]['created_at'].replace('Z', '+00:00'))
-            if datetime.utcnow() - created_at < timedelta(minutes=timeout_minutes):
+            if datetime.now(timezone.utc) - created_at < timedelta(minutes=timeout_minutes):
                 return True  # Already processed recently
         
         return False  # Not processed or expired
@@ -176,7 +176,7 @@ def log_webhook_event(
             "idempotency_key": idempotency_key,
             "error_message": error_message,
             "processing_time_ms": processing_time_ms,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
         
         supabase.table("webhook_logs").insert(log_entry).execute()
@@ -392,8 +392,8 @@ async def content_processed_webhook(
         # Update content record with processing results
         update_data = {
             "status": payload.get("status", "completed"),
-            "updated_at": datetime.utcnow().isoformat(),
-            "n8n_processed_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "n8n_processed_at": datetime.now(timezone.utc).isoformat(),
         }
         
         if payload.get("extracted_text"):
@@ -591,7 +591,7 @@ async def distribution_completed_webhook(
         # Update distribution record
         update_data = {
             "status": payload.get("status", "completed"),
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
         
         if payload.get("published_url"):
@@ -603,7 +603,7 @@ async def distribution_completed_webhook(
         if payload.get("published_at"):
             update_data["published_at"] = payload["published_at"]
         elif payload.get("status") == "published":
-            update_data["published_at"] = datetime.utcnow().isoformat()
+            update_data["published_at"] = datetime.now(timezone.utc).isoformat()
         
         if payload.get("error_message"):
             update_data["error_message"] = payload["error_message"]

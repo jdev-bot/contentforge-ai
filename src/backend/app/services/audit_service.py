@@ -6,7 +6,7 @@ Handles audit log creation, querying, statistics, CSV export, and retention mana
 import csv
 import io
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List
 
 from app.core.supabase import get_supabase_client
@@ -72,7 +72,7 @@ class AuditService:
             "details": details or {},
             "ip_address": ip_address,
             "user_agent": user_agent,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         result = self.supabase.table("audit_logs").insert(data).execute()
@@ -226,7 +226,7 @@ class AuditService:
         Remove audit logs older than retention period.
         Returns count of deleted entries.
         """
-        cutoff = (datetime.utcnow() - timedelta(days=retention_days)).isoformat()
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=retention_days)).isoformat()
 
         query = self.supabase.table("audit_logs").delete().lt("timestamp", cutoff)
 

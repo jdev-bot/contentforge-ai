@@ -7,7 +7,7 @@ import json
 import uuid
 import hmac
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch, MagicMock
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -587,8 +587,8 @@ class TestIntegrationRouter:
             "status": "delivered",
             "attempts": 1,
             "response_status": 200,
-            "delivered_at": datetime.utcnow(),
-            "created_at": datetime.utcnow()
+            "delivered_at": datetime.now(timezone.utc),
+            "created_at": datetime.now(timezone.utc)
         }
         model = WebhookDeliveryResponse(**data)
         assert model.status == "delivered"
@@ -635,8 +635,8 @@ class TestIntegrationRouterIntegration:
                 "name": "Test Webhook",
                 "config": {"webhook_url": "https://example.com/webhook"},
                 "is_active": True,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat()
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
             }]
 
             mock_supabase = Mock()

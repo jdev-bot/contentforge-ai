@@ -4,7 +4,7 @@ Analytics router for dashboard metrics and reporting.
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Query
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 import csv
 import io
@@ -134,7 +134,7 @@ async def get_dashboard_kpis(user=Depends(get_auth_user)):
         total_content = len(content_items)
         
         # Calculate last 30 days content
-        thirty_days_ago = datetime.now() - timedelta(days=30)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
         content_growth_30d = sum(
             1 for item in content_items
             if datetime.fromisoformat(item["created_at"].replace("Z", "+00:00")) >= thirty_days_ago
@@ -217,17 +217,17 @@ async def get_distribution_metrics(user=Depends(get_auth_user)):
         
         for dist in distributions:
             # Status counts
-            status = dist.get("status", "unknown")
-            status_counts[status] = status_counts.get(status, 0) + 1
+            dist_status = dist.get("status", "unknown")
+            status_counts[dist_status] = status_counts.get(dist_status, 0) + 1
             
             # Platform data
             platform = dist.get("platform") or "unknown"
             if platform not in platform_data:
                 platform_data[platform] = {"total": 0, "published": 0, "failed": 0}
             platform_data[platform]["total"] += 1
-            if status == "published":
+            if dist_status == "published":
                 platform_data[platform]["published"] += 1
-            elif status == "failed":
+            elif dist_status == "failed":
                 platform_data[platform]["failed"] += 1
         
         by_status = [DistributionStatusMetric(status=k, count=v) for k, v in status_counts.items()]
@@ -289,13 +289,13 @@ async def get_content_metrics(user=Depends(get_auth_user)):
         # Count by status
         status_counts: Dict[str, int] = {}
         for item in content_items:
-            status = item.get("status", "unknown")
-            status_counts[status] = status_counts.get(status, 0) + 1
+            item_status = item.get("status", "unknown")
+            status_counts[item_status] = status_counts.get(item_status, 0) + 1
         
         by_status = [ContentStatusMetric(status=k, count=v) for k, v in status_counts.items()]
         
         # Count last 30 days
-        thirty_days_ago = datetime.now() - timedelta(days=30)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
         last_30_days_count = sum(
             1 for item in content_items
             if datetime.fromisoformat(item["created_at"].replace("Z", "+00:00")) >= thirty_days_ago
@@ -389,7 +389,7 @@ async def get_usage_metrics(
     
     try:
         # Calculate date range
-        end_date = datetime.now()
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=days)
         
         # Get usage tracking data
@@ -501,7 +501,7 @@ async def export_user_activity(
     
     try:
         # Calculate date range
-        end_date = datetime.now()
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=days)
         
         # Get content data
@@ -590,7 +590,7 @@ async def export_user_activity(
             ])
         
         # Generate filename
-        filename = f"activity_export_{user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        filename = f"activity_export_{user.id}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"
         
         return Response(
             content=output.getvalue(),
@@ -624,7 +624,7 @@ async def export_user_activity_json(
     
     try:
         # Calculate date range
-        end_date = datetime.now()
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=days)
         
         # Get content data
@@ -657,7 +657,7 @@ async def export_user_activity_json(
         # Build JSON response
         export_data = {
             "export_info": {
-                "exported_at": datetime.now().isoformat(),
+                "exported_at": datetime.now(timezone.utc).isoformat(),
                 "user_id": str(user.id),
                 "days_exported": days,
                 "start_date": start_date.isoformat(),
@@ -674,7 +674,7 @@ async def export_user_activity_json(
         }
         
         # Generate filename
-        filename = f"activity_export_{user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        filename = f"activity_export_{user.id}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
         
         return Response(
             content=json.dumps(export_data, indent=2, default=str),

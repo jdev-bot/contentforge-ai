@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 import io
 
@@ -61,7 +61,7 @@ async def export_audit_logs(
             io.StringIO(csv_content),
             media_type="text/csv",
             headers={
-                "Content-Disposition": f"attachment; filename=audit_logs_{datetime.utcnow().strftime('%Y%m%d')}.csv"
+                "Content-Disposition": f"attachment; filename=audit_logs_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
             },
         )
     except Exception as e:
