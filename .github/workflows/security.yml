@@ -111,41 +111,40 @@ jobs:
   bandit:
     name: SAST (Bandit — Python)
     runs-on: self-hosted
-    defaults:
-      run:
-        working-directory: ./src/backend
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Bandit
-        run: pip install bandit
+        run: |
+          source /home/claw/actions-runner/venv/bin/activate
+          pip install bandit
 
       - name: Run Bandit
-        run: bandit -r app/ -f txt --severity-level ${{ env.SEVERITY_FAIL }} || true
+        run: |
+          source /home/claw/actions-runner/venv/bin/activate
+          cd src/backend && bandit -r app/ -f txt --severity-level ${{ env.SEVERITY_FAIL }} || true
 
   # ── C. Dependency & Supply-Chain Scanning ───────────────────────────
 
   pip-audit:
     name: Dependency Scan (Python)
     runs-on: self-hosted
-    defaults:
-      run:
-        working-directory: ./src/backend
     steps:
       - uses: actions/checkout@v4
 
       - name: Install pip-audit
-        run: pip install pip-audit
+        run: |
+          source /home/claw/actions-runner/venv/bin/activate
+          pip install pip-audit
 
       - name: pip-audit
-        run: pip-audit -r requirements.txt --desc || true
+        run: |
+          source /home/claw/actions-runner/venv/bin/activate
+          cd src/backend && pip-audit -r requirements.txt --desc || true
 
   npm-audit:
     name: Dependency Scan (Node.js)
     runs-on: self-hosted
-    defaults:
-      run:
-        working-directory: ./src/frontend
     steps:
       - uses: actions/checkout@v4
 
@@ -153,7 +152,7 @@ jobs:
         run: cd src/frontend && npm ci
 
       - name: npm audit
-        run: npm audit --audit-level=moderate || true
+        run: cd src/frontend && npm audit --audit-level=moderate || true
 
   dependency-review:
     name: Dependency Review (PR only)

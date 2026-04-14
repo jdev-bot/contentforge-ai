@@ -19,20 +19,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Setup Python venv
+        run: |
+          python3 -m venv /home/claw/actions-runner/venv
+          source /home/claw/actions-runner/venv/bin/activate
+          python -m pip install --upgrade pip
+      
       - name: Install dependencies
         run: |
+          source /home/claw/actions-runner/venv/bin/activate
           cd src/backend
-          python3 -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-asyncio httpx
       
       - name: Run tests
-        run: cd src/backend && pytest tests/ -v || echo "Tests not yet implemented"
+        run: |
+          source /home/claw/actions-runner/venv/bin/activate
+          cd src/backend && pytest tests/ -v || echo "Tests not yet implemented"
         env:
           PYTHONPATH: .
       
       - name: Lint with flake8
         run: |
+          source /home/claw/actions-runner/venv/bin/activate
           pip install flake8
           cd src/backend
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true

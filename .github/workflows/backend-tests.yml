@@ -11,15 +11,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Python venv
+        run: |
+          python3 -m venv /home/claw/actions-runner/venv
+          source /home/claw/actions-runner/venv/bin/activate
+          python -m pip install --upgrade pip
+
       - name: Install dependencies
         run: |
+          source /home/claw/actions-runner/venv/bin/activate
           cd src/backend
-          python3 -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-asyncio httpx pytest-cov
 
       - name: Run tests with coverage
         run: |
+          source /home/claw/actions-runner/venv/bin/activate
           cd src/backend
           pytest tests/ -v --cov=app --cov-report=xml --cov-report=term
         env:
@@ -45,19 +52,24 @@ jobs:
 
       - name: Install linting tools
         run: |
-          python3 -m pip install --upgrade pip
+          source /home/claw/actions-runner/venv/bin/activate
           pip install flake8 black isort
 
       - name: Run flake8
         run: |
+          source /home/claw/actions-runner/venv/bin/activate
           cd src/backend
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Check Black formatting
-        run: cd src/backend && black --check --diff .
+        run: |
+          source /home/claw/actions-runner/venv/bin/activate
+          cd src/backend && black --check --diff .
         continue-on-error: true
 
       - name: Check isort
-        run: cd src/backend && isort --check-only --diff .
+        run: |
+          source /home/claw/actions-runner/venv/bin/activate
+          cd src/backend && isort --check-only --diff .
         continue-on-error: true
