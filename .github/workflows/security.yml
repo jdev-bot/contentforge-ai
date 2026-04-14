@@ -23,7 +23,7 @@ jobs:
 
   gitleaks:
     name: Secret Scan (Gitleaks)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,7 +36,7 @@ jobs:
 
   trufflehog:
     name: Secret Scan (TruffleHog)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,7 +62,7 @@ jobs:
 
   semgrep:
     name: SAST (Semgrep)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -81,7 +81,7 @@ jobs:
 
   codeql:
     name: SAST (CodeQL — ${{ matrix.language }})
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
       fail-fast: false
       matrix:
@@ -110,7 +110,7 @@ jobs:
 
   bandit:
     name: SAST (Bandit — Python)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     defaults:
       run:
         working-directory: ./src/backend
@@ -132,7 +132,7 @@ jobs:
 
   pip-audit:
     name: Dependency Scan (Python)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     defaults:
       run:
         working-directory: ./src/backend
@@ -153,7 +153,7 @@ jobs:
 
   npm-audit:
     name: Dependency Scan (Node.js)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     defaults:
       run:
         working-directory: ./src/frontend
@@ -176,7 +176,7 @@ jobs:
   dependency-review:
     name: Dependency Review (PR only)
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -188,7 +188,7 @@ jobs:
 
   osv-scanner:
     name: Dependency Scan (OSV — all ecosystems)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -208,7 +208,7 @@ jobs:
 
   trivy-fs:
     name: Filesystem Scan (Trivy)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -224,7 +224,7 @@ jobs:
 
   trivy-config:
     name: IaC / Misconfig Scan (Trivy)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -240,7 +240,7 @@ jobs:
 
   checkov:
     name: IaC Scan (Checkov)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -257,7 +257,7 @@ jobs:
 
   trivy-image:
     name: Container Image Scan (Trivy)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -278,7 +278,7 @@ jobs:
   security-gate:
     name: Security Gate
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs:
       - gitleaks
       - trufflehog

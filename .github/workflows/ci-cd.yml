@@ -14,11 +14,8 @@ on:
 
 jobs:
   test-backend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./src/backend
-    
+    runs-on: self-hosted
+
     steps:
       - uses: actions/checkout@v4
       
@@ -30,26 +27,25 @@ jobs:
       
       - name: Install dependencies
         run: |
+          cd src/backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-asyncio httpx
       
       - name: Run tests
-        run: pytest tests/ -v || echo "Tests not yet implemented"
+        run: cd src/backend && pytest tests/ -v || echo "Tests not yet implemented"
         env:
           PYTHONPATH: .
       
       - name: Lint with flake8
         run: |
           pip install flake8
+          cd src/backend
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
   
   test-frontend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./src/frontend
-    
+    runs-on: self-hosted
+
     steps:
       - uses: actions/checkout@v4
       
@@ -57,27 +53,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # Cache disabled - path issues with working-directory
       
       - name: Install dependencies
-        run: npm ci
+        run: cd src/frontend && npm ci
       
       - name: Lint
-        run: npm run lint || true
+        run: cd src/frontend && npm run lint || true
       
       - name: Build
-        run: npm run build
+        run: cd src/frontend && npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key' }}
       
       - name: Test
-        run: npm test --if-present || echo "Tests not yet implemented"
+        run: cd src/frontend && npm test --if-present || echo "Tests not yet implemented"
   
   deploy-preview:
     needs: [test-backend, test-frontend]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    runs-on: ubuntu-latest
+    if: github.event.inputs.deploy_preview == 'true'
+    runs-on: self-hosted
     environment:
       name: preview
       url: ${{ steps.deploy-preview.outputs.url }}
@@ -97,8 +92,8 @@ jobs:
   
   deploy-production:
     needs: [test-backend, test-frontend]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
+    if: github.event.inputs.deploy_production == 'true'
+    runs-on: self-hosted
     environment:
       name: production
       url: ${{ steps.deploy-prod.outputs.url }}
