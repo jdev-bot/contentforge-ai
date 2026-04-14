@@ -5,7 +5,7 @@ Provides endpoints for scheduling, managing, and monitoring scheduled posts.
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status as http_status, Depends, Query
 from pydantic import BaseModel, Field
 from uuid import UUID
 
@@ -92,7 +92,7 @@ class PublishNowResponse(BaseModel):
 
 # ============== API Endpoints ==============
 
-@router.post("/schedule", response_model=ScheduledPostItem, status_code=status.HTTP_201_CREATED)
+@router.post("/schedule", response_model=ScheduledPostItem, status_code=http_status.HTTP_201_CREATED)
 async def create_scheduled_post(
     request: CreateScheduleRequest,
     user=Depends(get_auth_user),
@@ -125,12 +125,12 @@ async def create_scheduled_post(
         
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to schedule post: {str(e)}"
         )
 
@@ -166,7 +166,7 @@ async def list_scheduled_posts(
         
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list scheduled posts: {str(e)}"
         )
 
@@ -187,7 +187,7 @@ async def get_scheduled_post(
         
         if not post:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Scheduled post not found"
             )
         
@@ -197,7 +197,7 @@ async def get_scheduled_post(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get scheduled post: {str(e)}"
         )
 
@@ -230,7 +230,7 @@ async def update_scheduled_post(
         
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Scheduled post not found"
             )
         
@@ -238,19 +238,19 @@ async def update_scheduled_post(
         
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update scheduled post: {str(e)}"
         )
 
 
-@router.delete("/schedule/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/schedule/{post_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def cancel_scheduled_post(
     post_id: str,
     user=Depends(get_auth_user)
@@ -269,7 +269,7 @@ async def cancel_scheduled_post(
         
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Scheduled post not found"
             )
         
@@ -277,14 +277,14 @@ async def cancel_scheduled_post(
         
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to cancel scheduled post: {str(e)}"
         )
 
@@ -308,7 +308,7 @@ async def publish_scheduled_post_now(
         
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Scheduled post not found"
             )
         
@@ -320,14 +320,14 @@ async def publish_scheduled_post_now(
         
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to publish post: {str(e)}"
         )
 
@@ -355,7 +355,7 @@ async def get_scheduler_stats(
         
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get scheduler stats: {str(e)}"
         )
 
@@ -399,12 +399,12 @@ async def get_upcoming_scheduled_posts(
         
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get upcoming posts: {str(e)}"
         )
 
 
-@router.post("/schedule/bulk", response_model=List[ScheduledPostItem], status_code=status.HTTP_201_CREATED)
+@router.post("/schedule/bulk", response_model=List[ScheduledPostItem], status_code=http_status.HTTP_201_CREATED)
 async def bulk_create_scheduled_posts(
     requests: List[CreateScheduleRequest],
     user=Depends(get_auth_user)
@@ -448,7 +448,7 @@ async def bulk_create_scheduled_posts(
     
     if not results and errors:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"All {len(requests)} scheduling attempts failed. Errors: {errors[:3]}"
         )
     

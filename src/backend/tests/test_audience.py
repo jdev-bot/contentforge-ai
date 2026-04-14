@@ -244,7 +244,10 @@ class TestAudienceService:
         # Arrange
         with patch.object(audience_service, 'get_growth_metrics') as mock_growth, \
              patch.object(audience_service, 'get_platforms_metrics') as mock_platforms, \
-             patch.object(audience_service, 'get_latest_snapshot') as mock_snapshot:
+             patch.object(audience_service, 'get_latest_snapshot') as mock_snapshot, \
+             patch.object(audience_service, '_analyze_trends') as mock_trends, \
+             patch.object(audience_service, '_compare_periods') as mock_compare, \
+             patch.object(audience_service, '_predict_growth') as mock_predict:
             
             mock_growth.return_value = {
                 "metrics": [],
@@ -258,6 +261,9 @@ class TestAudienceService:
                 "total_followers": 1500,
                 "engagement_rate": 3.5
             }
+            mock_trends.return_value = {"trend": "growing", "direction": "up", "weekly_data": []}
+            mock_compare.return_value = {"current_period_growth": 50, "previous_period_growth": 30, "change_percent": 66.67, "improved": True}
+            mock_predict.return_value = {"projected_30d": 100, "projected_90d": 300, "growth_rate": 3.33, "confidence": "medium"}
             
             # Act
             result = audience_service.generate_insights(mock_user.id, days=30)
@@ -276,16 +282,19 @@ class TestAudienceRouter:
     """Tests for the audience router endpoints."""
     
     @pytest.fixture
-    def client(self):
-        """Create a test client."""
+    def client(self, mock_user):
+        """Create a test client with auth dependency overridden."""
         from fastapi.testclient import TestClient
         from app.main import app
-        return TestClient(app)
+        from app.routers.auth import get_auth_user
+        app.dependency_overrides[get_auth_user] = lambda: mock_user
+        client = TestClient(app)
+        yield client
+        app.dependency_overrides.clear()
     
     def test_get_growth_metrics_endpoint(self, client, mock_user):
         """Test the GET /api/v1/audience/growth endpoint."""
-        with patch("app.routers.audience.get_auth_user", return_value=mock_user), \
-             patch("app.routers.audience.audience_service") as mock_service:
+        with patch("app.routers.audience.audience_service") as mock_service:
             
             mock_service.get_growth_metrics.return_value = {
                 "metrics": [],
@@ -304,8 +313,7 @@ class TestAudienceRouter:
     
     def test_get_platforms_metrics_endpoint(self, client, mock_user):
         """Test the GET /api/v1/audience/platforms endpoint."""
-        with patch("app.routers.audience.get_auth_user", return_value=mock_user), \
-             patch("app.routers.audience.audience_service") as mock_service:
+        with patch("app.routers.audience.audience_service") as mock_service:
             
             mock_service.get_platforms_metrics.return_value = [
                 {
@@ -325,8 +333,7 @@ class TestAudienceRouter:
     
     def test_get_historical_data_endpoint(self, client, mock_user):
         """Test the GET /api/v1/audience/history endpoint."""
-        with patch("app.routers.audience.get_auth_user", return_value=mock_user), \
-             patch("app.routers.audience.audience_service") as mock_service:
+        with patch("app.routers.audience.audience_service") as mock_service:
             
             mock_service.get_historical_data.return_value = [
                 {"recorded_at": datetime.utcnow().isoformat(), "value": 1000}
@@ -340,8 +347,7 @@ class TestAudienceRouter:
     
     def test_record_metric_endpoint(self, client, mock_user):
         """Test the POST /api/v1/audience/record endpoint."""
-        with patch("app.routers.audience.get_auth_user", return_value=mock_user), \
-             patch("app.routers.audience.audience_service") as mock_service:
+        with patch("app.routers.audience.audience_service") as mock_service:
             
             mock_service.record_metric.return_value = {
                 "id": str(uuid4()),
@@ -406,8 +412,7 @@ class TestAudienceRouter:
     
     def test_get_insights_endpoint(self, client, mock_user):
         """Test the GET /api/v1/audience/insights endpoint."""
-        with patch("app.routers.audience.get_auth_user", return_value=mock_user), \
-             patch("app.routers.audience.audience_service") as mock_service:
+        with patch("app.routers.audience.audience_service") as mock_service:
             
             mock_service.generate_insights.return_value = {
                 "summary": {"total_followers": 1500, "growth_rate_30d": 10.0},
@@ -428,8 +433,7 @@ class TestAudienceRouter:
     
     def test_generate_snapshot_endpoint(self, client, mock_user):
         """Test the POST /api/v1/audience/snapshot endpoint."""
-        with patch("app.routers.audience.get_auth_user", return_value=mock_user), \
-             patch("app.routers.audience.audience_service") as mock_service:
+        with patch("app.routers.audience.audience_service") as mock_service:
             
             mock_service.calculate_growth_snapshot.return_value = {
                 "id": str(uuid4()),
@@ -444,9 +448,7 @@ class TestAudienceRouter:
     
     def test_delete_metric_endpoint(self, client, mock_user):
         """Test the DELETE /api/v1/audience/metrics/{metric_id} endpoint."""
-        with patch("app.routers.audience.get_auth_user", return_value=mock_user), \
-             patch("app.routers.audience.audience_service") as mock_service:
-            
+        with patch("app.routers.audience.audience_service") as mock_service:
             mock_supabase = MagicMock()
             mock_supabase.table.return_value.delete.return_value.eq.return_value.eq.return_value.execute.return_value = Mock(data=[{"id": str(uuid4())}])
             mock_service.supabase = mock_supabase

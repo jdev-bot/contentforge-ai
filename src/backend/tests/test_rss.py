@@ -491,26 +491,32 @@ async def test_import_entry_success(client, auth_headers, sample_rss_entry, samp
 @pytest.mark.asyncio
 async def test_import_entry_already_processed(client, auth_headers, sample_rss_entry, sample_content):
     """Test importing an already processed RSS entry."""
-    with patch("app.core.supabase.get_supabase_client") as mock_supabase:
-        processed_entry = {**sample_rss_entry, "processed": True, "content_id": sample_content["id"]}
-        
-        mock_client = MagicMock()
-        
-        # Mock entry query
-        mock_entry_query = MagicMock()
-        mock_entry_query.single.return_value.execute.return_value = MagicMock(data=processed_entry)
-        
-        # Mock feed ownership check
-        mock_feed_query = MagicMock()
-        mock_feed_query.single.return_value.execute.return_value = MagicMock(data={"user_id": "test-user-id-123"})
-        
-        mock_table = MagicMock()
-        mock_table.select.return_value.eq.return_value.single.return_value = mock_entry_query
-        mock_client.table.return_value = mock_table
-        mock_supabase.return_value = mock_client
-        
+    processed_entry = {**sample_rss_entry, "processed": True, "content_id": sample_content["id"]}
+    
+    mock_client = MagicMock()
+    
+    # Mock chain: table("rss_entries").select("*").eq("id", ...).single().execute()
+    mock_entry_query = MagicMock()
+    mock_entry_query.single.return_value.execute.return_value = MagicMock(data=processed_entry)
+    
+    # Mock chain: table("rss_feeds").select("*").eq("id", ...).eq("user_id", ...).single().execute()
+    mock_feed_query = MagicMock()
+    mock_feed_query.eq.return_value.single.return_value.execute.return_value = MagicMock(data={"user_id": "test-user-id-123"})
+    
+    def table_side_effect(name):
+        table_mock = MagicMock()
+        if name == "rss_entries":
+            table_mock.select.return_value.eq.return_value = mock_entry_query
+        elif name == "rss_feeds":
+            table_mock.select.return_value.eq.return_value = mock_feed_query
+        return table_mock
+    
+    mock_client.table = MagicMock(side_effect=table_side_effect)
+    
+    with patch("app.core.supabase.get_supabase_client", return_value=mock_client), \
+         patch("app.routers.rss.get_supabase_client", return_value=mock_client):
         response = client.post(f"/api/v1/rss/entries/{sample_rss_entry['id']}/import", headers=auth_headers)
-        
+    
         assert response.status_code == 200
         data = response.json()
         assert "already imported" in data["message"].lower()

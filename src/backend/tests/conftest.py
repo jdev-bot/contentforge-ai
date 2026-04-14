@@ -18,6 +18,15 @@ os.environ["APP_ENV"] = "testing"
 os.environ["DEBUG"] = "true"
 os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
 os.environ["SUPABASE_URL"] = "https://test.supabase.co"
+
+
+@pytest.fixture(autouse=True)
+def clear_supabase_cache():
+    """Clear lru_cache between tests to prevent mock leakage."""
+    from app.core.supabase import get_supabase_client
+    get_supabase_client.cache_clear()
+    yield
+    get_supabase_client.cache_clear()
 os.environ["SUPABASE_KEY"] = "test-anon-key"
 os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key"
 os.environ["GROQ_API_KEY"] = "test-groq-api-key"

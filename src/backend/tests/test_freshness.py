@@ -8,6 +8,7 @@ Covers:
 - Bulk operations
 """
 import pytest
+import asyncio
 from datetime import datetime, timedelta
 from uuid import uuid4, UUID
 from unittest.mock import Mock, patch, MagicMock
@@ -175,7 +176,7 @@ class TestFreshnessServiceTrendScore:
         service = FreshnessService()
         content = {
             "original_text": "hello world foo bar baz",
-            "title": "Random Content"
+            "title": "Random Thoughts"
         }
         score = service.calculate_trend_score(content)
         assert score == 5  # Base score
@@ -207,7 +208,7 @@ class TestFreshnessServiceRecommendations:
         content = {"original_text": "test", "word_count": 100}
         
         recommendations = service.generate_recommendations(
-            age_days=100,
+            age_days=200,
             age_score=25,
             engagement_score=20,
             trend_score=10,
@@ -282,7 +283,16 @@ class TestFreshnessServiceRecommendations:
 class TestFreshnessServiceFullAnalysis:
     """Tests for complete content analysis."""
     
-    def test_analysis_returns_all_fields(self):
+    @pytest.fixture(autouse=True)
+    def mock_supabase(self):
+        """Mock supabase for unit tests that call _count_generated_assets."""
+        with patch("app.services.freshness_service.get_supabase_client") as mock:
+            mock_client = MagicMock()
+            mock_client.table.return_value.select.return_value.eq.return_value.execute.return_value = MagicMock(count=0)
+            mock.return_value = mock_client
+            yield mock
+    
+    def test_analysis_returns_all_fields(self, mock_supabase):
         """Complete analysis returns all required fields."""
         service = FreshnessService()
         content = {
@@ -304,7 +314,7 @@ class TestFreshnessServiceFullAnalysis:
         assert isinstance(result["freshness_score"], int)
         assert 0 <= result["freshness_score"] <= 100
     
-    def test_analysis_score_calculation(self):
+    def test_analysis_score_calculation(self, mock_supabase):
         """Analysis calculates score as sum of component scores."""
         service = FreshnessService()
         content = {
@@ -324,7 +334,7 @@ class TestFreshnessServiceFullAnalysis:
         )
         assert result["freshness_score"] == expected_score
     
-    def test_analysis_factors_sum_to_one(self):
+    def test_analysis_factors_sum_to_one(self, mock_supabase):
         """Factor weights should approximately sum to 1.0."""
         service = FreshnessService()
         content = {
@@ -458,11 +468,11 @@ class TestFreshnessAPI:
         mock_client.table.return_value.upsert.return_value.execute.return_value.data = [{"id": str(uuid4())}]
         
         # Run the endpoint
-        result = analyze_content_freshness(
+        result = asyncio.run(analyze_content_freshness(
             content_id=content_id,
             request=Mock(force_reanalyze=False),
             user=mock_user
-        )
+        ))
         
         assert result.content_id == content_id
         assert 0 <= result.freshness_score <= 100
@@ -482,11 +492,11 @@ class TestFreshnessAPI:
         mock_client.table.return_value.select.return_value.eq.return_value.eq.return_value.single.return_value.execute.return_value.data = None
         
         with pytest.raises(HTTPException) as exc_info:
-            analyze_content_freshness(
+            asyncio.run(analyze_content_freshness(
                 content_id=content_id,
                 request=Mock(force_reanalyze=False),
                 user=mock_user
-            )
+            ))
         
         assert exc_info.value.status_code == 404
 
@@ -520,7 +530,7 @@ class TestFreshnessDashboard:
         # Mock empty freshness scores
         mock_client.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
         
-        result = get_freshness_dashboard(user=mock_user)
+        result = asyncio.run(get_freshness_dashboard(user=mock_user))
         
         assert result.stats.total_content == 10
         assert result.stats.analyzed_content == 0
@@ -552,7 +562,7 @@ class TestBulkAnalyze:
         mock_supabase.return_value = mock_client
         mock_client.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
         
-        result = bulk_analyze_content(content_ids=None, user=mock_user)
+        result = asyncio.run(bulk_analyze_content(content_ids=None, user=mock_user))
         
         assert result.total_analyzed == 0
         assert result.freshness_scores == []
@@ -590,7 +600,7 @@ class TestBulkAnalyze:
         # Mock upsert
         mock_client.table.return_value.upsert.return_value.execute.return_value.data = [{"id": str(uuid4())}]
         
-        result = bulk_analyze_content(content_ids=content_ids, user=mock_user)
+        result = asyncio.run(bulk_analyze_content(content_ids=content_ids, user=mock_user))
         
         assert result.total_analyzed == 2
         assert len(result.freshness_scores) == 2
@@ -626,6 +636,7 @@ class TestStaleContent:
                 "freshness_score": 30,
                 "age_days": 100,
                 "recommendations": ["Update statistics"],
+                "created_at": datetime.now().isoformat(),
                 "content": {"title": "Old Content", "created_at": datetime.now().isoformat()}
             }
         ]
@@ -633,7 +644,7 @@ class TestStaleContent:
         # Mock count
         mock_client.table.return_value.select.return_value.eq.return_value.lt.return_value.execute.return_value.count = 1
         
-        result = list_stale_content(threshold=50, page=1, page_size=20, user=mock_user)
+        result = asyncio.run(list_stale_content(threshold=50, page=1, page_size=20, user=mock_user))
         
         assert result.total == 1
         assert len(result.items) == 1
