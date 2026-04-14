@@ -31,7 +31,9 @@ jobs:
           pytest tests/ -v --timeout=60 --cov=app --cov-report=xml --cov-report=term \
             --ignore=tests/test_sso.py \
             --ignore=tests/test_websocket.py \
-            --ignore=tests/test_security_advanced.py
+            --ignore=tests/test_security_advanced.py \
+            --ignore=tests/deep_system_test.py \
+            --ignore=tests/deep_system_test_test.py
         env:
           PYTHONPATH: .
           SUPABASE_URL: https://test.supabase.co

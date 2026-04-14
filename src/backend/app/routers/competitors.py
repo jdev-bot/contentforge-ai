@@ -15,6 +15,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
+from app.core.cache import cache
 from app.core.rate_limit import (
     UsageStats,
     check_and_increment_usage,
@@ -213,6 +214,10 @@ async def add_competitor(
                 detail="Failed to create competitor",
             )
 
+        # Invalidate competitor caches for this user
+        cache.delete_pattern("competitors", prefix=f"user:{user.id}")
+        cache.delete_pattern("competitor_", prefix=f"user:{user.id}")
+
         return CompetitorResponse(**competitor)
 
     except Exception as e:
@@ -241,11 +246,20 @@ async def list_competitors(
 
     Optionally filter by platform.
     """
+    # Check cache first
+    cache_key = f"competitors:{platform}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return [CompetitorResponse(**c) for c in cached]
+
     try:
         competitors = await competitor_service.get_competitors(
             user_id=str(user.id), platform=platform
         )
-        return [CompetitorResponse(**comp) for comp in competitors]
+        result_list = [CompetitorResponse(**comp) for comp in competitors]
+        # Cache the result
+        cache.set(cache_key, [c.model_dump() for c in result_list], ttl=300, prefix=f"user:{user.id}")
+        return result_list
 
     except Exception as e:
         raise HTTPException(
@@ -270,6 +284,10 @@ async def remove_competitor(competitor_id: UUID, user=Depends(get_auth_user)):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Competitor not found"
             )
+
+        # Invalidate competitor caches for this user
+        cache.delete_pattern("competitors", prefix=f"user:{user.id}")
+        cache.delete_pattern("competitor_", prefix=f"user:{user.id}")
 
         return DeleteCompetitorResponse(
             success=True, message="Competitor removed from tracking"
@@ -299,6 +317,12 @@ async def get_competitor_content(
 
     Returns the competitor's posts sorted by published date (newest first).
     """
+    # Check cache first
+    cache_key = f"competitor_content:{competitor_id}:{limit}:{offset}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return [CompetitorContentResponse(**c) for c in cached]
+
     try:
         content = await competitor_service.get_competitor_content(
             competitor_id=str(competitor_id),
@@ -307,7 +331,10 @@ async def get_competitor_content(
             offset=offset,
         )
 
-        return [CompetitorContentResponse(**item) for item in content]
+        result_list = [CompetitorContentResponse(**item) for item in content]
+        # Cache the result
+        cache.set(cache_key, [c.model_dump() for c in result_list], ttl=300, prefix=f"user:{user.id}")
+        return result_list
 
     except Exception as e:
         raise HTTPException(
@@ -327,6 +354,12 @@ async def get_performance_analysis(
     """
     check_and_increment_usage(str(user.id))
 
+    # Check cache first
+    cache_key = "competitors_analysis"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return PerformanceAnalysisResponse(**cached)
+
     try:
         analysis = await competitor_service.get_performance_analysis(str(user.id))
 
@@ -339,7 +372,10 @@ async def get_performance_analysis(
                 insights=[],
             )
 
-        return PerformanceAnalysisResponse(**analysis)
+        result = PerformanceAnalysisResponse(**analysis)
+        # Cache the result
+        cache.set(cache_key, result.model_dump(), ttl=300, prefix=f"user:{user.id}")
+        return result
 
     except Exception as e:
         raise HTTPException(
@@ -360,11 +396,20 @@ async def get_content_gaps(
 
     Returns topics that competitors are covering but you might be missing.
     """
+    # Check cache first
+    cache_key = f"competitors_gaps:{min_opportunity}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return [ContentGapResponse(**g) for g in cached]
+
     try:
         gaps = await competitor_service.get_content_gaps(
             user_id=str(user.id), min_opportunity=min_opportunity
         )
-        return [ContentGapResponse(**gap) for gap in gaps]
+        result_list = [ContentGapResponse(**gap) for gap in gaps]
+        # Cache the result
+        cache.set(cache_key, [g.model_dump() for g in result_list], ttl=300, prefix=f"user:{user.id}")
+        return result_list
 
     except Exception as e:
         raise HTTPException(
@@ -386,6 +431,9 @@ async def analyze_content_gaps(
 
     try:
         result = await competitor_service.identify_content_gaps(str(user.id))
+        # Invalidate competitor caches for this user
+        cache.delete_pattern("competitors", prefix=f"user:{user.id}")
+        cache.delete_pattern("competitor_", prefix=f"user:{user.id}")
         return ContentGapAnalysisResponse(**result)
 
     except Exception as e:
@@ -406,9 +454,18 @@ async def get_topic_overlap(
     """
     check_and_increment_usage(str(user.id))
 
+    # Check cache first
+    cache_key = "competitors_overlap"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return TopicOverlapResponse(**cached)
+
     try:
         overlap = await competitor_service.analyze_topic_overlap(str(user.id))
-        return TopicOverlapResponse(**overlap)
+        result = TopicOverlapResponse(**overlap)
+        # Cache the result
+        cache.set(cache_key, result.model_dump(), ttl=300, prefix=f"user:{user.id}")
+        return result
 
     except Exception as e:
         raise HTTPException(
@@ -428,9 +485,18 @@ async def get_benchmark_comparison(
     """
     check_and_increment_usage(str(user.id))
 
+    # Check cache first
+    cache_key = "competitors_benchmark"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return BenchmarkComparisonResponse(**cached)
+
     try:
         benchmark = await competitor_service.get_benchmark_comparison(str(user.id))
-        return BenchmarkComparisonResponse(**benchmark)
+        result = BenchmarkComparisonResponse(**benchmark)
+        # Cache the result
+        cache.set(cache_key, result.model_dump(), ttl=300, prefix=f"user:{user.id}")
+        return result
 
     except Exception as e:
         raise HTTPException(
@@ -465,6 +531,10 @@ async def refresh_competitor_data(
                 detail=result.get("error", "Competitor not found"),
             )
 
+        # Invalidate competitor caches for this user
+        cache.delete_pattern("competitors", prefix=f"user:{user.id}")
+        cache.delete_pattern("competitor_", prefix=f"user:{user.id}")
+
         return RefreshCompetitorResponse(**result)
 
     except HTTPException:
@@ -481,6 +551,12 @@ async def get_competitor_details(competitor_id: UUID, user=Depends(get_auth_user
     """
     Get detailed information about a specific competitor.
     """
+    # Check cache first
+    cache_key = f"competitor_detail:{competitor_id}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return CompetitorResponse(**cached)
+
     try:
         competitor = await competitor_service.get_competitor_by_id(
             competitor_id=str(competitor_id), user_id=str(user.id)
@@ -491,7 +567,10 @@ async def get_competitor_details(competitor_id: UUID, user=Depends(get_auth_user
                 status_code=status.HTTP_404_NOT_FOUND, detail="Competitor not found"
             )
 
-        return CompetitorResponse(**competitor)
+        competitor_item = CompetitorResponse(**competitor)
+        # Cache the result
+        cache.set(cache_key, competitor_item.model_dump(), ttl=300, prefix=f"user:{user.id}")
+        return competitor_item
 
     except HTTPException:
         raise
