@@ -99,6 +99,10 @@ from app.core.error_tracking import ErrorTrackingMiddleware
 from app.core.rate_limit import UsageTrackingMiddleware
 from app.middleware.rate_limit_headers import RateLimitHeadersMiddleware
 from app.middleware.performance import PerformanceMiddleware
+from app.middleware.request_id import RequestIDMiddleware
+
+# Request ID middleware (adds X-Request-ID for tracing)
+app.add_middleware(RequestIDMiddleware)
 
 # Performance monitoring (adds X-Response-Time header, logs slow requests)
 app.add_middleware(PerformanceMiddleware)

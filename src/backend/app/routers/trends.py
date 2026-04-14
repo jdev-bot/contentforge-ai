@@ -255,6 +255,8 @@ async def track_topic(
         )
 
         if success:
+            # Invalidate trend caches for this user
+            cache.delete_pattern("trends", prefix=f"user:{user.id}")
             return TrackTopicResponse(
                 success=True, message="Topic is now being tracked for you"
             )
@@ -277,8 +279,16 @@ async def get_tracked_topics(user=Depends(get_auth_user)):
     """
     Get all topics currently tracked by the user.
     """
+    # Check cache first
+    cache_key = "trends_tracked"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return cached
+
     try:
         tracked = await trend_service.get_user_tracked_topics(str(user.id))
+        # Cache the result
+        cache.set(cache_key, tracked, ttl=300, prefix=f"user:{user.id}")
         return tracked
 
     except Exception as e:
@@ -302,6 +312,9 @@ async def untrack_topic(topic_id: UUID, user=Depends(get_auth_user)):
             .eq("topic_id", str(topic_id))
             .execute()
         )
+
+        # Invalidate trend caches for this user
+        cache.delete_pattern("trends", prefix=f"user:{user.id}")
 
         return {"success": True, "message": "Topic removed from tracking"}
 
@@ -402,9 +415,18 @@ async def get_velocity_leaderboard(
     """
     check_and_increment_usage(str(user.id))
 
+    # Check cache first
+    cache_key = f"trends_velocity:{limit}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return [TrendVelocityResponse(**t) for t in cached]
+
     try:
         trends = await trend_service.get_velocity_leaderboard(limit=limit)
-        return [TrendVelocityResponse(**t) for t in trends]
+        result_list = [TrendVelocityResponse(**t) for t in trends]
+        # Cache the result
+        cache.set(cache_key, [t.model_dump() for t in result_list], ttl=300, prefix=f"user:{user.id}")
+        return result_list
 
     except Exception as e:
         raise HTTPException(
@@ -424,9 +446,18 @@ async def get_trending_insights(
     """
     check_and_increment_usage(str(user.id))
 
+    # Check cache first
+    cache_key = "trends_insights"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return TrendInsightsResponse(**cached)
+
     try:
         insights = await trend_service.get_trending_insights()
-        return TrendInsightsResponse(**insights)
+        result = TrendInsightsResponse(**insights)
+        # Cache the result
+        cache.set(cache_key, result.model_dump(), ttl=300, prefix=f"user:{user.id}")
+        return result
 
     except Exception as e:
         raise HTTPException(
@@ -472,6 +503,9 @@ async def refresh_trending_topics(user=Depends(get_auth_user)):
         result = await trend_service.update_trending_topics()
 
         if result["success"]:
+            # Invalidate all trend caches (refresh changes global data)
+            cache.delete_pattern("trends", prefix=f"user:{user.id}")
+            cache.delete_pattern("trend_", prefix=f"user:{user.id}")
             return RefreshTrendsResponse(
                 success=True,
                 trends_analyzed=result["trends_analyzed"],
@@ -502,6 +536,12 @@ async def search_trends(
     """
     Search trending topics by keyword.
     """
+    # Check cache first
+    cache_key = f"trends_search:{q}:{limit}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return cached
+
     try:
         supabase = get_supabase_client()
 
@@ -530,11 +570,14 @@ async def search_trends(
                 if item["id"] not in existing_ids:
                     result.data.append(item)
 
-        return {
+        search_result = {
             "query": q,
             "results": result.data or [],
             "total": len(result.data or []),
         }
+        # Cache the result
+        cache.set(cache_key, search_result, ttl=300, prefix=f"user:{user.id}")
+        return search_result
 
     except Exception as e:
         raise HTTPException(
@@ -548,6 +591,12 @@ async def get_trend_details(topic_id: UUID, user=Depends(get_auth_user)):
     """
     Get detailed information about a specific trending topic.
     """
+    # Check cache first
+    cache_key = f"trend_detail:{topic_id}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return TrendingTopicResponse(**cached)
+
     try:
         supabase = get_supabase_client()
         result = (
@@ -563,7 +612,10 @@ async def get_trend_details(topic_id: UUID, user=Depends(get_auth_user)):
                 status_code=status.HTTP_404_NOT_FOUND, detail="Trend not found"
             )
 
-        return TrendingTopicResponse(**result.data)
+        trend_item = TrendingTopicResponse(**result.data)
+        # Cache the result
+        cache.set(cache_key, trend_item.model_dump(), ttl=300, prefix=f"user:{user.id}")
+        return trend_item
 
     except HTTPException:
         raise
