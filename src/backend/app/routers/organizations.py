@@ -265,7 +265,7 @@ async def get_organization(
                 if profile_result.data:
                     user_name = profile_result.data.get("full_name")
                     avatar_url = profile_result.data.get("avatar_url")
-            except:
+            except Exception:
                 pass
             
             members.append(OrganizationMemberResponse(
@@ -503,7 +503,7 @@ async def list_members(
                 if profile_result.data:
                     user_name = profile_result.data.get("full_name")
                     avatar_url = profile_result.data.get("avatar_url")
-            except:
+            except Exception:
                 pass
             
             members.append(OrganizationMemberResponse(
@@ -570,7 +570,7 @@ async def update_member_role(
             if profile_result.data:
                 user_name = profile_result.data.get("full_name")
                 avatar_url = profile_result.data.get("avatar_url")
-        except:
+        except Exception:
             pass
         
         return OrganizationMemberResponse(

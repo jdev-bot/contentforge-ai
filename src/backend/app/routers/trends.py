@@ -296,7 +296,7 @@ async def generate_content_from_trend(
             topic_result = supabase.table("trending_topics").select("id").eq("topic", request.topic).execute()
             if topic_result.data:
                 topic_id = topic_result.data[0]["id"]
-        except:
+        except Exception:
             pass
         
         # Save the suggestion

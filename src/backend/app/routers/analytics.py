@@ -426,7 +426,7 @@ async def get_usage_metrics(
                 # Monthly aggregation
                 month_key = item_date.strftime("%Y-%m")
                 monthly_counts[month_key] = monthly_counts.get(month_key, 0) + 1
-            except:
+            except Exception:
                 pass
         
         # Convert daily to sorted list (oldest first)

@@ -195,7 +195,7 @@ CONFIDENCE:
                     explanation = exp_conf[0].strip()
                     try:
                         confidence_score = float(exp_conf[1].strip()[:3])
-                    except:
+                    except Exception:
                         confidence_score = 0.8
                 else:
                     explanation = remaining.strip()

@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: Optional[str] = Field(default=None, alias="SMTP_PASSWORD")
     
     # Redis (for Celery)
-    REDIS_URL: str = Field(default="redis://:dev_redis_pass_2026@localhost:6379/0", alias="REDIS_URL")
+    REDIS_URL: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
     
     # Stripe
     STRIPE_SECRET_KEY: Optional[str] = Field(default=None, alias="STRIPE_SECRET_KEY")

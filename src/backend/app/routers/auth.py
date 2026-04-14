@@ -181,7 +181,7 @@ async def logout(request: Request):
         supabase = get_supabase_client()
         try:
             supabase.auth.sign_out()
-        except:
+        except Exception:
             pass
     
     return {"message": "Logged out successfully"}
