@@ -2,9 +2,10 @@
 Organization management router with full CRUD and member management.
 """
 
+import asyncio
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -187,29 +188,37 @@ async def list_organizations(
         user_id = str(user.id)
         organizations = []
 
-        # Get organizations where user is owner
-        owned_result = (
-            supabase.table("organizations")
-            .select("*")
-            .eq("owner_id", user_id)
-            .order("created_at", desc=True)
-            .execute()
+        # Run owned orgs and member orgs queries in parallel
+        def fetch_owned():
+            return (
+                supabase.table("organizations")
+                .select("*")
+                .eq("owner_id", user_id)
+                .order("created_at", desc=True)
+                .execute()
+            )
+
+        def fetch_member_links():
+            return (
+                supabase.table("organization_members")
+                .select("org_id")
+                .eq("user_id", user_id)
+                .execute()
+            )
+
+        owned_result, member_result = await asyncio.gather(
+            asyncio.to_thread(fetch_owned),
+            asyncio.to_thread(fetch_member_links),
         )
 
         # Get organizations where user is a member
-        member_result = (
-            supabase.table("organization_members")
-            .select("org_id")
-            .eq("user_id", user_id)
-            .execute()
-        )
         member_org_ids = (
             [m["org_id"] for m in member_result.data] if member_result.data else []
         )
 
+        # Fetch member orgs if any (separate from owned)
         member_orgs = []
         if member_org_ids:
-            # Use 'in' filter for member orgs
             member_orgs_result = (
                 supabase.table("organizations")
                 .select("*")
@@ -231,22 +240,22 @@ async def list_organizations(
         # Sort by created_at desc
         all_orgs.sort(key=lambda x: x["created_at"], reverse=True)
 
+        # Batch-fetch member counts to avoid N+1 queries
+        member_counts: Dict[str, int] = {}
+        if include_member_count and all_org_ids:
+            all_members_result = (
+                supabase.table("organization_members")
+                .select("org_id")
+                .in_("org_id", list(all_org_ids))
+                .execute()
+            )
+            for m in all_members_result.data or []:
+                oid = m["org_id"]
+                member_counts[oid] = member_counts.get(oid, 0) + 1
+
         for org in all_orgs:
             is_owner = org["owner_id"] == user_id
-
-            member_count = None
-            if include_member_count:
-                count_result = (
-                    supabase.table("organization_members")
-                    .select("id", count="exact")
-                    .eq("org_id", org["id"])
-                    .execute()
-                )
-                member_count = (
-                    count_result.count
-                    if hasattr(count_result, "count")
-                    else len(count_result.data)
-                )
+            member_count = member_counts.get(org["id"], 0) if include_member_count else None
 
             organizations.append(
                 OrganizationResponse(
@@ -305,33 +314,28 @@ async def get_organization(org_id: UUID, user=Depends(get_auth_user)):
             .execute()
         )
 
+        # Batch-fetch profiles for all members to avoid N+1 queries
+        member_user_ids = [m["user_id"] for m in members_result.data or []]
+        profiles_by_id: Dict[str, dict] = {}
+        if member_user_ids:
+            profiles_result = (
+                supabase.table("profiles")
+                .select("id, full_name, avatar_url")
+                .in_("id", member_user_ids)
+                .execute()
+            )
+            for p in profiles_result.data or []:
+                profiles_by_id[p["id"]] = p
+
         members = []
         for member in members_result.data or []:
-            # Get user email from auth (using profiles as fallback)
-            user_email = None
-            user_name = None
-            avatar_url = None
-
-            try:
-                profile_result = (
-                    supabase.table("profiles")
-                    .select("full_name, avatar_url")
-                    .eq("id", str(member["user_id"]))
-                    .single()
-                    .execute()
-                )
-                if profile_result.data:
-                    user_name = profile_result.data.get("full_name")
-                    avatar_url = profile_result.data.get("avatar_url")
-            except Exception:
-                pass
-
+            profile = profiles_by_id.get(str(member["user_id"]), {})
             members.append(
                 OrganizationMemberResponse(
                     **member,
-                    user_email=user_email,
-                    user_name=user_name,
-                    avatar_url=avatar_url,
+                    user_email=None,
+                    user_name=profile.get("full_name"),
+                    avatar_url=profile.get("avatar_url"),
                 )
             )
 
@@ -579,29 +583,27 @@ async def list_members(org_id: UUID, user=Depends(get_auth_user)):
             .execute()
         )
 
+        # Batch-fetch profiles for all members
+        member_user_ids = [m["user_id"] for m in members_result.data or []]
+        profiles_by_id: Dict[str, dict] = {}
+        if member_user_ids:
+            profiles_result = (
+                supabase.table("profiles")
+                .select("id, full_name, avatar_url")
+                .in_("id", member_user_ids)
+                .execute()
+            )
+            for p in profiles_result.data or []:
+                profiles_by_id[p["id"]] = p
+
         members = []
         for member in members_result.data or []:
-            # Get user profile info
-            user_name = None
-            avatar_url = None
-
-            try:
-                profile_result = (
-                    supabase.table("profiles")
-                    .select("full_name, avatar_url")
-                    .eq("id", str(member["user_id"]))
-                    .single()
-                    .execute()
-                )
-                if profile_result.data:
-                    user_name = profile_result.data.get("full_name")
-                    avatar_url = profile_result.data.get("avatar_url")
-            except Exception:
-                pass
-
+            profile = profiles_by_id.get(str(member["user_id"]), {})
             members.append(
                 OrganizationMemberResponse(
-                    **member, user_name=user_name, avatar_url=avatar_url
+                    **member,
+                    user_name=profile.get("full_name"),
+                    avatar_url=profile.get("avatar_url"),
                 )
             )
 
