@@ -8,6 +8,7 @@ Multi-dimensional quality analysis using Groq AI:
 - Grammar & style (sentence variety, passive voice, clarity)
 - Brand consistency (tone matching, vocabulary alignment)
 """
+
 import json
 import logging
 from typing import Any, Dict, List, Optional
@@ -49,7 +50,9 @@ class QualityService:
     #  AI-powered scoring                                                  #
     # ------------------------------------------------------------------ #
 
-    async def analyze_quality(self, text: str, brand_voice: Optional[Dict] = None) -> Dict[str, Any]:
+    async def analyze_quality(
+        self, text: str, brand_voice: Optional[Dict] = None
+    ) -> Dict[str, Any]:
         """
         Analyze content quality across five dimensions using Groq AI.
 
@@ -59,9 +62,7 @@ class QualityService:
         """
         brand_instruction = ""
         if brand_voice:
-            brand_instruction = (
-                f"\n\nBrand voice reference: {json.dumps(brand_voice)}"
-            )
+            brand_instruction = f"\n\nBrand voice reference: {json.dumps(brand_voice)}"
 
         system_prompt = (
             "You are a senior content quality auditor. "
@@ -124,8 +125,7 @@ class QualityService:
     def _compute_overall(self, scores: Dict[str, Any]) -> int:
         """Weighted composite 0-100."""
         total = sum(
-            scores.get(dim, 0) * weight
-            for dim, weight in DIMENSION_WEIGHTS.items()
+            scores.get(dim, 0) * weight for dim, weight in DIMENSION_WEIGHTS.items()
         )
         return max(0, min(100, round(total)))
 
@@ -158,7 +158,9 @@ class QualityService:
         cache.delete(f"history:{content_id}", prefix=CACHE_PREFIX)
         return result.data[0] if result.data else row
 
-    async def get_score(self, content_id: UUID, user_id: UUID) -> Optional[Dict[str, Any]]:
+    async def get_score(
+        self, content_id: UUID, user_id: UUID
+    ) -> Optional[Dict[str, Any]]:
         """Fetch the latest quality score for a content item (with cache)."""
         cached = cache.get(str(content_id), prefix=CACHE_PREFIX)
         if cached is not None:
@@ -203,7 +205,9 @@ class QualityService:
         )
 
         rows = result.data or []
-        cache.set(f"history:{content_id}", rows, ttl=CACHE_TTL_SECONDS, prefix=CACHE_PREFIX)
+        cache.set(
+            f"history:{content_id}", rows, ttl=CACHE_TTL_SECONDS, prefix=CACHE_PREFIX
+        )
         return rows
 
     async def get_suggestions(self, content_id: UUID, user_id: UUID) -> List[str]:
@@ -232,7 +236,9 @@ class QualityService:
 
             scores = await self.analyze_quality(text, brand_voice=brand_voice)
             stored = await self.store_score(
-                content_id=content_id, user_id=user_id, scores=scores,
+                content_id=content_id,
+                user_id=user_id,
+                scores=scores,
             )
             results.append(stored)
         return results

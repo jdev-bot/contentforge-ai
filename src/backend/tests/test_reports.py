@@ -1,6 +1,7 @@
 """
 Tests for report scheduling API.
 """
+
 import pytest
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -73,12 +74,14 @@ def build_mock_query_chain(return_data=None):
 
 # ── Report Service Tests ───────────────────────────────────────────
 
+
 class TestReportService:
     """Tests for the ReportService class."""
 
     def test_list_reports(self, mock_user, sample_report):
         """Test listing reports."""
         from app.services.report_service import ReportService
+
         service = ReportService()
         mock_supabase = MagicMock()
         mock_query = build_mock_query_chain([sample_report])
@@ -97,9 +100,18 @@ class TestReportService:
     def test_create_report(self, mock_user):
         """Test creating a report."""
         from app.services.report_service import ReportService
+
         service = ReportService()
         mock_supabase = MagicMock()
-        mock_query = build_mock_query_chain([{"id": "new-report", "name": "New Report", "report_type": "content_summary"}])
+        mock_query = build_mock_query_chain(
+            [
+                {
+                    "id": "new-report",
+                    "name": "New Report",
+                    "report_type": "content_summary",
+                }
+            ]
+        )
         mock_supabase.table.return_value = MagicMock(
             select=MagicMock(return_value=mock_query),
             insert=MagicMock(return_value=mock_query),
@@ -122,6 +134,7 @@ class TestReportService:
     def test_create_report_invalid_type(self, mock_user):
         """Test creating a report with invalid type."""
         from app.services.report_service import ReportService
+
         service = ReportService()
 
         with pytest.raises(ValueError, match="Invalid report type"):
@@ -135,6 +148,7 @@ class TestReportService:
     def test_create_report_invalid_format(self, mock_user):
         """Test creating a report with invalid format."""
         from app.services.report_service import ReportService
+
         service = ReportService()
 
         with pytest.raises(ValueError, match="Invalid format"):
@@ -149,6 +163,7 @@ class TestReportService:
     def test_get_report(self, mock_user, sample_report):
         """Test getting a report."""
         from app.services.report_service import ReportService
+
         service = ReportService()
         mock_supabase = MagicMock()
         mock_query = build_mock_query_chain(sample_report)
@@ -167,11 +182,14 @@ class TestReportService:
     def test_update_report(self, mock_user, sample_report):
         """Test updating a report."""
         from app.services.report_service import ReportService
+
         service = ReportService()
 
-        with patch.object(service, 'get_report', return_value=sample_report):
+        with patch.object(service, "get_report", return_value=sample_report):
             mock_supabase = MagicMock()
-            mock_query = build_mock_query_chain([{**sample_report, "name": "Updated Report"}])
+            mock_query = build_mock_query_chain(
+                [{**sample_report, "name": "Updated Report"}]
+            )
             mock_supabase.table.return_value = MagicMock(
                 select=MagicMock(return_value=mock_query),
                 insert=MagicMock(return_value=mock_query),
@@ -180,22 +198,26 @@ class TestReportService:
             )
             service.supabase = mock_supabase
 
-            result = service.update_report("report-1", mock_user.id, name="Updated Report")
+            result = service.update_report(
+                "report-1", mock_user.id, name="Updated Report"
+            )
             assert result is not None
             assert result["name"] == "Updated Report"
 
     def test_update_report_not_found(self, mock_user):
         """Test updating a non-existent report."""
         from app.services.report_service import ReportService
+
         service = ReportService()
 
-        with patch.object(service, 'get_report', return_value=None):
+        with patch.object(service, "get_report", return_value=None):
             result = service.update_report("nonexistent", mock_user.id, name="New Name")
             assert result is None
 
     def test_delete_report(self, mock_user, sample_report):
         """Test deleting a report."""
         from app.services.report_service import ReportService
+
         service = ReportService()
         mock_supabase = MagicMock()
         mock_query = build_mock_query_chain([])
@@ -206,7 +228,7 @@ class TestReportService:
             delete=MagicMock(return_value=mock_query),
         )
 
-        with patch.object(service, 'get_report', return_value=sample_report):
+        with patch.object(service, "get_report", return_value=sample_report):
             service.supabase = mock_supabase
             result = service.delete_report("report-1", mock_user.id)
             assert result is True
@@ -214,15 +236,17 @@ class TestReportService:
     def test_delete_report_not_found(self, mock_user):
         """Test deleting a non-existent report."""
         from app.services.report_service import ReportService
+
         service = ReportService()
 
-        with patch.object(service, 'get_report', return_value=None):
+        with patch.object(service, "get_report", return_value=None):
             result = service.delete_report("nonexistent", mock_user.id)
             assert result is False
 
     def test_generate_report(self, mock_user, sample_report):
         """Test generating a report."""
         from app.services.report_service import ReportService
+
         service = ReportService()
         mock_supabase = MagicMock()
         mock_query = build_mock_query_chain([{"id": "run-1", "status": "completed"}])
@@ -234,12 +258,18 @@ class TestReportService:
                 update=MagicMock(return_value=mock_query),
                 delete=MagicMock(return_value=mock_query),
             )
+
         mock_supabase.table = MagicMock(side_effect=table_side_effect)
 
-        with patch.object(service, 'get_report', return_value=sample_report), \
-             patch.object(service, '_gather_report_data', return_value={"total_content": 42}), \
-             patch.object(service, '_store_report', return_value="reports/test.html"), \
-             patch.object(service, '_send_report_email'):
+        with patch.object(
+            service, "get_report", return_value=sample_report
+        ), patch.object(
+            service, "_gather_report_data", return_value={"total_content": 42}
+        ), patch.object(
+            service, "_store_report", return_value="reports/test.html"
+        ), patch.object(
+            service, "_send_report_email"
+        ):
             service.supabase = mock_supabase
             result = service.generate_report("report-1", mock_user.id)
             assert result is not None
@@ -248,6 +278,7 @@ class TestReportService:
     def test_get_report_history(self, mock_user, sample_report, sample_report_run):
         """Test getting report history."""
         from app.services.report_service import ReportService
+
         service = ReportService()
         mock_supabase = MagicMock()
         mock_query = build_mock_query_chain([sample_report_run])
@@ -258,7 +289,7 @@ class TestReportService:
             delete=MagicMock(return_value=mock_query),
         )
 
-        with patch.object(service, 'get_report', return_value=sample_report):
+        with patch.object(service, "get_report", return_value=sample_report):
             service.supabase = mock_supabase
             result = service.get_report_history("report-1", mock_user.id)
             assert len(result) == 1
@@ -267,28 +298,35 @@ class TestReportService:
 
 # ── Report Router Tests ────────────────────────────────────────────
 
+
 class TestReportRouter:
     """Tests for the report router endpoints using conftest client fixture."""
 
     def test_list_reports_endpoint(self, client, mock_user):
         """Test GET /api/v1/reports."""
-        with patch("app.routers.reports.get_auth_user", return_value=mock_user), \
-             patch("app.routers.reports.report_service") as mock_service:
+        with patch("app.routers.reports.get_auth_user", return_value=mock_user), patch(
+            "app.routers.reports.report_service"
+        ) as mock_service:
             mock_service.list_reports.return_value = [
                 {"id": "report-1", "name": "Weekly Summary"}
             ]
 
-            response = client.get("/api/v1/reports", headers={"Authorization": "Bearer test"})
+            response = client.get(
+                "/api/v1/reports", headers={"Authorization": "Bearer test"}
+            )
             assert response.status_code == 200
             data = response.json()
             assert len(data) == 1
 
     def test_create_report_endpoint(self, client, mock_user):
         """Test POST /api/v1/reports."""
-        with patch("app.routers.reports.get_auth_user", return_value=mock_user), \
-             patch("app.routers.reports.report_service") as mock_service:
+        with patch("app.routers.reports.get_auth_user", return_value=mock_user), patch(
+            "app.routers.reports.report_service"
+        ) as mock_service:
             mock_service.create_report.return_value = {
-                "id": "report-new", "name": "New Report", "report_type": "content_summary"
+                "id": "report-new",
+                "name": "New Report",
+                "report_type": "content_summary",
             }
 
             response = client.post(
@@ -320,66 +358,97 @@ class TestReportRouter:
 
     def test_get_report_endpoint(self, client, mock_user):
         """Test GET /api/v1/reports/{id}."""
-        with patch("app.routers.reports.get_auth_user", return_value=mock_user), \
-             patch("app.routers.reports.report_service") as mock_service:
+        with patch("app.routers.reports.get_auth_user", return_value=mock_user), patch(
+            "app.routers.reports.report_service"
+        ) as mock_service:
             mock_service.get_report.return_value = {
-                "id": "report-1", "name": "Weekly Summary", "report_type": "content_summary"
+                "id": "report-1",
+                "name": "Weekly Summary",
+                "report_type": "content_summary",
             }
 
-            response = client.get("/api/v1/reports/report-1", headers={"Authorization": "Bearer test"})
+            response = client.get(
+                "/api/v1/reports/report-1", headers={"Authorization": "Bearer test"}
+            )
             assert response.status_code == 200
 
     def test_get_report_not_found_endpoint(self, client, mock_user):
         """Test GET /api/v1/reports/{id} when not found."""
-        with patch("app.routers.reports.get_auth_user", return_value=mock_user), \
-             patch("app.routers.reports.report_service") as mock_service:
+        with patch("app.routers.reports.get_auth_user", return_value=mock_user), patch(
+            "app.routers.reports.report_service"
+        ) as mock_service:
             mock_service.get_report.return_value = None
 
-            response = client.get("/api/v1/reports/nonexistent", headers={"Authorization": "Bearer test"})
+            response = client.get(
+                "/api/v1/reports/nonexistent", headers={"Authorization": "Bearer test"}
+            )
             assert response.status_code == 404
 
     def test_delete_report_endpoint(self, client, mock_user):
         """Test DELETE /api/v1/reports/{id}."""
-        with patch("app.routers.reports.get_auth_user", return_value=mock_user), \
-             patch("app.routers.reports.report_service") as mock_service:
+        with patch("app.routers.reports.get_auth_user", return_value=mock_user), patch(
+            "app.routers.reports.report_service"
+        ) as mock_service:
             mock_service.delete_report.return_value = True
 
-            response = client.delete("/api/v1/reports/report-1", headers={"Authorization": "Bearer test"})
+            response = client.delete(
+                "/api/v1/reports/report-1", headers={"Authorization": "Bearer test"}
+            )
             assert response.status_code == 204
 
     def test_generate_report_endpoint(self, client, mock_user):
         """Test POST /api/v1/reports/{id}/generate."""
-        with patch("app.routers.reports.get_auth_user", return_value=mock_user), \
-             patch("app.routers.reports.report_service") as mock_service:
+        with patch("app.routers.reports.get_auth_user", return_value=mock_user), patch(
+            "app.routers.reports.report_service"
+        ) as mock_service:
             mock_service.generate_report.return_value = {
-                "id": "run-1", "status": "completed", "format": "html"
+                "id": "run-1",
+                "status": "completed",
+                "format": "html",
             }
 
-            response = client.post("/api/v1/reports/report-1/generate", headers={"Authorization": "Bearer test"})
+            response = client.post(
+                "/api/v1/reports/report-1/generate",
+                headers={"Authorization": "Bearer test"},
+            )
             assert response.status_code == 200
 
     def test_get_report_history_endpoint(self, client, mock_user):
         """Test GET /api/v1/reports/{id}/history."""
-        with patch("app.routers.reports.get_auth_user", return_value=mock_user), \
-             patch("app.routers.reports.report_service") as mock_service:
+        with patch("app.routers.reports.get_auth_user", return_value=mock_user), patch(
+            "app.routers.reports.report_service"
+        ) as mock_service:
             mock_service.get_report_history.return_value = [
-                {"id": "run-1", "status": "completed", "generated_at": datetime.now(timezone.utc).isoformat()}
+                {
+                    "id": "run-1",
+                    "status": "completed",
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                }
             ]
 
-            response = client.get("/api/v1/reports/report-1/history", headers={"Authorization": "Bearer test"})
+            response = client.get(
+                "/api/v1/reports/report-1/history",
+                headers={"Authorization": "Bearer test"},
+            )
             assert response.status_code == 200
             data = response.json()
             assert len(data) == 1
 
     def test_download_report_endpoint(self, client, mock_user):
         """Test GET /api/v1/reports/{id}/download/{run_id}."""
-        with patch("app.routers.reports.get_auth_user", return_value=mock_user), \
-             patch("app.routers.reports.report_service") as mock_service:
+        with patch("app.routers.reports.get_auth_user", return_value=mock_user), patch(
+            "app.routers.reports.report_service"
+        ) as mock_service:
             mock_service.download_report.return_value = {
-                "id": "run-1", "file_name": "report.html", "download_url": "https://example.com/report.html"
+                "id": "run-1",
+                "file_name": "report.html",
+                "download_url": "https://example.com/report.html",
             }
 
-            response = client.get("/api/v1/reports/report-1/download/run-1", headers={"Authorization": "Bearer test"})
+            response = client.get(
+                "/api/v1/reports/report-1/download/run-1",
+                headers={"Authorization": "Bearer test"},
+            )
             assert response.status_code == 200
             data = response.json()
             assert "download_url" in data
@@ -387,15 +456,23 @@ class TestReportRouter:
 
 # ── Celery Task Tests ──────────────────────────────────────────────
 
+
 class TestReportTasks:
     """Tests for report Celery tasks."""
 
     def test_generate_scheduled_reports(self):
         """Test the generate_scheduled_reports task."""
         mock_client = MagicMock()
-        mock_query = build_mock_query_chain([
-            {"id": "report-1", "user_id": "user-1", "schedule": "0 9 * * 1", "name": "Weekly"}
-        ])
+        mock_query = build_mock_query_chain(
+            [
+                {
+                    "id": "report-1",
+                    "user_id": "user-1",
+                    "schedule": "0 9 * * 1",
+                    "name": "Weekly",
+                }
+            ]
+        )
         mock_client.table.return_value = MagicMock(
             select=MagicMock(return_value=mock_query),
             insert=MagicMock(return_value=mock_query),
@@ -403,11 +480,16 @@ class TestReportTasks:
             delete=MagicMock(return_value=mock_query),
         )
 
-        with patch("app.core.supabase.get_supabase_admin_client", return_value=mock_client), \
-             patch("app.tasks.reports.report_service") as mock_service:
-            mock_service.generate_report.return_value = {"id": "run-1", "status": "completed"}
+        with patch(
+            "app.core.supabase.get_supabase_admin_client", return_value=mock_client
+        ), patch("app.tasks.reports.report_service") as mock_service:
+            mock_service.generate_report.return_value = {
+                "id": "run-1",
+                "status": "completed",
+            }
 
             from app.tasks.reports import generate_scheduled_reports
+
             result = generate_scheduled_reports()
             assert result["success"] is True
             assert result["generated"] == 1
@@ -415,9 +497,13 @@ class TestReportTasks:
     def test_generate_single_report_task(self):
         """Test the generate_single_report task."""
         with patch("app.tasks.reports.report_service") as mock_service:
-            mock_service.generate_report.return_value = {"id": "run-1", "status": "completed"}
+            mock_service.generate_report.return_value = {
+                "id": "run-1",
+                "status": "completed",
+            }
 
             from app.tasks.reports import generate_single_report
+
             result = generate_single_report("report-1", "user-1")
             assert result["success"] is True
 
@@ -432,8 +518,11 @@ class TestReportTasks:
             delete=MagicMock(return_value=mock_query),
         )
 
-        with patch("app.core.supabase.get_supabase_admin_client", return_value=mock_client):
+        with patch(
+            "app.core.supabase.get_supabase_admin_client", return_value=mock_client
+        ):
             from app.tasks.reports import cleanup_old_report_runs
+
             result = cleanup_old_report_runs(days=90)
             assert result["success"] is True
             assert result["deleted"] == 2

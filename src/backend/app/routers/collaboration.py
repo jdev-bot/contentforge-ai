@@ -5,6 +5,7 @@ Provides HTTP endpoints for querying collaboration state
 (edit history, locks, cursors). Real-time editing flows
 through the WebSocket channel (app/routers/ws.py).
 """
+
 import logging
 from typing import Optional
 
@@ -44,7 +45,9 @@ async def get_edit_history(
     user=Depends(get_auth_user),
 ):
     """Get recent edit operations for a content item."""
-    edits = collaboration_service.get_edit_history(content_id, limit=limit, offset=offset)
+    edits = collaboration_service.get_edit_history(
+        content_id, limit=limit, offset=offset
+    )
     version = collaboration_service.get_current_version(content_id)
     return EditHistoryResponse(
         content_id=content_id,

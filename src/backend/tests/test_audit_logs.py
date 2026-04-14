@@ -1,13 +1,14 @@
 """
 Tests for Audit Logs service and router.
 """
+
 import pytest
 from datetime import datetime, timezone
 from uuid import uuid4
 from unittest.mock import Mock, patch, MagicMock
 
-
 # ── Fixtures ──
+
 
 @pytest.fixture
 def mock_user():
@@ -28,6 +29,7 @@ def mock_supabase():
 @pytest.fixture
 def audit_svc(mock_supabase):
     from app.services.audit_service import AuditService
+
     svc = AuditService()
     svc.supabase = mock_supabase
     return svc
@@ -51,6 +53,7 @@ def sample_audit_log():
 
 # ── Service Tests ──
 
+
 class TestAuditService:
     """Tests for the AuditService class."""
 
@@ -58,19 +61,23 @@ class TestAuditService:
         """Test creating an audit log entry."""
         log_id = str(uuid4())
         mock_response = Mock()
-        mock_response.data = [{
-            "id": log_id,
-            "actor_id": str(mock_user.id),
-            "actor_email": mock_user.email,
-            "action": "content.created",
-            "resource_type": "content",
-            "resource_id": str(uuid4()),
-            "details": {"title": "Test"},
-            "ip_address": "127.0.0.1",
-            "user_agent": "TestAgent/1.0",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }]
-        mock_supabase.table.return_value.insert.return_value.execute.return_value = mock_response
+        mock_response.data = [
+            {
+                "id": log_id,
+                "actor_id": str(mock_user.id),
+                "actor_email": mock_user.email,
+                "action": "content.created",
+                "resource_type": "content",
+                "resource_id": str(uuid4()),
+                "details": {"title": "Test"},
+                "ip_address": "127.0.0.1",
+                "user_agent": "TestAgent/1.0",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        ]
+        mock_supabase.table.return_value.insert.return_value.execute.return_value = (
+            mock_response
+        )
 
         result = audit_svc.log(
             actor_id=str(mock_user.id),
@@ -90,19 +97,23 @@ class TestAuditService:
     def test_log_with_minimal_fields(self, audit_svc, mock_supabase, mock_user):
         """Test creating an audit log with only required fields."""
         mock_response = Mock()
-        mock_response.data = [{
-            "id": str(uuid4()),
-            "actor_id": str(mock_user.id),
-            "actor_email": "",
-            "action": "user.login",
-            "resource_type": "session",
-            "resource_id": str(uuid4()),
-            "details": {},
-            "ip_address": None,
-            "user_agent": None,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }]
-        mock_supabase.table.return_value.insert.return_value.execute.return_value = mock_response
+        mock_response.data = [
+            {
+                "id": str(uuid4()),
+                "actor_id": str(mock_user.id),
+                "actor_email": "",
+                "action": "user.login",
+                "resource_type": "session",
+                "resource_id": str(uuid4()),
+                "details": {},
+                "ip_address": None,
+                "user_agent": None,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        ]
+        mock_supabase.table.return_value.insert.return_value.execute.return_value = (
+            mock_response
+        )
 
         result = audit_svc.log(
             actor_id=str(mock_user.id),
@@ -133,7 +144,9 @@ class TestAuditService:
             }
         ]
         # Set up chained query
-        chain = mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value
+        chain = (
+            mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value
+        )
         chain.eq.return_value.range.return_value.execute.return_value = mock_response
 
         result = audit_svc.list_logs(
@@ -148,8 +161,12 @@ class TestAuditService:
         """Test listing audit logs with date range filtering."""
         mock_response = Mock()
         mock_response.data = []
-        chain = mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value
-        chain.gte.return_value.lte.return_value.range.return_value.execute.return_value = mock_response
+        chain = (
+            mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value
+        )
+        chain.gte.return_value.lte.return_value.range.return_value.execute.return_value = (
+            mock_response
+        )
 
         result = audit_svc.list_logs(
             user_id=str(mock_user.id),
@@ -163,7 +180,9 @@ class TestAuditService:
         """Test getting a specific audit log entry."""
         mock_response = Mock()
         mock_response.data = sample_audit_log
-        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.single.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.single.return_value.execute.return_value = (
+            mock_response
+        )
 
         result = audit_svc.get_log(sample_audit_log["id"], str(mock_user.id))
         assert result is not None
@@ -173,7 +192,9 @@ class TestAuditService:
         """Test getting a log that doesn't exist returns None."""
         mock_response = Mock()
         mock_response.data = None
-        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.single.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.single.return_value.execute.return_value = (
+            mock_response
+        )
 
         result = audit_svc.get_log(str(uuid4()), str(mock_user.id))
         assert result is None
@@ -187,7 +208,9 @@ class TestAuditService:
             {"action": "content.updated"},
             {"action": "user.login"},
         ]
-        mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value = (
+            mock_response
+        )
 
         result = audit_svc.get_stats(user_id=str(mock_user.id))
 
@@ -202,7 +225,9 @@ class TestAuditService:
         mock_response.data = [
             {"action": "content.created"},
         ]
-        mock_supabase.table.return_value.select.return_value.eq.return_value.gte.return_value.lte.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.select.return_value.eq.return_value.gte.return_value.lte.return_value.execute.return_value = (
+            mock_response
+        )
 
         result = audit_svc.get_stats(
             user_id=str(mock_user.id),
@@ -232,7 +257,9 @@ class TestAuditService:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         ]
-        mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = (
+            mock_response
+        )
 
         csv_output = audit_svc.export_csv(user_id=str(mock_user.id))
 
@@ -245,7 +272,9 @@ class TestAuditService:
         """Test exporting audit logs as CSV with filters."""
         mock_response = Mock()
         mock_response.data = []
-        mock_supabase.table.return_value.select.return_value.eq.return_value.gte.return_value.lte.return_value.eq.return_value.order.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.select.return_value.eq.return_value.gte.return_value.lte.return_value.eq.return_value.order.return_value.execute.return_value = (
+            mock_response
+        )
 
         csv_output = audit_svc.export_csv(
             user_id=str(mock_user.id),
@@ -260,7 +289,9 @@ class TestAuditService:
         """Test cleaning up expired audit logs."""
         mock_response = Mock()
         mock_response.data = [{"id": str(uuid4())}, {"id": str(uuid4())}]
-        mock_supabase.table.return_value.delete.return_value.lt.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.delete.return_value.lt.return_value.execute.return_value = (
+            mock_response
+        )
 
         deleted_count = audit_svc.cleanup_expired(retention_days=90)
 
@@ -270,7 +301,9 @@ class TestAuditService:
         """Test cleaning up expired audit logs scoped to an organization."""
         mock_response = Mock()
         mock_response.data = [{"id": str(uuid4())}]
-        mock_supabase.table.return_value.delete.return_value.lt.return_value.eq.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.delete.return_value.lt.return_value.eq.return_value.execute.return_value = (
+            mock_response
+        )
 
         deleted_count = audit_svc.cleanup_expired(
             organization_id="org-123",
@@ -281,6 +314,7 @@ class TestAuditService:
 
 
 # ── Router Tests ──
+
 
 class TestAuditLogsRouter:
     """Tests for the audit logs router endpoints."""
@@ -371,7 +405,9 @@ class TestAuditLogsRouter:
     def test_export_audit_logs_endpoint(self, client, mock_user):
         """Test GET /api/v1/audit-logs/export."""
         with patch("app.routers.audit_logs.audit_service") as mock_svc:
-            mock_svc.export_csv.return_value = "id,actor_id,actor_email,action\n1,test,user@test.com,content.created\n"
+            mock_svc.export_csv.return_value = (
+                "id,actor_id,actor_email,action\n1,test,user@test.com,content.created\n"
+            )
 
             response = client.get("/api/v1/audit-logs/export")
 

@@ -8,6 +8,7 @@ Endpoints:
 - POST   /api/v1/quality/batch                 — Batch analyze multiple items
 - GET    /api/v1/quality/suggestions/{content_id} — Get improvement suggestions
 """
+
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -15,8 +16,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app.core.rate_limit import (UsageStats, check_and_increment_usage,
-                                 enforce_subscription_limit)
+from app.core.rate_limit import (
+    UsageStats,
+    check_and_increment_usage,
+    enforce_subscription_limit,
+)
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.quality_service import quality_service
@@ -26,14 +30,19 @@ router = APIRouter()
 
 # ---------- Request / Response models ---------- #
 
+
 class QualityAnalyzeRequest(BaseModel):
     """Request body for quality analysis of raw text."""
+
     text: str = Field(..., min_length=10, description="Content text to analyze")
-    brand_voice: Optional[Dict[str, Any]] = Field(default=None, description="Brand voice reference for brand consistency scoring")
+    brand_voice: Optional[Dict[str, Any]] = Field(
+        default=None, description="Brand voice reference for brand consistency scoring"
+    )
 
 
 class QualityBatchItem(BaseModel):
     """Single item in a batch analysis request."""
+
     content_id: UUID
     text: str = Field(..., min_length=10)
     brand_voice: Optional[Dict[str, Any]] = None
@@ -41,11 +50,13 @@ class QualityBatchItem(BaseModel):
 
 class QualityBatchRequest(BaseModel):
     """Batch quality analysis request."""
+
     items: List[QualityBatchItem] = Field(..., min_length=1, max_length=50)
 
 
 class QualityScoreResponse(BaseModel):
     """Response model for a quality score."""
+
     id: Optional[UUID] = None
     content_id: Optional[UUID] = None
     overall_score: int = Field(..., ge=0, le=100)
@@ -60,17 +71,20 @@ class QualityScoreResponse(BaseModel):
 
 class QualityHistoryResponse(BaseModel):
     """Response for quality score history."""
+
     content_id: UUID
     history: List[QualityScoreResponse]
 
 
 class QualitySuggestionsResponse(BaseModel):
     """Response for improvement suggestions."""
+
     content_id: UUID
     suggestions: List[str]
 
 
 # ---------- Endpoints ---------- #
+
 
 @router.post("/quality/analyze", response_model=QualityScoreResponse)
 async def analyze_quality(
@@ -134,7 +148,9 @@ async def get_quality_history(
     """Get quality score history over time for a content item."""
     try:
         history = await quality_service.get_history(
-            content_id=content_id, user_id=user.id, limit=limit,
+            content_id=content_id,
+            user_id=user.id,
+            limit=limit,
         )
         return QualityHistoryResponse(
             content_id=content_id,
@@ -167,7 +183,9 @@ async def batch_analyze_quality(
         )
 
 
-@router.get("/quality/suggestions/{content_id}", response_model=QualitySuggestionsResponse)
+@router.get(
+    "/quality/suggestions/{content_id}", response_model=QualitySuggestionsResponse
+)
 async def get_quality_suggestions(
     content_id: UUID,
     user=Depends(get_auth_user),
@@ -175,7 +193,8 @@ async def get_quality_suggestions(
     """Get improvement suggestions for a content item."""
     try:
         suggestions = await quality_service.get_suggestions(
-            content_id=content_id, user_id=user.id,
+            content_id=content_id,
+            user_id=user.id,
         )
         return QualitySuggestionsResponse(
             content_id=content_id,

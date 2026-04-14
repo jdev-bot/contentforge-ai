@@ -3,6 +3,7 @@ Version History Service
 
 Handles version creation, diff computation, restoration, and auto-versioning for content items.
 """
+
 import difflib
 import logging
 from datetime import datetime, timezone
@@ -172,12 +173,16 @@ class VersionService:
 
         if format == "html":
             differ = difflib.HtmlDiff()
-            diff_output = differ.make_table(lines1, lines2,
-                                            fromdesc=f"v{v1['version_number']}",
-                                            todesc=f"v{v2['version_number']}")
+            diff_output = differ.make_table(
+                lines1,
+                lines2,
+                fromdesc=f"v{v1['version_number']}",
+                todesc=f"v{v2['version_number']}",
+            )
         else:
             diff_lines = difflib.unified_diff(
-                lines1, lines2,
+                lines1,
+                lines2,
                 fromfile=f"v{v1['version_number']}",
                 tofile=f"v{v2['version_number']}",
                 lineterm="",
@@ -211,11 +216,13 @@ class VersionService:
             raise ValueError("Version not found")
 
         # Update the content record
-        self.supabase.table("content").update({
-            "title": version["title"],
-            "original_text": version["body"],
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("id", content_id).eq("user_id", user_id).execute()
+        self.supabase.table("content").update(
+            {
+                "title": version["title"],
+                "original_text": version["body"],
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ).eq("id", content_id).eq("user_id", user_id).execute()
 
         # Create a new version reflecting the restoration
         restored_version = self.create_version(
@@ -276,7 +283,11 @@ class VersionService:
             .eq("user_id", user_id)
             .execute()
         )
-        total = count_result.count if hasattr(count_result, "count") and count_result.count else len(count_result.data or [])
+        total = (
+            count_result.count
+            if hasattr(count_result, "count") and count_result.count
+            else len(count_result.data or [])
+        )
 
         if total > MAX_VERSIONS_PER_CONTENT:
             # Get IDs of the oldest versions to delete
@@ -291,7 +302,9 @@ class VersionService:
                 .execute()
             )
             for row in oldest.data or []:
-                self.supabase.table("content_versions").delete().eq("id", row["id"]).execute()
+                self.supabase.table("content_versions").delete().eq(
+                    "id", row["id"]
+                ).execute()
 
 
 # Global service instance

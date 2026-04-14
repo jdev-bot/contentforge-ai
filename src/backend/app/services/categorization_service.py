@@ -2,6 +2,7 @@
 Smart Categorization service for ContentForge AI.
 Auto-categorizes and tags content using AI, supports content clustering.
 """
+
 import json
 import logging
 from datetime import datetime, timezone
@@ -19,25 +20,70 @@ class CategorizationService:
 
     # Predefined categories for classification
     DEFAULT_CATEGORIES = [
-        "technology", "business", "marketing", "finance", "health",
-        "education", "entertainment", "lifestyle", "science", "politics",
-        "sports", "travel", "food", "fashion", "design", "productivity",
-        "career", "startups", "ai_ml", "cybersecurity", "sustainability",
+        "technology",
+        "business",
+        "marketing",
+        "finance",
+        "health",
+        "education",
+        "entertainment",
+        "lifestyle",
+        "science",
+        "politics",
+        "sports",
+        "travel",
+        "food",
+        "fashion",
+        "design",
+        "productivity",
+        "career",
+        "startups",
+        "ai_ml",
+        "cybersecurity",
+        "sustainability",
     ]
 
     # Predefined format types
     CONTENT_FORMATS = [
-        "how_to", "listicle", "opinion", "case_study", "interview",
-        "tutorial", "news", "review", "comparison", "thought_leadership",
-        "announcement", "story", "guide", "analysis", "faq",
+        "how_to",
+        "listicle",
+        "opinion",
+        "case_study",
+        "interview",
+        "tutorial",
+        "news",
+        "review",
+        "comparison",
+        "thought_leadership",
+        "announcement",
+        "story",
+        "guide",
+        "analysis",
+        "faq",
     ]
 
     # Predefined industry verticals
     INDUSTRY_VERTICALS = [
-        "saas", "ecommerce", "fintech", "healthtech", "edtech",
-        "martech", "proptech", "cleantech", "agritech", "legaltech",
-        "general", "media", "healthcare", "finance", "education",
-        "technology", "real_estate", "automotive", "retail", "manufacturing",
+        "saas",
+        "ecommerce",
+        "fintech",
+        "healthtech",
+        "edtech",
+        "martech",
+        "proptech",
+        "cleantech",
+        "agritech",
+        "legaltech",
+        "general",
+        "media",
+        "healthcare",
+        "finance",
+        "education",
+        "technology",
+        "real_estate",
+        "automotive",
+        "retail",
+        "manufacturing",
     ]
 
     def __init__(self):
@@ -84,7 +130,10 @@ class CategorizationService:
             content_text = content.get("original_text") or content.get("title", "")
 
             if not content_text:
-                return {"error": "No text content available for categorization", "content_id": content_id}
+                return {
+                    "error": "No text content available for categorization",
+                    "content_id": content_id,
+                }
 
             # Use AI for categorization
             categorization = await self._ai_categorize(content_text)
@@ -128,7 +177,9 @@ class CategorizationService:
                 query = query.in_("id", content_ids)
             elif uncategorized_only:
                 # Content without category or with generic category
-                query = query.is_("category", "null").or_("category.eq.uncategorized,category.eq.general,category.eq.")
+                query = query.is_("category", "null").or_(
+                    "category.eq.uncategorized,category.eq.general,category.eq."
+                )
 
             query = query.limit(limit)
             result = query.execute()
@@ -203,7 +254,10 @@ class CategorizationService:
             content_text = content.get("original_text") or content.get("title", "")
 
             if not content_text:
-                return {"error": "No text content available for tagging", "content_id": content_id}
+                return {
+                    "error": "No text content available for tagging",
+                    "content_id": content_id,
+                }
 
             # Use AI for tagging
             tags = await self._ai_tag(content_text, max_tags)
@@ -220,7 +274,9 @@ class CategorizationService:
             if isinstance(existing_tags, str):
                 existing_tags = json.loads(existing_tags) if existing_tags else []
             new_tags = list(set(existing_tags + tags.get("tags", [])))
-            self.supabase.table("content").update({"tags": new_tags}).eq("id", content_id).execute()
+            self.supabase.table("content").update({"tags": new_tags}).eq(
+                "id", content_id
+            ).execute()
 
             return saved or tags
 
@@ -276,15 +332,23 @@ class CategorizationService:
                     # Update content tags
                     existing_tags = item.get("tags", [])
                     if isinstance(existing_tags, str):
-                        existing_tags = json.loads(existing_tags) if existing_tags else []
+                        existing_tags = (
+                            json.loads(existing_tags) if existing_tags else []
+                        )
                     new_tags = list(set(existing_tags + tags.get("tags", [])))
-                    self.supabase.table("content").update({"tags": new_tags}).eq("id", item["id"]).execute()
+                    self.supabase.table("content").update({"tags": new_tags}).eq(
+                        "id", item["id"]
+                    ).execute()
                     results.append(saved or tags)
                 except Exception as e:
                     logger.error(f"Failed to tag content {item['id']}: {e}")
                     continue
 
-            return {"total": len(content_items), "tagged": len(results), "results": results}
+            return {
+                "total": len(content_items),
+                "tagged": len(results),
+                "results": results,
+            }
 
         except Exception as e:
             logger.error(f"Batch auto-tag failed: {e}")
@@ -323,7 +387,9 @@ class CategorizationService:
                 title = item.get("title", "Untitled")
                 text = (item.get("original_text") or "")[:200]
                 category = item.get("category", "unknown")
-                content_summaries.append(f"ID: {item['id']} | Title: {title} | Category: {category} | Excerpt: {text}")
+                content_summaries.append(
+                    f"ID: {item['id']} | Title: {title} | Category: {category} | Excerpt: {text}"
+                )
 
             content_list = "\n".join(content_summaries)
 
@@ -383,7 +449,12 @@ Format your response as JSON:
             except Exception as e:
                 logger.error(f"Failed to save clusters: {e}")
 
-            cache.set(cache_key, response, ttl=CACHE_TTL.get("analytics", 300), prefix=f"categorization:{user_id}")
+            cache.set(
+                cache_key,
+                response,
+                ttl=CACHE_TTL.get("analytics", 300),
+                prefix=f"categorization:{user_id}",
+            )
 
             return response
 
@@ -638,11 +709,15 @@ Format your response as JSON:
                 "format": categorization.get("format", "how_to"),
                 "sub_topics": categorization.get("sub_topics", []),
                 "relevance_score": categorization.get("relevance_score", 50),
-                "target_audience": categorization.get("target_audience", "General audience"),
+                "target_audience": categorization.get(
+                    "target_audience", "General audience"
+                ),
                 "tone": categorization.get("tone", "professional"),
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
-            result = self.supabase.table("content_categorizations").insert(data).execute()
+            result = (
+                self.supabase.table("content_categorizations").insert(data).execute()
+            )
             cache.delete_pattern("", prefix=f"categorization:{user_id}")
             return result.data[0] if result.data else None
         except Exception as e:
@@ -685,18 +760,24 @@ Format your response as JSON:
                 "category": categorization.get("category", "general"),
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }
-            self.supabase.table("content").update(update_data).eq("id", content_id).execute()
+            self.supabase.table("content").update(update_data).eq(
+                "id", content_id
+            ).execute()
             return True
         except Exception as e:
             logger.error(f"Failed to update content metadata: {e}")
             return False
 
-    async def _get_user_content(self, user_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+    async def _get_user_content(
+        self, user_id: str, limit: int = 100
+    ) -> List[Dict[str, Any]]:
         """Get user's content for clustering analysis."""
         try:
             result = (
                 self.supabase.table("content")
-                .select("id, title, original_text, category, tags, platform, created_at")
+                .select(
+                    "id, title, original_text, category, tags, platform, created_at"
+                )
                 .eq("user_id", user_id)
                 .order("created_at", desc=True)
                 .limit(limit)

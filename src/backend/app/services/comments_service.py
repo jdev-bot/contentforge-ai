@@ -8,6 +8,7 @@ Provides:
 - Comment mentions (@user)
 - Comment reactions (emoji reactions)
 """
+
 import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -73,7 +74,9 @@ class CommentsService:
             if position_end < position_start:
                 raise ValueError("position_end must be >= position_start")
         if (position_start is None) != (position_end is None):
-            raise ValueError("position_start and position_end must both be provided or both omitted")
+            raise ValueError(
+                "position_start and position_end must both be provided or both omitted"
+            )
 
         # Extract mentions
         mentions = self._extract_mentions(text)
@@ -169,7 +172,9 @@ class CommentsService:
         total = count_result.count or 0
 
         offset = (page - 1) * page_size
-        result = query.order("created_at").range(offset, offset + page_size - 1).execute()
+        result = (
+            query.order("created_at").range(offset, offset + page_size - 1).execute()
+        )
 
         # Enrich with mentions
         items = []
@@ -203,7 +208,9 @@ class CommentsService:
             # Re-extract mentions
             new_mentions = self._extract_mentions(text)
             # Replace mentions
-            self.supabase.table("comment_mentions").delete().eq("comment_id", comment_id).execute()
+            self.supabase.table("comment_mentions").delete().eq(
+                "comment_id", comment_id
+            ).execute()
             if new_mentions:
                 self._store_mentions(comment_id, new_mentions)
             updates["mentions"] = new_mentions
@@ -229,8 +236,12 @@ class CommentsService:
             return False
 
         # Delete mentions and reactions first
-        self.supabase.table("comment_mentions").delete().eq("comment_id", comment_id).execute()
-        self.supabase.table("comment_reactions").delete().eq("comment_id", comment_id).execute()
+        self.supabase.table("comment_mentions").delete().eq(
+            "comment_id", comment_id
+        ).execute()
+        self.supabase.table("comment_reactions").delete().eq(
+            "comment_id", comment_id
+        ).execute()
         self.supabase.table("content_comments").delete().eq("id", comment_id).execute()
         return True
 
@@ -278,7 +289,9 @@ class CommentsService:
 
     # ── Resolution ────────────────────────────────────────────────
 
-    def resolve_comment(self, comment_id: str, user_id: UUID) -> Optional[Dict[str, Any]]:
+    def resolve_comment(
+        self, comment_id: str, user_id: UUID
+    ) -> Optional[Dict[str, Any]]:
         """Mark a comment as resolved."""
         # Verify user owns the content this comment belongs to
         comment = (
@@ -304,18 +317,22 @@ class CommentsService:
 
         result = (
             self.supabase.table("content_comments")
-            .update({
-                "is_resolved": True,
-                "resolved_at": datetime.now().isoformat(),
-                "resolved_by": str(user_id),
-                "updated_at": datetime.now().isoformat(),
-            })
+            .update(
+                {
+                    "is_resolved": True,
+                    "resolved_at": datetime.now().isoformat(),
+                    "resolved_by": str(user_id),
+                    "updated_at": datetime.now().isoformat(),
+                }
+            )
             .eq("id", comment_id)
             .execute()
         )
         return result.data[0] if result.data else None
 
-    def unresolve_comment(self, comment_id: str, user_id: UUID) -> Optional[Dict[str, Any]]:
+    def unresolve_comment(
+        self, comment_id: str, user_id: UUID
+    ) -> Optional[Dict[str, Any]]:
         """Mark a comment as unresolved (reopen)."""
         comment = (
             self.supabase.table("content_comments")
@@ -340,12 +357,14 @@ class CommentsService:
 
         result = (
             self.supabase.table("content_comments")
-            .update({
-                "is_resolved": False,
-                "resolved_at": None,
-                "resolved_by": None,
-                "updated_at": datetime.now().isoformat(),
-            })
+            .update(
+                {
+                    "is_resolved": False,
+                    "resolved_at": None,
+                    "resolved_by": None,
+                    "updated_at": datetime.now().isoformat(),
+                }
+            )
             .eq("id", comment_id)
             .execute()
         )
@@ -389,11 +408,17 @@ class CommentsService:
         if existing.data:
             return existing.data[0]
 
-        result = self.supabase.table("comment_reactions").insert({
-            "comment_id": comment_id,
-            "user_id": str(user_id),
-            "emoji": emoji,
-        }).execute()
+        result = (
+            self.supabase.table("comment_reactions")
+            .insert(
+                {
+                    "comment_id": comment_id,
+                    "user_id": str(user_id),
+                    "emoji": emoji,
+                }
+            )
+            .execute()
+        )
         return result.data[0]
 
     def remove_reaction(
@@ -427,7 +452,10 @@ class CommentsService:
             emoji = r["emoji"]
             grouped.setdefault(emoji, []).append(r["user_id"])
 
-        return [{"emoji": e, "user_ids": uids, "count": len(uids)} for e, uids in grouped.items()]
+        return [
+            {"emoji": e, "user_ids": uids, "count": len(uids)}
+            for e, uids in grouped.items()
+        ]
 
     # ── Internal ──────────────────────────────────────────────────
 

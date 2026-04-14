@@ -8,6 +8,7 @@ Endpoints:
 - GET    /api/v1/sentiment/trends/{content_id}   — Get sentiment trends over time
 - GET    /api/v1/sentiment/distribution          — Get sentiment distribution across all content
 """
+
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -15,8 +16,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app.core.rate_limit import (UsageStats, check_and_increment_usage,
-                                 enforce_subscription_limit)
+from app.core.rate_limit import (
+    UsageStats,
+    check_and_increment_usage,
+    enforce_subscription_limit,
+)
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.sentiment_service import sentiment_service
@@ -26,24 +30,29 @@ router = APIRouter()
 
 # ---------- Request / Response models ---------- #
 
+
 class SentimentAnalyzeRequest(BaseModel):
     """Request body for sentiment analysis of raw text."""
+
     text: str = Field(..., min_length=5, description="Text to analyze for sentiment")
 
 
 class SentimentBatchItem(BaseModel):
     """Single item in a batch sentiment analysis."""
+
     content_id: UUID
     text: str = Field(..., min_length=5)
 
 
 class SentimentBatchRequest(BaseModel):
     """Batch sentiment analysis request."""
+
     items: List[SentimentBatchItem] = Field(..., min_length=1, max_length=50)
 
 
 class EmotionScores(BaseModel):
     """Emotion detection scores 0-1."""
+
     joy: float = Field(..., ge=0.0, le=1.0)
     anger: float = Field(..., ge=0.0, le=1.0)
     sadness: float = Field(..., ge=0.0, le=1.0)
@@ -54,6 +63,7 @@ class EmotionScores(BaseModel):
 
 class AspectSentiment(BaseModel):
     """Aspect-based sentiment for a section/paragraph."""
+
     section: str
     sentiment: str
     score: float = Field(..., ge=-1.0, le=1.0)
@@ -61,30 +71,38 @@ class AspectSentiment(BaseModel):
 
 class SentimentResponse(BaseModel):
     """Response model for sentiment analysis."""
+
     id: Optional[UUID] = None
     content_id: Optional[UUID] = None
     sentiment: str = Field(..., description="positive, negative, neutral, or mixed")
-    score: float = Field(..., ge=-1.0, le=1.0, description="Sentiment score -1.0 to +1.0")
+    score: float = Field(
+        ..., ge=-1.0, le=1.0, description="Sentiment score -1.0 to +1.0"
+    )
     emotions: EmotionScores
     aspects: List[AspectSentiment] = []
-    tone: str = Field(..., description="formal, casual, urgent, persuasive, or informative")
+    tone: str = Field(
+        ..., description="formal, casual, urgent, persuasive, or informative"
+    )
     created_at: Optional[datetime] = None
 
 
 class SentimentTrendsResponse(BaseModel):
     """Response for sentiment trends."""
+
     content_id: UUID
     trends: List[SentimentResponse]
 
 
 class SentimentDistributionResponse(BaseModel):
     """Response for sentiment distribution."""
+
     total_analyses: int
     distribution: Dict[str, int]
     percentages: Dict[str, float]
 
 
 # ---------- Endpoints ---------- #
+
 
 @router.post("/sentiment/analyze", response_model=SentimentResponse)
 async def analyze_sentiment(
@@ -121,7 +139,8 @@ async def get_content_sentiment(
     """Get sentiment analysis for existing content."""
     try:
         analysis = await sentiment_service.get_analysis(
-            content_id=content_id, user_id=user.id,
+            content_id=content_id,
+            user_id=user.id,
         )
         if analysis is None:
             raise HTTPException(
@@ -130,8 +149,11 @@ async def get_content_sentiment(
             )
         emotions = EmotionScores(**analysis["emotions"])
         aspects = [AspectSentiment(**a) for a in analysis.get("aspects", [])]
-        return SentimentResponse(**{k: v for k, v in analysis.items() if k != "emotions" and k != "aspects"},
-                                  emotions=emotions, aspects=aspects)
+        return SentimentResponse(
+            **{k: v for k, v in analysis.items() if k != "emotions" and k != "aspects"},
+            emotions=emotions,
+            aspects=aspects,
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -185,22 +207,26 @@ async def get_sentiment_trends(
     """Get sentiment trends over time for a content item."""
     try:
         trends = await sentiment_service.get_trends(
-            content_id=content_id, user_id=user.id, limit=limit,
+            content_id=content_id,
+            user_id=user.id,
+            limit=limit,
         )
         trend_responses = []
         for t in trends:
             emotions = EmotionScores(**t["emotions"])
             aspects = [AspectSentiment(**a) for a in t.get("aspects", [])]
-            trend_responses.append(SentimentResponse(
-                id=t.get("id"),
-                content_id=t.get("content_id"),
-                sentiment=t["sentiment"],
-                score=t["score"],
-                emotions=emotions,
-                aspects=aspects,
-                tone=t["tone"],
-                created_at=t.get("created_at"),
-            ))
+            trend_responses.append(
+                SentimentResponse(
+                    id=t.get("id"),
+                    content_id=t.get("content_id"),
+                    sentiment=t["sentiment"],
+                    score=t["score"],
+                    emotions=emotions,
+                    aspects=aspects,
+                    tone=t["tone"],
+                    created_at=t.get("created_at"),
+                )
+            )
         return SentimentTrendsResponse(content_id=content_id, trends=trend_responses)
     except Exception as e:
         raise HTTPException(

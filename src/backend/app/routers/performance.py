@@ -1,6 +1,7 @@
 """
 Performance Analytics router for content performance tracking and analysis.
 """
+
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -18,16 +19,23 @@ router = APIRouter()
 #  Request / Response Models                                           #
 # ------------------------------------------------------------------ #
 
+
 class TrackEventRequest(BaseModel):
     """Request body for tracking a performance event."""
+
     content_id: UUID = Field(..., description="Content piece ID")
-    event_type: str = Field(..., description="Event type: view, share, comment, conversion")
+    event_type: str = Field(
+        ..., description="Event type: view, share, comment, conversion"
+    )
     value: int = Field(default=1, ge=1, description="Numeric value of the event")
-    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Optional metadata")
+    metadata: Optional[Dict[str, Any]] = Field(
+        default=None, description="Optional metadata"
+    )
 
 
 class TrackEventResponse(BaseModel):
     """Response after tracking a performance event."""
+
     id: Optional[str] = None
     content_id: str
     event_type: str
@@ -38,6 +46,7 @@ class TrackEventResponse(BaseModel):
 
 class OverviewResponse(BaseModel):
     """Response for overall performance summary."""
+
     total_views: int
     total_shares: int
     total_comments: int
@@ -52,6 +61,7 @@ class OverviewResponse(BaseModel):
 
 class ContentMetricsResponse(BaseModel):
     """Response for per-content performance metrics."""
+
     content_id: str
     title: str
     status: Optional[str] = None
@@ -65,12 +75,14 @@ class ContentMetricsResponse(BaseModel):
 
 class FunnelStage(BaseModel):
     """Single funnel stage."""
+
     name: str
     count: int
 
 
 class FunnelResponse(BaseModel):
     """Response for funnel analysis."""
+
     stages: List[FunnelStage]
     conversion_rates: Dict[str, float]
     overall_conversion_rate: float
@@ -79,6 +91,7 @@ class FunnelResponse(BaseModel):
 
 class CohortEntry(BaseModel):
     """Single cohort bucket."""
+
     cohort: str
     content_count: int
     metrics: Dict[str, int]
@@ -90,6 +103,7 @@ class CohortEntry(BaseModel):
 
 class CohortResponse(BaseModel):
     """Response for cohort analysis."""
+
     cohorts: List[CohortEntry]
     cohort_size: str
     periods: int
@@ -97,6 +111,7 @@ class CohortResponse(BaseModel):
 
 class AttributionByType(BaseModel):
     """Attribution by content source type."""
+
     source_type: str
     conversions: int
     value: int
@@ -105,6 +120,7 @@ class AttributionByType(BaseModel):
 
 class AttributionByPlatform(BaseModel):
     """Attribution by distribution platform."""
+
     platform: str
     conversions: int
     value: int
@@ -112,6 +128,7 @@ class AttributionByPlatform(BaseModel):
 
 class TopConverter(BaseModel):
     """Top converting content piece."""
+
     content_id: str
     title: str
     source_type: str
@@ -121,6 +138,7 @@ class TopConverter(BaseModel):
 
 class AttributionResponse(BaseModel):
     """Response for attribution data."""
+
     total_conversions: int
     total_value: int
     by_content: List[Dict[str, Any]]
@@ -132,6 +150,7 @@ class AttributionResponse(BaseModel):
 
 class TrendDataPoint(BaseModel):
     """Single data point in a trend series."""
+
     period: str
     views: int = 0
     shares: int = 0
@@ -142,6 +161,7 @@ class TrendDataPoint(BaseModel):
 
 class TrendsResponse(BaseModel):
     """Response for performance trends."""
+
     granularity: str
     period_days: int
     series: List[TrendDataPoint]
@@ -151,6 +171,7 @@ class TrendsResponse(BaseModel):
 # ------------------------------------------------------------------ #
 #  Endpoints                                                           #
 # ------------------------------------------------------------------ #
+
 
 @router.post("/performance/track", response_model=TrackEventResponse)
 async def track_performance_event(
@@ -192,7 +213,9 @@ async def track_performance_event(
 
 @router.get("/performance/overview", response_model=OverviewResponse)
 async def get_performance_overview(
-    days: int = Query(default=30, ge=1, le=365, description="Number of days to analyze"),
+    days: int = Query(
+        default=30, ge=1, le=365, description="Number of days to analyze"
+    ),
     user=Depends(get_auth_user),
 ):
     """
@@ -222,7 +245,8 @@ async def get_content_performance(
     """
     try:
         metrics = await performance_service.get_content_metrics(
-            content_id=content_id, user_id=user.id,
+            content_id=content_id,
+            user_id=user.id,
         )
         if metrics is None:
             raise HTTPException(
@@ -241,7 +265,9 @@ async def get_content_performance(
 
 @router.get("/performance/funnel", response_model=FunnelResponse)
 async def get_performance_funnel(
-    days: int = Query(default=30, ge=1, le=365, description="Number of days to analyze"),
+    days: int = Query(
+        default=30, ge=1, le=365, description="Number of days to analyze"
+    ),
     user=Depends(get_auth_user),
 ):
     """
@@ -261,8 +287,12 @@ async def get_performance_funnel(
 
 @router.get("/performance/cohort", response_model=CohortResponse)
 async def get_performance_cohort(
-    cohort_size: str = Query(default="week", description="Cohort size: day, week, or month"),
-    periods: int = Query(default=4, ge=1, le=12, description="Number of cohort periods"),
+    cohort_size: str = Query(
+        default="week", description="Cohort size: day, week, or month"
+    ),
+    periods: int = Query(
+        default=4, ge=1, le=12, description="Number of cohort periods"
+    ),
     user=Depends(get_auth_user),
 ):
     """
@@ -278,7 +308,9 @@ async def get_performance_cohort(
 
     try:
         cohort = await performance_service.get_cohort(
-            user_id=user.id, cohort_size=cohort_size, periods=periods,
+            user_id=user.id,
+            cohort_size=cohort_size,
+            periods=periods,
         )
         return CohortResponse(**cohort)
     except Exception as e:
@@ -290,7 +322,9 @@ async def get_performance_cohort(
 
 @router.get("/performance/attribution", response_model=AttributionResponse)
 async def get_performance_attribution(
-    days: int = Query(default=30, ge=1, le=365, description="Number of days to analyze"),
+    days: int = Query(
+        default=30, ge=1, le=365, description="Number of days to analyze"
+    ),
     user=Depends(get_auth_user),
 ):
     """
@@ -300,7 +334,9 @@ async def get_performance_attribution(
     and top converting content pieces.
     """
     try:
-        attribution = await performance_service.get_attribution(user_id=user.id, days=days)
+        attribution = await performance_service.get_attribution(
+            user_id=user.id, days=days
+        )
         return AttributionResponse(**attribution)
     except Exception as e:
         raise HTTPException(
@@ -311,8 +347,12 @@ async def get_performance_attribution(
 
 @router.get("/performance/trends", response_model=TrendsResponse)
 async def get_performance_trends(
-    days: int = Query(default=30, ge=1, le=365, description="Number of days to analyze"),
-    granularity: str = Query(default="day", description="Time granularity: day, week, or month"),
+    days: int = Query(
+        default=30, ge=1, le=365, description="Number of days to analyze"
+    ),
+    granularity: str = Query(
+        default="day", description="Time granularity: day, week, or month"
+    ),
     user=Depends(get_auth_user),
 ):
     """
@@ -328,7 +368,9 @@ async def get_performance_trends(
 
     try:
         trends = await performance_service.get_trends(
-            user_id=user.id, days=days, granularity=granularity,
+            user_id=user.id,
+            days=days,
+            granularity=granularity,
         )
         return TrendsResponse(**trends)
     except Exception as e:

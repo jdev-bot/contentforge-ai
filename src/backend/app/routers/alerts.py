@@ -7,6 +7,7 @@ This router provides endpoints for:
 - Acknowledging and resolving alerts
 - Getting unread alert counts
 """
+
 from typing import List, Optional
 from uuid import UUID
 
@@ -15,16 +16,23 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
-from app.services.alert_service import (AlertOperator, AlertStatus, AlertType,
-                                        MetricName, alert_service)
+from app.services.alert_service import (
+    AlertOperator,
+    AlertStatus,
+    AlertType,
+    MetricName,
+    alert_service,
+)
 
 router = APIRouter()
 
 
 # ============== Pydantic Models ==============
 
+
 class AlertResponse(BaseModel):
     """Alert response model."""
+
     id: str
     user_id: str
     alert_type: str
@@ -40,6 +48,7 @@ class AlertResponse(BaseModel):
 
 class AlertListResponse(BaseModel):
     """Alert list response model."""
+
     alerts: List[AlertResponse]
     total: int
     limit: int
@@ -48,14 +57,20 @@ class AlertListResponse(BaseModel):
 
 class AlertRuleCreate(BaseModel):
     """Create alert rule request model."""
+
     name: str = Field(..., min_length=1, max_length=255, description="Rule name")
-    alert_type: str = Field(..., description="Alert type: viral, declining, milestone, error")
-    metric_name: str = Field(..., description="Metric: views, engagement, clicks, shares, comments, likes")
-    operator: str = Field(..., description="Operator: greater_than, less_than, equals, percentage_change")
+    alert_type: str = Field(
+        ..., description="Alert type: viral, declining, milestone, error"
+    )
+    metric_name: str = Field(
+        ..., description="Metric: views, engagement, clicks, shares, comments, likes"
+    )
+    operator: str = Field(
+        ..., description="Operator: greater_than, less_than, equals, percentage_change"
+    )
     threshold_value: float = Field(..., gt=0, description="Threshold value")
     notification_channels: List[str] = Field(
-        default=["in_app"],
-        description="Notification channels: in_app, email, slack"
+        default=["in_app"], description="Notification channels: in_app, email, slack"
     )
 
     @field_validator("alert_type")
@@ -94,6 +109,7 @@ class AlertRuleCreate(BaseModel):
 
 class AlertRuleUpdate(BaseModel):
     """Update alert rule request model."""
+
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     alert_type: Optional[str] = None
     metric_name: Optional[str] = None
@@ -146,6 +162,7 @@ class AlertRuleUpdate(BaseModel):
 
 class AlertRuleResponse(BaseModel):
     """Alert rule response model."""
+
     id: str
     user_id: str
     name: str
@@ -161,40 +178,49 @@ class AlertRuleResponse(BaseModel):
 
 class AlertRuleListResponse(BaseModel):
     """Alert rule list response model."""
+
     rules: List[AlertRuleResponse]
     total: int
 
 
 class AcknowledgeAlertRequest(BaseModel):
     """Acknowledge alert request model."""
+
     pass
 
 
 class AcknowledgeAlertResponse(BaseModel):
     """Acknowledge alert response model."""
+
     success: bool
     message: str
 
 
 class UnreadCountResponse(BaseModel):
     """Unread count response model."""
+
     unread_count: int
 
 
 class CheckMetricsRequest(BaseModel):
     """Check metrics request model."""
+
     content_id: UUID
-    metrics: dict = Field(..., description="Metrics dictionary (views, engagement, clicks, etc.)")
+    metrics: dict = Field(
+        ..., description="Metrics dictionary (views, engagement, clicks, etc.)"
+    )
 
 
 class CheckMetricsResponse(BaseModel):
     """Check metrics response model."""
+
     triggered_alerts: List[AlertResponse]
     message: str
 
 
 class InAppNotificationResponse(BaseModel):
     """In-app notification response model."""
+
     id: str
     user_id: str
     alert_id: Optional[str] = None
@@ -208,6 +234,7 @@ class InAppNotificationResponse(BaseModel):
 
 class NotificationListResponse(BaseModel):
     """Notification list response model."""
+
     notifications: List[InAppNotificationResponse]
     total: int
     unread_count: int
@@ -215,10 +242,15 @@ class NotificationListResponse(BaseModel):
 
 # ============== Alert Endpoints ==============
 
+
 @router.get("/alerts", response_model=AlertListResponse)
 async def list_alerts(
-    status: Optional[str] = Query(None, description="Filter by status: active, acknowledged, resolved"),
-    alert_type: Optional[str] = Query(None, description="Filter by type: viral, declining, milestone, error"),
+    status: Optional[str] = Query(
+        None, description="Filter by status: active, acknowledged, resolved"
+    ),
+    alert_type: Optional[str] = Query(
+        None, description="Filter by type: viral, declining, milestone, error"
+    ),
     limit: int = Query(50, ge=1, le=100, description="Number of results to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     user=Depends(get_auth_user),
@@ -233,14 +265,14 @@ async def list_alerts(
     if status and status not in ["active", "acknowledged", "resolved"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid status filter. Must be one of: active, acknowledged, resolved"
+            detail=f"Invalid status filter. Must be one of: active, acknowledged, resolved",
         )
 
     # Validate alert_type filter
     if alert_type and alert_type not in ["viral", "declining", "milestone", "error"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid alert_type filter. Must be one of: viral, declining, milestone, error"
+            detail=f"Invalid alert_type filter. Must be one of: viral, declining, milestone, error",
         )
 
     try:
@@ -249,12 +281,16 @@ async def list_alerts(
             status=status,
             alert_type=alert_type,
             limit=limit,
-            offset=offset
+            offset=offset,
         )
 
         # Get total count for pagination
         supabase = get_supabase_client()
-        query = supabase.table("content_alerts").select("id", count="exact").eq("user_id", str(user.id))
+        query = (
+            supabase.table("content_alerts")
+            .select("id", count="exact")
+            .eq("user_id", str(user.id))
+        )
         if status:
             query = query.eq("status", status)
         if alert_type:
@@ -262,17 +298,12 @@ async def list_alerts(
         count_result = query.execute()
         total = count_result.count or 0
 
-        return AlertListResponse(
-            alerts=alerts,
-            total=total,
-            limit=limit,
-            offset=offset
-        )
+        return AlertListResponse(alerts=alerts, total=total, limit=limit, offset=offset)
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch alerts: {str(e)}"
+            detail=f"Failed to fetch alerts: {str(e)}",
         )
 
 
@@ -292,12 +323,11 @@ async def acknowledge_alert(
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Alert not found or you don't have permission"
+                detail="Alert not found or you don't have permission",
             )
 
         return AcknowledgeAlertResponse(
-            success=True,
-            message="Alert acknowledged successfully"
+            success=True, message="Alert acknowledged successfully"
         )
 
     except HTTPException:
@@ -305,7 +335,7 @@ async def acknowledge_alert(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to acknowledge alert: {str(e)}"
+            detail=f"Failed to acknowledge alert: {str(e)}",
         )
 
 
@@ -325,12 +355,11 @@ async def resolve_alert(
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Alert not found or you don't have permission"
+                detail="Alert not found or you don't have permission",
             )
 
         return AcknowledgeAlertResponse(
-            success=True,
-            message="Alert resolved successfully"
+            success=True, message="Alert resolved successfully"
         )
 
     except HTTPException:
@@ -338,7 +367,7 @@ async def resolve_alert(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to resolve alert: {str(e)}"
+            detail=f"Failed to resolve alert: {str(e)}",
         )
 
 
@@ -356,11 +385,12 @@ async def get_unread_count(user=Depends(get_auth_user)):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get unread count: {str(e)}"
+            detail=f"Failed to get unread count: {str(e)}",
         )
 
 
 # ============== Alert Rules Endpoints ==============
+
 
 @router.get("/alerts/rules", response_model=AlertRuleListResponse)
 async def list_alert_rules(
@@ -374,23 +404,23 @@ async def list_alert_rules(
     """
     try:
         rules = await alert_service.get_alert_rules(
-            user_id=user.id,
-            is_enabled=is_enabled
+            user_id=user.id, is_enabled=is_enabled
         )
 
-        return AlertRuleListResponse(
-            rules=rules,
-            total=len(rules)
-        )
+        return AlertRuleListResponse(rules=rules, total=len(rules))
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch alert rules: {str(e)}"
+            detail=f"Failed to fetch alert rules: {str(e)}",
         )
 
 
-@router.post("/alerts/rules", response_model=AlertRuleResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/alerts/rules",
+    response_model=AlertRuleResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_alert_rule(
     rule: AlertRuleCreate,
     user=Depends(get_auth_user),
@@ -408,28 +438,25 @@ async def create_alert_rule(
             metric_name=rule.metric_name,
             operator=rule.operator,
             threshold_value=rule.threshold_value,
-            notification_channels=rule.notification_channels
+            notification_channels=rule.notification_channels,
         )
 
         if not created_rule:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create alert rule"
+                detail="Failed to create alert rule",
             )
 
         return created_rule
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create alert rule: {str(e)}"
+            detail=f"Failed to create alert rule: {str(e)}",
         )
 
 
@@ -449,20 +476,17 @@ async def update_alert_rule(
 
         if not update_data:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No fields to update"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update"
             )
 
         updated_rule = await alert_service.update_alert_rule(
-            rule_id=rule_id,
-            user_id=user.id,
-            updates=update_data
+            rule_id=rule_id, user_id=user.id, updates=update_data
         )
 
         if not updated_rule:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Alert rule not found or you don't have permission"
+                detail="Alert rule not found or you don't have permission",
             )
 
         return updated_rule
@@ -472,7 +496,7 @@ async def update_alert_rule(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update alert rule: {str(e)}"
+            detail=f"Failed to update alert rule: {str(e)}",
         )
 
 
@@ -492,7 +516,7 @@ async def delete_alert_rule(
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Alert rule not found or you don't have permission"
+                detail="Alert rule not found or you don't have permission",
             )
 
     except HTTPException:
@@ -500,11 +524,12 @@ async def delete_alert_rule(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete alert rule: {str(e)}"
+            detail=f"Failed to delete alert rule: {str(e)}",
         )
 
 
 # ============== Metrics Check Endpoint ==============
+
 
 @router.post("/alerts/check-metrics", response_model=CheckMetricsResponse)
 async def check_metrics(
@@ -519,24 +544,23 @@ async def check_metrics(
     """
     try:
         triggered = await alert_service.check_content_metrics(
-            content_id=request.content_id,
-            user_id=user.id,
-            metrics=request.metrics
+            content_id=request.content_id, user_id=user.id, metrics=request.metrics
         )
 
         return CheckMetricsResponse(
             triggered_alerts=triggered,
-            message=f"Checked metrics. {len(triggered)} alert(s) triggered."
+            message=f"Checked metrics. {len(triggered)} alert(s) triggered.",
         )
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to check metrics: {str(e)}"
+            detail=f"Failed to check metrics: {str(e)}",
         )
 
 
 # ============== In-App Notifications Endpoints ==============
+
 
 @router.get("/alerts/notifications", response_model=NotificationListResponse)
 async def list_notifications(
@@ -551,9 +575,7 @@ async def list_notifications(
     """
     try:
         notifications = await alert_service.get_in_app_notifications(
-            user_id=user.id,
-            is_read=is_read,
-            limit=limit
+            user_id=user.id, is_read=is_read, limit=limit
         )
 
         # Get unread count
@@ -562,17 +584,20 @@ async def list_notifications(
         return NotificationListResponse(
             notifications=notifications,
             total=len(notifications),
-            unread_count=unread_count
+            unread_count=unread_count,
         )
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch notifications: {str(e)}"
+            detail=f"Failed to fetch notifications: {str(e)}",
         )
 
 
-@router.post("/alerts/notifications/{notification_id}/read", response_model=AcknowledgeAlertResponse)
+@router.post(
+    "/alerts/notifications/{notification_id}/read",
+    response_model=AcknowledgeAlertResponse,
+)
 async def mark_notification_read(
     notification_id: UUID,
     user=Depends(get_auth_user),
@@ -586,12 +611,11 @@ async def mark_notification_read(
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Notification not found or you don't have permission"
+                detail="Notification not found or you don't have permission",
             )
 
         return AcknowledgeAlertResponse(
-            success=True,
-            message="Notification marked as read"
+            success=True, message="Notification marked as read"
         )
 
     except HTTPException:
@@ -599,11 +623,13 @@ async def mark_notification_read(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to mark notification as read: {str(e)}"
+            detail=f"Failed to mark notification as read: {str(e)}",
         )
 
 
-@router.post("/alerts/notifications/mark-all-read", response_model=AcknowledgeAlertResponse)
+@router.post(
+    "/alerts/notifications/mark-all-read", response_model=AcknowledgeAlertResponse
+)
 async def mark_all_notifications_read(user=Depends(get_auth_user)):
     """
     Mark all in-app notifications as read for the current user.
@@ -611,19 +637,26 @@ async def mark_all_notifications_read(user=Depends(get_auth_user)):
     try:
         supabase = get_supabase_client()
 
-        result = supabase.table("in_app_notifications").update({
-            "is_read": True,
-        }).eq("user_id", str(user.id)).eq("is_read", False).execute()
+        result = (
+            supabase.table("in_app_notifications")
+            .update(
+                {
+                    "is_read": True,
+                }
+            )
+            .eq("user_id", str(user.id))
+            .eq("is_read", False)
+            .execute()
+        )
 
         updated_count = len(result.data or [])
 
         return AcknowledgeAlertResponse(
-            success=True,
-            message=f"{updated_count} notification(s) marked as read"
+            success=True, message=f"{updated_count} notification(s) marked as read"
         )
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to mark notifications as read: {str(e)}"
+            detail=f"Failed to mark notifications as read: {str(e)}",
         )

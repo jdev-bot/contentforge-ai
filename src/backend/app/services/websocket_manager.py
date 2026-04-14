@@ -8,6 +8,7 @@ Provides:
 - Graceful disconnect handling
 - Connection limit per user
 """
+
 import asyncio
 import json
 import logging
@@ -23,12 +24,13 @@ logger = logging.getLogger(__name__)
 # Default configuration
 MAX_CONNECTIONS_PER_USER = 5
 HEARTBEAT_INTERVAL = 30  # seconds
-HEARTBEAT_TIMEOUT = 60   # seconds — close if no pong within this window
+HEARTBEAT_TIMEOUT = 60  # seconds — close if no pong within this window
 
 
 @dataclass
 class ConnectionInfo:
     """Tracks state for a single WebSocket connection."""
+
     websocket: WebSocket
     user_id: str
     rooms: Set[str] = field(default_factory=set)
@@ -107,7 +109,8 @@ class WebSocketManager:
             if len(user_conns) >= self._max_per_user:
                 logger.warning(
                     "User %s exceeded connection limit (%d)",
-                    user_id, self._max_per_user,
+                    user_id,
+                    self._max_per_user,
                 )
                 return False
 
@@ -119,7 +122,9 @@ class WebSocketManager:
             user_conns.add(connection_id)
             logger.info(
                 "WebSocket connected: %s (user=%s, total=%d)",
-                connection_id, user_id, len(self._connections),
+                connection_id,
+                user_id,
+                len(self._connections),
             )
             return True
 
@@ -148,7 +153,10 @@ class WebSocketManager:
 
             logger.info(
                 "WebSocket disconnected: %s (user=%s, reason=%s, remaining=%d)",
-                connection_id, info.user_id, reason, len(self._connections),
+                connection_id,
+                info.user_id,
+                reason,
+                len(self._connections),
             )
 
         # Close the underlying socket outside the lock
@@ -210,9 +218,7 @@ class WebSocketManager:
                 await info.websocket.send_json(message)
                 sent += 1
             except Exception as exc:
-                logger.warning(
-                    "Failed to send to %s in room %s: %s", cid, room, exc
-                )
+                logger.warning("Failed to send to %s in room %s: %s", cid, room, exc)
                 # Stale connection — schedule cleanup
                 await self.disconnect(cid, reason="send_failure")
 
@@ -284,11 +290,13 @@ class WebSocketManager:
         for cid in self._rooms.get(room, set()):
             info = self._connections.get(cid)
             if info:
-                members.append({
-                    "connection_id": cid,
-                    "user_id": info.user_id,
-                    "connected_at": info.connected_at,
-                })
+                members.append(
+                    {
+                        "connection_id": cid,
+                        "user_id": info.user_id,
+                        "connected_at": info.connected_at,
+                    }
+                )
         return members
 
     def get_user_connections(self, user_id: str) -> List[str]:

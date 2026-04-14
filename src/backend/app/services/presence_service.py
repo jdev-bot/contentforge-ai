@@ -8,6 +8,7 @@ Provides:
 - User status (online, away, editing)
 - Lazy Supabase init for persistence
 """
+
 import json
 import logging
 import time
@@ -192,10 +193,12 @@ class PresenceService:
             else:
                 entry = self._rooms.get(room, {}).get(uid)
                 if entry:
-                    active.append({
-                        "user_id": uid,
-                        "user_name": entry.get("user_name", ""),
-                    })
+                    active.append(
+                        {
+                            "user_id": uid,
+                            "user_name": entry.get("user_name", ""),
+                        }
+                    )
 
         # Clean up expired entries
         for uid in expired:

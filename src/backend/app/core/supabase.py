@@ -1,6 +1,7 @@
 """
 Supabase client initialization.
 """
+
 from functools import lru_cache
 
 from supabase import Client, create_client

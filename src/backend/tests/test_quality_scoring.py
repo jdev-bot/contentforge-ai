@@ -7,14 +7,18 @@ Covers:
 - Caching behaviour
 - Batch operations
 """
+
 import pytest
 import json
 from datetime import datetime
 from uuid import uuid4, UUID
 from unittest.mock import Mock, patch, MagicMock, AsyncMock
 
-from app.services.quality_service import QualityService, quality_service, DIMENSION_WEIGHTS
-
+from app.services.quality_service import (
+    QualityService,
+    quality_service,
+    DIMENSION_WEIGHTS,
+)
 
 # =========================================================================== #
 #  Service unit tests                                                          #
@@ -27,7 +31,13 @@ class TestQualityServiceComputeOverall:
     def test_all_perfect_scores(self):
         """All 100s should yield overall 100."""
         svc = QualityService()
-        scores = {"readability": 100, "seo": 100, "engagement": 100, "grammar": 100, "brand": 100}
+        scores = {
+            "readability": 100,
+            "seo": 100,
+            "engagement": 100,
+            "grammar": 100,
+            "brand": 100,
+        }
         assert svc._compute_overall(scores) == 100
 
     def test_all_zero_scores(self):
@@ -39,16 +49,26 @@ class TestQualityServiceComputeOverall:
     def test_mixed_scores_weighted(self):
         """Overall should be weighted sum of dimensions."""
         svc = QualityService()
-        scores = {"readability": 80, "seo": 60, "engagement": 70, "grammar": 90, "brand": 50}
-        expected = round(
-            80 * 0.25 + 60 * 0.20 + 70 * 0.25 + 90 * 0.15 + 50 * 0.15
-        )
+        scores = {
+            "readability": 80,
+            "seo": 60,
+            "engagement": 70,
+            "grammar": 90,
+            "brand": 50,
+        }
+        expected = round(80 * 0.25 + 60 * 0.20 + 70 * 0.25 + 90 * 0.15 + 50 * 0.15)
         assert svc._compute_overall(scores) == expected
 
     def test_score_clamped_to_100(self):
         """Overall is clamped at 100 even with inflated inputs."""
         svc = QualityService()
-        scores = {"readability": 200, "seo": 200, "engagement": 200, "grammar": 200, "brand": 200}
+        scores = {
+            "readability": 200,
+            "seo": 200,
+            "engagement": 200,
+            "grammar": 200,
+            "brand": 200,
+        }
         assert svc._compute_overall(scores) == 100
 
     def test_dimension_weights_sum_to_one(self):
@@ -69,11 +89,16 @@ class TestQualityServiceAnalyzeQuality:
     @pytest.mark.asyncio
     async def test_analyze_returns_required_keys(self):
         """Result should contain all expected keys."""
-        mock_ai_response = json.dumps({
-            "readability": 75, "seo": 60, "engagement": 80,
-            "grammar": 90, "brand": 70,
-            "suggestions": ["Improve keyword density", "Add more CTAs"],
-        })
+        mock_ai_response = json.dumps(
+            {
+                "readability": 75,
+                "seo": 60,
+                "engagement": 80,
+                "grammar": 90,
+                "brand": 70,
+                "suggestions": ["Improve keyword density", "Add more CTAs"],
+            }
+        )
 
         svc = QualityService()
         svc._supabase = MagicMock()
@@ -95,7 +120,9 @@ class TestQualityServiceAnalyzeQuality:
         svc = QualityService()
         svc._supabase = MagicMock()
         with patch("app.services.quality_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value="This is not JSON at all")
+            mock_groq.generate_content = AsyncMock(
+                return_value="This is not JSON at all"
+            )
             result = await svc.analyze_quality("Some test content here.")
 
         assert result["overall_score"] is not None
@@ -105,11 +132,16 @@ class TestQualityServiceAnalyzeQuality:
     @pytest.mark.asyncio
     async def test_analyze_scores_clamped_0_100(self):
         """All dimension scores should be clamped to 0-100."""
-        mock_ai_response = json.dumps({
-            "readability": -10, "seo": 150, "engagement": 80,
-            "grammar": 90, "brand": 70,
-            "suggestions": [],
-        })
+        mock_ai_response = json.dumps(
+            {
+                "readability": -10,
+                "seo": 150,
+                "engagement": 80,
+                "grammar": 90,
+                "brand": 70,
+                "suggestions": [],
+            }
+        )
 
         svc = QualityService()
         svc._supabase = MagicMock()
@@ -124,11 +156,16 @@ class TestQualityServiceAnalyzeQuality:
     @pytest.mark.asyncio
     async def test_analyze_with_brand_voice(self):
         """Brand voice parameter should be passed through to the prompt."""
-        mock_ai_response = json.dumps({
-            "readability": 70, "seo": 60, "engagement": 80,
-            "grammar": 85, "brand": 90,
-            "suggestions": [],
-        })
+        mock_ai_response = json.dumps(
+            {
+                "readability": 70,
+                "seo": 60,
+                "engagement": 80,
+                "grammar": 85,
+                "brand": 90,
+                "suggestions": [],
+            }
+        )
 
         brand_voice = {"tone": "professional", "vocabulary": "elevated"}
         svc = QualityService()
@@ -160,14 +197,23 @@ class TestQualityServicePersistence:
         """store_score should insert a row and return data."""
         svc = QualityService()
         mock_sb = MagicMock()
-        mock_sb.table.return_value.insert.return_value.execute.return_value.data = [{"id": str(uuid4())}]
+        mock_sb.table.return_value.insert.return_value.execute.return_value.data = [
+            {"id": str(uuid4())}
+        ]
         with patch.object(svc, "_supabase", mock_sb):
             with patch("app.services.quality_service.cache") as mock_cache:
                 result = await svc.store_score(
-                    content_id=uuid4(), user_id=uuid4(),
-                    scores={"overall_score": 80, "readability": 80, "seo": 70,
-                            "engagement": 85, "grammar": 90, "brand": 75,
-                            "suggestions": ["Improve SEO"]},
+                    content_id=uuid4(),
+                    user_id=uuid4(),
+                    scores={
+                        "overall_score": 80,
+                        "readability": 80,
+                        "seo": 70,
+                        "engagement": 85,
+                        "grammar": 90,
+                        "brand": 75,
+                        "suggestions": ["Improve SEO"],
+                    },
                 )
         assert result is not None
         mock_sb.table.assert_called_with("quality_scores")
@@ -177,7 +223,9 @@ class TestQualityServicePersistence:
         """get_score returns None when no rows exist."""
         svc = QualityService()
         mock_sb = MagicMock()
-        mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = []
+        mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = (
+            []
+        )
         with patch.object(svc, "_supabase", mock_sb):
             with patch("app.services.quality_service.cache") as mock_cache:
                 mock_cache.get = Mock(return_value=None)
@@ -236,10 +284,24 @@ class TestQualityServiceBatch:
     async def test_batch_analyze_processes_all_items(self):
         """batch_analyze should process and store each item."""
         svc = QualityService()
-        mock_scores = {"overall_score": 80, "readability": 80, "seo": 70,
-                        "engagement": 85, "grammar": 90, "brand": 75, "suggestions": []}
-        with patch.object(svc, "analyze_quality", new_callable=AsyncMock, return_value=mock_scores):
-            with patch.object(svc, "store_score", new_callable=AsyncMock, return_value={"id": str(uuid_id())}):
+        mock_scores = {
+            "overall_score": 80,
+            "readability": 80,
+            "seo": 70,
+            "engagement": 85,
+            "grammar": 90,
+            "brand": 75,
+            "suggestions": [],
+        }
+        with patch.object(
+            svc, "analyze_quality", new_callable=AsyncMock, return_value=mock_scores
+        ):
+            with patch.object(
+                svc,
+                "store_score",
+                new_callable=AsyncMock,
+                return_value={"id": str(uuid_id())},
+            ):
                 items = [
                     {"content_id": uuid_id(), "text": "Content 1"},
                     {"content_id": uuid_id(), "text": "Content 2"},
@@ -284,13 +346,20 @@ class TestQualityScoringAPI:
         from app.routers.quality_scoring import analyze_quality
 
         with patch("app.routers.quality_scoring.quality_service") as mock_svc:
-            mock_svc.analyze_quality = AsyncMock(return_value={
-                "overall_score": 82, "readability": 80, "seo": 70,
-                "engagement": 85, "grammar": 90, "brand": 75,
-                "suggestions": ["Improve SEO keywords"],
-            })
+            mock_svc.analyze_quality = AsyncMock(
+                return_value={
+                    "overall_score": 82,
+                    "readability": 80,
+                    "seo": 70,
+                    "engagement": 85,
+                    "grammar": 90,
+                    "brand": 75,
+                    "suggestions": ["Improve SEO keywords"],
+                }
+            )
             with patch("app.routers.quality_scoring.check_and_increment_usage"):
                 import asyncio
+
                 result = asyncio.get_event_loop().run_until_complete(
                     analyze_quality(
                         request=Mock(text="Test content", brand_voice=None),
@@ -307,6 +376,7 @@ class TestQualityScoringAPI:
         with patch("app.routers.quality_scoring.quality_service") as mock_svc:
             mock_svc.get_score = AsyncMock(return_value=None)
             import asyncio
+
             with pytest.raises(Exception):  # HTTPException
                 asyncio.get_event_loop().run_until_complete(
                     get_content_quality(content_id=uuid4(), user=self.mock_user)

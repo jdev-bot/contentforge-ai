@@ -3,6 +3,7 @@ Smart Categorization router for ContentForge AI.
 Provides endpoints for AI-powered content categorization, auto-tagging,
 and content clustering.
 """
+
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -10,8 +11,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
-from app.core.rate_limit import (UsageStats, check_and_increment_usage,
-                                 enforce_subscription_limit)
+from app.core.rate_limit import (
+    UsageStats,
+    check_and_increment_usage,
+    enforce_subscription_limit,
+)
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.categorization_service import categorization_service
@@ -20,6 +24,7 @@ router = APIRouter()
 
 
 # ============ Pydantic Models ============
+
 
 class CategorizeRequest(BaseModel):
     content_id: UUID = Field(..., description="ID of the content item to categorize")
@@ -38,9 +43,16 @@ class CategorizeResponse(BaseModel):
 
 
 class BatchCategorizeRequest(BaseModel):
-    content_ids: Optional[List[str]] = Field(default=None, description="Specific content IDs to categorize (omit for uncategorized)")
-    uncategorized_only: bool = Field(default=True, description="Only categorize content without categories")
-    limit: int = Field(default=50, ge=1, le=100, description="Max content items to process")
+    content_ids: Optional[List[str]] = Field(
+        default=None,
+        description="Specific content IDs to categorize (omit for uncategorized)",
+    )
+    uncategorized_only: bool = Field(
+        default=True, description="Only categorize content without categories"
+    )
+    limit: int = Field(
+        default=50, ge=1, le=100, description="Max content items to process"
+    )
 
 
 class BatchCategorizeResponse(BaseModel):
@@ -51,7 +63,9 @@ class BatchCategorizeResponse(BaseModel):
 
 class AutoTagRequest(BaseModel):
     content_id: UUID = Field(..., description="ID of the content item to tag")
-    max_tags: int = Field(default=10, ge=1, le=30, description="Maximum number of tags to generate")
+    max_tags: int = Field(
+        default=10, ge=1, le=30, description="Maximum number of tags to generate"
+    )
 
 
 class AutoTagResponse(BaseModel):
@@ -66,14 +80,27 @@ class AutoTagResponse(BaseModel):
 
 
 class BatchAutoTagRequest(BaseModel):
-    content_ids: Optional[List[str]] = Field(default=None, description="Specific content IDs to tag (omit for untagged)")
-    untagged_only: bool = Field(default=True, description="Only tag content without tags")
-    max_tags: int = Field(default=10, ge=1, le=30, description="Maximum number of tags per content")
-    limit: int = Field(default=50, ge=1, le=100, description="Max content items to process")
+    content_ids: Optional[List[str]] = Field(
+        default=None, description="Specific content IDs to tag (omit for untagged)"
+    )
+    untagged_only: bool = Field(
+        default=True, description="Only tag content without tags"
+    )
+    max_tags: int = Field(
+        default=10, ge=1, le=30, description="Maximum number of tags per content"
+    )
+    limit: int = Field(
+        default=50, ge=1, le=100, description="Max content items to process"
+    )
 
 
 class ClusterRequest(BaseModel):
-    cluster_count: Optional[int] = Field(default=None, ge=2, le=20, description="Number of clusters (auto-determined if omitted)")
+    cluster_count: Optional[int] = Field(
+        default=None,
+        ge=2,
+        le=20,
+        description="Number of clusters (auto-determined if omitted)",
+    )
 
 
 class ClusterResponse(BaseModel):
@@ -95,15 +122,16 @@ class UpdateCategorizationRequest(BaseModel):
 
 # ============ Categorize Single Content ============
 
+
 @router.post("/categorization/categorize", response_model=Dict[str, Any])
 async def categorize_content(
     request: CategorizeRequest,
     user=Depends(get_auth_user),
-    _: UsageStats = Depends(enforce_subscription_limit)
+    _: UsageStats = Depends(enforce_subscription_limit),
 ):
     """
     Auto-categorize a single content item.
-    
+
     Uses AI to analyze content and assign topic category, industry vertical,
     content format, sub-topics, and tone classification.
     """
@@ -117,8 +145,7 @@ async def categorize_content(
 
         if "error" in result:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result["error"]
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result["error"]
             )
 
         return result
@@ -127,21 +154,22 @@ async def categorize_content(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to categorize content: {str(e)}"
+            detail=f"Failed to categorize content: {str(e)}",
         )
 
 
 # ============ Batch Categorize ============
 
+
 @router.post("/categorization/batch-categorize", response_model=BatchCategorizeResponse)
 async def batch_categorize_content(
     request: BatchCategorizeRequest,
     user=Depends(get_auth_user),
-    _: UsageStats = Depends(enforce_subscription_limit)
+    _: UsageStats = Depends(enforce_subscription_limit),
 ):
     """
     Batch categorize multiple content items.
-    
+
     Processes uncategorized content or specific content IDs.
     Limited to 20 items per batch for AI rate limiting.
     """
@@ -158,21 +186,22 @@ async def batch_categorize_content(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to batch categorize: {str(e)}"
+            detail=f"Failed to batch categorize: {str(e)}",
         )
 
 
 # ============ Auto-Tag Single Content ============
 
+
 @router.post("/categorization/auto-tag", response_model=Dict[str, Any])
 async def auto_tag_content(
     request: AutoTagRequest,
     user=Depends(get_auth_user),
-    _: UsageStats = Depends(enforce_subscription_limit)
+    _: UsageStats = Depends(enforce_subscription_limit),
 ):
     """
     Auto-tag a single content item with AI-generated keywords.
-    
+
     Generates primary keywords, secondary keywords, long-tail keywords,
     entity tags, and sentiment classification.
     """
@@ -187,8 +216,7 @@ async def auto_tag_content(
 
         if "error" in result:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result["error"]
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result["error"]
             )
 
         return result
@@ -197,21 +225,22 @@ async def auto_tag_content(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to auto-tag content: {str(e)}"
+            detail=f"Failed to auto-tag content: {str(e)}",
         )
 
 
 # ============ Batch Auto-Tag ============
 
+
 @router.post("/categorization/batch-auto-tag", response_model=Dict[str, Any])
 async def batch_auto_tag_content(
     request: BatchAutoTagRequest,
     user=Depends(get_auth_user),
-    _: UsageStats = Depends(enforce_subscription_limit)
+    _: UsageStats = Depends(enforce_subscription_limit),
 ):
     """
     Batch auto-tag multiple content items.
-    
+
     Processes untagged content or specific content IDs.
     Limited to 20 items per batch for AI rate limiting.
     """
@@ -229,21 +258,22 @@ async def batch_auto_tag_content(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to batch auto-tag: {str(e)}"
+            detail=f"Failed to batch auto-tag: {str(e)}",
         )
 
 
 # ============ Content Clustering ============
 
+
 @router.post("/categorization/cluster", response_model=ClusterResponse)
 async def cluster_content(
     request: ClusterRequest,
     user=Depends(get_auth_user),
-    _: UsageStats = Depends(enforce_subscription_limit)
+    _: UsageStats = Depends(enforce_subscription_limit),
 ):
     """
     Cluster user's content into thematic groups.
-    
+
     Uses AI to analyze content patterns and organize items into
     meaningful clusters with descriptions, keywords, and suggested categories.
     """
@@ -258,17 +288,15 @@ async def cluster_content(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to cluster content: {str(e)}"
+            detail=f"Failed to cluster content: {str(e)}",
         )
 
 
 # ============ Get Categorization for Content ============
 
+
 @router.get("/categorization/content/{content_id}", response_model=Dict[str, Any])
-async def get_content_categorization(
-    content_id: UUID,
-    user=Depends(get_auth_user)
-):
+async def get_content_categorization(content_id: UUID, user=Depends(get_auth_user)):
     """
     Retrieve the categorization record for a specific content item.
     """
@@ -281,7 +309,7 @@ async def get_content_categorization(
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Categorization not found for this content"
+                detail="Categorization not found for this content",
             )
 
         return result
@@ -290,17 +318,15 @@ async def get_content_categorization(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get categorization: {str(e)}"
+            detail=f"Failed to get categorization: {str(e)}",
         )
 
 
 # ============ Get Tags for Content ============
 
+
 @router.get("/categorization/content/{content_id}/tags", response_model=Dict[str, Any])
-async def get_content_tags(
-    content_id: UUID,
-    user=Depends(get_auth_user)
-):
+async def get_content_tags(content_id: UUID, user=Depends(get_auth_user)):
     """
     Retrieve the tag record for a specific content item.
     """
@@ -313,7 +339,7 @@ async def get_content_tags(
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Tags not found for this content"
+                detail="Tags not found for this content",
             )
 
         return result
@@ -322,21 +348,22 @@ async def get_content_tags(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get content tags: {str(e)}"
+            detail=f"Failed to get content tags: {str(e)}",
         )
 
 
 # ============ Update Categorization ============
 
+
 @router.patch("/categorization/{categorization_id}", response_model=Dict[str, Any])
 async def update_categorization(
     categorization_id: UUID,
     request: UpdateCategorizationRequest,
-    user=Depends(get_auth_user)
+    user=Depends(get_auth_user),
 ):
     """
     Update a categorization record (e.g., user overrides of AI categorization).
-    
+
     Only provided fields will be updated.
     """
     try:
@@ -344,7 +371,7 @@ async def update_categorization(
         if not updates:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No fields provided for update"
+                detail="No fields provided for update",
             )
 
         result = await categorization_service.update_categorization(
@@ -356,7 +383,7 @@ async def update_categorization(
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Categorization not found or update failed"
+                detail="Categorization not found or update failed",
             )
 
         return result
@@ -365,17 +392,15 @@ async def update_categorization(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update categorization: {str(e)}"
+            detail=f"Failed to update categorization: {str(e)}",
         )
 
 
 # ============ Delete Categorization ============
 
+
 @router.delete("/categorization/{categorization_id}")
-async def delete_categorization(
-    categorization_id: UUID,
-    user=Depends(get_auth_user)
-):
+async def delete_categorization(categorization_id: UUID, user=Depends(get_auth_user)):
     """
     Delete a categorization record.
     """
@@ -388,7 +413,7 @@ async def delete_categorization(
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Categorization not found or could not be deleted"
+                detail="Categorization not found or could not be deleted",
             )
 
         return {"success": True, "message": "Categorization deleted successfully"}
@@ -397,18 +422,19 @@ async def delete_categorization(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete categorization: {str(e)}"
+            detail=f"Failed to delete categorization: {str(e)}",
         )
 
 
 # ============ List Categorizations ============
+
 
 @router.get("/categorization/list", response_model=List[Dict[str, Any]])
 async def list_categorizations(
     category: Optional[str] = Query(None, description="Filter by category"),
     industry: Optional[str] = Query(None, description="Filter by industry vertical"),
     limit: int = Query(20, ge=1, le=100, description="Number of results to return"),
-    user=Depends(get_auth_user)
+    user=Depends(get_auth_user),
 ):
     """
     List all categorizations for the user with optional filters.
@@ -424,5 +450,5 @@ async def list_categorizations(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list categorizations: {str(e)}"
+            detail=f"Failed to list categorizations: {str(e)}",
         )

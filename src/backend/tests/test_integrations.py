@@ -2,6 +2,7 @@
 Tests for the integrations ecosystem.
 Includes tests for Zapier, Webhook, and WordPress services.
 """
+
 import pytest
 import json
 import uuid
@@ -17,13 +18,13 @@ from app.services.integration_services import (
     WebhookService,
     WordPressService,
     IntegrationFactory,
-    AVAILABLE_EVENT_TYPES
+    AVAILABLE_EVENT_TYPES,
 )
-
 
 # =============================================================================
 # Zapier Service Tests
 # =============================================================================
+
 
 class TestZapierService:
     """Test cases for ZapierService."""
@@ -62,7 +63,7 @@ class TestZapierService:
         assert "Invalid Zapier webhook URL format" in error
 
     @pytest.mark.asyncio
-    @patch('requests.post')
+    @patch("requests.post")
     async def test_zapier_test_connection_success(self, mock_post):
         """Test successful Zapier connection test."""
         mock_response = Mock()
@@ -87,7 +88,7 @@ class TestZapierService:
         assert "No webhook URL configured" in message
 
     @pytest.mark.asyncio
-    @patch('requests.post')
+    @patch("requests.post")
     async def test_zapier_send_event_success(self, mock_post):
         """Test sending event to Zapier."""
         mock_response = Mock()
@@ -98,8 +99,7 @@ class TestZapierService:
         config = {"webhook_url": "https://hooks.zapier.com/hooks/catch/123/abc/"}
         service = ZapierService(config=config)
         success, message = await service.send_event(
-            "content.created",
-            {"title": "Test", "content": "Hello"}
+            "content.created", {"title": "Test", "content": "Hello"}
         )
 
         assert success is True
@@ -107,13 +107,13 @@ class TestZapierService:
 
         # Verify payload structure
         call_args = mock_post.call_args
-        payload = call_args.kwargs.get('json') or call_args[1].get('json')
+        payload = call_args.kwargs.get("json") or call_args[1].get("json")
         assert payload["event"] == "content.created"
         assert "timestamp" in payload
         assert payload["data"]["title"] == "Test"
 
     @pytest.mark.asyncio
-    @patch('requests.post')
+    @patch("requests.post")
     async def test_zapier_send_event_http_error(self, mock_post):
         """Test sending event when Zapier returns HTTP error."""
         mock_response = Mock()
@@ -129,17 +129,21 @@ class TestZapierService:
         assert "500" in message
 
     @pytest.mark.asyncio
-    @patch('requests.post')
+    @patch("requests.post")
     async def test_zapier_send_event_timeout(self, mock_post):
         """Test sending event with timeout retry."""
         from requests.exceptions import Timeout
-        mock_post.side_effect = [Timeout("Connection timeout"), Mock(status_code=200, text="OK")]
+
+        mock_post.side_effect = [
+            Timeout("Connection timeout"),
+            Mock(status_code=200, text="OK"),
+        ]
 
         config = {"webhook_url": "https://hooks.zapier.com/hooks/catch/123/abc/"}
         service = ZapierService(config=config)
 
         # Mock time.sleep to speed up test
-        with patch('time.sleep'):
+        with patch("time.sleep"):
             success, message = await service.send_event("content.created", {})
 
         # Should succeed after retry
@@ -150,6 +154,7 @@ class TestZapierService:
 # Webhook Service Tests
 # =============================================================================
 
+
 class TestWebhookService:
     """Test cases for WebhookService."""
 
@@ -159,7 +164,7 @@ class TestWebhookService:
             "webhook_url": "https://example.com/webhook",
             "secret": "my-secret",
             "signature_header": "X-Signature",
-            "hash_algorithm": "sha256"
+            "hash_algorithm": "sha256",
         }
         service = WebhookService(config=config)
         assert service.webhook_url == "https://example.com/webhook"
@@ -210,9 +215,9 @@ class TestWebhookService:
         signature = service._generate_signature(payload)
 
         expected = hmac.new(
-            "secret".encode('utf-8'),
-            json.dumps(payload, sort_keys=True, separators=(',', ':')).encode('utf-8'),
-            hashlib.sha256
+            "secret".encode("utf-8"),
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8"),
+            hashlib.sha256,
         ).hexdigest()
 
         assert signature == expected
@@ -222,7 +227,7 @@ class TestWebhookService:
         config = {
             "webhook_url": "https://example.com/webhook",
             "secret": "secret",
-            "hash_algorithm": "sha512"
+            "hash_algorithm": "sha512",
         }
         service = WebhookService(config=config)
         payload = {"event": "test"}
@@ -230,9 +235,9 @@ class TestWebhookService:
         signature = service._generate_signature(payload)
 
         expected = hmac.new(
-            "secret".encode('utf-8'),
-            json.dumps(payload, sort_keys=True, separators=(',', ':')).encode('utf-8'),
-            hashlib.sha512
+            "secret".encode("utf-8"),
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8"),
+            hashlib.sha512,
         ).hexdigest()
 
         assert signature == expected
@@ -242,7 +247,7 @@ class TestWebhookService:
         config = {
             "webhook_url": "https://example.com/webhook",
             "secret": "secret",
-            "signature_format": "base64"
+            "signature_format": "base64",
         }
         service = WebhookService(config=config)
         payload = {"event": "test"}
@@ -250,13 +255,16 @@ class TestWebhookService:
         signature = service._generate_signature(payload)
 
         import base64
+
         expected = base64.b64encode(
             hmac.new(
-                "secret".encode('utf-8'),
-                json.dumps(payload, sort_keys=True, separators=(',', ':')).encode('utf-8'),
-                hashlib.sha256
+                "secret".encode("utf-8"),
+                json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
+                    "utf-8"
+                ),
+                hashlib.sha256,
             ).digest()
-        ).decode('utf-8')
+        ).decode("utf-8")
 
         assert signature == expected
 
@@ -265,17 +273,19 @@ class TestWebhookService:
         """Test that webhook respects event filters."""
         config = {
             "webhook_url": "https://example.com/webhook",
-            "event_filter": ["content.created", "content.updated"]
+            "event_filter": ["content.created", "content.updated"],
         }
         service = WebhookService(config=config)
-        
+
         # Event IN filter should pass through to _send_payload
-        with patch.object(service, '_send_payload', return_value=(True, None)) as mock_send:
+        with patch.object(
+            service, "_send_payload", return_value=(True, None)
+        ) as mock_send:
             success, message = await service.send_event("content.created", {})
             assert success is True
             assert message is None  # Not filtered, sent successfully
             mock_send.assert_called_once()
-        
+
         # Event NOT in filter should be filtered out
         success, message = await service.send_event("user.signup", {})
         assert success is True
@@ -288,17 +298,12 @@ class TestWebhookService:
             "payload_transform": {
                 "title": "${data.title}",
                 "body": "${data.content}",
-                "static_field": "static_value"
-            }
+                "static_field": "static_value",
+            },
         }
         service = WebhookService(config=config)
 
-        original = {
-            "data": {
-                "title": "My Title",
-                "content": "My Content"
-            }
-        }
+        original = {"data": {"title": "My Title", "content": "My Content"}}
 
         transformed = service._transform_payload("test", original)
 
@@ -311,6 +316,7 @@ class TestWebhookService:
 # WordPress Service Tests
 # =============================================================================
 
+
 class TestWordPressService:
     """Test cases for WordPressService."""
 
@@ -319,7 +325,7 @@ class TestWordPressService:
         config = {
             "site_url": "https://blog.example.com",
             "username": "admin",
-            "application_password": "abcd efgh ijkl mnop"
+            "application_password": "abcd efgh ijkl mnop",
         }
         service = WordPressService(config=config)
         assert service.site_url == "https://blog.example.com"
@@ -331,7 +337,7 @@ class TestWordPressService:
         config = {
             "site_url": "https://blog.example.com",
             "username": "admin",
-            "application_password": "password123"
+            "application_password": "password123",
         }
         service = WordPressService(config=config)
         is_valid, error = await service.validate_config(config)
@@ -353,7 +359,7 @@ class TestWordPressService:
         config = {
             "site_url": "ftp://blog.example.com",
             "username": "admin",
-            "application_password": "pass"
+            "application_password": "pass",
         }
         service = WordPressService(config=config)
         is_valid, error = await service.validate_config(config)
@@ -376,7 +382,7 @@ class TestWordPressService:
             "site_url": "https://blog.example.com",
             "username": "admin",
             "application_password": "pass",
-            "default_status": "invalid_status"
+            "default_status": "invalid_status",
         }
         service = WordPressService(config=config)
         is_valid, error = await service.validate_config(config)
@@ -384,7 +390,7 @@ class TestWordPressService:
         assert "Default status must be" in error
 
     @pytest.mark.asyncio
-    @patch('requests.get')
+    @patch("requests.get")
     async def test_wordpress_test_connection_success(self, mock_get):
         """Test successful WordPress connection test."""
         mock_response = Mock()
@@ -395,7 +401,7 @@ class TestWordPressService:
         config = {
             "site_url": "https://blog.example.com",
             "username": "admin",
-            "application_password": "pass123"
+            "application_password": "pass123",
         }
         service = WordPressService(config=config)
         success, message = await service.test_connection()
@@ -404,7 +410,7 @@ class TestWordPressService:
         assert "Connected as Admin" in message
 
     @pytest.mark.asyncio
-    @patch('requests.get')
+    @patch("requests.get")
     async def test_wordpress_test_connection_auth_failure(self, mock_get):
         """Test WordPress connection test with auth failure."""
         mock_response = Mock()
@@ -415,7 +421,7 @@ class TestWordPressService:
         config = {
             "site_url": "https://blog.example.com",
             "username": "admin",
-            "application_password": "wrong"
+            "application_password": "wrong",
         }
         service = WordPressService(config=config)
         success, message = await service.test_connection()
@@ -424,14 +430,14 @@ class TestWordPressService:
         assert "Authentication failed" in message
 
     @pytest.mark.asyncio
-    @patch('requests.post')
+    @patch("requests.post")
     async def test_wordpress_create_post_success(self, mock_post):
         """Test creating a WordPress post."""
         mock_response = Mock()
         mock_response.status_code = 201
         mock_response.json.return_value = {
             "id": 123,
-            "link": "https://blog.example.com/my-post"
+            "link": "https://blog.example.com/my-post",
         }
         mock_post.return_value = mock_response
 
@@ -439,7 +445,7 @@ class TestWordPressService:
             "site_url": "https://blog.example.com",
             "username": "admin",
             "application_password": "pass123",
-            "default_status": "draft"
+            "default_status": "draft",
         }
         service = WordPressService(config=config)
 
@@ -447,7 +453,7 @@ class TestWordPressService:
             "title": "My Post",
             "content": "<p>Post content here</p>",
             "excerpt": "Summary",
-            "tags": ["tag1", "tag2"]
+            "tags": ["tag1", "tag2"],
         }
 
         success, message = await service.create_post(content_data)
@@ -458,7 +464,7 @@ class TestWordPressService:
 
         # Verify POST data
         call_args = mock_post.call_args
-        post_data = call_args.kwargs.get('json') or call_args[1].get('json')
+        post_data = call_args.kwargs.get("json") or call_args[1].get("json")
         assert post_data["title"] == "My Post"
         assert post_data["status"] == "draft"
         assert post_data["tags"] == ["tag1", "tag2"]
@@ -467,6 +473,7 @@ class TestWordPressService:
 # =============================================================================
 # Integration Factory Tests
 # =============================================================================
+
 
 class TestIntegrationFactory:
     """Test cases for IntegrationFactory."""
@@ -512,13 +519,16 @@ class TestIntegrationFactory:
     def test_factory_create_with_id(self):
         """Test factory creates service with integration ID."""
         integration_id = str(uuid.uuid4())
-        service = IntegrationFactory.create_service("webhook", integration_id=integration_id)
+        service = IntegrationFactory.create_service(
+            "webhook", integration_id=integration_id
+        )
         assert service.integration_id == integration_id
 
 
 # =============================================================================
 # Available Event Types Tests
 # =============================================================================
+
 
 class TestAvailableEventTypes:
     """Test cases for AVAILABLE_EVENT_TYPES."""
@@ -548,6 +558,7 @@ class TestAvailableEventTypes:
 # Router Tests (mock database calls)
 # =============================================================================
 
+
 class TestIntegrationRouter:
     """Test cases for integration router endpoints."""
 
@@ -560,7 +571,7 @@ class TestIntegrationRouter:
             "integration_type": "webhook",
             "name": "My Webhook",
             "config": {"webhook_url": "https://example.com/webhook"},
-            "is_active": True
+            "is_active": True,
         }
         model = IntegrationCreate(**data)
         assert model.integration_type == "webhook"
@@ -588,7 +599,7 @@ class TestIntegrationRouter:
             "attempts": 1,
             "response_status": 200,
             "delivered_at": datetime.now(timezone.utc),
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(timezone.utc),
         }
         model = WebhookDeliveryResponse(**data)
         assert model.status == "delivered"
@@ -599,6 +610,7 @@ class TestIntegrationRouter:
 # Integration Router Integration Tests
 # =============================================================================
 
+
 @pytest.mark.asyncio
 class TestIntegrationRouterIntegration:
     """Integration tests for integration router."""
@@ -607,13 +619,15 @@ class TestIntegrationRouterIntegration:
         """Test listing integrations with empty result."""
         from app.routers.integrations import list_integrations
 
-        with patch('app.routers.integrations.get_supabase_client') as mock_client:
+        with patch("app.routers.integrations.get_supabase_client") as mock_client:
             mock_response = Mock()
             mock_response.data = []
             mock_response.count = 0
 
             mock_supabase = Mock()
-            mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = mock_response
+            mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = (
+                mock_response
+            )
             mock_client.return_value = mock_supabase
 
             result = await list_integrations(user=mock_user)
@@ -625,33 +639,37 @@ class TestIntegrationRouterIntegration:
         """Test creating an integration."""
         from app.routers.integrations import create_integration, IntegrationCreate
 
-        with patch('app.routers.integrations.get_supabase_client') as mock_client:
+        with patch("app.routers.integrations.get_supabase_client") as mock_client:
             integration_id = uuid.uuid4()
             mock_response = Mock()
-            mock_response.data = [{
-                "id": str(integration_id),
-                "user_id": str(mock_user.id),
-                "integration_type": "webhook",
-                "name": "Test Webhook",
-                "config": {"webhook_url": "https://example.com/webhook"},
-                "is_active": True,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }]
+            mock_response.data = [
+                {
+                    "id": str(integration_id),
+                    "user_id": str(mock_user.id),
+                    "integration_type": "webhook",
+                    "name": "Test Webhook",
+                    "config": {"webhook_url": "https://example.com/webhook"},
+                    "is_active": True,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }
+            ]
 
             mock_supabase = Mock()
-            mock_supabase.table.return_value.insert.return_value.execute.return_value = mock_response
+            mock_supabase.table.return_value.insert.return_value.execute.return_value = (
+                mock_response
+            )
             mock_client.return_value = mock_supabase
 
             data = IntegrationCreate(
                 integration_type="webhook",
                 name="Test Webhook",
                 config={"webhook_url": "https://example.com/webhook"},
-                is_active=True
+                is_active=True,
             )
 
             result = await create_integration(data, user=mock_user)
-    
+
             assert result["name"] == "Test Webhook"
             assert result["integration_type"] == "webhook"
 
@@ -659,9 +677,11 @@ class TestIntegrationRouterIntegration:
         """Test getting non-existent integration."""
         from app.routers.integrations import get_integration
 
-        with patch('app.routers.integrations.get_supabase_client') as mock_client:
+        with patch("app.routers.integrations.get_supabase_client") as mock_client:
             mock_supabase = Mock()
-            mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.single.return_value.execute.return_value = Mock(data=None)
+            mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.single.return_value.execute.return_value = Mock(
+                data=None
+            )
             mock_client.return_value = mock_supabase
 
             with pytest.raises(HTTPException) as exc_info:
@@ -674,6 +694,7 @@ class TestIntegrationRouterIntegration:
 # Incoming Webhook Tests
 # =============================================================================
 
+
 @pytest.mark.asyncio
 class TestIncomingWebhook:
     """Test cases for incoming webhook endpoint."""
@@ -682,16 +703,18 @@ class TestIncomingWebhook:
         """Test incoming webhook with invalid token."""
         from app.routers.integrations import incoming_webhook, IncomingWebhookPayload
 
-        with patch('app.routers.integrations.get_supabase_admin_client') as mock_client:
+        with patch("app.routers.integrations.get_supabase_admin_client") as mock_client:
             mock_supabase = Mock()
-            mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = Mock(data=[])
+            mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = Mock(
+                data=[]
+            )
             mock_client.return_value = mock_supabase
 
             with pytest.raises(HTTPException) as exc_info:
                 await incoming_webhook(
                     token="invalid-token",
                     payload=IncomingWebhookPayload(event_type="test", data={}),
-                    request=Mock()
+                    request=Mock(),
                 )
 
             assert exc_info.value.status_code == 404
@@ -701,28 +724,34 @@ class TestIncomingWebhook:
         from app.routers.integrations import incoming_webhook, IncomingWebhookPayload
         from unittest.mock import AsyncMock
 
-        with patch('app.routers.integrations.get_supabase_admin_client') as mock_client:
+        with patch("app.routers.integrations.get_supabase_admin_client") as mock_client:
             integration_id = uuid.uuid4()
             mock_response = Mock()
-            mock_response.data = [{
-                "id": str(integration_id),
-                "integration_type": "webhook",
-                "config": {"incoming_secret": "my-secret"}
-            }]
+            mock_response.data = [
+                {
+                    "id": str(integration_id),
+                    "integration_type": "webhook",
+                    "config": {"incoming_secret": "my-secret"},
+                }
+            ]
 
             mock_supabase = Mock()
-            mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
+            mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = (
+                mock_response
+            )
             mock_client.return_value = mock_supabase
 
             mock_request = Mock()
-            mock_request.body = AsyncMock(return_value=b'{"event_type": "test", "data": {}}')
+            mock_request.body = AsyncMock(
+                return_value=b'{"event_type": "test", "data": {}}'
+            )
 
             with pytest.raises(HTTPException) as exc_info:
                 await incoming_webhook(
                     token="valid-token",
                     payload=IncomingWebhookPayload(event_type="test", data={}),
                     request=mock_request,
-                    x_signature="invalid-signature"
+                    x_signature="invalid-signature",
                 )
 
             assert exc_info.value.status_code == 401
@@ -731,6 +760,7 @@ class TestIncomingWebhook:
 # =============================================================================
 # Test Utilities
 # =============================================================================
+
 
 @pytest.fixture
 def mock_user():
@@ -744,9 +774,11 @@ def mock_user():
 @pytest.fixture
 def mock_supabase_response():
     """Create a mock Supabase response."""
+
     def _create_response(data=None, count=0):
         response = Mock()
         response.data = data or []
         response.count = count
         return response
+
     return _create_response

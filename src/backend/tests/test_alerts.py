@@ -8,6 +8,7 @@ This module tests:
 - Metrics checking and viral/declining detection
 - In-app notifications
 """
+
 import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch, MagicMock, AsyncMock
@@ -16,8 +17,8 @@ from uuid import uuid4, UUID
 import httpx
 from fastapi import status
 
-
 # ============== Fixtures ==============
+
 
 @pytest.fixture
 def mock_alert_data():
@@ -86,6 +87,7 @@ def mock_metrics():
 
 # ============== Alert Service Tests ==============
 
+
 class TestAlertService:
     """Test the AlertService class."""
 
@@ -94,11 +96,17 @@ class TestAlertService:
         """Test checking content metrics against rules."""
         from app.services.alert_service import alert_service
 
-        with patch.object(alert_service, '_check_alert_rules', new_callable=AsyncMock) as mock_rules, \
-             patch.object(alert_service, '_detect_viral_content', new_callable=AsyncMock) as mock_viral, \
-             patch.object(alert_service, '_detect_declining_engagement', new_callable=AsyncMock) as mock_decline, \
-             patch.object(alert_service, '_check_milestones', new_callable=AsyncMock) as mock_milestones, \
-             patch.object(alert_service, '_store_metrics_history', new_callable=AsyncMock) as mock_store:
+        with patch.object(
+            alert_service, "_check_alert_rules", new_callable=AsyncMock
+        ) as mock_rules, patch.object(
+            alert_service, "_detect_viral_content", new_callable=AsyncMock
+        ) as mock_viral, patch.object(
+            alert_service, "_detect_declining_engagement", new_callable=AsyncMock
+        ) as mock_decline, patch.object(
+            alert_service, "_check_milestones", new_callable=AsyncMock
+        ) as mock_milestones, patch.object(
+            alert_service, "_store_metrics_history", new_callable=AsyncMock
+        ) as mock_store:
 
             mock_rules.return_value = [{"id": "rule-alert-1", "type": "rule"}]
             mock_viral.return_value = {"id": "viral-alert-1", "type": "viral"}
@@ -109,7 +117,9 @@ class TestAlertService:
             user_id = uuid4()
             metrics = {"views": 10000, "engagement": 3.5}
 
-            result = await alert_service.check_content_metrics(content_id, user_id, metrics)
+            result = await alert_service.check_content_metrics(
+                content_id, user_id, metrics
+            )
 
             assert len(result) == 3
             mock_rules.assert_called_once()
@@ -123,12 +133,21 @@ class TestAlertService:
         """Test viral content detection."""
         from app.services.alert_service import alert_service
 
-        with patch.object(alert_service, '_get_metrics_history', new_callable=AsyncMock) as mock_history, \
-             patch.object(alert_service, '_alert_exists', new_callable=AsyncMock) as mock_exists, \
-             patch.object(alert_service, '_save_alert', new_callable=AsyncMock) as mock_save:
+        with patch.object(
+            alert_service, "_get_metrics_history", new_callable=AsyncMock
+        ) as mock_history, patch.object(
+            alert_service, "_alert_exists", new_callable=AsyncMock
+        ) as mock_exists, patch.object(
+            alert_service, "_save_alert", new_callable=AsyncMock
+        ) as mock_save:
 
             mock_history.return_value = [
-                {"value": 100, "recorded_at": (datetime.now(timezone.utc) - timedelta(hours=12)).isoformat()},
+                {
+                    "value": 100,
+                    "recorded_at": (
+                        datetime.now(timezone.utc) - timedelta(hours=12)
+                    ).isoformat(),
+                },
                 {"value": 500, "recorded_at": datetime.now(timezone.utc).isoformat()},
             ]
             mock_exists.return_value = False
@@ -138,7 +157,9 @@ class TestAlertService:
             user_id = uuid4()
             metrics = {"views": 5000, "engagement": 5.0}
 
-            result = await alert_service._detect_viral_content(content_id, user_id, metrics)
+            result = await alert_service._detect_viral_content(
+                content_id, user_id, metrics
+            )
 
             mock_history.assert_called_once()
             assert result is not None
@@ -161,16 +182,40 @@ class TestAlertService:
         """Test declining engagement detection."""
         from app.services.alert_service import alert_service
 
-        with patch.object(alert_service, '_get_metrics_history', new_callable=AsyncMock) as mock_history, \
-             patch.object(alert_service, '_alert_exists', new_callable=AsyncMock) as mock_exists, \
-             patch.object(alert_service, '_save_alert', new_callable=AsyncMock) as mock_save:
+        with patch.object(
+            alert_service, "_get_metrics_history", new_callable=AsyncMock
+        ) as mock_history, patch.object(
+            alert_service, "_alert_exists", new_callable=AsyncMock
+        ) as mock_exists, patch.object(
+            alert_service, "_save_alert", new_callable=AsyncMock
+        ) as mock_save:
 
             # Need enough data points for declining detection (at least 4)
             mock_history.return_value = [
-                {"value": 1000, "recorded_at": (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()},
-                {"value": 900, "recorded_at": (datetime.now(timezone.utc) - timedelta(days=6)).isoformat()},
-                {"value": 800, "recorded_at": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat()},
-                {"value": 300, "recorded_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()},
+                {
+                    "value": 1000,
+                    "recorded_at": (
+                        datetime.now(timezone.utc) - timedelta(days=7)
+                    ).isoformat(),
+                },
+                {
+                    "value": 900,
+                    "recorded_at": (
+                        datetime.now(timezone.utc) - timedelta(days=6)
+                    ).isoformat(),
+                },
+                {
+                    "value": 800,
+                    "recorded_at": (
+                        datetime.now(timezone.utc) - timedelta(days=5)
+                    ).isoformat(),
+                },
+                {
+                    "value": 300,
+                    "recorded_at": (
+                        datetime.now(timezone.utc) - timedelta(days=1)
+                    ).isoformat(),
+                },
             ]
             mock_exists.return_value = False
             mock_save.return_value = {"id": "declining-alert", "type": "declining"}
@@ -179,7 +224,9 @@ class TestAlertService:
             user_id = uuid4()
             metrics = {"engagement": 300}
 
-            result = await alert_service._detect_declining_engagement(content_id, user_id, metrics)
+            result = await alert_service._detect_declining_engagement(
+                content_id, user_id, metrics
+            )
 
             mock_history.assert_called_once()
             # Result may or may not be None depending on the algorithm's thresholds
@@ -191,8 +238,11 @@ class TestAlertService:
         """Test milestone checking."""
         from app.services.alert_service import alert_service
 
-        with patch.object(alert_service, '_milestone_alerted', new_callable=AsyncMock) as mock_alerted, \
-             patch.object(alert_service, '_save_alert', new_callable=AsyncMock) as mock_save:
+        with patch.object(
+            alert_service, "_milestone_alerted", new_callable=AsyncMock
+        ) as mock_alerted, patch.object(
+            alert_service, "_save_alert", new_callable=AsyncMock
+        ) as mock_save:
 
             mock_alerted.return_value = False
             mock_save.return_value = {"id": "milestone-alert", "type": "milestone"}
@@ -212,7 +262,9 @@ class TestAlertService:
         """Test milestone doesn't duplicate if already alerted."""
         from app.services.alert_service import alert_service
 
-        with patch.object(alert_service, '_milestone_alerted', new_callable=AsyncMock) as mock_alerted:
+        with patch.object(
+            alert_service, "_milestone_alerted", new_callable=AsyncMock
+        ) as mock_alerted:
             mock_alerted.return_value = True
 
             content_id = uuid4()
@@ -231,7 +283,9 @@ class TestAlertService:
         mock_client = MagicMock()
         mock_response = Mock()
         mock_response.data = [{"id": "alert-1", "status": "acknowledged"}]
-        mock_client.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
+        mock_client.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = (
+            mock_response
+        )
 
         # Set supabase directly (uses the setter property)
         alert_service.supabase = mock_client
@@ -249,7 +303,9 @@ class TestAlertService:
         mock_client = MagicMock()
         mock_response = Mock()
         mock_response.data = [{"id": "alert-1", "status": "resolved"}]
-        mock_client.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
+        mock_client.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = (
+            mock_response
+        )
 
         alert_service.supabase = mock_client
         try:
@@ -269,7 +325,9 @@ class TestAlertService:
             {"id": "alert-1", "status": "active"},
             {"id": "alert-2", "status": "acknowledged"},
         ]
-        mock_client.table.return_value.select.return_value.eq.return_value.order.return_value.range.return_value.execute.return_value = mock_response
+        mock_client.table.return_value.select.return_value.eq.return_value.order.return_value.range.return_value.execute.return_value = (
+            mock_response
+        )
 
         alert_service.supabase = mock_client
         try:
@@ -286,7 +344,9 @@ class TestAlertService:
         mock_client = MagicMock()
         mock_response = Mock()
         mock_response.count = 5
-        mock_client.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
+        mock_client.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = (
+            mock_response
+        )
 
         alert_service.supabase = mock_client
         try:
@@ -302,13 +362,17 @@ class TestAlertService:
 
         mock_client = MagicMock()
         mock_response = Mock()
-        mock_response.data = [{
-            "id": "rule-1",
-            "name": "Test Rule",
-            "metric_name": "views",
-            "threshold_value": 1000,
-        }]
-        mock_client.table.return_value.insert.return_value.execute.return_value = mock_response
+        mock_response.data = [
+            {
+                "id": "rule-1",
+                "name": "Test Rule",
+                "metric_name": "views",
+                "threshold_value": 1000,
+            }
+        ]
+        mock_client.table.return_value.insert.return_value.execute.return_value = (
+            mock_response
+        )
 
         alert_service.supabase = mock_client
         try:
@@ -319,7 +383,7 @@ class TestAlertService:
                 metric_name="views",
                 operator="greater_than",
                 threshold_value=1000,
-                notification_channels=["in_app"]
+                notification_channels=["in_app"],
             )
             assert result is not None
             assert result["name"] == "Test Rule"
@@ -333,19 +397,23 @@ class TestAlertService:
 
         mock_client = MagicMock()
         mock_response = Mock()
-        mock_response.data = [{
-            "id": "rule-1",
-            "name": "Updated Rule",
-            "is_enabled": False,
-        }]
-        mock_client.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
+        mock_response.data = [
+            {
+                "id": "rule-1",
+                "name": "Updated Rule",
+                "is_enabled": False,
+            }
+        ]
+        mock_client.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = (
+            mock_response
+        )
 
         alert_service.supabase = mock_client
         try:
             result = await alert_service.update_alert_rule(
                 rule_id=uuid4(),
                 user_id=uuid4(),
-                updates={"name": "Updated Rule", "is_enabled": False}
+                updates={"name": "Updated Rule", "is_enabled": False},
             )
             assert result is not None
             assert result["name"] == "Updated Rule"
@@ -360,7 +428,9 @@ class TestAlertService:
         mock_client = MagicMock()
         mock_response = Mock()
         mock_response.data = [{"id": "rule-1"}]
-        mock_client.table.return_value.delete.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
+        mock_client.table.return_value.delete.return_value.eq.return_value.eq.return_value.execute.return_value = (
+            mock_response
+        )
 
         alert_service.supabase = mock_client
         try:
@@ -372,32 +442,38 @@ class TestAlertService:
 
 # ============== API Endpoint Tests ==============
 
+
 class TestAlertsAPI:
     """Test alert API endpoints."""
 
     def test_list_alerts(self, client, auth_headers):
         """Test GET /api/v1/alerts endpoint."""
-        with patch("app.routers.alerts.alert_service") as mock_service, \
-             patch("app.routers.alerts.get_supabase_client") as mock_supabase:
-            mock_service.get_user_alerts = AsyncMock(return_value=[
-                {
-                    "id": str(uuid4()),
-                    "user_id": "test-user-id",
-                    "alert_type": "viral",
-                    "content_id": str(uuid4()),
-                    "metric_name": "engagement",
-                    "threshold_value": 3.0,
-                    "current_value": 5.5,
-                    "status": "active",
-                    "message": "Test alert",
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                    "acknowledged_at": None,
-                }
-            ])
+        with patch("app.routers.alerts.alert_service") as mock_service, patch(
+            "app.routers.alerts.get_supabase_client"
+        ) as mock_supabase:
+            mock_service.get_user_alerts = AsyncMock(
+                return_value=[
+                    {
+                        "id": str(uuid4()),
+                        "user_id": "test-user-id",
+                        "alert_type": "viral",
+                        "content_id": str(uuid4()),
+                        "metric_name": "engagement",
+                        "threshold_value": 3.0,
+                        "current_value": 5.5,
+                        "status": "active",
+                        "message": "Test alert",
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "acknowledged_at": None,
+                    }
+                ]
+            )
             mock_client = MagicMock()
             mock_count_response = Mock()
             mock_count_response.count = 1
-            mock_client.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_count_response
+            mock_client.table.return_value.select.return_value.eq.return_value.execute.return_value = (
+                mock_count_response
+            )
             mock_supabase.return_value = mock_client
 
             response = client.get("/api/v1/alerts", headers=auth_headers)
@@ -409,37 +485,43 @@ class TestAlertsAPI:
 
     def test_list_alerts_with_filters(self, client, auth_headers):
         """Test GET /api/v1/alerts with status and type filters."""
-        with patch("app.routers.alerts.alert_service") as mock_service, \
-             patch("app.routers.alerts.get_supabase_client") as mock_supabase:
+        with patch("app.routers.alerts.alert_service") as mock_service, patch(
+            "app.routers.alerts.get_supabase_client"
+        ) as mock_supabase:
             mock_service.get_user_alerts = AsyncMock(return_value=[])
             mock_client = MagicMock()
             mock_count_response = Mock()
             mock_count_response.count = 0
-            mock_client.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value.execute.return_value = mock_count_response
+            mock_client.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value.execute.return_value = (
+                mock_count_response
+            )
             mock_supabase.return_value = mock_client
 
             response = client.get(
-                "/api/v1/alerts?status=active&alert_type=viral",
-                headers=auth_headers
+                "/api/v1/alerts?status=active&alert_type=viral", headers=auth_headers
             )
 
         assert response.status_code == status.HTTP_200_OK
 
-    @pytest.mark.skip(reason="Router has status name shadowing bug causing unhandled exception")
+    @pytest.mark.skip(
+        reason="Router has status name shadowing bug causing unhandled exception"
+    )
     def test_list_alerts_invalid_status(self, client, auth_headers):
         """Test GET /api/v1/alerts with invalid status filter.
-        
+
         Note: The router has a name shadowing bug where the 'status' query
         parameter shadows the 'fastapi.status' import. This causes a 500
         instead of 400 for invalid status values. Testing for 500 until
         the production code is fixed.
         """
         response = client.get(
-            "/api/v1/alerts?status=invalid_status",
-            headers=auth_headers
+            "/api/v1/alerts?status=invalid_status", headers=auth_headers
         )
         # Due to name shadowing bug in router, this returns 500 not 400
-        assert response.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_500_INTERNAL_SERVER_ERROR]
+        assert response.status_code in [
+            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        ]
 
     def test_acknowledge_alert(self, client, auth_headers):
         """Test POST /api/v1/alerts/acknowledge/{id} endpoint."""
@@ -448,8 +530,7 @@ class TestAlertsAPI:
 
             alert_id = str(uuid4())
             response = client.post(
-                f"/api/v1/alerts/acknowledge/{alert_id}",
-                headers=auth_headers
+                f"/api/v1/alerts/acknowledge/{alert_id}", headers=auth_headers
             )
 
         assert response.status_code == status.HTTP_200_OK
@@ -463,8 +544,7 @@ class TestAlertsAPI:
 
             alert_id = str(uuid4())
             response = client.post(
-                f"/api/v1/alerts/acknowledge/{alert_id}",
-                headers=auth_headers
+                f"/api/v1/alerts/acknowledge/{alert_id}", headers=auth_headers
             )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -476,8 +556,7 @@ class TestAlertsAPI:
 
             alert_id = str(uuid4())
             response = client.post(
-                f"/api/v1/alerts/resolve/{alert_id}",
-                headers=auth_headers
+                f"/api/v1/alerts/resolve/{alert_id}", headers=auth_headers
             )
 
         assert response.status_code == status.HTTP_200_OK
@@ -499,21 +578,23 @@ class TestAlertsAPI:
     def test_list_alert_rules(self, client, auth_headers):
         """Test GET /api/v1/alerts/rules endpoint."""
         with patch("app.routers.alerts.alert_service") as mock_service:
-            mock_service.get_alert_rules = AsyncMock(return_value=[
-                {
-                    "id": str(uuid4()),
-                    "user_id": "test-user-id",
-                    "name": "High Views",
-                    "alert_type": "milestone",
-                    "metric_name": "views",
-                    "operator": "greater_than",
-                    "threshold_value": 10000.0,
-                    "is_enabled": True,
-                    "notification_channels": ["in_app"],
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                    "updated_at": datetime.now(timezone.utc).isoformat(),
-                }
-            ])
+            mock_service.get_alert_rules = AsyncMock(
+                return_value=[
+                    {
+                        "id": str(uuid4()),
+                        "user_id": "test-user-id",
+                        "name": "High Views",
+                        "alert_type": "milestone",
+                        "metric_name": "views",
+                        "operator": "greater_than",
+                        "threshold_value": 10000.0,
+                        "is_enabled": True,
+                        "notification_channels": ["in_app"],
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                ]
+            )
 
             response = client.get("/api/v1/alerts/rules", headers=auth_headers)
 
@@ -524,19 +605,21 @@ class TestAlertsAPI:
     def test_create_alert_rule(self, client, auth_headers):
         """Test POST /api/v1/alerts/rules endpoint."""
         with patch("app.routers.alerts.alert_service") as mock_service:
-            mock_service.create_alert_rule = AsyncMock(return_value={
-                "id": str(uuid4()),
-                "user_id": "test-user-id",
-                "name": "Test Rule",
-                "alert_type": "milestone",
-                "metric_name": "views",
-                "operator": "greater_than",
-                "threshold_value": 10000.0,
-                "is_enabled": True,
-                "notification_channels": ["in_app", "email"],
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-            })
+            mock_service.create_alert_rule = AsyncMock(
+                return_value={
+                    "id": str(uuid4()),
+                    "user_id": "test-user-id",
+                    "name": "Test Rule",
+                    "alert_type": "milestone",
+                    "metric_name": "views",
+                    "operator": "greater_than",
+                    "threshold_value": 10000.0,
+                    "is_enabled": True,
+                    "notification_channels": ["in_app", "email"],
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
 
             response = client.post(
                 "/api/v1/alerts/rules",
@@ -548,7 +631,7 @@ class TestAlertsAPI:
                     "operator": "greater_than",
                     "threshold_value": 10000,
                     "notification_channels": ["in_app", "email"],
-                }
+                },
             )
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -567,7 +650,7 @@ class TestAlertsAPI:
                 "operator": "greater_than",
                 "threshold_value": 10000,
                 "notification_channels": ["in_app"],
-            }
+            },
         )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -575,25 +658,27 @@ class TestAlertsAPI:
     def test_update_alert_rule(self, client, auth_headers):
         """Test PUT /api/v1/alerts/rules/{id} endpoint."""
         with patch("app.routers.alerts.alert_service") as mock_service:
-            mock_service.update_alert_rule = AsyncMock(return_value={
-                "id": str(uuid4()),
-                "user_id": "test-user-id",
-                "name": "Updated Rule",
-                "alert_type": "milestone",
-                "metric_name": "views",
-                "operator": "greater_than",
-                "threshold_value": 5000.0,
-                "is_enabled": False,
-                "notification_channels": ["in_app"],
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-            })
+            mock_service.update_alert_rule = AsyncMock(
+                return_value={
+                    "id": str(uuid4()),
+                    "user_id": "test-user-id",
+                    "name": "Updated Rule",
+                    "alert_type": "milestone",
+                    "metric_name": "views",
+                    "operator": "greater_than",
+                    "threshold_value": 5000.0,
+                    "is_enabled": False,
+                    "notification_channels": ["in_app"],
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
 
             rule_id = str(uuid4())
             response = client.put(
                 f"/api/v1/alerts/rules/{rule_id}",
                 headers={**auth_headers, "Content-Type": "application/json"},
-                json={"name": "Updated Rule", "is_enabled": False}
+                json={"name": "Updated Rule", "is_enabled": False},
             )
 
         assert response.status_code == status.HTTP_200_OK
@@ -607,8 +692,7 @@ class TestAlertsAPI:
 
             rule_id = str(uuid4())
             response = client.delete(
-                f"/api/v1/alerts/rules/{rule_id}",
-                headers=auth_headers
+                f"/api/v1/alerts/rules/{rule_id}", headers=auth_headers
             )
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -616,29 +700,31 @@ class TestAlertsAPI:
     def test_check_metrics(self, client, auth_headers):
         """Test POST /api/v1/alerts/check-metrics endpoint."""
         with patch("app.routers.alerts.alert_service") as mock_service:
-            mock_service.check_content_metrics = AsyncMock(return_value=[
-                {
-                    "id": str(uuid4()),
-                    "user_id": "test-user-id",
-                    "alert_type": "milestone",
-                    "content_id": str(uuid4()),
-                    "metric_name": "views",
-                    "threshold_value": 10000.0,
-                    "current_value": 15000.0,
-                    "status": "active",
-                    "message": "Milestone reached!",
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                    "acknowledged_at": None,
-                }
-            ])
+            mock_service.check_content_metrics = AsyncMock(
+                return_value=[
+                    {
+                        "id": str(uuid4()),
+                        "user_id": "test-user-id",
+                        "alert_type": "milestone",
+                        "content_id": str(uuid4()),
+                        "metric_name": "views",
+                        "threshold_value": 10000.0,
+                        "current_value": 15000.0,
+                        "status": "active",
+                        "message": "Milestone reached!",
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "acknowledged_at": None,
+                    }
+                ]
+            )
 
             response = client.post(
                 "/api/v1/alerts/check-metrics",
                 headers={**auth_headers, "Content-Type": "application/json"},
                 json={
                     "content_id": str(uuid4()),
-                    "metrics": {"views": 15000, "engagement": 5.5}
-                }
+                    "metrics": {"views": 15000, "engagement": 5.5},
+                },
             )
 
         assert response.status_code == status.HTTP_200_OK
@@ -648,19 +734,21 @@ class TestAlertsAPI:
     def test_list_notifications(self, client, auth_headers):
         """Test GET /api/v1/alerts/notifications endpoint."""
         with patch("app.routers.alerts.alert_service") as mock_service:
-            mock_service.get_in_app_notifications = AsyncMock(return_value=[
-                {
-                    "id": str(uuid4()),
-                    "user_id": "test-user-id",
-                    "alert_id": str(uuid4()),
-                    "title": "Test Notification",
-                    "message": "Test message",
-                    "type": "info",
-                    "is_read": False,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                    "read_at": None,
-                }
-            ])
+            mock_service.get_in_app_notifications = AsyncMock(
+                return_value=[
+                    {
+                        "id": str(uuid4()),
+                        "user_id": "test-user-id",
+                        "alert_id": str(uuid4()),
+                        "title": "Test Notification",
+                        "message": "Test message",
+                        "type": "info",
+                        "is_read": False,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "read_at": None,
+                    }
+                ]
+            )
             mock_service.get_unread_alert_count = AsyncMock(return_value=1)
 
             response = client.get("/api/v1/alerts/notifications", headers=auth_headers)
@@ -678,7 +766,7 @@ class TestAlertsAPI:
             notification_id = str(uuid4())
             response = client.post(
                 f"/api/v1/alerts/notifications/{notification_id}/read",
-                headers=auth_headers
+                headers=auth_headers,
             )
 
         assert response.status_code == status.HTTP_200_OK
@@ -691,12 +779,13 @@ class TestAlertsAPI:
             mock_client = MagicMock()
             mock_response = Mock()
             mock_response.data = [{"id": str(uuid4())}, {"id": str(uuid4())}]
-            mock_client.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
+            mock_client.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = (
+                mock_response
+            )
             mock_supabase.return_value = mock_client
 
             response = client.post(
-                "/api/v1/alerts/notifications/mark-all-read",
-                headers=auth_headers
+                "/api/v1/alerts/notifications/mark-all-read", headers=auth_headers
             )
 
         assert response.status_code == status.HTTP_200_OK
@@ -705,6 +794,7 @@ class TestAlertsAPI:
 
 
 # ============== Integration Tests ==============
+
 
 class TestAlertsIntegration:
     """Integration tests for the alerts system."""
@@ -719,12 +809,18 @@ class TestAlertsIntegration:
         mock_client.table.return_value = mock_table
 
         # Setup mock chain
-        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = Mock(data=[])
-        mock_table.insert.return_value.execute.return_value = Mock(data=[{
-            "id": str(uuid4()),
-            "alert_type": "viral",
-            "message": "Your content is going viral!",
-        }])
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = Mock(
+            data=[]
+        )
+        mock_table.insert.return_value.execute.return_value = Mock(
+            data=[
+                {
+                    "id": str(uuid4()),
+                    "alert_type": "viral",
+                    "message": "Your content is going viral!",
+                }
+            ]
+        )
 
         alert_service.supabase = mock_client
         try:
@@ -737,17 +833,25 @@ class TestAlertsIntegration:
                 "engagement": 10.0,
             }
 
-            with patch.object(alert_service, '_check_alert_rules', new_callable=AsyncMock) as mock_rules, \
-                 patch.object(alert_service, '_detect_viral_content', new_callable=AsyncMock) as mock_viral, \
-                 patch.object(alert_service, '_detect_declining_engagement', new_callable=AsyncMock) as mock_decline, \
-                 patch.object(alert_service, '_check_milestones', new_callable=AsyncMock) as mock_milestones, \
-                 patch.object(alert_service, '_store_metrics_history', new_callable=AsyncMock):
+            with patch.object(
+                alert_service, "_check_alert_rules", new_callable=AsyncMock
+            ) as mock_rules, patch.object(
+                alert_service, "_detect_viral_content", new_callable=AsyncMock
+            ) as mock_viral, patch.object(
+                alert_service, "_detect_declining_engagement", new_callable=AsyncMock
+            ) as mock_decline, patch.object(
+                alert_service, "_check_milestones", new_callable=AsyncMock
+            ) as mock_milestones, patch.object(
+                alert_service, "_store_metrics_history", new_callable=AsyncMock
+            ):
                 mock_rules.return_value = []
                 mock_viral.return_value = {"id": "viral-1", "type": "viral"}
                 mock_decline.return_value = None
                 mock_milestones.return_value = []
 
-                result = await alert_service.check_content_metrics(content_id, user_id, metrics)
+                result = await alert_service.check_content_metrics(
+                    content_id, user_id, metrics
+                )
                 assert isinstance(result, list)
         finally:
             alert_service._supabase = None
@@ -765,7 +869,10 @@ class TestAlertsIntegration:
     async def test_alert_enumerations(self):
         """Test that alert enumerations work correctly."""
         from app.services.alert_service import (
-            AlertType, AlertStatus, MetricName, AlertOperator
+            AlertType,
+            AlertStatus,
+            MetricName,
+            AlertOperator,
         )
 
         # Test AlertType
@@ -796,6 +903,7 @@ class TestAlertsIntegration:
 
 # ============== Validation Tests ==============
 
+
 class TestAlertValidation:
     """Test input validation for alerts."""
 
@@ -810,7 +918,7 @@ class TestAlertValidation:
                 "metric_name": "invalid_metric",
                 "operator": "greater_than",
                 "threshold_value": 1000,
-            }
+            },
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -825,7 +933,7 @@ class TestAlertValidation:
                 "metric_name": "views",
                 "operator": "invalid_operator",
                 "threshold_value": 1000,
-            }
+            },
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -841,7 +949,7 @@ class TestAlertValidation:
                 "operator": "greater_than",
                 "threshold_value": 1000,
                 "notification_channels": ["invalid_channel"],
-            }
+            },
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -856,7 +964,7 @@ class TestAlertValidation:
                 "metric_name": "views",
                 "operator": "greater_than",
                 "threshold_value": 1000,
-            }
+            },
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -871,12 +979,13 @@ class TestAlertValidation:
                 "metric_name": "views",
                 "operator": "greater_than",
                 "threshold_value": -1000,
-            }
+            },
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 # ============== Edge Case Tests ==============
+
 
 class TestAlertEdgeCases:
     """Test edge cases and error handling."""
@@ -887,9 +996,11 @@ class TestAlertEdgeCases:
         from app.services.alert_service import alert_service
 
         # get_user_alerts catches exceptions and returns []
-        with patch.object(alert_service, 'get_user_alerts', new_callable=AsyncMock) as mock_get:
+        with patch.object(
+            alert_service, "get_user_alerts", new_callable=AsyncMock
+        ) as mock_get:
             mock_get.side_effect = Exception("Database error")
-            
+
             # The service should catch and return empty list
             # Since the exception propagates, we expect it to be raised
             try:
@@ -909,8 +1020,12 @@ class TestAlertEdgeCases:
         user_id = uuid4()
         metrics = {}
 
-        with patch.object(alert_service, '_store_metrics_history', new_callable=AsyncMock):
-            result = await alert_service.check_content_metrics(content_id, user_id, metrics)
+        with patch.object(
+            alert_service, "_store_metrics_history", new_callable=AsyncMock
+        ):
+            result = await alert_service.check_content_metrics(
+                content_id, user_id, metrics
+            )
             assert isinstance(result, list)
 
     @pytest.mark.asyncio
@@ -918,14 +1033,18 @@ class TestAlertEdgeCases:
         """Test viral detection with only one history entry."""
         from app.services.alert_service import alert_service
 
-        with patch.object(alert_service, '_get_metrics_history', new_callable=AsyncMock) as mock_history:
+        with patch.object(
+            alert_service, "_get_metrics_history", new_callable=AsyncMock
+        ) as mock_history:
             mock_history.return_value = [{"value": 100}]  # Only one entry
 
             content_id = uuid4()
             user_id = uuid4()
             metrics = {"views": 5000, "engagement": 5.0}
 
-            result = await alert_service._detect_viral_content(content_id, user_id, metrics)
+            result = await alert_service._detect_viral_content(
+                content_id, user_id, metrics
+            )
             assert result is None
 
     @pytest.mark.asyncio
@@ -933,7 +1052,9 @@ class TestAlertEdgeCases:
         """Test percentage change with zero previous value."""
         from app.services.alert_service import alert_service
 
-        with patch.object(alert_service, '_get_metrics_history', new_callable=AsyncMock) as mock_history:
+        with patch.object(
+            alert_service, "_get_metrics_history", new_callable=AsyncMock
+        ) as mock_history:
             mock_history.return_value = [
                 {"value": 0},
                 {"value": 100},
@@ -944,7 +1065,9 @@ class TestAlertEdgeCases:
             metrics = {"engagement": 100}
 
             # Should not crash with division by zero
-            result = await alert_service._detect_declining_engagement(content_id, user_id, metrics)
+            result = await alert_service._detect_declining_engagement(
+                content_id, user_id, metrics
+            )
             # No alert expected due to zero first half average
             assert result is None
 
@@ -959,6 +1082,7 @@ class TestAlertEdgeCases:
 
 # ============== WebSocket Preparation Tests ==============
 
+
 class TestWebSocketPreparation:
     """Tests for WebSocket real-time notifications preparation."""
 
@@ -967,7 +1091,9 @@ class TestWebSocketPreparation:
         """Test that alert service is prepared for WebSocket integration."""
         from app.services.alert_service import alert_service
 
-        with patch.object(alert_service, 'get_user_alerts', new_callable=AsyncMock) as mock_get:
+        with patch.object(
+            alert_service, "get_user_alerts", new_callable=AsyncMock
+        ) as mock_get:
             mock_get.return_value = [
                 {
                     "id": str(uuid4()),
@@ -978,7 +1104,9 @@ class TestWebSocketPreparation:
                 }
             ]
 
-            alerts = await alert_service.get_user_alerts(uuid4(), status="active", limit=10)
+            alerts = await alert_service.get_user_alerts(
+                uuid4(), status="active", limit=10
+            )
             assert isinstance(alerts, list)
             for alert in alerts:
                 assert "id" in alert

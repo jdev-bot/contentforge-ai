@@ -8,6 +8,7 @@ Covers:
 - Batch operations
 - Distribution endpoint
 """
+
 import pytest
 import json
 from datetime import datetime
@@ -15,7 +16,6 @@ from uuid import uuid4, UUID
 from unittest.mock import Mock, patch, MagicMock, AsyncMock
 
 from app.services.sentiment_service import SentimentService, sentiment_service
-
 
 # =========================================================================== #
 #  Service unit tests                                                          #
@@ -28,14 +28,24 @@ class TestSentimentServiceAnalyze:
     @pytest.mark.asyncio
     async def test_analyze_returns_required_keys(self):
         """Result should contain all expected keys."""
-        mock_ai_response = json.dumps({
-            "sentiment": "positive",
-            "score": 0.75,
-            "emotions": {"joy": 0.8, "anger": 0.1, "sadness": 0.05,
-                         "fear": 0.02, "surprise": 0.5, "disgust": 0.01},
-            "aspects": [{"section": "intro", "sentiment": "positive", "score": 0.8}],
-            "tone": "informative",
-        })
+        mock_ai_response = json.dumps(
+            {
+                "sentiment": "positive",
+                "score": 0.75,
+                "emotions": {
+                    "joy": 0.8,
+                    "anger": 0.1,
+                    "sadness": 0.05,
+                    "fear": 0.02,
+                    "surprise": 0.5,
+                    "disgust": 0.01,
+                },
+                "aspects": [
+                    {"section": "intro", "sentiment": "positive", "score": 0.8}
+                ],
+                "tone": "informative",
+            }
+        )
 
         svc = SentimentService()
         svc._supabase = MagicMock()
@@ -64,14 +74,22 @@ class TestSentimentServiceAnalyze:
     @pytest.mark.asyncio
     async def test_analyze_clamps_sentiment_score(self):
         """Score should be clamped to [-1.0, 1.0]."""
-        mock_ai_response = json.dumps({
-            "sentiment": "positive",
-            "score": 1.5,  # over limit
-            "emotions": {"joy": 0.5, "anger": 0.5, "sadness": 0.5,
-                         "fear": 0.5, "surprise": 0.5, "disgust": 0.5},
-            "aspects": [],
-            "tone": "informative",
-        })
+        mock_ai_response = json.dumps(
+            {
+                "sentiment": "positive",
+                "score": 1.5,  # over limit
+                "emotions": {
+                    "joy": 0.5,
+                    "anger": 0.5,
+                    "sadness": 0.5,
+                    "fear": 0.5,
+                    "surprise": 0.5,
+                    "disgust": 0.5,
+                },
+                "aspects": [],
+                "tone": "informative",
+            }
+        )
 
         svc = SentimentService()
         svc._supabase = MagicMock()
@@ -84,14 +102,22 @@ class TestSentimentServiceAnalyze:
     @pytest.mark.asyncio
     async def test_analyze_normalizes_invalid_sentiment(self):
         """Invalid sentiment values should default to neutral."""
-        mock_ai_response = json.dumps({
-            "sentiment": "excited",  # invalid
-            "score": 0.5,
-            "emotions": {"joy": 0.9, "anger": 0.0, "sadness": 0.0,
-                         "fear": 0.0, "surprise": 0.3, "disgust": 0.0},
-            "aspects": [],
-            "tone": "casual",
-        })
+        mock_ai_response = json.dumps(
+            {
+                "sentiment": "excited",  # invalid
+                "score": 0.5,
+                "emotions": {
+                    "joy": 0.9,
+                    "anger": 0.0,
+                    "sadness": 0.0,
+                    "fear": 0.0,
+                    "surprise": 0.3,
+                    "disgust": 0.0,
+                },
+                "aspects": [],
+                "tone": "casual",
+            }
+        )
 
         svc = SentimentService()
         svc._supabase = MagicMock()
@@ -104,14 +130,22 @@ class TestSentimentServiceAnalyze:
     @pytest.mark.asyncio
     async def test_analyze_normalizes_invalid_tone(self):
         """Invalid tone values should default to informative."""
-        mock_ai_response = json.dumps({
-            "sentiment": "neutral",
-            "score": 0.0,
-            "emotions": {"joy": 0.0, "anger": 0.0, "sadness": 0.0,
-                         "fear": 0.0, "surprise": 0.0, "disgust": 0.0},
-            "aspects": [],
-            "tone": "sarcastic",  # invalid
-        })
+        mock_ai_response = json.dumps(
+            {
+                "sentiment": "neutral",
+                "score": 0.0,
+                "emotions": {
+                    "joy": 0.0,
+                    "anger": 0.0,
+                    "sadness": 0.0,
+                    "fear": 0.0,
+                    "surprise": 0.0,
+                    "disgust": 0.0,
+                },
+                "aspects": [],
+                "tone": "sarcastic",  # invalid
+            }
+        )
 
         svc = SentimentService()
         svc._supabase = MagicMock()
@@ -124,14 +158,22 @@ class TestSentimentServiceAnalyze:
     @pytest.mark.asyncio
     async def test_analyze_clamps_emotions(self):
         """Emotion scores should be clamped to [0, 1]."""
-        mock_ai_response = json.dumps({
-            "sentiment": "positive",
-            "score": 0.5,
-            "emotions": {"joy": 1.5, "anger": -0.2, "sadness": 0.3,
-                         "fear": 0.1, "surprise": 0.8, "disgust": 0.0},
-            "aspects": [],
-            "tone": "formal",
-        })
+        mock_ai_response = json.dumps(
+            {
+                "sentiment": "positive",
+                "score": 0.5,
+                "emotions": {
+                    "joy": 1.5,
+                    "anger": -0.2,
+                    "sadness": 0.3,
+                    "fear": 0.1,
+                    "surprise": 0.8,
+                    "disgust": 0.0,
+                },
+                "aspects": [],
+                "tone": "formal",
+            }
+        )
 
         svc = SentimentService()
         svc._supabase = MagicMock()
@@ -139,8 +181,8 @@ class TestSentimentServiceAnalyze:
             mock_groq.generate_content = AsyncMock(return_value=mock_ai_response)
             result = await svc.analyze_sentiment("Test")
 
-        assert result["emotions"]["joy"] == 1.0   # clamped from 1.5
-        assert result["emotions"]["anger"] == 0.0   # clamped from -0.2
+        assert result["emotions"]["joy"] == 1.0  # clamped from 1.5
+        assert result["emotions"]["anger"] == 0.0  # clamped from -0.2
 
     @pytest.mark.asyncio
     async def test_analyze_strips_markdown_fences(self):
@@ -158,17 +200,25 @@ class TestSentimentServiceAnalyze:
     @pytest.mark.asyncio
     async def test_analyze_aspect_sentiment_normalization(self):
         """Aspect sentiment values should be normalized."""
-        mock_ai_response = json.dumps({
-            "sentiment": "mixed",
-            "score": 0.2,
-            "emotions": {"joy": 0.4, "anger": 0.3, "sadness": 0.1,
-                         "fear": 0.0, "surprise": 0.2, "disgust": 0.1},
-            "aspects": [
-                {"section": "good part", "sentiment": "positive", "score": 0.7},
-                {"section": "bad part", "sentiment": "negative", "score": -0.5},
-            ],
-            "tone": "persuasive",
-        })
+        mock_ai_response = json.dumps(
+            {
+                "sentiment": "mixed",
+                "score": 0.2,
+                "emotions": {
+                    "joy": 0.4,
+                    "anger": 0.3,
+                    "sadness": 0.1,
+                    "fear": 0.0,
+                    "surprise": 0.2,
+                    "disgust": 0.1,
+                },
+                "aspects": [
+                    {"section": "good part", "sentiment": "positive", "score": 0.7},
+                    {"section": "bad part", "sentiment": "negative", "score": -0.5},
+                ],
+                "tone": "persuasive",
+            }
+        )
 
         svc = SentimentService()
         svc._supabase = MagicMock()
@@ -189,17 +239,29 @@ class TestSentimentServicePersistence:
         """store_analysis should insert a row."""
         svc = SentimentService()
         mock_sb = MagicMock()
-        mock_sb.table.return_value.insert.return_value.execute.return_value.data = [{"id": str(uuid4())}]
+        mock_sb.table.return_value.insert.return_value.execute.return_value.data = [
+            {"id": str(uuid4())}
+        ]
         analysis = {
-            "sentiment": "positive", "score": 0.7,
-            "emotions": {"joy": 0.8, "anger": 0.1, "sadness": 0.05,
-                         "fear": 0.02, "surprise": 0.5, "disgust": 0.01},
-            "aspects": [], "tone": "informative",
+            "sentiment": "positive",
+            "score": 0.7,
+            "emotions": {
+                "joy": 0.8,
+                "anger": 0.1,
+                "sadness": 0.05,
+                "fear": 0.02,
+                "surprise": 0.5,
+                "disgust": 0.01,
+            },
+            "aspects": [],
+            "tone": "informative",
         }
         with patch.object(svc, "_supabase", mock_sb):
             with patch("app.services.sentiment_service.cache") as mock_cache:
                 result = await svc.store_analysis(
-                    content_id=uuid4(), user_id=uuid4(), analysis=analysis,
+                    content_id=uuid4(),
+                    user_id=uuid4(),
+                    analysis=analysis,
                 )
         assert result is not None
         mock_sb.table.assert_called_with("sentiment_analyses")
@@ -209,7 +271,9 @@ class TestSentimentServicePersistence:
         """get_analysis returns None when no rows exist."""
         svc = SentimentService()
         mock_sb = MagicMock()
-        mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = []
+        mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = (
+            []
+        )
         with patch.object(svc, "_supabase", mock_sb):
             with patch("app.services.sentiment_service.cache") as mock_cache:
                 mock_cache.get = Mock(return_value=None)
@@ -266,7 +330,9 @@ class TestSentimentServicePersistence:
         """get_distribution with no data returns zeros."""
         svc = SentimentService()
         mock_sb = MagicMock()
-        mock_sb.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
+        mock_sb.table.return_value.select.return_value.eq.return_value.execute.return_value.data = (
+            []
+        )
         with patch.object(svc, "_supabase", mock_sb):
             result = await svc.get_distribution(uuid4())
 
@@ -283,13 +349,28 @@ class TestSentimentServiceBatch:
         """batch_analyze should analyze and store each item."""
         svc = SentimentService()
         mock_analysis = {
-            "sentiment": "positive", "score": 0.7,
-            "emotions": {"joy": 0.8, "anger": 0.1, "sadness": 0.05,
-                         "fear": 0.02, "surprise": 0.5, "disgust": 0.01},
-            "aspects": [], "tone": "informative",
+            "sentiment": "positive",
+            "score": 0.7,
+            "emotions": {
+                "joy": 0.8,
+                "anger": 0.1,
+                "sadness": 0.05,
+                "fear": 0.02,
+                "surprise": 0.5,
+                "disgust": 0.01,
+            },
+            "aspects": [],
+            "tone": "informative",
         }
-        with patch.object(svc, "analyze_sentiment", new_callable=AsyncMock, return_value=mock_analysis):
-            with patch.object(svc, "store_analysis", new_callable=AsyncMock, return_value={"id": str(uuid4())}):
+        with patch.object(
+            svc, "analyze_sentiment", new_callable=AsyncMock, return_value=mock_analysis
+        ):
+            with patch.object(
+                svc,
+                "store_analysis",
+                new_callable=AsyncMock,
+                return_value={"id": str(uuid4())},
+            ):
                 items = [
                     {"content_id": uuid4(), "text": "Great stuff"},
                     {"content_id": uuid4(), "text": "Not so great"},

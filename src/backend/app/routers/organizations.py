@@ -1,6 +1,7 @@
 """
 Organization management router with full CRUD and member management.
 """
+
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional
@@ -86,15 +87,29 @@ class OwnershipTransferResponse(BaseModel):
 def check_org_access(supabase, org_id: str, user_id: str) -> tuple[bool, Optional[str]]:
     """Check if user has access to organization and return their role."""
     # Check if user is owner
-    result = supabase.table("organizations").select("*").eq("id", org_id).eq("owner_id", user_id).single().execute()
+    result = (
+        supabase.table("organizations")
+        .select("*")
+        .eq("id", org_id)
+        .eq("owner_id", user_id)
+        .single()
+        .execute()
+    )
     if result.data:
         return True, "owner"
-    
+
     # Check if user is a member
-    result = supabase.table("organization_members").select("role").eq("org_id", org_id).eq("user_id", user_id).single().execute()
+    result = (
+        supabase.table("organization_members")
+        .select("role")
+        .eq("org_id", org_id)
+        .eq("user_id", user_id)
+        .single()
+        .execute()
+    )
     if result.data:
         return True, result.data.get("role")
-    
+
     return False, None
 
 
@@ -114,31 +129,33 @@ def check_is_owner(supabase, org_id: str, user_id: str) -> bool:
 
 # Organization CRUD
 
-@router.post("/", response_model=OrganizationResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/", response_model=OrganizationResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_organization(
-    org_data: OrganizationCreate,
-    user=Depends(get_auth_user)
+    org_data: OrganizationCreate, user=Depends(get_auth_user)
 ):
     """Create a new organization. User becomes the owner."""
     supabase = get_supabase_client()
-    
+
     try:
         # Create organization
         data = {
             "name": org_data.name,
             "owner_id": str(user.id),
         }
-        
+
         result = supabase.table("organizations").insert(data).execute()
-        
+
         if not result.data:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create organization",
             )
-        
+
         created_org = result.data[0]
-        
+
         # Add owner as admin member
         member_data = {
             "org_id": created_org["id"],
@@ -146,13 +163,9 @@ async def create_organization(
             "role": "admin",
         }
         supabase.table("organization_members").insert(member_data).execute()
-        
-        return OrganizationResponse(
-            **created_org,
-            is_owner=True,
-            member_count=1
-        )
-        
+
+        return OrganizationResponse(**created_org, is_owner=True, member_count=1)
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -163,56 +176,86 @@ async def create_organization(
 @router.get("/", response_model=List[OrganizationResponse])
 async def list_organizations(
     user=Depends(get_auth_user),
-    include_member_count: bool = Query(True, description="Include member count in response")
+    include_member_count: bool = Query(
+        True, description="Include member count in response"
+    ),
 ):
     """List all organizations the user owns or is a member of."""
     supabase = get_supabase_client()
-    
+
     try:
         user_id = str(user.id)
         organizations = []
-        
+
         # Get organizations where user is owner
-        owned_result = supabase.table("organizations").select("*").eq("owner_id", user_id).order("created_at", desc=True).execute()
-        
+        owned_result = (
+            supabase.table("organizations")
+            .select("*")
+            .eq("owner_id", user_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+
         # Get organizations where user is a member
-        member_result = supabase.table("organization_members").select("org_id").eq("user_id", user_id).execute()
-        member_org_ids = [m["org_id"] for m in member_result.data] if member_result.data else []
-        
+        member_result = (
+            supabase.table("organization_members")
+            .select("org_id")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        member_org_ids = (
+            [m["org_id"] for m in member_result.data] if member_result.data else []
+        )
+
         member_orgs = []
         if member_org_ids:
             # Use 'in' filter for member orgs
-            member_orgs_result = supabase.table("organizations").select("*").in_("id", member_org_ids).order("created_at", desc=True).execute()
+            member_orgs_result = (
+                supabase.table("organizations")
+                .select("*")
+                .in_("id", member_org_ids)
+                .order("created_at", desc=True)
+                .execute()
+            )
             member_orgs = member_orgs_result.data if member_orgs_result.data else []
-        
+
         # Combine and deduplicate
         all_org_ids = set()
         all_orgs = []
-        
+
         for org in (owned_result.data or []) + member_orgs:
             if org["id"] not in all_org_ids:
                 all_org_ids.add(org["id"])
                 all_orgs.append(org)
-        
+
         # Sort by created_at desc
         all_orgs.sort(key=lambda x: x["created_at"], reverse=True)
-        
+
         for org in all_orgs:
             is_owner = org["owner_id"] == user_id
-            
+
             member_count = None
             if include_member_count:
-                count_result = supabase.table("organization_members").select("id", count="exact").eq("org_id", org["id"]).execute()
-                member_count = count_result.count if hasattr(count_result, 'count') else len(count_result.data)
-            
-            organizations.append(OrganizationResponse(
-                **org,
-                is_owner=is_owner,
-                member_count=member_count
-            ))
-        
+                count_result = (
+                    supabase.table("organization_members")
+                    .select("id", count="exact")
+                    .eq("org_id", org["id"])
+                    .execute()
+                )
+                member_count = (
+                    count_result.count
+                    if hasattr(count_result, "count")
+                    else len(count_result.data)
+                )
+
+            organizations.append(
+                OrganizationResponse(
+                    **org, is_owner=is_owner, member_count=member_count
+                )
+            )
+
         return organizations
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -221,16 +264,13 @@ async def list_organizations(
 
 
 @router.get("/{org_id}", response_model=OrganizationWithMembers)
-async def get_organization(
-    org_id: UUID,
-    user=Depends(get_auth_user)
-):
+async def get_organization(org_id: UUID, user=Depends(get_auth_user)):
     """Get a specific organization with its members."""
     supabase = get_supabase_client()
-    
+
     try:
         user_id = str(user.id)
-        
+
         # Check access
         has_access, role = check_org_access(supabase, str(org_id), user_id)
         if not has_access:
@@ -238,52 +278,71 @@ async def get_organization(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have access to this organization",
             )
-        
+
         # Get organization
-        result = supabase.table("organizations").select("*").eq("id", str(org_id)).single().execute()
-        
+        result = (
+            supabase.table("organizations")
+            .select("*")
+            .eq("id", str(org_id))
+            .single()
+            .execute()
+        )
+
         if not result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Organization not found",
             )
-        
+
         org = result.data
         is_owner = org["owner_id"] == user_id
-        
+
         # Get members with user details
-        members_result = supabase.table("organization_members").select("*").eq("org_id", str(org_id)).execute()
-        
+        members_result = (
+            supabase.table("organization_members")
+            .select("*")
+            .eq("org_id", str(org_id))
+            .execute()
+        )
+
         members = []
-        for member in (members_result.data or []):
+        for member in members_result.data or []:
             # Get user email from auth (using profiles as fallback)
             user_email = None
             user_name = None
             avatar_url = None
-            
+
             try:
-                profile_result = supabase.table("profiles").select("full_name, avatar_url").eq("id", str(member["user_id"])).single().execute()
+                profile_result = (
+                    supabase.table("profiles")
+                    .select("full_name, avatar_url")
+                    .eq("id", str(member["user_id"]))
+                    .single()
+                    .execute()
+                )
                 if profile_result.data:
                     user_name = profile_result.data.get("full_name")
                     avatar_url = profile_result.data.get("avatar_url")
             except Exception:
                 pass
-            
-            members.append(OrganizationMemberResponse(
-                **member,
-                user_email=user_email,
-                user_name=user_name,
-                avatar_url=avatar_url
-            ))
-        
+
+            members.append(
+                OrganizationMemberResponse(
+                    **member,
+                    user_email=user_email,
+                    user_name=user_name,
+                    avatar_url=avatar_url,
+                )
+            )
+
         return OrganizationWithMembers(
             **org,
             is_owner=is_owner,
             member_count=len(members),
             members=members,
-            current_user_role=role
+            current_user_role=role,
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -295,46 +354,55 @@ async def get_organization(
 
 @router.patch("/{org_id}", response_model=OrganizationResponse)
 async def update_organization(
-    org_id: UUID,
-    org_data: OrganizationUpdate,
-    user=Depends(get_auth_user)
+    org_id: UUID, org_data: OrganizationUpdate, user=Depends(get_auth_user)
 ):
     """Update an organization. Only admins can update."""
     supabase = get_supabase_client()
-    
+
     try:
         user_id = str(user.id)
-        
+
         # Check admin access
         if not check_is_admin(supabase, str(org_id), user_id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to update this organization",
             )
-        
+
         # Build update data
         update_data = {}
         if org_data.name is not None:
             update_data["name"] = org_data.name
-        
+
         if not update_data:
             # Return existing organization
-            result = supabase.table("organizations").select("*").eq("id", str(org_id)).single().execute()
+            result = (
+                supabase.table("organizations")
+                .select("*")
+                .eq("id", str(org_id))
+                .single()
+                .execute()
+            )
             return OrganizationResponse(**result.data, is_owner=True)
-        
-        result = supabase.table("organizations").update(update_data).eq("id", str(org_id)).execute()
-        
+
+        result = (
+            supabase.table("organizations")
+            .update(update_data)
+            .eq("id", str(org_id))
+            .execute()
+        )
+
         if not result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Organization not found",
             )
-        
+
         updated_org = result.data[0]
         is_owner = updated_org["owner_id"] == user_id
-        
+
         return OrganizationResponse(**updated_org, is_owner=is_owner)
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -345,34 +413,37 @@ async def update_organization(
 
 
 @router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_organization(
-    org_id: UUID,
-    user=Depends(get_auth_user)
-):
+async def delete_organization(org_id: UUID, user=Depends(get_auth_user)):
     """Delete an organization. Only the owner can delete."""
     supabase = get_supabase_client()
-    
+
     try:
         user_id = str(user.id)
-        
+
         # Check ownership
         if not check_is_owner(supabase, str(org_id), user_id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only the owner can delete this organization",
             )
-        
+
         # Delete organization (cascade will handle members)
-        result = supabase.table("organizations").delete().eq("id", str(org_id)).eq("owner_id", user_id).execute()
-        
+        result = (
+            supabase.table("organizations")
+            .delete()
+            .eq("id", str(org_id))
+            .eq("owner_id", user_id)
+            .execute()
+        )
+
         if not result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Organization not found",
             )
-        
+
         return None
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -384,39 +455,50 @@ async def delete_organization(
 
 # Member Management
 
+
 @router.post("/{org_id}/invite", response_model=InvitationResponse)
 async def invite_member(
-    org_id: UUID,
-    invitation: OrganizationMemberBase,
-    user=Depends(get_auth_user)
+    org_id: UUID, invitation: OrganizationMemberBase, user=Depends(get_auth_user)
 ):
     """Invite a member to the organization by email."""
     supabase = get_supabase_client()
-    
+
     try:
         user_id = str(user.id)
-        
+
         # Check admin access
         if not check_is_admin(supabase, str(org_id), user_id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to invite members",
             )
-        
+
         # Check if email is already a member
         # First get user by email from auth.users (we need admin client)
         try:
             admin_supabase = get_supabase_admin_client()
             # Note: In production, you'd use auth.admin.listUsers() or similar
             # For now, we try to find by profile
-            profile_result = supabase.table("profiles").select("id").eq("email", str(invitation.email)).single().execute()
-            
+            profile_result = (
+                supabase.table("profiles")
+                .select("id")
+                .eq("email", str(invitation.email))
+                .single()
+                .execute()
+            )
+
             if profile_result.data:
                 invited_user_id = profile_result.data["id"]
-                
+
                 # Check if already a member
-                existing_member = supabase.table("organization_members").select("*").eq("org_id", str(org_id)).eq("user_id", invited_user_id).execute()
-                
+                existing_member = (
+                    supabase.table("organization_members")
+                    .select("*")
+                    .eq("org_id", str(org_id))
+                    .eq("user_id", invited_user_id)
+                    .execute()
+                )
+
                 if existing_member.data:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
@@ -428,30 +510,32 @@ async def invite_member(
                 return InvitationResponse(
                     message=f"Invitation prepared for {invitation.email}. User needs to sign up first.",
                     email=str(invitation.email),
-                    org_id=org_id
+                    org_id=org_id,
                 )
-            
+
             # Add member
             member_data = {
                 "org_id": str(org_id),
                 "user_id": invited_user_id,
                 "role": invitation.role.value,
             }
-            
-            result = supabase.table("organization_members").insert(member_data).execute()
-            
+
+            result = (
+                supabase.table("organization_members").insert(member_data).execute()
+            )
+
             if not result.data:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to add member",
                 )
-            
+
             return InvitationResponse(
                 message=f"Successfully invited {invitation.email} as {invitation.role.value}",
                 email=str(invitation.email),
-                org_id=org_id
+                org_id=org_id,
             )
-            
+
         except HTTPException:
             raise
         except Exception as e:
@@ -459,9 +543,9 @@ async def invite_member(
             return InvitationResponse(
                 message=f"Invitation sent to {invitation.email}. They will be added once they sign up.",
                 email=str(invitation.email),
-                org_id=org_id
+                org_id=org_id,
             )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -472,16 +556,13 @@ async def invite_member(
 
 
 @router.get("/{org_id}/members", response_model=List[OrganizationMemberResponse])
-async def list_members(
-    org_id: UUID,
-    user=Depends(get_auth_user)
-):
+async def list_members(org_id: UUID, user=Depends(get_auth_user)):
     """List all members of an organization."""
     supabase = get_supabase_client()
-    
+
     try:
         user_id = str(user.id)
-        
+
         # Check access
         has_access, _ = check_org_access(supabase, str(org_id), user_id)
         if not has_access:
@@ -489,32 +570,43 @@ async def list_members(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have access to this organization",
             )
-        
+
         # Get members
-        members_result = supabase.table("organization_members").select("*").eq("org_id", str(org_id)).execute()
-        
+        members_result = (
+            supabase.table("organization_members")
+            .select("*")
+            .eq("org_id", str(org_id))
+            .execute()
+        )
+
         members = []
-        for member in (members_result.data or []):
+        for member in members_result.data or []:
             # Get user profile info
             user_name = None
             avatar_url = None
-            
+
             try:
-                profile_result = supabase.table("profiles").select("full_name, avatar_url").eq("id", str(member["user_id"])).single().execute()
+                profile_result = (
+                    supabase.table("profiles")
+                    .select("full_name, avatar_url")
+                    .eq("id", str(member["user_id"]))
+                    .single()
+                    .execute()
+                )
                 if profile_result.data:
                     user_name = profile_result.data.get("full_name")
                     avatar_url = profile_result.data.get("avatar_url")
             except Exception:
                 pass
-            
-            members.append(OrganizationMemberResponse(
-                **member,
-                user_name=user_name,
-                avatar_url=avatar_url
-            ))
-        
+
+            members.append(
+                OrganizationMemberResponse(
+                    **member, user_name=user_name, avatar_url=avatar_url
+                )
+            )
+
         return members
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -524,62 +616,74 @@ async def list_members(
         )
 
 
-@router.patch("/{org_id}/members/{member_id}", response_model=OrganizationMemberResponse)
+@router.patch(
+    "/{org_id}/members/{member_id}", response_model=OrganizationMemberResponse
+)
 async def update_member_role(
     org_id: UUID,
     member_id: UUID,
     update_data: OrganizationMemberUpdate,
-    user=Depends(get_auth_user)
+    user=Depends(get_auth_user),
 ):
     """Update a member's role. Only admins can change roles."""
     supabase = get_supabase_client()
-    
+
     try:
         user_id = str(user.id)
-        
+
         # Check admin access
         if not check_is_admin(supabase, str(org_id), user_id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to update member roles",
             )
-        
+
         # Prevent changing own role (owners should transfer ownership instead)
         if str(member_id) == user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You cannot change your own role. Use ownership transfer instead.",
             )
-        
+
         # Update member role
-        result = supabase.table("organization_members").update({"role": update_data.role.value}).eq("id", str(member_id)).eq("org_id", str(org_id)).execute()
-        
+        result = (
+            supabase.table("organization_members")
+            .update({"role": update_data.role.value})
+            .eq("id", str(member_id))
+            .eq("org_id", str(org_id))
+            .execute()
+        )
+
         if not result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Member not found",
             )
-        
+
         updated_member = result.data[0]
-        
+
         # Get user info
         user_name = None
         avatar_url = None
-        
+
         try:
-            profile_result = supabase.table("profiles").select("full_name, avatar_url").eq("id", str(updated_member["user_id"])).single().execute()
+            profile_result = (
+                supabase.table("profiles")
+                .select("full_name, avatar_url")
+                .eq("id", str(updated_member["user_id"]))
+                .single()
+                .execute()
+            )
             if profile_result.data:
                 user_name = profile_result.data.get("full_name")
                 avatar_url = profile_result.data.get("avatar_url")
         except Exception:
             pass
-        
+
         return OrganizationMemberResponse(
-            **updated_member,
-            user_name=user_name,
-            avatar_url=avatar_url
+            **updated_member, user_name=user_name, avatar_url=avatar_url
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -590,51 +694,64 @@ async def update_member_role(
 
 
 @router.delete("/{org_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def remove_member(
-    org_id: UUID,
-    member_id: UUID,
-    user=Depends(get_auth_user)
-):
+async def remove_member(org_id: UUID, member_id: UUID, user=Depends(get_auth_user)):
     """Remove a member from the organization. Admins can remove members, users can remove themselves."""
     supabase = get_supabase_client()
-    
+
     try:
         user_id = str(user.id)
-        
+
         # Get the member to check permissions
-        member_result = supabase.table("organization_members").select("*").eq("id", str(member_id)).eq("org_id", str(org_id)).single().execute()
-        
+        member_result = (
+            supabase.table("organization_members")
+            .select("*")
+            .eq("id", str(member_id))
+            .eq("org_id", str(org_id))
+            .single()
+            .execute()
+        )
+
         if not member_result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Member not found",
             )
-        
+
         member = member_result.data
-        
+
         # Check permissions: admin can remove anyone, users can remove themselves
         is_admin = check_is_admin(supabase, str(org_id), user_id)
         is_self = str(member["user_id"]) == user_id
-        
+
         if not is_admin and not is_self:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to remove this member",
             )
-        
+
         # Cannot remove the owner
-        org_result = supabase.table("organizations").select("owner_id").eq("id", str(org_id)).single().execute()
-        if org_result.data and str(org_result.data["owner_id"]) == str(member["user_id"]):
+        org_result = (
+            supabase.table("organizations")
+            .select("owner_id")
+            .eq("id", str(org_id))
+            .single()
+            .execute()
+        )
+        if org_result.data and str(org_result.data["owner_id"]) == str(
+            member["user_id"]
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot remove the organization owner. Transfer ownership first.",
             )
-        
+
         # Delete member
-        supabase.table("organization_members").delete().eq("id", str(member_id)).eq("org_id", str(org_id)).execute()
-        
+        supabase.table("organization_members").delete().eq("id", str(member_id)).eq(
+            "org_id", str(org_id)
+        ).execute()
+
         return None
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -646,59 +763,72 @@ async def remove_member(
 
 # Ownership Transfer
 
+
 @router.post("/{org_id}/transfer-ownership", response_model=OwnershipTransferResponse)
 async def transfer_ownership(
-    org_id: UUID,
-    transfer_data: OwnershipTransferRequest,
-    user=Depends(get_auth_user)
+    org_id: UUID, transfer_data: OwnershipTransferRequest, user=Depends(get_auth_user)
 ):
     """Transfer organization ownership to another member. Only the current owner can do this."""
     supabase = get_supabase_client()
-    
+
     try:
         user_id = str(user.id)
-        
+
         # Check ownership
         if not check_is_owner(supabase, str(org_id), user_id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only the owner can transfer ownership",
             )
-        
+
         # Cannot transfer to self
         if str(transfer_data.new_owner_id) == user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You are already the owner",
             )
-        
+
         # Check if new owner is a member
-        new_owner_member = supabase.table("organization_members").select("*").eq("org_id", str(org_id)).eq("user_id", str(transfer_data.new_owner_id)).single().execute()
-        
+        new_owner_member = (
+            supabase.table("organization_members")
+            .select("*")
+            .eq("org_id", str(org_id))
+            .eq("user_id", str(transfer_data.new_owner_id))
+            .single()
+            .execute()
+        )
+
         if not new_owner_member.data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="New owner must be a member of the organization",
             )
-        
+
         # Update organization owner
-        org_result = supabase.table("organizations").update({"owner_id": str(transfer_data.new_owner_id)}).eq("id", str(org_id)).execute()
-        
+        org_result = (
+            supabase.table("organizations")
+            .update({"owner_id": str(transfer_data.new_owner_id)})
+            .eq("id", str(org_id))
+            .execute()
+        )
+
         if not org_result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Organization not found",
             )
-        
+
         # Update member roles: old owner becomes admin, new owner becomes admin
-        supabase.table("organization_members").update({"role": "admin"}).eq("org_id", str(org_id)).eq("user_id", str(transfer_data.new_owner_id)).execute()
-        
+        supabase.table("organization_members").update({"role": "admin"}).eq(
+            "org_id", str(org_id)
+        ).eq("user_id", str(transfer_data.new_owner_id)).execute()
+
         return OwnershipTransferResponse(
             message="Ownership transferred successfully",
             organization_id=org_id,
-            new_owner_id=transfer_data.new_owner_id
+            new_owner_id=transfer_data.new_owner_id,
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -709,36 +839,42 @@ async def transfer_ownership(
 
 
 @router.post("/{org_id}/leave", status_code=status.HTTP_204_NO_CONTENT)
-async def leave_organization(
-    org_id: UUID,
-    user=Depends(get_auth_user)
-):
+async def leave_organization(org_id: UUID, user=Depends(get_auth_user)):
     """Leave an organization. The owner must transfer ownership before leaving."""
     supabase = get_supabase_client()
-    
+
     try:
         user_id = str(user.id)
-        
+
         # Check if user is owner
         if check_is_owner(supabase, str(org_id), user_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Owner cannot leave the organization. Transfer ownership or delete the organization.",
             )
-        
+
         # Find and delete membership
-        member_result = supabase.table("organization_members").select("id").eq("org_id", str(org_id)).eq("user_id", user_id).single().execute()
-        
+        member_result = (
+            supabase.table("organization_members")
+            .select("id")
+            .eq("org_id", str(org_id))
+            .eq("user_id", user_id)
+            .single()
+            .execute()
+        )
+
         if not member_result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="You are not a member of this organization",
             )
-        
-        supabase.table("organization_members").delete().eq("id", member_result.data["id"]).execute()
-        
+
+        supabase.table("organization_members").delete().eq(
+            "id", member_result.data["id"]
+        ).execute()
+
         return None
-        
+
     except HTTPException:
         raise
     except Exception as e:

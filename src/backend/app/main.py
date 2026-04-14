@@ -1,6 +1,7 @@
 """
 FastAPI application entry point.
 """
+
 import logging
 from contextlib import asynccontextmanager
 
@@ -9,18 +10,59 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
 from app.core.config import get_settings
-from app.routers import (admin, ai_editor, ai_suggestions, alerts, analytics,
-                         attribution, audience, audit_logs, auth, automation,
-                         categorization, collaboration, comments, competitors,
-                         content, dashboards, distributions, docs, freshness,
-                         funnel, health, integration_framework, integrations,
-                         marketplace, notifications, organizations,
-                         performance, plugins, presence, projects,
-                         quality_scoring, reports, retention, rss, saml,
-                         scheduler, search, sentiment, sla, sso)
+from app.routers import (
+    admin,
+    ai_editor,
+    ai_suggestions,
+    alerts,
+    analytics,
+    attribution,
+    audience,
+    audit_logs,
+    auth,
+    automation,
+    categorization,
+    collaboration,
+    comments,
+    competitors,
+    content,
+    dashboards,
+    distributions,
+    docs,
+    freshness,
+    funnel,
+    health,
+    integration_framework,
+    integrations,
+    marketplace,
+    notifications,
+    organizations,
+    performance,
+    plugins,
+    presence,
+    projects,
+    quality_scoring,
+    reports,
+    retention,
+    rss,
+    saml,
+    scheduler,
+    search,
+    sentiment,
+    sla,
+    sso,
+)
 from app.routers import stripe as stripe_router
-from app.routers import (suggestions, trash, trends, usage, user,
-                         version_history, webhooks, ws)
+from app.routers import (
+    suggestions,
+    trash,
+    trends,
+    usage,
+    user,
+    version_history,
+    webhooks,
+    ws,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +94,7 @@ app = FastAPI(
 )
 
 from app.core.error_tracking import ErrorTrackingMiddleware
+
 # Import middleware
 from app.core.rate_limit import UsageTrackingMiddleware
 from app.middleware.rate_limit_headers import RateLimitHeadersMiddleware
@@ -72,7 +115,16 @@ app.add_middleware(
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-API-Key", "Upgrade", "Connection", "Sec-WebSocket-Key", "Sec-WebSocket-Version"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "X-Request-ID",
+        "X-API-Key",
+        "Upgrade",
+        "Connection",
+        "Sec-WebSocket-Key",
+        "Sec-WebSocket-Version",
+    ],
 )
 
 # Routers
@@ -122,7 +174,9 @@ app.include_router(collaboration.router, prefix="/api/v1", tags=["collaboration"
 app.include_router(ws.router, tags=["websocket"])
 app.include_router(plugins.router, prefix="/api/v1", tags=["plugins"])
 app.include_router(sla.router, prefix="/api/v1", tags=["sla"])
-app.include_router(integration_framework.router, prefix="/api/v1", tags=["integration-framework"])
+app.include_router(
+    integration_framework.router, prefix="/api/v1", tags=["integration-framework"]
+)
 app.include_router(funnel.router, prefix="/api/v1", tags=["funnels"])
 app.include_router(attribution.router, prefix="/api/v1", tags=["attribution"])
 
@@ -140,6 +194,7 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",

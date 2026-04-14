@@ -7,6 +7,7 @@ This service handles:
 - Dashboard aggregation (uptime, response time, error rate, throughput)
 - Alert generation and lifecycle management
 """
+
 import logging
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class SLAMetricType(str, Enum):
     """SLA metric types."""
+
     UPTIME = "uptime"
     RESPONSE_TIME = "response_time"
     ERROR_RATE = "error_rate"
@@ -28,6 +30,7 @@ class SLAMetricType(str, Enum):
 
 class SLASeverity(str, Enum):
     """SLA alert severity levels."""
+
     CRITICAL = "critical"
     WARNING = "warning"
     INFO = "info"
@@ -35,6 +38,7 @@ class SLASeverity(str, Enum):
 
 class SLAPolicy:
     """SLA Policy model."""
+
     def __init__(
         self,
         policy_id: str,
@@ -73,6 +77,7 @@ class SLAPolicy:
 
 class SLAMetric:
     """SLA Metric data point model."""
+
     def __init__(
         self,
         metric_id: str,
@@ -99,6 +104,7 @@ class SLAMetric:
 
 class SLAAlert:
     """SLA Alert model."""
+
     def __init__(
         self,
         alert_id: str,
@@ -137,6 +143,7 @@ class SLAAlert:
 
 class SLADashboard:
     """SLA Dashboard aggregation model."""
+
     def __init__(
         self,
         uptime_percentage: float,
@@ -232,9 +239,13 @@ class SLAService:
             List of policy dicts
         """
         try:
-            result = self.supabase.table("sla_policies").select("*").eq(
-                "user_id", str(user_id)
-            ).order("created_at", desc=True).execute()
+            result = (
+                self.supabase.table("sla_policies")
+                .select("*")
+                .eq("user_id", str(user_id))
+                .order("created_at", desc=True)
+                .execute()
+            )
             return result.data or []
         except Exception as e:
             logger.error(f"Error listing SLA policies: {e}")
@@ -264,9 +275,13 @@ class SLAService:
             updates.pop("created_at", None)
             updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 
-            result = self.supabase.table("sla_policies").update(updates).eq(
-                "id", str(policy_id)
-            ).eq("user_id", str(user_id)).execute()
+            result = (
+                self.supabase.table("sla_policies")
+                .update(updates)
+                .eq("id", str(policy_id))
+                .eq("user_id", str(user_id))
+                .execute()
+            )
 
             if result.data and len(result.data) > 0:
                 return result.data[0]
@@ -286,9 +301,13 @@ class SLAService:
             True if successful
         """
         try:
-            result = self.supabase.table("sla_policies").delete().eq(
-                "id", str(policy_id)
-            ).eq("user_id", str(user_id)).execute()
+            result = (
+                self.supabase.table("sla_policies")
+                .delete()
+                .eq("id", str(policy_id))
+                .eq("user_id", str(user_id))
+                .execute()
+            )
             return len(result.data or []) > 0
         except Exception as e:
             logger.error(f"Error deleting SLA policy: {e}")
@@ -327,7 +346,9 @@ class SLAService:
             logger.error(f"Error recording SLA metric: {e}")
         return None
 
-    async def check_compliance(self, policy_id: UUID, user_id: UUID) -> Optional[Dict[str, Any]]:
+    async def check_compliance(
+        self, policy_id: UUID, user_id: UUID
+    ) -> Optional[Dict[str, Any]]:
         """
         Check if current metrics comply with an SLA policy.
 
@@ -340,9 +361,13 @@ class SLAService:
         """
         try:
             # Fetch the policy
-            policy_result = self.supabase.table("sla_policies").select("*").eq(
-                "id", str(policy_id)
-            ).eq("user_id", str(user_id)).execute()
+            policy_result = (
+                self.supabase.table("sla_policies")
+                .select("*")
+                .eq("id", str(policy_id))
+                .eq("user_id", str(user_id))
+                .execute()
+            )
 
             if not policy_result.data or len(policy_result.data) == 0:
                 return None
@@ -353,10 +378,17 @@ class SLAService:
             window_minutes = policy["window_minutes"]
 
             # Get recent metrics for this metric type within the window
-            cutoff = (datetime.now(timezone.utc) - timedelta(minutes=window_minutes)).isoformat()
-            metrics_result = self.supabase.table("sla_metrics").select("value").eq(
-                "user_id", str(user_id)
-            ).eq("metric_type", metric).gte("created_at", cutoff).execute()
+            cutoff = (
+                datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
+            ).isoformat()
+            metrics_result = (
+                self.supabase.table("sla_metrics")
+                .select("value")
+                .eq("user_id", str(user_id))
+                .eq("metric_type", metric)
+                .gte("created_at", cutoff)
+                .execute()
+            )
 
             values = [m["value"] for m in (metrics_result.data or [])]
 
@@ -413,46 +445,80 @@ class SLAService:
         try:
             # Get uptime over last 24 hours
             cutoff_24h = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
-            uptime_metrics = self.supabase.table("sla_metrics").select("value").eq(
-                "user_id", str(user_id)
-            ).eq("metric_type", SLAMetricType.UPTIME.value).gte("created_at", cutoff_24h).execute()
+            uptime_metrics = (
+                self.supabase.table("sla_metrics")
+                .select("value")
+                .eq("user_id", str(user_id))
+                .eq("metric_type", SLAMetricType.UPTIME.value)
+                .gte("created_at", cutoff_24h)
+                .execute()
+            )
             uptime_values = [m["value"] for m in (uptime_metrics.data or [])]
-            uptime_percentage = (sum(1 for v in uptime_values if v > 0) / len(uptime_values) * 100) if uptime_values else 100.0
+            uptime_percentage = (
+                (sum(1 for v in uptime_values if v > 0) / len(uptime_values) * 100)
+                if uptime_values
+                else 100.0
+            )
 
             # Get average response time
-            rt_metrics = self.supabase.table("sla_metrics").select("value").eq(
-                "user_id", str(user_id)
-            ).eq("metric_type", SLAMetricType.RESPONSE_TIME.value).gte("created_at", cutoff_24h).execute()
+            rt_metrics = (
+                self.supabase.table("sla_metrics")
+                .select("value")
+                .eq("user_id", str(user_id))
+                .eq("metric_type", SLAMetricType.RESPONSE_TIME.value)
+                .gte("created_at", cutoff_24h)
+                .execute()
+            )
             rt_values = [m["value"] for m in (rt_metrics.data or [])]
-            avg_response_time_ms = (sum(rt_values) / len(rt_values)) if rt_values else 0.0
+            avg_response_time_ms = (
+                (sum(rt_values) / len(rt_values)) if rt_values else 0.0
+            )
 
             # Get error rate
-            er_metrics = self.supabase.table("sla_metrics").select("value").eq(
-                "user_id", str(user_id)
-            ).eq("metric_type", SLAMetricType.ERROR_RATE.value).gte("created_at", cutoff_24h).execute()
+            er_metrics = (
+                self.supabase.table("sla_metrics")
+                .select("value")
+                .eq("user_id", str(user_id))
+                .eq("metric_type", SLAMetricType.ERROR_RATE.value)
+                .gte("created_at", cutoff_24h)
+                .execute()
+            )
             er_values = [m["value"] for m in (er_metrics.data or [])]
             error_rate = (sum(er_values) / len(er_values)) if er_values else 0.0
 
             # Get throughput
-            tp_metrics = self.supabase.table("sla_metrics").select("value").eq(
-                "user_id", str(user_id)
-            ).eq("metric_type", SLAMetricType.THROUGHPUT.value).gte("created_at", cutoff_24h).execute()
+            tp_metrics = (
+                self.supabase.table("sla_metrics")
+                .select("value")
+                .eq("user_id", str(user_id))
+                .eq("metric_type", SLAMetricType.THROUGHPUT.value)
+                .gte("created_at", cutoff_24h)
+                .execute()
+            )
             tp_values = [m["value"] for m in (tp_metrics.data or [])]
             throughput_rps = (sum(tp_values) / len(tp_values)) if tp_values else 0.0
 
             # Count active (unacknowledged) alerts
-            alerts_result = self.supabase.table("sla_alerts").select("id", count="exact").eq(
-                "user_id", str(user_id)
-            ).eq("acknowledged", False).execute()
+            alerts_result = (
+                self.supabase.table("sla_alerts")
+                .select("id", count="exact")
+                .eq("user_id", str(user_id))
+                .eq("acknowledged", False)
+                .execute()
+            )
             active_alerts = alerts_result.count or 0
 
             # Check compliance for all enabled policies
-            policies_result = self.supabase.table("sla_policies").select("id").eq(
-                "user_id", str(user_id)
-            ).eq("enabled", True).execute()
+            policies_result = (
+                self.supabase.table("sla_policies")
+                .select("id")
+                .eq("user_id", str(user_id))
+                .eq("enabled", True)
+                .execute()
+            )
 
             policy_compliance: Dict[str, bool] = {}
-            for policy in (policies_result.data or []):
+            for policy in policies_result.data or []:
                 compliance = await self.check_compliance(UUID(policy["id"]), user_id)
                 if compliance:
                     policy_compliance[policy["id"]] = compliance["compliant"]
@@ -497,9 +563,12 @@ class SLAService:
             List of alert dicts
         """
         try:
-            query = self.supabase.table("sla_alerts").select("*").eq(
-                "user_id", str(user_id)
-            ).order("created_at", desc=True)
+            query = (
+                self.supabase.table("sla_alerts")
+                .select("*")
+                .eq("user_id", str(user_id))
+                .order("created_at", desc=True)
+            )
 
             if acknowledged is not None:
                 query = query.eq("acknowledged", acknowledged)
@@ -523,10 +592,18 @@ class SLAService:
             True if successful
         """
         try:
-            result = self.supabase.table("sla_alerts").update({
-                "acknowledged": True,
-                "acknowledged_at": datetime.now(timezone.utc).isoformat(),
-            }).eq("id", str(alert_id)).eq("user_id", str(user_id)).execute()
+            result = (
+                self.supabase.table("sla_alerts")
+                .update(
+                    {
+                        "acknowledged": True,
+                        "acknowledged_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
+                .eq("id", str(alert_id))
+                .eq("user_id", str(user_id))
+                .execute()
+            )
             return len(result.data or []) > 0
         except Exception as e:
             logger.error(f"Error acknowledging SLA alert: {e}")
@@ -545,16 +622,22 @@ class SLAService:
         """
         try:
             cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-            result = self.supabase.table("sla_metrics").select("value, created_at").eq(
-                "user_id", str(user_id)
-            ).eq("metric_type", SLAMetricType.UPTIME.value).gte("created_at", cutoff).order(
-                "created_at", desc=False
-            ).execute()
+            result = (
+                self.supabase.table("sla_metrics")
+                .select("value, created_at")
+                .eq("user_id", str(user_id))
+                .eq("metric_type", SLAMetricType.UPTIME.value)
+                .gte("created_at", cutoff)
+                .order("created_at", desc=False)
+                .execute()
+            )
 
             data = result.data or []
             total_points = len(data)
             up_points = sum(1 for m in data if m["value"] > 0)
-            uptime_percentage = (up_points / total_points * 100) if total_points > 0 else 100.0
+            uptime_percentage = (
+                (up_points / total_points * 100) if total_points > 0 else 100.0
+            )
 
             # Group by day for trend data
             daily_data: Dict[str, List[float]] = {}
@@ -567,11 +650,15 @@ class SLAService:
             daily_summary = []
             for day, values in sorted(daily_data.items()):
                 day_up = sum(1 for v in values if v > 0)
-                daily_summary.append({
-                    "date": day,
-                    "uptime_percentage": round(day_up / len(values) * 100, 2) if values else 100.0,
-                    "samples": len(values),
-                })
+                daily_summary.append(
+                    {
+                        "date": day,
+                        "uptime_percentage": (
+                            round(day_up / len(values) * 100, 2) if values else 100.0
+                        ),
+                        "samples": len(values),
+                    }
+                )
 
             return {
                 "uptime_percentage": round(uptime_percentage, 2),
@@ -581,9 +668,16 @@ class SLAService:
             }
         except Exception as e:
             logger.error(f"Error getting uptime SLA: {e}")
-            return {"uptime_percentage": 0.0, "total_samples": 0, "period_days": days, "daily_data": []}
+            return {
+                "uptime_percentage": 0.0,
+                "total_samples": 0,
+                "period_days": days,
+                "daily_data": [],
+            }
 
-    async def get_response_time_sla(self, user_id: UUID, days: int = 30) -> Dict[str, Any]:
+    async def get_response_time_sla(
+        self, user_id: UUID, days: int = 30
+    ) -> Dict[str, Any]:
         """
         Get response time SLA metrics over a time period.
 
@@ -596,11 +690,15 @@ class SLAService:
         """
         try:
             cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-            result = self.supabase.table("sla_metrics").select("value, created_at").eq(
-                "user_id", str(user_id)
-            ).eq("metric_type", SLAMetricType.RESPONSE_TIME.value).gte("created_at", cutoff).order(
-                "created_at", desc=False
-            ).execute()
+            result = (
+                self.supabase.table("sla_metrics")
+                .select("value, created_at")
+                .eq("user_id", str(user_id))
+                .eq("metric_type", SLAMetricType.RESPONSE_TIME.value)
+                .gte("created_at", cutoff)
+                .order("created_at", desc=False)
+                .execute()
+            )
 
             data = result.data or []
             values = sorted([m["value"] for m in data])
@@ -624,12 +722,18 @@ class SLAService:
 
             daily_summary = []
             for day, day_values in sorted(daily_data.items()):
-                daily_summary.append({
-                    "date": day,
-                    "avg_ms": round(sum(day_values) / len(day_values), 2),
-                    "p50_ms": round(sorted(day_values)[len(day_values) // 2], 2) if day_values else 0,
-                    "samples": len(day_values),
-                })
+                daily_summary.append(
+                    {
+                        "date": day,
+                        "avg_ms": round(sum(day_values) / len(day_values), 2),
+                        "p50_ms": (
+                            round(sorted(day_values)[len(day_values) // 2], 2)
+                            if day_values
+                            else 0
+                        ),
+                        "samples": len(day_values),
+                    }
+                )
 
             return {
                 "avg_ms": round(avg, 2),
@@ -644,8 +748,14 @@ class SLAService:
         except Exception as e:
             logger.error(f"Error getting response time SLA: {e}")
             return {
-                "avg_ms": 0.0, "p50_ms": 0.0, "p90_ms": 0.0, "p95_ms": 0.0, "p99_ms": 0.0,
-                "total_samples": 0, "period_days": days, "daily_data": [],
+                "avg_ms": 0.0,
+                "p50_ms": 0.0,
+                "p90_ms": 0.0,
+                "p95_ms": 0.0,
+                "p99_ms": 0.0,
+                "total_samples": 0,
+                "period_days": days,
+                "daily_data": [],
             }
 
     async def get_error_rate_sla(self, user_id: UUID, days: int = 30) -> Dict[str, Any]:
@@ -661,11 +771,15 @@ class SLAService:
         """
         try:
             cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-            result = self.supabase.table("sla_metrics").select("value, created_at").eq(
-                "user_id", str(user_id)
-            ).eq("metric_type", SLAMetricType.ERROR_RATE.value).gte("created_at", cutoff).order(
-                "created_at", desc=False
-            ).execute()
+            result = (
+                self.supabase.table("sla_metrics")
+                .select("value, created_at")
+                .eq("user_id", str(user_id))
+                .eq("metric_type", SLAMetricType.ERROR_RATE.value)
+                .gte("created_at", cutoff)
+                .order("created_at", desc=False)
+                .execute()
+            )
 
             data = result.data or []
             values = [m["value"] for m in data]
@@ -680,11 +794,13 @@ class SLAService:
 
             daily_summary = []
             for day, day_values in sorted(daily_data.items()):
-                daily_summary.append({
-                    "date": day,
-                    "error_rate": round(sum(day_values) / len(day_values), 4),
-                    "samples": len(day_values),
-                })
+                daily_summary.append(
+                    {
+                        "date": day,
+                        "error_rate": round(sum(day_values) / len(day_values), 4),
+                        "samples": len(day_values),
+                    }
+                )
 
             overall_rate = (sum(values) / len(values)) if values else 0.0
 
@@ -696,7 +812,12 @@ class SLAService:
             }
         except Exception as e:
             logger.error(f"Error getting error rate SLA: {e}")
-            return {"error_rate": 0.0, "total_samples": 0, "period_days": days, "daily_data": []}
+            return {
+                "error_rate": 0.0,
+                "total_samples": 0,
+                "period_days": days,
+                "daily_data": [],
+            }
 
     async def _create_alert_if_needed(
         self,
@@ -711,11 +832,16 @@ class SLAService:
         """Create an alert if one doesn't already exist for this policy+metric."""
         try:
             # Check for existing unacknowledged alert
-            existing = self.supabase.table("sla_alerts").select("id").eq(
-                "user_id", str(user_id)
-            ).eq("policy_id", policy_id).eq("metric_type", metric_type).eq(
-                "acknowledged", False
-            ).limit(1).execute()
+            existing = (
+                self.supabase.table("sla_alerts")
+                .select("id")
+                .eq("user_id", str(user_id))
+                .eq("policy_id", policy_id)
+                .eq("metric_type", metric_type)
+                .eq("acknowledged", False)
+                .limit(1)
+                .execute()
+            )
 
             if existing.data and len(existing.data) > 0:
                 return None  # Alert already exists

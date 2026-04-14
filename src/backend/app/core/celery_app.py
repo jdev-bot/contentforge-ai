@@ -1,6 +1,7 @@
 """
 Celery application configuration for background tasks.
 """
+
 import logging
 
 from celery import Celery
@@ -14,8 +15,16 @@ logger = logging.getLogger(__name__)
 # Create Celery app
 celery_app = Celery(
     "contentforge",
-    broker=settings.REDIS_URL if hasattr(settings, 'REDIS_URL') else "redis://localhost:6379/0",
-    backend=settings.REDIS_URL if hasattr(settings, 'REDIS_URL') else "redis://localhost:6379/0",
+    broker=(
+        settings.REDIS_URL
+        if hasattr(settings, "REDIS_URL")
+        else "redis://localhost:6379/0"
+    ),
+    backend=(
+        settings.REDIS_URL
+        if hasattr(settings, "REDIS_URL")
+        else "redis://localhost:6379/0"
+    ),
 )
 
 # Celery configuration
@@ -116,7 +125,15 @@ celery_app.conf.update(
 
 
 @task_failure.connect
-def handle_task_failure(sender=None, task_id=None, exception=None, args=None, kwargs=None, traceback=None, **kw):
+def handle_task_failure(
+    sender=None,
+    task_id=None,
+    exception=None,
+    args=None,
+    kwargs=None,
+    traceback=None,
+    **kw,
+):
     """Log task failures."""
     logger.error(f"Task {sender.name}[{task_id}] failed: {exception}")
 
@@ -130,5 +147,6 @@ def handle_task_success(sender=None, result=None, **kwargs):
 def init_celery():
     """Initialize Celery with app context."""
     from app.main import app
-    celery_app.conf.update(app.state.config if hasattr(app.state, 'config') else {})
+
+    celery_app.conf.update(app.state.config if hasattr(app.state, "config") else {})
     return celery_app

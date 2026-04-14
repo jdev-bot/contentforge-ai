@@ -1,6 +1,7 @@
 """
 Authentication router with Supabase integration.
 """
+
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -48,10 +49,10 @@ def get_auth_user(request: Request):
             detail="Missing or invalid authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     token = auth_header.replace("Bearer ", "")
     supabase = get_supabase_client()
-    
+
     try:
         user = supabase.auth.get_user(token)
         if not user or not user.user:
@@ -69,30 +70,34 @@ def get_auth_user(request: Request):
         )
 
 
-@router.post("/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED
+)
 async def register(user_data: UserRegister):
     """Register a new user and trigger welcome email."""
     supabase = get_supabase_client()
-    
+
     try:
-        auth_response = supabase.auth.sign_up({
-            "email": user_data.email,
-            "password": user_data.password,
-            "options": {
-                "data": {
-                    "full_name": user_data.full_name,
-                }
+        auth_response = supabase.auth.sign_up(
+            {
+                "email": user_data.email,
+                "password": user_data.password,
+                "options": {
+                    "data": {
+                        "full_name": user_data.full_name,
+                    }
+                },
             }
-        })
-        
+        )
+
         if not auth_response.user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Registration failed",
             )
-        
+
         user_id = str(auth_response.user.id)
-        
+
         # Queue welcome email
         try:
             send_welcome_email_task.delay(
@@ -103,11 +108,14 @@ async def register(user_data: UserRegister):
         except Exception as email_err:
             # Log error but don't fail registration
             import logging
-            logging.getLogger(__name__).warning(f"Failed to queue welcome email: {email_err}")
-        
+
+            logging.getLogger(__name__).warning(
+                f"Failed to queue welcome email: {email_err}"
+            )
+
         # Get session for token
         session = auth_response.session
-        
+
         if not session:
             # Email confirmation might be required
             return TokenResponse(
@@ -117,9 +125,9 @@ async def register(user_data: UserRegister):
                     id=user_id,
                     email=auth_response.user.email,
                     full_name=user_data.full_name,
-                )
+                ),
             )
-        
+
         return TokenResponse(
             access_token=session.access_token,
             token_type="bearer",
@@ -127,9 +135,9 @@ async def register(user_data: UserRegister):
                 id=user_id,
                 email=auth_response.user.email,
                 full_name=user_data.full_name,
-            )
+            ),
         )
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -141,22 +149,24 @@ async def register(user_data: UserRegister):
 async def login(user_data: UserLogin):
     """Login a user."""
     supabase = get_supabase_client()
-    
+
     try:
-        auth_response = supabase.auth.sign_in_with_password({
-            "email": user_data.email,
-            "password": user_data.password,
-        })
-        
+        auth_response = supabase.auth.sign_in_with_password(
+            {
+                "email": user_data.email,
+                "password": user_data.password,
+            }
+        )
+
         if not auth_response.user or not auth_response.session:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials",
             )
-        
+
         # Get profile data
         profile_data = auth_response.user.user_metadata or {}
-        
+
         return TokenResponse(
             access_token=auth_response.session.access_token,
             token_type="bearer",
@@ -164,9 +174,9 @@ async def login(user_data: UserLogin):
                 id=str(auth_response.user.id),
                 email=auth_response.user.email,
                 full_name=profile_data.get("full_name"),
-            )
+            ),
         )
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -184,7 +194,7 @@ async def logout(request: Request):
             supabase.auth.sign_out()
         except Exception:
             pass
-    
+
     return {"message": "Logged out successfully"}
 
 
@@ -193,13 +203,17 @@ async def get_current_user(user=Depends(get_auth_user)):
     """Get current authenticated user with subscription details."""
     supabase = get_supabase_client()
     profile_data = user.user_metadata or {}
-    
+
     # Fetch subscription info from profiles table
     try:
-        result = supabase.table("profiles").select(
-            "subscription_tier, monthly_usage_count, monthly_usage_limit"
-        ).eq("id", str(user.id)).single().execute()
-        
+        result = (
+            supabase.table("profiles")
+            .select("subscription_tier, monthly_usage_count, monthly_usage_limit")
+            .eq("id", str(user.id))
+            .single()
+            .execute()
+        )
+
         if result.data:
             subscription_tier = result.data.get("subscription_tier", "free")
             monthly_usage_count = result.data.get("monthly_usage_count", 0)
@@ -212,7 +226,7 @@ async def get_current_user(user=Depends(get_auth_user)):
         subscription_tier = "free"
         monthly_usage_count = 0
         monthly_usage_limit = 10
-    
+
     return UserResponse(
         id=str(user.id),
         email=user.email,
@@ -229,37 +243,40 @@ class UpdateProfileRequest(BaseModel):
 
 
 @router.patch("/auth/me", response_model=UserResponse)
-async def update_current_user(update_data: UpdateProfileRequest, user=Depends(get_auth_user)):
+async def update_current_user(
+    update_data: UpdateProfileRequest, user=Depends(get_auth_user)
+):
     """Update current user's profile."""
     supabase = get_supabase_client()
-    
+
     try:
         # Update user metadata in Supabase Auth
-        auth_response = supabase.auth.update_user({
-            "data": {
-                "full_name": update_data.full_name,
+        auth_response = supabase.auth.update_user(
+            {
+                "data": {
+                    "full_name": update_data.full_name,
+                }
             }
-        })
-        
+        )
+
         if not auth_response.user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Failed to update profile",
             )
-        
+
         # Also update in profiles table
-        supabase.table("profiles").update({
-            "full_name": update_data.full_name,
-            "updated_at": "now()"
-        }).eq("id", str(user.id)).execute()
-        
+        supabase.table("profiles").update(
+            {"full_name": update_data.full_name, "updated_at": "now()"}
+        ).eq("id", str(user.id)).execute()
+
         return UserResponse(
             id=str(user.id),
             email=user.email,
             full_name=update_data.full_name,
             is_active=True,
         )
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -1,6 +1,7 @@
 """
 Celery tasks for scheduled report generation.
 """
+
 import logging
 from datetime import datetime, timezone
 
@@ -39,7 +40,9 @@ def generate_scheduled_reports(self):
                 result = report_service.generate_report(report["id"], report["user_id"])
                 if result:
                     generated += 1
-                    logger.info(f"Generated report {report['id']}: {report.get('name')}")
+                    logger.info(
+                        f"Generated report {report['id']}: {report.get('name')}"
+                    )
             except Exception as e:
                 failed += 1
                 logger.error(f"Failed to generate report {report['id']}: {e}")
@@ -88,10 +91,7 @@ def cleanup_old_report_runs(self, days: int = 90):
         admin = get_supabase_admin_client()
         cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         response = (
-            admin.table("report_runs")
-            .delete()
-            .lt("generated_at", cutoff)
-            .execute()
+            admin.table("report_runs").delete().lt("generated_at", cutoff).execute()
         )
         deleted = len(response.data) if response.data else 0
         logger.info(f"Cleaned up {deleted} old report runs (older than {days} days)")

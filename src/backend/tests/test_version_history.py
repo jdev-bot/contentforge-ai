@@ -1,13 +1,14 @@
 """
 Tests for Version History service and router.
 """
+
 import pytest
 from datetime import datetime, timezone
 from uuid import uuid4
 from unittest.mock import Mock, patch, MagicMock
 
-
 # ── Fixtures ──
+
 
 @pytest.fixture
 def mock_user():
@@ -28,6 +29,7 @@ def mock_supabase():
 @pytest.fixture
 def version_svc(mock_supabase):
     from app.services.version_service import VersionService
+
     svc = VersionService()
     svc.supabase = mock_supabase
     return svc
@@ -53,6 +55,7 @@ def sample_version():
 
 
 # ── Service Tests ──
+
 
 class TestVersionService:
     """Tests for the VersionService class."""
@@ -85,19 +88,27 @@ class TestVersionService:
                 "created_at": datetime.now(timezone.utc).isoformat(),
             },
         ]
-        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.range.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.range.return_value.execute.return_value = (
+            mock_response
+        )
 
         result = version_svc.list_versions(content_id, str(mock_user.id))
         assert len(result) == 2
         assert result[0]["version_number"] == 2
 
-    def test_get_version_found(self, version_svc, mock_supabase, mock_user, sample_version):
+    def test_get_version_found(
+        self, version_svc, mock_supabase, mock_user, sample_version
+    ):
         """Test getting a specific version that exists."""
         mock_response = Mock()
         mock_response.data = sample_version
-        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value.single.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value.single.return_value.execute.return_value = (
+            mock_response
+        )
 
-        result = version_svc.get_version(sample_version["content_id"], sample_version["id"], str(mock_user.id))
+        result = version_svc.get_version(
+            sample_version["content_id"], sample_version["id"], str(mock_user.id)
+        )
         assert result is not None
         assert result["version_number"] == 1
 
@@ -105,46 +116,64 @@ class TestVersionService:
         """Test getting a version that doesn't exist returns None."""
         mock_response = Mock()
         mock_response.data = None
-        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value.single.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value.single.return_value.execute.return_value = (
+            mock_response
+        )
 
         result = version_svc.get_version(str(uuid4()), str(uuid4()), str(mock_user.id))
         assert result is None
 
-    def test_create_version_with_explicit_content(self, version_svc, mock_supabase, mock_user):
+    def test_create_version_with_explicit_content(
+        self, version_svc, mock_supabase, mock_user
+    ):
         """Test creating a version with explicit title and body."""
         content_id = str(uuid4())
 
         # Mock: get latest version number
         latest_mock = Mock()
         latest_mock.data = [{"version_number": 3}]
-        mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = latest_mock
+        mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = (
+            latest_mock
+        )
 
         # Mock: get previous version body for word count delta
         prev_mock = Mock()
         prev_mock.data = {"body": "previous content with some words"}
         # We need to set up the chain for the single() call
-        single_chain = mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value.single.return_value
+        single_chain = (
+            mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value.single.return_value
+        )
         single_chain.execute.return_value = prev_mock
 
         # Mock: insert
         insert_mock = Mock()
-        insert_mock.data = [{
-            "id": str(uuid4()),
-            "content_id": content_id,
-            "version_number": 4,
-            "title": "New Version",
-            "body": "New body text",
-            "metadata": {"change_summary": "Manual save", "word_count": 3, "word_count_delta": -2},
-            "created_by": str(mock_user.id),
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }]
-        mock_supabase.table.return_value.insert.return_value.execute.return_value = insert_mock
+        insert_mock.data = [
+            {
+                "id": str(uuid4()),
+                "content_id": content_id,
+                "version_number": 4,
+                "title": "New Version",
+                "body": "New body text",
+                "metadata": {
+                    "change_summary": "Manual save",
+                    "word_count": 3,
+                    "word_count_delta": -2,
+                },
+                "created_by": str(mock_user.id),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ]
+        mock_supabase.table.return_value.insert.return_value.execute.return_value = (
+            insert_mock
+        )
 
         # Mock: count for pruning
         count_mock = Mock()
         count_mock.data = []
         count_mock.count = 2
-        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = count_mock
+        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = (
+            count_mock
+        )
 
         result = version_svc.create_version(
             content_id=content_id,
@@ -156,43 +185,61 @@ class TestVersionService:
         assert result is not None
         assert result["version_number"] == 4
 
-    def test_create_version_fetches_current_content(self, version_svc, mock_supabase, mock_user):
+    def test_create_version_fetches_current_content(
+        self, version_svc, mock_supabase, mock_user
+    ):
         """Test that create_version fetches current content when title/body not provided."""
         content_id = str(uuid4())
 
         # Mock: content fetch
         content_mock = Mock()
         content_mock.data = {"title": "Fetched Title", "original_text": "Fetched body"}
-        single_chain = mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.single.return_value
+        single_chain = (
+            mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.single.return_value
+        )
         single_chain.execute.return_value = content_mock
 
         # Mock: latest version number (no prior versions)
         latest_mock = Mock()
         latest_mock.data = []
         # Need separate chain for the order call
-        mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = latest_mock
+        mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = (
+            latest_mock
+        )
 
         # Mock: insert
         insert_mock = Mock()
-        insert_mock.data = [{
-            "id": str(uuid4()),
-            "content_id": content_id,
-            "version_number": 1,
-            "title": "Fetched Title",
-            "body": "Fetched body",
-            "metadata": {"change_summary": "Version 1", "word_count": 2, "word_count_delta": 0},
-            "created_by": str(mock_user.id),
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }]
-        mock_supabase.table.return_value.insert.return_value.execute.return_value = insert_mock
+        insert_mock.data = [
+            {
+                "id": str(uuid4()),
+                "content_id": content_id,
+                "version_number": 1,
+                "title": "Fetched Title",
+                "body": "Fetched body",
+                "metadata": {
+                    "change_summary": "Version 1",
+                    "word_count": 2,
+                    "word_count_delta": 0,
+                },
+                "created_by": str(mock_user.id),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ]
+        mock_supabase.table.return_value.insert.return_value.execute.return_value = (
+            insert_mock
+        )
 
         # Mock: count for pruning
         count_mock = Mock()
         count_mock.data = []
         count_mock.count = 1
-        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = count_mock
+        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = (
+            count_mock
+        )
 
-        result = version_svc.create_version(content_id=content_id, user_id=str(mock_user.id))
+        result = version_svc.create_version(
+            content_id=content_id, user_id=str(mock_user.id)
+        )
         assert result is not None
         assert result["title"] == "Fetched Title"
 
@@ -203,17 +250,23 @@ class TestVersionService:
         content_id = str(uuid4())
 
         v1_data = {
-            "id": v1_id, "content_id": content_id,
-            "version_number": 1, "title": "v1",
+            "id": v1_id,
+            "content_id": content_id,
+            "version_number": 1,
+            "title": "v1",
             "body": "Line one\nLine two\nLine three",
-            "metadata": {}, "created_by": str(mock_user.id),
+            "metadata": {},
+            "created_by": str(mock_user.id),
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         v2_data = {
-            "id": v2_id, "content_id": content_id,
-            "version_number": 2, "title": "v2",
+            "id": v2_id,
+            "content_id": content_id,
+            "version_number": 2,
+            "title": "v2",
             "body": "Line one\nLine modified\nLine three",
-            "metadata": {}, "created_by": str(mock_user.id),
+            "metadata": {},
+            "created_by": str(mock_user.id),
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
@@ -243,17 +296,23 @@ class TestVersionService:
         content_id = str(uuid4())
 
         v1_data = {
-            "id": v1_id, "content_id": content_id,
-            "version_number": 1, "title": "v1",
+            "id": v1_id,
+            "content_id": content_id,
+            "version_number": 1,
+            "title": "v1",
             "body": "Original text here",
-            "metadata": {}, "created_by": str(mock_user.id),
+            "metadata": {},
+            "created_by": str(mock_user.id),
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         v2_data = {
-            "id": v2_id, "content_id": content_id,
-            "version_number": 2, "title": "v2",
+            "id": v2_id,
+            "content_id": content_id,
+            "version_number": 2,
+            "title": "v2",
             "body": "Modified text here",
-            "metadata": {}, "created_by": str(mock_user.id),
+            "metadata": {},
+            "created_by": str(mock_user.id),
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
@@ -287,8 +346,9 @@ class TestVersionService:
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        with patch.object(version_svc, "get_version", return_value=version_data), \
-             patch.object(version_svc, "create_version") as mock_create:
+        with patch.object(
+            version_svc, "get_version", return_value=version_data
+        ), patch.object(version_svc, "create_version") as mock_create:
             mock_create.return_value = {
                 "id": str(uuid4()),
                 "version_number": 3,
@@ -309,22 +369,31 @@ class TestVersionService:
         """Test deleting a version."""
         mock_response = Mock()
         mock_response.data = [{"id": str(uuid4())}]
-        mock_supabase.table.return_value.delete.return_value.eq.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.delete.return_value.eq.return_value.eq.return_value.eq.return_value.execute.return_value = (
+            mock_response
+        )
 
-        result = version_svc.delete_version(str(uuid4()), str(uuid4()), str(mock_user.id))
+        result = version_svc.delete_version(
+            str(uuid4()), str(uuid4()), str(mock_user.id)
+        )
         assert result is True
 
     def test_delete_version_not_found(self, version_svc, mock_supabase, mock_user):
         """Test deleting a version that doesn't exist."""
         mock_response = Mock()
         mock_response.data = []
-        mock_supabase.table.return_value.delete.return_value.eq.return_value.eq.return_value.eq.return_value.execute.return_value = mock_response
+        mock_supabase.table.return_value.delete.return_value.eq.return_value.eq.return_value.eq.return_value.execute.return_value = (
+            mock_response
+        )
 
-        result = version_svc.delete_version(str(uuid4()), str(uuid4()), str(mock_user.id))
+        result = version_svc.delete_version(
+            str(uuid4()), str(uuid4()), str(mock_user.id)
+        )
         assert result is False
 
 
 # ── Router Tests ──
+
 
 class TestVersionHistoryRouter:
     """Tests for the version history router endpoints."""
@@ -376,7 +445,11 @@ class TestVersionHistoryRouter:
                 "version_number": 1,
                 "title": "Manual Save",
                 "body": "Saved body",
-                "metadata": {"change_summary": "Manual savepoint", "word_count": 2, "word_count_delta": 0},
+                "metadata": {
+                    "change_summary": "Manual savepoint",
+                    "word_count": 2,
+                    "word_count_delta": 0,
+                },
                 "created_by": str(mock_user.id),
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
@@ -398,8 +471,16 @@ class TestVersionHistoryRouter:
 
         with patch("app.routers.version_history.version_service") as mock_svc:
             mock_svc.compute_diff.return_value = {
-                "version_1": {"id": v1, "version_number": 1, "created_at": datetime.now(timezone.utc).isoformat()},
-                "version_2": {"id": v2, "version_number": 2, "created_at": datetime.now(timezone.utc).isoformat()},
+                "version_1": {
+                    "id": v1,
+                    "version_number": 1,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                },
+                "version_2": {
+                    "id": v2,
+                    "version_number": 2,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                },
                 "format": "unified",
                 "diff": "--- v1\n+++ v2\n@@ -1 +1 @@\n-old\n+new",
             }
@@ -463,9 +544,7 @@ class TestVersionHistoryRouter:
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
 
-            response = client.get(
-                f"/api/v1/content/{content_id}/versions/{version_id}"
-            )
+            response = client.get(f"/api/v1/content/{content_id}/versions/{version_id}")
 
             assert response.status_code == 200
             data = response.json()

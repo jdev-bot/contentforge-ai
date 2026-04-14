@@ -3,6 +3,7 @@ Report Scheduling Service
 
 Handles scheduled report generation, email delivery, and storage.
 """
+
 import csv
 import io
 import json
@@ -19,8 +20,11 @@ from app.services.email_service import get_email_service
 logger = logging.getLogger(__name__)
 
 VALID_REPORT_TYPES = [
-    "content_summary", "performance_overview", "quality_report",
-    "sentiment_report", "team_activity",
+    "content_summary",
+    "performance_overview",
+    "quality_report",
+    "sentiment_report",
+    "team_activity",
 ]
 
 VALID_FORMATS = ["pdf", "html", "csv"]
@@ -214,7 +218,9 @@ class ReportService:
         """List all scheduled reports for a user."""
         response = (
             self.supabase.table("scheduled_reports")
-            .select("id, user_id, name, description, report_type, schedule, format, recipients, filters, created_at, updated_at")
+            .select(
+                "id, user_id, name, description, report_type, schedule, format, recipients, filters, created_at, updated_at"
+            )
             .eq("user_id", user_id)
             .order("created_at", desc=True)
             .execute()
@@ -256,7 +262,9 @@ class ReportService:
         """Get a scheduled report configuration."""
         response = (
             self.supabase.table("scheduled_reports")
-            .select("id, user_id, name, description, report_type, schedule, format, recipients, filters, created_at, updated_at")
+            .select(
+                "id, user_id, name, description, report_type, schedule, format, recipients, filters, created_at, updated_at"
+            )
             .eq("id", report_id)
             .eq("user_id", user_id)
             .maybe_single()
@@ -322,7 +330,9 @@ class ReportService:
 
         # Delete report runs first
         self.supabase.table("report_runs").delete().eq("report_id", report_id).execute()
-        self.supabase.table("scheduled_reports").delete().eq("id", report_id).eq("user_id", user_id).execute()
+        self.supabase.table("scheduled_reports").delete().eq("id", report_id).eq(
+            "user_id", user_id
+        ).execute()
         return True
 
     # ── Report Generation ──────────────────────────────────────────
@@ -334,13 +344,18 @@ class ReportService:
             return None
 
         # Gather data
-        data = self._gather_report_data(report["report_type"], user_id, report.get("filters", {}))
+        data = self._gather_report_data(
+            report["report_type"], user_id, report.get("filters", {})
+        )
 
         # Render report
         generated_at = datetime.now(timezone.utc).isoformat()
         report_format = report.get("format", "html")
         content, content_type, storage_path = self._render_report(
-            report["report_type"], data, report_format, generated_at,
+            report["report_type"],
+            data,
+            report_format,
+            generated_at,
         )
 
         # Store in Supabase storage
@@ -367,15 +382,21 @@ class ReportService:
         if recipients:
             try:
                 self._send_report_email(
-                    report["name"], recipients, content, content_type, file_name,
+                    report["name"],
+                    recipients,
+                    content,
+                    content_type,
+                    file_name,
                 )
             except Exception as e:
                 logger.error(f"Failed to send report email: {e}")
                 # Update run status
-                self.supabase.table("report_runs").update({
-                    "status": "completed_delivery_failed",
-                    "error_message": str(e),
-                }).eq("id", run_id).execute()
+                self.supabase.table("report_runs").update(
+                    {
+                        "status": "completed_delivery_failed",
+                        "error_message": str(e),
+                    }
+                ).eq("id", run_id).execute()
 
         return run_data
 
@@ -388,7 +409,9 @@ class ReportService:
 
         response = (
             self.supabase.table("report_runs")
-            .select("id, report_id, status, format, storage_path, file_name, generated_at, error_message")
+            .select(
+                "id, report_id, status, format, storage_path, file_name, generated_at, error_message"
+            )
             .eq("report_id", report_id)
             .order("generated_at", desc=True)
             .limit(50)
@@ -396,7 +419,9 @@ class ReportService:
         )
         return response.data or []
 
-    def download_report(self, report_id: str, run_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+    def download_report(
+        self, report_id: str, run_id: str, user_id: str
+    ) -> Optional[Dict[str, Any]]:
         """Get download info for a generated report."""
         # Verify ownership
         report = self.get_report(report_id, user_id)
@@ -405,7 +430,9 @@ class ReportService:
 
         run_resp = (
             self.supabase.table("report_runs")
-            .select("id, report_id, status, format, storage_path, file_name, generated_at")
+            .select(
+                "id, report_id, status, format, storage_path, file_name, generated_at"
+            )
             .eq("id", run_id)
             .eq("report_id", report_id)
             .maybe_single()
@@ -418,9 +445,9 @@ class ReportService:
         # Generate a signed URL from Supabase storage
         if run.get("storage_path"):
             try:
-                signed_url = self.admin_supabase.storage.from_("reports").create_signed_url(
-                    run["storage_path"], 3600
-                )
+                signed_url = self.admin_supabase.storage.from_(
+                    "reports"
+                ).create_signed_url(run["storage_path"], 3600)
                 run["download_url"] = signed_url.get("signedURL", "")
             except Exception as e:
                 logger.error(f"Failed to create signed URL: {e}")
@@ -430,7 +457,9 @@ class ReportService:
 
     # ── Data Gathering ─────────────────────────────────────────────
 
-    def _gather_report_data(self, report_type: str, user_id: str, filters: Dict) -> Dict[str, Any]:
+    def _gather_report_data(
+        self, report_type: str, user_id: str, filters: Dict
+    ) -> Dict[str, Any]:
         """Gather data for a given report type."""
         gatherer = getattr(self, f"_gather_{report_type}", None)
         if gatherer:
@@ -458,7 +487,9 @@ class ReportService:
             "by_status": by_status,
         }
 
-    def _gather_performance_overview(self, user_id: str, filters: Dict) -> Dict[str, Any]:
+    def _gather_performance_overview(
+        self, user_id: str, filters: Dict
+    ) -> Dict[str, Any]:
         """Gather performance overview data."""
         dist_resp = (
             self.supabase.table("distributions")
@@ -491,7 +522,9 @@ class ReportService:
         for p in by_platform:
             total = by_platform[p]["count"]
             published = by_platform[p]["published"]
-            by_platform[p]["success_rate"] = round(published / total * 100, 1) if total else 0
+            by_platform[p]["success_rate"] = (
+                round(published / total * 100, 1) if total else 0
+            )
 
         total = len(dist_items)
         published = by_status.get("published", 0)
@@ -526,7 +559,9 @@ class ReportService:
 
             for cat_data in by_category.values():
                 scores = cat_data["scores"]
-                cat_data["average"] = round(sum(scores) / len(scores), 1) if scores else 0
+                cat_data["average"] = (
+                    round(sum(scores) / len(scores), 1) if scores else 0
+                )
                 del cat_data["scores"]
 
             return {
@@ -596,7 +631,11 @@ class ReportService:
             if template:
                 html = template.render(data=data, generated_at=generated_at)
                 return html, "text/html", f"reports/{report_type}"
-            return "<html><body><p>Report template not found</p></body></html>", "text/html", f"reports/{report_type}"
+            return (
+                "<html><body><p>Report template not found</p></body></html>",
+                "text/html",
+                f"reports/{report_type}",
+            )
 
         elif fmt == "csv":
             output = io.StringIO()
@@ -655,7 +694,11 @@ class ReportService:
                     to_email=recipient,
                     subject=f"ContentForge Report: {report_name}",
                     html_content=content if content_type == "text/html" else None,
-                    text_content=content if content_type != "text/html" else "Please view in HTML-compatible email client.",
+                    text_content=(
+                        content
+                        if content_type != "text/html"
+                        else "Please view in HTML-compatible email client."
+                    ),
                 )
             except Exception as e:
                 logger.error(f"Failed to send report email to {recipient}: {e}")

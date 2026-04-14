@@ -25,14 +25,54 @@ logger = logging.getLogger(__name__)
 
 # Default categories for the marketplace
 DEFAULT_CATEGORIES = [
-    {"id": "blog", "name": "Blog Posts", "icon": "📝", "description": "Templates for blog content"},
-    {"id": "social", "name": "Social Media", "icon": "📱", "description": "Templates for social media posts"},
-    {"id": "newsletter", "name": "Newsletters", "icon": "📧", "description": "Email newsletter templates"},
-    {"id": "marketing", "name": "Marketing", "icon": "🎯", "description": "Marketing campaign templates"},
-    {"id": "seo", "name": "SEO Content", "icon": "🔍", "description": "SEO-optimized content templates"},
-    {"id": "ecommerce", "name": "E-Commerce", "icon": "🛒", "description": "Product and e-commerce templates"},
-    {"id": "technical", "name": "Technical Writing", "icon": "⚙️", "description": "Documentation and technical writing"},
-    {"id": "creative", "name": "Creative Writing", "icon": "🎨", "description": "Storytelling and creative content"},
+    {
+        "id": "blog",
+        "name": "Blog Posts",
+        "icon": "📝",
+        "description": "Templates for blog content",
+    },
+    {
+        "id": "social",
+        "name": "Social Media",
+        "icon": "📱",
+        "description": "Templates for social media posts",
+    },
+    {
+        "id": "newsletter",
+        "name": "Newsletters",
+        "icon": "📧",
+        "description": "Email newsletter templates",
+    },
+    {
+        "id": "marketing",
+        "name": "Marketing",
+        "icon": "🎯",
+        "description": "Marketing campaign templates",
+    },
+    {
+        "id": "seo",
+        "name": "SEO Content",
+        "icon": "🔍",
+        "description": "SEO-optimized content templates",
+    },
+    {
+        "id": "ecommerce",
+        "name": "E-Commerce",
+        "icon": "🛒",
+        "description": "Product and e-commerce templates",
+    },
+    {
+        "id": "technical",
+        "name": "Technical Writing",
+        "icon": "⚙️",
+        "description": "Documentation and technical writing",
+    },
+    {
+        "id": "creative",
+        "name": "Creative Writing",
+        "icon": "🎨",
+        "description": "Storytelling and creative content",
+    },
 ]
 
 
@@ -69,10 +109,14 @@ class MarketplaceService:
         offset: int = 0,
     ) -> Dict[str, Any]:
         """List marketplace templates with filtering and pagination."""
-        query = self.supabase.table("marketplace_templates").select(
-            "*, author:profiles!marketplace_templates_author_id_fkey(id, email, full_name)",
-            count="exact",
-        ).eq("is_published", True)
+        query = (
+            self.supabase.table("marketplace_templates")
+            .select(
+                "*, author:profiles!marketplace_templates_author_id_fkey(id, email, full_name)",
+                count="exact",
+            )
+            .eq("is_published", True)
+        )
 
         if category:
             query = query.eq("category", category)
@@ -86,9 +130,7 @@ class MarketplaceService:
 
         # Search
         if search:
-            query = query.or_(
-                f"name.ilike.%{search}%,description.ilike.%{search}%"
-            )
+            query = query.or_(f"name.ilike.%{search}%,description.ilike.%{search}%")
 
         # Sort
         if sort_by == "newest":
@@ -228,7 +270,9 @@ class MarketplaceService:
         )
         return len(result.data) > 0
 
-    def publish_template(self, template_id: str, author_id: str) -> Optional[Dict[str, Any]]:
+    def publish_template(
+        self, template_id: str, author_id: str
+    ) -> Optional[Dict[str, Any]]:
         """Publish a template to the marketplace."""
         existing = self.get_template(template_id)
         if not existing:
@@ -240,7 +284,12 @@ class MarketplaceService:
 
         result = (
             self.supabase.table("marketplace_templates")
-            .update({"is_published": True, "published_at": datetime.now(timezone.utc).isoformat()})
+            .update(
+                {
+                    "is_published": True,
+                    "published_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
             .eq("id", template_id)
             .execute()
         )
@@ -248,7 +297,9 @@ class MarketplaceService:
             return None
         return result.data[0]
 
-    def unpublish_template(self, template_id: str, author_id: str) -> Optional[Dict[str, Any]]:
+    def unpublish_template(
+        self, template_id: str, author_id: str
+    ) -> Optional[Dict[str, Any]]:
         """Unpublish a template from the marketplace."""
         existing = self.get_template(template_id)
         if not existing:
@@ -279,26 +330,30 @@ class MarketplaceService:
         )
 
         counts: Dict[str, int] = {}
-        for row in (result.data or []):
+        for row in result.data or []:
             cat = row.get("category", "other")
             counts[cat] = counts.get(cat, 0) + 1
 
         categories = []
         for cat in DEFAULT_CATEGORIES:
-            categories.append({
-                **cat,
-                "template_count": counts.get(cat["id"], 0),
-            })
+            categories.append(
+                {
+                    **cat,
+                    "template_count": counts.get(cat["id"], 0),
+                }
+            )
 
         # Add uncategorized
         if counts.get("other"):
-            categories.append({
-                "id": "other",
-                "name": "Other",
-                "icon": "📂",
-                "description": "Other templates",
-                "template_count": counts["other"],
-            })
+            categories.append(
+                {
+                    "id": "other",
+                    "name": "Other",
+                    "icon": "📂",
+                    "description": "Other templates",
+                    "template_count": counts["other"],
+                }
+            )
 
         return categories
 
@@ -314,11 +369,13 @@ class MarketplaceService:
         )
 
         tag_counts: Dict[str, int] = {}
-        for row in (result.data or []):
-            for tag in (row.get("tags") or []):
+        for row in result.data or []:
+            for tag in row.get("tags") or []:
                 tag_counts[tag] = tag_counts.get(tag, 0) + 1
 
-        sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[:limit]
+        sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[
+            :limit
+        ]
         return [{"name": t, "count": c} for t, c in sorted_tags]
 
     # ── Ratings & Reviews ──────────────────────────────────────────
@@ -379,7 +436,10 @@ class MarketplaceService:
         """Get ratings and reviews for a template."""
         result = (
             self.supabase.table("marketplace_ratings")
-            .select("*, user:profiles!marketplace_ratings_user_id_fkey(id, email, full_name)", count="exact")
+            .select(
+                "*, user:profiles!marketplace_ratings_user_id_fkey(id, email, full_name)",
+                count="exact",
+            )
             .eq("template_id", template_id)
             .order("created_at", desc=True)
             .range(offset, offset + limit - 1)
@@ -420,22 +480,26 @@ class MarketplaceService:
 
         ratings = result.data or []
         if not ratings:
-            self.supabase.table("marketplace_templates").update({
-                "avg_rating": 0.0,
-                "rating_count": 0,
-                "review_count": 0,
-            }).eq("id", template_id).execute()
+            self.supabase.table("marketplace_templates").update(
+                {
+                    "avg_rating": 0.0,
+                    "rating_count": 0,
+                    "review_count": 0,
+                }
+            ).eq("id", template_id).execute()
             return
 
         rating_values = [r["rating"] for r in ratings]
         avg_rating = sum(rating_values) / len(rating_values)
         review_count = sum(1 for r in ratings if r.get("review"))
 
-        self.supabase.table("marketplace_templates").update({
-            "avg_rating": round(avg_rating, 2),
-            "rating_count": len(ratings),
-            "review_count": review_count,
-        }).eq("id", template_id).execute()
+        self.supabase.table("marketplace_templates").update(
+            {
+                "avg_rating": round(avg_rating, 2),
+                "rating_count": len(ratings),
+                "review_count": review_count,
+            }
+        ).eq("id", template_id).execute()
 
     # ── Usage Tracking ──────────────────────────────────────────────
 
@@ -463,23 +527,35 @@ class MarketplaceService:
         )
 
         if existing.data:
-            return {"message": "Template already installed", "template_id": template_id, "already_installed": True}
+            return {
+                "message": "Template already installed",
+                "template_id": template_id,
+                "already_installed": True,
+            }
 
         self.supabase.table("marketplace_installs").insert(install_data).execute()
 
         # Increment install count
         new_count = (template.get("install_count") or 0) + 1
-        self.supabase.table("marketplace_templates").update({
-            "install_count": new_count,
-        }).eq("id", template_id).execute()
+        self.supabase.table("marketplace_templates").update(
+            {
+                "install_count": new_count,
+            }
+        ).eq("id", template_id).execute()
 
-        return {"message": "Template installed", "template_id": template_id, "already_installed": False}
+        return {
+            "message": "Template installed",
+            "template_id": template_id,
+            "already_installed": False,
+        }
 
     def get_user_installs(self, user_id: str) -> List[Dict[str, Any]]:
         """Get templates installed by a user."""
         result = (
             self.supabase.table("marketplace_installs")
-            .select("template_id, installed_at, template:marketplace_templates(id, name, category, version, latest_version, author:profiles!marketplace_templates_author_id_fkey(full_name))")
+            .select(
+                "template_id, installed_at, template:marketplace_templates(id, name, category, version, latest_version, author:profiles!marketplace_templates_author_id_fkey(full_name))"
+            )
             .eq("user_id", user_id)
             .order("installed_at", desc=True)
             .execute()
@@ -492,7 +568,9 @@ class MarketplaceService:
         """Get featured templates."""
         result = (
             self.supabase.table("marketplace_templates")
-            .select("*, author:profiles!marketplace_templates_author_id_fkey(id, full_name)")
+            .select(
+                "*, author:profiles!marketplace_templates_author_id_fkey(id, full_name)"
+            )
             .eq("is_published", True)
             .eq("is_featured", True)
             .order("install_count", desc=True)
@@ -505,7 +583,9 @@ class MarketplaceService:
         """Get trending templates (most installs recently)."""
         result = (
             self.supabase.table("marketplace_templates")
-            .select("*, author:profiles!marketplace_templates_author_id_fkey(id, full_name)")
+            .select(
+                "*, author:profiles!marketplace_templates_author_id_fkey(id, full_name)"
+            )
             .eq("is_published", True)
             .order("install_count", desc=True)
             .limit(limit)
@@ -513,7 +593,9 @@ class MarketplaceService:
         )
         return result.data or []
 
-    def set_featured(self, template_id: str, featured: bool) -> Optional[Dict[str, Any]]:
+    def set_featured(
+        self, template_id: str, featured: bool
+    ) -> Optional[Dict[str, Any]]:
         """Set or unset a template as featured (admin only in practice)."""
         result = (
             self.supabase.table("marketplace_templates")
@@ -538,7 +620,9 @@ class MarketplaceService:
         )
         return result.data or []
 
-    def get_template_version(self, template_id: str, version: str) -> Optional[Dict[str, Any]]:
+    def get_template_version(
+        self, template_id: str, version: str
+    ) -> Optional[Dict[str, Any]]:
         """Get a specific version of a template."""
         result = (
             self.supabase.table("marketplace_template_versions")
@@ -564,7 +648,9 @@ class MarketplaceService:
             "change_summary": change_summary,
             "author_id": author_id,
         }
-        result = self.supabase.table("marketplace_template_versions").insert(data).execute()
+        result = (
+            self.supabase.table("marketplace_template_versions").insert(data).execute()
+        )
         return result.data[0]
 
     # ── Author Profile ──────────────────────────────────────────────
@@ -587,7 +673,11 @@ class MarketplaceService:
         template_list = templates.data or []
         published_count = sum(1 for t in template_list if t.get("is_published"))
         total_installs = sum(t.get("install_count", 0) for t in template_list)
-        avg_ratings = [t["avg_rating"] for t in template_list if t.get("avg_rating") and t["avg_rating"] > 0]
+        avg_ratings = [
+            t["avg_rating"]
+            for t in template_list
+            if t.get("avg_rating") and t["avg_rating"] > 0
+        ]
         avg_rating = sum(avg_ratings) / len(avg_ratings) if avg_ratings else 0.0
 
         return {
@@ -602,7 +692,9 @@ class MarketplaceService:
             "joined_at": profile.get("created_at", ""),
         }
 
-    def get_author_templates(self, author_id: str, limit: int = 20, offset: int = 0) -> Dict[str, Any]:
+    def get_author_templates(
+        self, author_id: str, limit: int = 20, offset: int = 0
+    ) -> Dict[str, Any]:
         """Get templates by a specific author."""
         result = (
             self.supabase.table("marketplace_templates")
@@ -624,7 +716,13 @@ class MarketplaceService:
 
     def _get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Get a user by ID from profiles table."""
-        result = self.supabase.table("profiles").select("*").eq("id", user_id).single().execute()
+        result = (
+            self.supabase.table("profiles")
+            .select("*")
+            .eq("id", user_id)
+            .single()
+            .execute()
+        )
         return result.data
 
 

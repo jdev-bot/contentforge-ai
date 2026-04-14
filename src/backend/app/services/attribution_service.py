@@ -7,6 +7,7 @@ Provides multi-touch attribution analysis:
 - Channel-level performance aggregation
 - Revenue attribution breakdowns
 """
+
 import logging
 import math
 from collections import defaultdict
@@ -31,6 +32,7 @@ CACHE_TTL_SECONDS = 300  # 5 minutes
 
 class AttributionModel(str, Enum):
     """Supported attribution models."""
+
     FIRST_TOUCH = "first_touch"
     LAST_TOUCH = "last_touch"
     LINEAR = "linear"
@@ -43,26 +45,39 @@ class AttributionModel(str, Enum):
 
 class AttributionTouchpoint(BaseModel):
     """A single touchpoint in the attribution chain."""
+
     id: str = Field(default="", description="Touchpoint ID")
     content_id: str = Field(..., description="Content piece ID")
-    channel: str = Field(..., description="Marketing channel (e.g., organic, email, social)")
-    source: str = Field(default="", description="Traffic source (e.g., google, newsletter)")
+    channel: str = Field(
+        ..., description="Marketing channel (e.g., organic, email, social)"
+    )
+    source: str = Field(
+        default="", description="Traffic source (e.g., google, newsletter)"
+    )
     campaign: str = Field(default="", description="Campaign name or identifier")
     timestamp: str = Field(default="", description="When the touchpoint occurred")
-    event_data: Dict[str, Any] = Field(default_factory=dict, description="Optional metadata")
+    event_data: Dict[str, Any] = Field(
+        default_factory=dict, description="Optional metadata"
+    )
 
 
 class AttributionResult(BaseModel):
     """Result of attribution calculation for a single channel/source."""
+
     channel: str = Field(..., description="Marketing channel")
     source: str = Field(default="", description="Traffic source")
     attribution_weight: float = Field(default=0.0, description="Weight assigned (0-1)")
-    revenue_attributed: float = Field(default=0.0, description="Revenue attributed to this channel")
-    conversion_count: int = Field(default=0, description="Number of conversions attributed")
+    revenue_attributed: float = Field(
+        default=0.0, description="Revenue attributed to this channel"
+    )
+    conversion_count: int = Field(
+        default=0, description="Number of conversions attributed"
+    )
 
 
 class ChannelPerformance(BaseModel):
     """Aggregated channel-level performance."""
+
     channel: str
     total_touchpoints: int = 0
     total_conversions: int = 0
@@ -127,7 +142,11 @@ class AttributionService:
             "event_data": event_data or {},
         }
 
-        result = self.supabase.table("attribution_touchpoints").insert(touchpoint_data).execute()
+        result = (
+            self.supabase.table("attribution_touchpoints")
+            .insert(touchpoint_data)
+            .execute()
+        )
 
         # Invalidate caches
         cache.delete(f"touchpoints:{content_id}", prefix=CACHE_PREFIX)
@@ -191,15 +210,17 @@ class AttributionService:
         # Parse touchpoints into structured objects
         parsed = []
         for tp in touchpoints:
-            parsed.append(AttributionTouchpoint(
-                id=tp.get("id", ""),
-                content_id=tp.get("content_id", content_id),
-                channel=tp.get("channel", ""),
-                source=tp.get("source", ""),
-                campaign=tp.get("campaign", ""),
-                timestamp=tp.get("created_at", ""),
-                event_data=tp.get("event_data", {}),
-            ))
+            parsed.append(
+                AttributionTouchpoint(
+                    id=tp.get("id", ""),
+                    content_id=tp.get("content_id", content_id),
+                    channel=tp.get("channel", ""),
+                    source=tp.get("source", ""),
+                    campaign=tp.get("campaign", ""),
+                    timestamp=tp.get("created_at", ""),
+                    event_data=tp.get("event_data", {}),
+                )
+            )
 
         # Dispatch to the appropriate model
         model_enum = AttributionModel(model)
@@ -216,10 +237,17 @@ class AttributionService:
         else:
             raise ValueError(f"Unsupported attribution model: {model}")
 
-        cache.set(cache_key, [r.model_dump() for r in results], ttl=CACHE_TTL_SECONDS, prefix=CACHE_PREFIX)
+        cache.set(
+            cache_key,
+            [r.model_dump() for r in results],
+            ttl=CACHE_TTL_SECONDS,
+            prefix=CACHE_PREFIX,
+        )
         return results
 
-    def first_touch_attribution(self, touchpoints: List[AttributionTouchpoint]) -> List[AttributionResult]:
+    def first_touch_attribution(
+        self, touchpoints: List[AttributionTouchpoint]
+    ) -> List[AttributionResult]:
         """
         First-Touch Attribution: 100% credit to the first touchpoint.
 
@@ -233,15 +261,19 @@ class AttributionService:
             return []
 
         first = touchpoints[0]
-        return [AttributionResult(
-            channel=first.channel,
-            source=first.source,
-            attribution_weight=1.0,
-            revenue_attributed=0.0,
-            conversion_count=1,
-        )]
+        return [
+            AttributionResult(
+                channel=first.channel,
+                source=first.source,
+                attribution_weight=1.0,
+                revenue_attributed=0.0,
+                conversion_count=1,
+            )
+        ]
 
-    def last_touch_attribution(self, touchpoints: List[AttributionTouchpoint]) -> List[AttributionResult]:
+    def last_touch_attribution(
+        self, touchpoints: List[AttributionTouchpoint]
+    ) -> List[AttributionResult]:
         """
         Last-Touch Attribution: 100% credit to the last touchpoint.
 
@@ -255,15 +287,19 @@ class AttributionService:
             return []
 
         last = touchpoints[-1]
-        return [AttributionResult(
-            channel=last.channel,
-            source=last.source,
-            attribution_weight=1.0,
-            revenue_attributed=0.0,
-            conversion_count=1,
-        )]
+        return [
+            AttributionResult(
+                channel=last.channel,
+                source=last.source,
+                attribution_weight=1.0,
+                revenue_attributed=0.0,
+                conversion_count=1,
+            )
+        ]
 
-    def linear_attribution(self, touchpoints: List[AttributionTouchpoint]) -> List[AttributionResult]:
+    def linear_attribution(
+        self, touchpoints: List[AttributionTouchpoint]
+    ) -> List[AttributionResult]:
         """
         Linear Attribution: Equal credit to all touchpoints.
 
@@ -377,13 +413,15 @@ class AttributionService:
         n = len(touchpoints)
 
         if n == 1:
-            return [AttributionResult(
-                channel=touchpoints[0].channel,
-                source=touchpoints[0].source,
-                attribution_weight=1.0,
-                revenue_attributed=0.0,
-                conversion_count=1,
-            )]
+            return [
+                AttributionResult(
+                    channel=touchpoints[0].channel,
+                    source=touchpoints[0].source,
+                    attribution_weight=1.0,
+                    revenue_attributed=0.0,
+                    conversion_count=1,
+                )
+            ]
 
         # Normalize weights to ensure they sum to 1.0
         total = first_weight + last_weight + middle_weight
@@ -476,10 +514,12 @@ class AttributionService:
             return []
 
         # Aggregate by channel
-        channel_data: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
-            "total_touchpoints": 0,
-            "unique_content": set(),
-        })
+        channel_data: Dict[str, Dict[str, Any]] = defaultdict(
+            lambda: {
+                "total_touchpoints": 0,
+                "unique_content": set(),
+            }
+        )
 
         for tp in touchpoints:
             channel = tp.get("channel", "unknown")
@@ -489,15 +529,22 @@ class AttributionService:
         # Build performance list
         performance = []
         for channel, data in channel_data.items():
-            performance.append(ChannelPerformance(
-                channel=channel,
-                total_touchpoints=data["total_touchpoints"],
-                total_conversions=len(data["unique_content"]),
-                attribution_weights={},
-                revenue_attributed={},
-            ))
+            performance.append(
+                ChannelPerformance(
+                    channel=channel,
+                    total_touchpoints=data["total_touchpoints"],
+                    total_conversions=len(data["unique_content"]),
+                    attribution_weights={},
+                    revenue_attributed={},
+                )
+            )
 
-        cache.set(cache_key, [p.model_dump() for p in performance], ttl=CACHE_TTL_SECONDS, prefix=CACHE_PREFIX)
+        cache.set(
+            cache_key,
+            [p.model_dump() for p in performance],
+            ttl=CACHE_TTL_SECONDS,
+            prefix=CACHE_PREFIX,
+        )
         return performance
 
 

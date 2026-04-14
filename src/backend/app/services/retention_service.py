@@ -8,6 +8,7 @@ Provides configurable retention policies per content type:
 - Retention audit trail
 - Compliance reporting (GDPR Article 5)
 """
+
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -108,7 +109,11 @@ class RetentionService:
         total = count_result.count or 0
 
         offset = (page - 1) * page_size
-        result = query.order("created_at", desc=True).range(offset, offset + page_size - 1).execute()
+        result = (
+            query.order("created_at", desc=True)
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
 
         return {
             "items": result.data,
@@ -147,7 +152,9 @@ class RetentionService:
 
         # Validate consistency
         archive_days = updates.get("archive_after_days", existing["archive_after_days"])
-        delete_days = updates.get("delete_after_days", existing.get("delete_after_days"))
+        delete_days = updates.get(
+            "delete_after_days", existing.get("delete_after_days")
+        )
         if delete_days is not None and delete_days < archive_days:
             raise ValueError("delete_after_days must be >= archive_after_days")
 
@@ -175,7 +182,9 @@ class RetentionService:
         if not existing:
             return False
 
-        self.supabase.table("retention_policies").delete().eq("id", policy_id).eq("user_id", str(user_id)).execute()
+        self.supabase.table("retention_policies").delete().eq("id", policy_id).eq(
+            "user_id", str(user_id)
+        ).execute()
 
         self._record_audit(
             user_id=user_id,
@@ -188,7 +197,9 @@ class RetentionService:
 
     # ── Apply Retention ───────────────────────────────────────────
 
-    def apply_retention(self, user_id: UUID, content_type: Optional[str] = None) -> Dict[str, Any]:
+    def apply_retention(
+        self, user_id: UUID, content_type: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Apply retention policies: archive and/or delete expired content.
 
@@ -234,15 +245,23 @@ class RetentionService:
                 created_at_str = content.get("created_at")
                 if not created_at_str:
                     continue
-                created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+                created_at = datetime.fromisoformat(
+                    created_at_str.replace("Z", "+00:00")
+                )
                 age_days = (now - created_at.replace(tzinfo=None)).days
 
                 # Check delete threshold first
-                if delete_days and age_days >= delete_days and content.get("status") != "deleted":
-                    self.supabase.table("content").update({
-                        "status": "deleted",
-                        "updated_at": now.isoformat(),
-                    }).eq("id", content["id"]).execute()
+                if (
+                    delete_days
+                    and age_days >= delete_days
+                    and content.get("status") != "deleted"
+                ):
+                    self.supabase.table("content").update(
+                        {
+                            "status": "deleted",
+                            "updated_at": now.isoformat(),
+                        }
+                    ).eq("id", content["id"]).execute()
 
                     self._record_audit(
                         user_id=user_id,
@@ -260,11 +279,16 @@ class RetentionService:
                     continue
 
                 # Check archive threshold
-                if age_days >= archive_days and content.get("status") not in ("archived", "deleted"):
-                    self.supabase.table("content").update({
-                        "status": "archived",
-                        "updated_at": now.isoformat(),
-                    }).eq("id", content["id"]).execute()
+                if age_days >= archive_days and content.get("status") not in (
+                    "archived",
+                    "deleted",
+                ):
+                    self.supabase.table("content").update(
+                        {
+                            "status": "archived",
+                            "updated_at": now.isoformat(),
+                        }
+                    ).eq("id", content["id"]).execute()
 
                     self._record_audit(
                         user_id=user_id,
@@ -357,7 +381,11 @@ class RetentionService:
             coverage_ratio = covered_content / total_content
             has_archive = any(p["archive_after_days"] for p in active_policies)
             has_delete = any(p.get("delete_after_days") for p in active_policies)
-            compliance_score = int(coverage_ratio * 60 + (20 if has_archive else 0) + (20 if has_delete else 0))
+            compliance_score = int(
+                coverage_ratio * 60
+                + (20 if has_archive else 0)
+                + (20 if has_delete else 0)
+            )
 
         return {
             "report_generated_at": now.isoformat(),
@@ -406,7 +434,11 @@ class RetentionService:
         total = count_result.count or 0
 
         offset = (page - 1) * page_size
-        result = query.order("created_at", desc=True).range(offset, offset + page_size - 1).execute()
+        result = (
+            query.order("created_at", desc=True)
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
 
         return {
             "items": result.data,
@@ -427,13 +459,15 @@ class RetentionService:
     ) -> None:
         """Record a retention audit entry."""
         try:
-            self.supabase.table("retention_audit_log").insert({
-                "user_id": str(user_id),
-                "action": action,
-                "resource_type": resource_type,
-                "resource_id": str(resource_id),
-                "details": details,
-            }).execute()
+            self.supabase.table("retention_audit_log").insert(
+                {
+                    "user_id": str(user_id),
+                    "action": action,
+                    "resource_type": resource_type,
+                    "resource_id": str(resource_id),
+                    "details": details,
+                }
+            ).execute()
         except Exception:
             # Audit logging should never break the main operation
             pass
@@ -449,7 +483,9 @@ class RetentionService:
         recs = []
 
         if not active_policies:
-            recs.append("No active retention policies found. Create policies to comply with GDPR Art. 5(1)(e).")
+            recs.append(
+                "No active retention policies found. Create policies to comply with GDPR Art. 5(1)(e)."
+            )
 
         if content_without_policy:
             types_str = ", ".join(sorted(set(content_without_policy)))

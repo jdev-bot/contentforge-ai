@@ -4,6 +4,7 @@ Presence REST API router.
 Provides HTTP endpoints for querying presence state.
 Real-time updates flow through the WebSocket channel (app/routers/ws.py).
 """
+
 import logging
 from typing import Optional
 

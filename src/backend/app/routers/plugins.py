@@ -3,6 +3,7 @@ Plugin router for the ContentForge AI plugin system.
 Provides REST API endpoints for plugin registry, installation, configuration,
 and lifecycle management.
 """
+
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -12,10 +13,14 @@ from pydantic import BaseModel, Field
 
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
-from app.services.plugin_service import (AVAILABLE_HOOKS,
-                                         AVAILABLE_PERMISSIONS, PluginHook,
-                                         PluginPermission, PluginService,
-                                         get_plugin_service)
+from app.services.plugin_service import (
+    AVAILABLE_HOOKS,
+    AVAILABLE_PERMISSIONS,
+    PluginHook,
+    PluginPermission,
+    PluginService,
+    get_plugin_service,
+)
 
 router = APIRouter()
 
@@ -24,26 +29,52 @@ router = APIRouter()
 # Request / Response Models
 # ============================================================================
 
+
 class PluginCreate(BaseModel):
     """Request model for registering a new plugin."""
-    name: str = Field(..., min_length=1, max_length=255, description="Plugin display name")
-    slug: Optional[str] = Field(None, max_length=255, description="URL-friendly slug (auto-generated from name)")
-    description: str = Field(default="", max_length=2000, description="Plugin description")
-    version: str = Field(default="1.0.0", max_length=20, description="Semver version string")
-    category: str = Field(default="utility", description="Plugin category (utility, analytics, distribution, editor, integration)")
+
+    name: str = Field(
+        ..., min_length=1, max_length=255, description="Plugin display name"
+    )
+    slug: Optional[str] = Field(
+        None, max_length=255, description="URL-friendly slug (auto-generated from name)"
+    )
+    description: str = Field(
+        default="", max_length=2000, description="Plugin description"
+    )
+    version: str = Field(
+        default="1.0.0", max_length=20, description="Semver version string"
+    )
+    category: str = Field(
+        default="utility",
+        description="Plugin category (utility, analytics, distribution, editor, integration)",
+    )
     icon_url: Optional[str] = None
     homepage_url: Optional[str] = None
     repository_url: Optional[str] = None
-    permissions: List[str] = Field(default_factory=list, description="List of permissions the plugin requires")
-    hooks: List[str] = Field(default_factory=list, description="Lifecycle hooks the plugin subscribes to")
-    config_schema: Dict[str, Any] = Field(default_factory=dict, description="JSON Schema for plugin configuration")
-    default_config: Dict[str, Any] = Field(default_factory=dict, description="Default configuration values")
-    is_official: bool = Field(default=False, description="Whether this is an official ContentForge plugin")
-    status: str = Field(default="published", description="Publication status: draft or published")
+    permissions: List[str] = Field(
+        default_factory=list, description="List of permissions the plugin requires"
+    )
+    hooks: List[str] = Field(
+        default_factory=list, description="Lifecycle hooks the plugin subscribes to"
+    )
+    config_schema: Dict[str, Any] = Field(
+        default_factory=dict, description="JSON Schema for plugin configuration"
+    )
+    default_config: Dict[str, Any] = Field(
+        default_factory=dict, description="Default configuration values"
+    )
+    is_official: bool = Field(
+        default=False, description="Whether this is an official ContentForge plugin"
+    )
+    status: str = Field(
+        default="published", description="Publication status: draft or published"
+    )
 
 
 class PluginUpdate(BaseModel):
     """Request model for updating a plugin."""
+
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     slug: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = Field(None, max_length=2000)
@@ -61,6 +92,7 @@ class PluginUpdate(BaseModel):
 
 class PluginResponse(BaseModel):
     """Response model for a plugin in the registry."""
+
     id: UUID
     name: str
     slug: str
@@ -86,19 +118,24 @@ class PluginResponse(BaseModel):
 
 class PluginListResponse(BaseModel):
     """Response for listing plugins in the marketplace."""
+
     plugins: List[PluginResponse]
     total: int
 
 
 class PluginInstallRequest(BaseModel):
     """Request model for installing a plugin."""
+
     plugin_id: UUID
     organization_id: UUID
-    custom_config: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Custom config overrides")
+    custom_config: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, description="Custom config overrides"
+    )
 
 
 class InstalledPluginResponse(BaseModel):
     """Response model for an installed plugin instance."""
+
     id: UUID
     plugin_id: UUID
     organization_id: UUID
@@ -112,28 +149,33 @@ class InstalledPluginResponse(BaseModel):
 
 class InstalledPluginListResponse(BaseModel):
     """Response for listing installed plugins."""
+
     plugins: List[InstalledPluginResponse]
     total: int
 
 
 class PluginConfigUpdate(BaseModel):
     """Request model for updating plugin configuration."""
+
     config: Dict[str, Any] = Field(..., description="Full plugin configuration object")
 
 
 class PluginToggleRequest(BaseModel):
     """Request model for enabling/disabling a plugin."""
+
     is_enabled: bool
 
 
 class PluginPermissionsValidation(BaseModel):
     """Response for a permissions validation check."""
+
     valid: bool
     errors: List[str]
 
 
 class PluginMetaResponse(BaseModel):
     """Response for available hooks and permissions metadata."""
+
     hooks: List[Dict[str, str]]
     permissions: List[Dict[str, str]]
 
@@ -141,6 +183,7 @@ class PluginMetaResponse(BaseModel):
 # ============================================================================
 # Plugin Registry (Marketplace) Endpoints
 # ============================================================================
+
 
 @router.get("/plugins", response_model=PluginListResponse)
 async def list_plugins(
@@ -175,8 +218,14 @@ async def list_plugins(
 @router.get("/plugins/meta", response_model=PluginMetaResponse)
 async def get_plugin_meta(user=Depends(get_auth_user)):
     """Get available plugin hooks and permissions metadata."""
-    hooks = [{"value": h, "label": h.replace("on_", "").replace("_", " ").title()} for h in AVAILABLE_HOOKS]
-    permissions = [{"value": p, "label": p.replace("_", " ").title()} for p in AVAILABLE_PERMISSIONS]
+    hooks = [
+        {"value": h, "label": h.replace("on_", "").replace("_", " ").title()}
+        for h in AVAILABLE_HOOKS
+    ]
+    permissions = [
+        {"value": p, "label": p.replace("_", " ").title()}
+        for p in AVAILABLE_PERMISSIONS
+    ]
     return PluginMetaResponse(hooks=hooks, permissions=permissions)
 
 
@@ -196,7 +245,9 @@ async def get_plugin(
     return plugin
 
 
-@router.post("/plugins", response_model=PluginResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/plugins", response_model=PluginResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_plugin(
     plugin_data: PluginCreate,
     user=Depends(get_auth_user),
@@ -246,7 +297,9 @@ async def update_plugin(
     except PermissionError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+        )
 
     return plugin
 
@@ -274,7 +327,11 @@ async def delete_plugin(
 # Plugin Installation Endpoints
 # ============================================================================
 
-@router.get("/organizations/{organization_id}/plugins", response_model=InstalledPluginListResponse)
+
+@router.get(
+    "/organizations/{organization_id}/plugins",
+    response_model=InstalledPluginListResponse,
+)
 async def list_installed_plugins(
     organization_id: UUID,
     is_enabled: Optional[bool] = None,
@@ -294,7 +351,11 @@ async def list_installed_plugins(
     return InstalledPluginListResponse(plugins=plugins, total=len(plugins))
 
 
-@router.post("/organizations/{organization_id}/plugins/install", response_model=InstalledPluginResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/organizations/{organization_id}/plugins/install",
+    response_model=InstalledPluginResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def install_plugin(
     organization_id: UUID,
     install_data: PluginInstallRequest,
@@ -319,12 +380,17 @@ async def install_plugin(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+        )
 
     return installed
 
 
-@router.get("/organizations/{organization_id}/plugins/{install_id}", response_model=InstalledPluginResponse)
+@router.get(
+    "/organizations/{organization_id}/plugins/{install_id}",
+    response_model=InstalledPluginResponse,
+)
 async def get_installed_plugin(
     organization_id: UUID,
     install_id: UUID,
@@ -332,7 +398,9 @@ async def get_installed_plugin(
 ):
     """Get a specific installed plugin instance."""
     service = get_plugin_service()
-    installed = await service.get_installed_plugin(str(install_id), str(organization_id))
+    installed = await service.get_installed_plugin(
+        str(install_id), str(organization_id)
+    )
     if not installed:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -341,7 +409,10 @@ async def get_installed_plugin(
     return installed
 
 
-@router.delete("/organizations/{organization_id}/plugins/{install_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/organizations/{organization_id}/plugins/{install_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def uninstall_plugin(
     organization_id: UUID,
     install_id: UUID,
@@ -362,6 +433,7 @@ async def uninstall_plugin(
 # ============================================================================
 # Plugin Configuration Endpoints
 # ============================================================================
+
 
 @router.get("/organizations/{organization_id}/plugins/{install_id}/config")
 async def get_plugin_config(
@@ -394,13 +466,16 @@ async def update_plugin_config(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+        )
     return result
 
 
 # ============================================================================
 # Plugin Enable/Disable Endpoints
 # ============================================================================
+
 
 @router.patch("/organizations/{organization_id}/plugins/{install_id}/toggle")
 async def toggle_plugin(
@@ -418,7 +493,9 @@ async def toggle_plugin(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+        )
     return result
 
 
@@ -426,7 +503,10 @@ async def toggle_plugin(
 # Plugin Permissions Validation Endpoint
 # ============================================================================
 
-@router.post("/plugins/validate-permissions", response_model=PluginPermissionsValidation)
+
+@router.post(
+    "/plugins/validate-permissions", response_model=PluginPermissionsValidation
+)
 async def validate_permissions(
     plugin_data: PluginCreate,
     user=Depends(get_auth_user),

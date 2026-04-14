@@ -9,6 +9,7 @@ Provides:
 - Content locking for concurrent edits
 - Edit history broadcast to collaborators
 """
+
 import asyncio
 import logging
 import time
@@ -31,6 +32,7 @@ MAX_EDIT_HISTORY = 100
 @dataclass
 class ContentLock:
     """Tracks who currently holds a lock on a piece of content."""
+
     user_id: str
     user_name: str
     locked_at: float
@@ -40,6 +42,7 @@ class ContentLock:
 @dataclass
 class EditOperation:
     """Represents a single edit operation."""
+
     id: str
     user_id: str
     user_name: str
@@ -229,7 +232,9 @@ class CollaborationService:
         # Store in history
         self._edit_history[content_id].append(op)
         if len(self._edit_history[content_id]) > MAX_EDIT_HISTORY:
-            self._edit_history[content_id] = self._edit_history[content_id][-MAX_EDIT_HISTORY:]
+            self._edit_history[content_id] = self._edit_history[content_id][
+                -MAX_EDIT_HISTORY:
+            ]
 
         # Broadcast the edit to collaborators
         room = f"content:{content_id}"

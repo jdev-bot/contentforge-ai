@@ -1,6 +1,7 @@
 """
 Email service with Resend.com integration, SMTP fallback, and Celery task queue.
 """
+
 import logging
 import smtplib
 import ssl
@@ -22,6 +23,7 @@ settings = get_settings()
 
 class EmailTemplateType(str, Enum):
     """Email template types."""
+
     WELCOME = "welcome"
     PASSWORD_RESET = "password_reset"
     SUBSCRIPTION_CONFIRMATION = "subscription_confirmation"
@@ -34,6 +36,7 @@ class EmailTemplateType(str, Enum):
 
 class EmailPreferences:
     """User email preferences model."""
+
     marketing_emails: bool = True
     usage_alerts: bool = True
     weekly_digest: bool = True
@@ -110,7 +113,6 @@ EMAIL_TEMPLATES = {
 </body>
 </html>
 """),
-
     EmailTemplateType.PASSWORD_RESET: Template("""
 <!DOCTYPE html>
 <html>
@@ -162,7 +164,6 @@ EMAIL_TEMPLATES = {
 </body>
 </html>
 """),
-
     EmailTemplateType.SUBSCRIPTION_CONFIRMATION: Template("""
 <!DOCTYPE html>
 <html>
@@ -226,7 +227,6 @@ EMAIL_TEMPLATES = {
 </body>
 </html>
 """),
-
     EmailTemplateType.INVOICE_RECEIPT: Template("""
 <!DOCTYPE html>
 <html>
@@ -301,7 +301,6 @@ EMAIL_TEMPLATES = {
 </body>
 </html>
 """),
-
     EmailTemplateType.WEEKLY_USAGE_SUMMARY: Template("""
 <!DOCTYPE html>
 <html>
@@ -375,7 +374,6 @@ EMAIL_TEMPLATES = {
 </body>
 </html>
 """),
-
     EmailTemplateType.FEATURE_ANNOUNCEMENT: Template("""
 <!DOCTYPE html>
 <html>
@@ -439,7 +437,6 @@ EMAIL_TEMPLATES = {
 </body>
 </html>
 """),
-
     EmailTemplateType.ABANDONED_CART: Template("""
 <!DOCTYPE html>
 <html>
@@ -506,7 +503,6 @@ EMAIL_TEMPLATES = {
 </body>
 </html>
 """),
-
     EmailTemplateType.USAGE_ALERT: Template("""
 <!DOCTYPE html>
 <html>
@@ -588,32 +584,32 @@ EMAIL_TEMPLATES = {
 
 class EmailService:
     """Email service with Resend.com integration and SMTP fallback."""
-    
+
     def __init__(self):
         self.settings = get_settings()
         self.from_email = "noreply@contentforge.ai"
         self.from_name = "ContentForge AI"
         self.base_url = "https://app.contentforge.ai"
-        
+
     def _get_from_address(self) -> str:
         """Get formatted from address."""
         return f"{self.from_name} <{self.from_email}>"
-    
+
     def _render_template(self, template_type: EmailTemplateType, **kwargs) -> str:
         """Render email template with provided variables."""
         template = EMAIL_TEMPLATES.get(template_type)
         if not template:
             raise ValueError(f"Unknown template type: {template_type}")
-        
+
         # Add default variables
-        kwargs.setdefault('year', datetime.now().year)
-        kwargs.setdefault('dashboard_url', f"{self.base_url}/dashboard")
-        kwargs.setdefault('settings_url', f"{self.base_url}/settings")
-        kwargs.setdefault('help_url', f"{self.base_url}/help")
-        kwargs.setdefault('unsubscribe_url', f"{self.base_url}/settings/notifications")
-        
+        kwargs.setdefault("year", datetime.now().year)
+        kwargs.setdefault("dashboard_url", f"{self.base_url}/dashboard")
+        kwargs.setdefault("settings_url", f"{self.base_url}/settings")
+        kwargs.setdefault("help_url", f"{self.base_url}/help")
+        kwargs.setdefault("unsubscribe_url", f"{self.base_url}/settings/notifications")
+
         return template.render(**kwargs)
-    
+
     def _get_subject(self, template_type: EmailTemplateType) -> str:
         """Get email subject for template type."""
         subjects = {
@@ -627,13 +623,15 @@ class EmailService:
             EmailTemplateType.USAGE_ALERT: "⚠️ You're approaching your usage limit",
         }
         return subjects.get(template_type, "Message from ContentForge AI")
-    
-    async def send_via_resend(self, to_email: str, subject: str, html_content: str) -> Optional[str]:
+
+    async def send_via_resend(
+        self, to_email: str, subject: str, html_content: str
+    ) -> Optional[str]:
         """Send email via Resend.com API."""
         if not self.settings.RESEND_API_KEY:
             logger.warning("RESEND_API_KEY not configured")
             return None
-        
+
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
@@ -650,132 +648,152 @@ class EmailService:
                     },
                     timeout=30.0,
                 )
-                
+
                 if response.status_code == 200:
                     result = response.json()
                     logger.info(f"Email sent via Resend: {result.get('id')}")
-                    return result.get('id')
+                    return result.get("id")
                 else:
-                    logger.error(f"Resend API error: {response.status_code} - {response.text}")
+                    logger.error(
+                        f"Resend API error: {response.status_code} - {response.text}"
+                    )
                     return None
-                    
+
         except Exception as e:
             logger.error(f"Error sending via Resend: {e}")
             return None
-    
-    async def send_via_smtp(self, to_email: str, subject: str, html_content: str) -> bool:
+
+    async def send_via_smtp(
+        self, to_email: str, subject: str, html_content: str
+    ) -> bool:
         """Send email via SMTP as fallback."""
-        smtp_host = getattr(self.settings, 'SMTP_HOST', None)
-        smtp_port = getattr(self.settings, 'SMTP_PORT', 587)
-        smtp_user = getattr(self.settings, 'SMTP_USER', None)
-        smtp_password = getattr(self.settings, 'SMTP_PASSWORD', None)
-        
+        smtp_host = getattr(self.settings, "SMTP_HOST", None)
+        smtp_port = getattr(self.settings, "SMTP_PORT", 587)
+        smtp_user = getattr(self.settings, "SMTP_USER", None)
+        smtp_password = getattr(self.settings, "SMTP_PASSWORD", None)
+
         if not smtp_host or not smtp_user:
             logger.warning("SMTP not configured")
             return False
-        
+
         try:
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From'] = self._get_from_address()
-            msg['To'] = to_email
-            
-            html_part = MIMEText(html_content, 'html')
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = self._get_from_address()
+            msg["To"] = to_email
+
+            html_part = MIMEText(html_content, "html")
             msg.attach(html_part)
-            
+
             context = ssl.create_default_context()
-            
+
             with smtplib.SMTP(smtp_host, smtp_port) as server:
                 server.starttls(context=context)
                 server.login(smtp_user, smtp_password)
                 server.sendmail(self.from_email, to_email, msg.as_string())
-            
+
             logger.info(f"Email sent via SMTP to {to_email}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Error sending via SMTP: {e}")
             return False
-    
+
     async def send_email(
         self,
         to_email: str,
         template_type: EmailTemplateType,
         template_data: Dict,
-        user_preferences: Optional[EmailPreferences] = None
+        user_preferences: Optional[EmailPreferences] = None,
     ) -> Optional[str]:
         """
         Send templated email.
-        
+
         Args:
             to_email: Recipient email address
             template_type: Type of email template
             template_data: Data for template rendering
             user_preferences: User's email preferences (for opt-out checks)
-            
+
         Returns:
             Email ID if sent successfully, None otherwise
         """
         # Check user preferences
         if user_preferences:
-            if template_type == EmailTemplateType.FEATURE_ANNOUNCEMENT and not user_preferences.marketing_emails:
+            if (
+                template_type == EmailTemplateType.FEATURE_ANNOUNCEMENT
+                and not user_preferences.marketing_emails
+            ):
                 logger.info(f"Skipping marketing email to {to_email} - user opted out")
                 return None
-            if template_type == EmailTemplateType.WEEKLY_USAGE_SUMMARY and not user_preferences.weekly_digest:
+            if (
+                template_type == EmailTemplateType.WEEKLY_USAGE_SUMMARY
+                and not user_preferences.weekly_digest
+            ):
                 logger.info(f"Skipping weekly digest to {to_email} - user opted out")
                 return None
-            if template_type == EmailTemplateType.USAGE_ALERT and not user_preferences.usage_alerts:
+            if (
+                template_type == EmailTemplateType.USAGE_ALERT
+                and not user_preferences.usage_alerts
+            ):
                 logger.info(f"Skipping usage alert to {to_email} - user opted out")
                 return None
-            if template_type == EmailTemplateType.INVOICE_RECEIPT and not user_preferences.invoice_receipts:
+            if (
+                template_type == EmailTemplateType.INVOICE_RECEIPT
+                and not user_preferences.invoice_receipts
+            ):
                 logger.info(f"Skipping invoice to {to_email} - user opted out")
                 return None
-        
+
         # Render template
         html_content = self._render_template(template_type, **template_data)
         subject = self._get_subject(template_type)
-        
+
         # Try Resend first
         email_id = await self.send_via_resend(to_email, subject, html_content)
         if email_id:
             return email_id
-        
+
         # Fallback to SMTP
         smtp_success = await self.send_via_smtp(to_email, subject, html_content)
         if smtp_success:
             return "smtp-sent"
-        
+
         logger.error(f"Failed to send email to {to_email} via all methods")
         return None
-    
+
     # Convenience methods for specific email types
-    
-    async def send_welcome_email(self, to_email: str, user_name: str, **kwargs) -> Optional[str]:
+
+    async def send_welcome_email(
+        self, to_email: str, user_name: str, **kwargs
+    ) -> Optional[str]:
         """Send welcome email to new user."""
         template_data = {
-            'user_name': user_name,
-            'signup_url': f"{self.base_url}/signup",
-            **kwargs
+            "user_name": user_name,
+            "signup_url": f"{self.base_url}/signup",
+            **kwargs,
         }
         return await self.send_email(to_email, EmailTemplateType.WELCOME, template_data)
-    
+
     async def send_password_reset(
         self,
         to_email: str,
         user_name: str,
         reset_token: str,
         expiry_hours: int = 24,
-        **kwargs
+        **kwargs,
     ) -> Optional[str]:
         """Send password reset email."""
         template_data = {
-            'user_name': user_name,
-            'reset_url': f"{self.base_url}/reset-password?token={reset_token}",
-            'expiry_hours': expiry_hours,
-            **kwargs
+            "user_name": user_name,
+            "reset_url": f"{self.base_url}/reset-password?token={reset_token}",
+            "expiry_hours": expiry_hours,
+            **kwargs,
         }
-        return await self.send_email(to_email, EmailTemplateType.PASSWORD_RESET, template_data)
-    
+        return await self.send_email(
+            to_email, EmailTemplateType.PASSWORD_RESET, template_data
+        )
+
     async def send_subscription_confirmation(
         self,
         to_email: str,
@@ -784,19 +802,21 @@ class EmailService:
         price: str,
         billing_cycle: str,
         usage_limit: int,
-        **kwargs
+        **kwargs,
     ) -> Optional[str]:
         """Send subscription confirmation email."""
         template_data = {
-            'user_name': user_name,
-            'plan_name': plan_name,
-            'price': price,
-            'billing_cycle': billing_cycle,
-            'usage_limit': usage_limit,
-            **kwargs
+            "user_name": user_name,
+            "plan_name": plan_name,
+            "price": price,
+            "billing_cycle": billing_cycle,
+            "usage_limit": usage_limit,
+            **kwargs,
         }
-        return await self.send_email(to_email, EmailTemplateType.SUBSCRIPTION_CONFIRMATION, template_data)
-    
+        return await self.send_email(
+            to_email, EmailTemplateType.SUBSCRIPTION_CONFIRMATION, template_data
+        )
+
     async def send_invoice_receipt(
         self,
         to_email: str,
@@ -806,28 +826,25 @@ class EmailService:
         plan_name: str,
         billing_period: str,
         invoice_url: str,
-        **kwargs
+        **kwargs,
     ) -> Optional[str]:
         """Send invoice receipt email."""
         template_data = {
-            'user_name': user_name,
-            'invoice_number': invoice_number,
-            'amount': amount,
-            'plan_name': plan_name,
-            'billing_period': billing_period,
-            'invoice_url': invoice_url,
-            'date': datetime.now().strftime('%B %d, %Y'),
-            **kwargs
+            "user_name": user_name,
+            "invoice_number": invoice_number,
+            "amount": amount,
+            "plan_name": plan_name,
+            "billing_period": billing_period,
+            "invoice_url": invoice_url,
+            "date": datetime.now().strftime("%B %d, %Y"),
+            **kwargs,
         }
-        preferences = kwargs.get('user_preferences', EmailPreferences())
-        preferences.invoice_receipts = kwargs.get('invoice_receipts', True)
+        preferences = kwargs.get("user_preferences", EmailPreferences())
+        preferences.invoice_receipts = kwargs.get("invoice_receipts", True)
         return await self.send_email(
-            to_email,
-            EmailTemplateType.INVOICE_RECEIPT,
-            template_data,
-            preferences
+            to_email, EmailTemplateType.INVOICE_RECEIPT, template_data, preferences
         )
-    
+
     async def send_weekly_summary(
         self,
         to_email: str,
@@ -838,30 +855,31 @@ class EmailService:
         monthly_usage: int,
         monthly_limit: int,
         top_performing: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Optional[str]:
         """Send weekly usage summary email."""
-        usage_percentage = min(100, int((monthly_usage / monthly_limit) * 100)) if monthly_limit > 0 else 0
-        template_data = {
-            'user_name': user_name,
-            'week_range': week_range,
-            'content_created': content_created,
-            'word_count': word_count,
-            'monthly_usage': monthly_usage,
-            'monthly_limit': monthly_limit,
-            'usage_percentage': usage_percentage,
-            'top_performing': top_performing,
-            **kwargs
-        }
-        preferences = kwargs.get('user_preferences', EmailPreferences())
-        preferences.weekly_digest = kwargs.get('weekly_digest', True)
-        return await self.send_email(
-            to_email,
-            EmailTemplateType.WEEKLY_USAGE_SUMMARY,
-            template_data,
-            preferences
+        usage_percentage = (
+            min(100, int((monthly_usage / monthly_limit) * 100))
+            if monthly_limit > 0
+            else 0
         )
-    
+        template_data = {
+            "user_name": user_name,
+            "week_range": week_range,
+            "content_created": content_created,
+            "word_count": word_count,
+            "monthly_usage": monthly_usage,
+            "monthly_limit": monthly_limit,
+            "usage_percentage": usage_percentage,
+            "top_performing": top_performing,
+            **kwargs,
+        }
+        preferences = kwargs.get("user_preferences", EmailPreferences())
+        preferences.weekly_digest = kwargs.get("weekly_digest", True)
+        return await self.send_email(
+            to_email, EmailTemplateType.WEEKLY_USAGE_SUMMARY, template_data, preferences
+        )
+
     async def send_feature_announcement(
         self,
         to_email: str,
@@ -871,42 +889,33 @@ class EmailService:
         feature_icon: str,
         benefits: List[str],
         feature_url: str,
-        **kwargs
+        **kwargs,
     ) -> Optional[str]:
         """Send feature announcement email."""
         template_data = {
-            'user_name': user_name,
-            'feature_name': feature_name,
-            'feature_description': feature_description,
-            'feature_icon': feature_icon,
-            'benefits': benefits,
-            'feature_url': feature_url,
-            **kwargs
+            "user_name": user_name,
+            "feature_name": feature_name,
+            "feature_description": feature_description,
+            "feature_icon": feature_icon,
+            "benefits": benefits,
+            "feature_url": feature_url,
+            **kwargs,
         }
-        preferences = kwargs.get('user_preferences', EmailPreferences())
-        preferences.marketing_emails = kwargs.get('marketing_emails', True)
+        preferences = kwargs.get("user_preferences", EmailPreferences())
+        preferences.marketing_emails = kwargs.get("marketing_emails", True)
         return await self.send_email(
-            to_email,
-            EmailTemplateType.FEATURE_ANNOUNCEMENT,
-            template_data,
-            preferences
+            to_email, EmailTemplateType.FEATURE_ANNOUNCEMENT, template_data, preferences
         )
-    
+
     async def send_abandoned_cart(
-        self,
-        to_email: str,
-        user_name: str,
-        signup_url: str,
-        **kwargs
+        self, to_email: str, user_name: str, signup_url: str, **kwargs
     ) -> Optional[str]:
         """Send abandoned cart (incomplete signup) email."""
-        template_data = {
-            'user_name': user_name,
-            'signup_url': signup_url,
-            **kwargs
-        }
-        return await self.send_email(to_email, EmailTemplateType.ABANDONED_CART, template_data)
-    
+        template_data = {"user_name": user_name, "signup_url": signup_url, **kwargs}
+        return await self.send_email(
+            to_email, EmailTemplateType.ABANDONED_CART, template_data
+        )
+
     async def send_usage_alert(
         self,
         to_email: str,
@@ -914,29 +923,30 @@ class EmailService:
         monthly_usage: int,
         monthly_limit: int,
         plan_name: str,
-        **kwargs
+        **kwargs,
     ) -> Optional[str]:
         """Send usage alert email when approaching limit."""
-        usage_percentage = min(100, int((monthly_usage / monthly_limit) * 100)) if monthly_limit > 0 else 0
+        usage_percentage = (
+            min(100, int((monthly_usage / monthly_limit) * 100))
+            if monthly_limit > 0
+            else 0
+        )
         remaining = monthly_limit - monthly_usage
-        
+
         template_data = {
-            'user_name': user_name,
-            'monthly_usage': monthly_usage,
-            'monthly_limit': monthly_limit,
-            'usage_percentage': usage_percentage,
-            'remaining': remaining,
-            'plan_name': plan_name,
-            'upgrade_url': f"{self.base_url}/settings/subscription",
-            **kwargs
+            "user_name": user_name,
+            "monthly_usage": monthly_usage,
+            "monthly_limit": monthly_limit,
+            "usage_percentage": usage_percentage,
+            "remaining": remaining,
+            "plan_name": plan_name,
+            "upgrade_url": f"{self.base_url}/settings/subscription",
+            **kwargs,
         }
-        preferences = kwargs.get('user_preferences', EmailPreferences())
-        preferences.usage_alerts = kwargs.get('usage_alerts', True)
+        preferences = kwargs.get("user_preferences", EmailPreferences())
+        preferences.usage_alerts = kwargs.get("usage_alerts", True)
         return await self.send_email(
-            to_email,
-            EmailTemplateType.USAGE_ALERT,
-            template_data,
-            preferences
+            to_email, EmailTemplateType.USAGE_ALERT, template_data, preferences
         )
 
 

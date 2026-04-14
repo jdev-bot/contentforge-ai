@@ -6,6 +6,7 @@ Provides endpoints for:
 - Tracking events at funnel steps
 - Retrieving funnel conversion analytics
 """
+
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
@@ -23,6 +24,7 @@ router = APIRouter()
 
 class FunnelStepInput(BaseModel):
     """Input model for a funnel step."""
+
     step_id: str = Field(..., description="Unique identifier for the step")
     name: str = Field(..., description="Display name of the step")
     order: int = Field(..., description="Order of the step in the funnel")
@@ -31,20 +33,29 @@ class FunnelStepInput(BaseModel):
 
 class CreateFunnelRequest(BaseModel):
     """Request body for creating a funnel."""
+
     name: str = Field(..., min_length=1, max_length=200, description="Funnel name")
-    description: str = Field(default="", max_length=1000, description="Funnel description")
-    steps: List[FunnelStepInput] = Field(default_factory=list, description="Funnel steps")
+    description: str = Field(
+        default="", max_length=1000, description="Funnel description"
+    )
+    steps: List[FunnelStepInput] = Field(
+        default_factory=list, description="Funnel steps"
+    )
 
 
 class TrackEventRequest(BaseModel):
     """Request body for tracking a funnel event."""
+
     step_id: str = Field(..., description="Funnel step ID")
     user_id: str = Field(default="", description="Optional user identifier")
-    event_data: Dict[str, Any] = Field(default_factory=dict, description="Optional event metadata")
+    event_data: Dict[str, Any] = Field(
+        default_factory=dict, description="Optional event metadata"
+    )
 
 
 class FunnelStepResponse(BaseModel):
     """Response model for a funnel step."""
+
     step_id: str
     name: str
     order: int
@@ -53,6 +64,7 @@ class FunnelStepResponse(BaseModel):
 
 class FunnelResponse(BaseModel):
     """Response model for a funnel."""
+
     id: str
     name: str
     description: str = ""
@@ -63,12 +75,14 @@ class FunnelResponse(BaseModel):
 
 class FunnelListResponse(BaseModel):
     """Response model for listing funnels."""
+
     funnels: List[FunnelResponse]
     total: int
 
 
 class DropOffStep(BaseModel):
     """Drop-off information for a funnel step."""
+
     step_id: str
     step_name: str
     users_entered: int
@@ -79,6 +93,7 @@ class DropOffStep(BaseModel):
 
 class FunnelAnalyticsResponse(BaseModel):
     """Response model for funnel analytics."""
+
     funnel_id: str
     step_conversions: Dict[str, int]
     total_entered: int
@@ -90,6 +105,7 @@ class FunnelAnalyticsResponse(BaseModel):
 
 class TrackEventResponse(BaseModel):
     """Response after tracking a funnel event."""
+
     id: Optional[str] = None
     funnel_id: str
     step_id: str
@@ -101,7 +117,9 @@ class TrackEventResponse(BaseModel):
 # ── Endpoints ────────────────────────────────────────────────
 
 
-@router.post("/funnels", response_model=FunnelResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/funnels", response_model=FunnelResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_funnel(
     body: CreateFunnelRequest,
     user=Depends(get_auth_user),
@@ -152,14 +170,16 @@ async def list_funnels(
         funnel_responses = []
         for f in funnels:
             steps = f.get("steps", [])
-            funnel_responses.append(FunnelResponse(
-                id=f.get("id", ""),
-                name=f.get("name", ""),
-                description=f.get("description", ""),
-                steps=[FunnelStepResponse(**s) for s in steps],
-                created_at=f.get("created_at", ""),
-                updated_at=f.get("updated_at", ""),
-            ))
+            funnel_responses.append(
+                FunnelResponse(
+                    id=f.get("id", ""),
+                    name=f.get("name", ""),
+                    description=f.get("description", ""),
+                    steps=[FunnelStepResponse(**s) for s in steps],
+                    created_at=f.get("created_at", ""),
+                    updated_at=f.get("updated_at", ""),
+                )
+            )
         return FunnelListResponse(
             funnels=funnel_responses,
             total=len(funnel_responses),
@@ -243,7 +263,9 @@ async def track_funnel_event(
 @router.get("/funnels/{funnel_id}/analytics", response_model=FunnelAnalyticsResponse)
 async def get_funnel_analytics(
     funnel_id: str,
-    days: int = Query(default=30, ge=1, le=365, description="Number of days to analyze"),
+    days: int = Query(
+        default=30, ge=1, le=365, description="Number of days to analyze"
+    ),
     user=Depends(get_auth_user),
 ):
     """
@@ -262,9 +284,7 @@ async def get_funnel_analytics(
             total_entered=conversion.total_entered,
             total_completed=conversion.total_completed,
             conversion_rate=conversion.conversion_rate,
-            drop_off_steps=[
-                DropOffStep(**d) for d in conversion.drop_off_steps
-            ],
+            drop_off_steps=[DropOffStep(**d) for d in conversion.drop_off_steps],
             step_conversion_rates=conversion.step_conversion_rates,
         )
     except ValueError as e:

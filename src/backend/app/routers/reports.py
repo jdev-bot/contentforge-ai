@@ -1,6 +1,7 @@
 """
 Report scheduling router with generation and download endpoints.
 """
+
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -9,16 +10,21 @@ from pydantic import BaseModel, EmailStr, Field
 
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
-from app.services.report_service import (VALID_FORMATS, VALID_REPORT_TYPES,
-                                         report_service)
+from app.services.report_service import (
+    VALID_FORMATS,
+    VALID_REPORT_TYPES,
+    report_service,
+)
 
 router = APIRouter()
 
 
 # ── Pydantic Models ─────────────────────────────────────────────────
 
+
 class ReportCreate(BaseModel):
     """Create a new scheduled report."""
+
     name: str = Field(..., min_length=1, max_length=200)
     report_type: str = Field(..., description="Type of report to generate")
     schedule: str = Field(..., description="Cron schedule expression")
@@ -30,6 +36,7 @@ class ReportCreate(BaseModel):
 
 class ReportUpdate(BaseModel):
     """Update a scheduled report."""
+
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     report_type: Optional[str] = None
     schedule: Optional[str] = None
@@ -40,6 +47,7 @@ class ReportUpdate(BaseModel):
 
 
 # ── Report Endpoints ────────────────────────────────────────────────
+
 
 @router.get("/reports")
 async def list_reports(user=Depends(get_auth_user)):
@@ -104,7 +112,9 @@ async def get_report(report_id: str, user=Depends(get_auth_user)):
 
 
 @router.put("/reports/{report_id}")
-async def update_report(report_id: str, report: ReportUpdate, user=Depends(get_auth_user)):
+async def update_report(
+    report_id: str, report: ReportUpdate, user=Depends(get_auth_user)
+):
     """Update a scheduled report configuration."""
     try:
         if report.report_type and report.report_type not in VALID_REPORT_TYPES:

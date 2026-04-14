@@ -8,6 +8,7 @@ Provides endpoints for:
 - @mention lookup
 - Emoji reactions
 """
+
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -23,21 +24,33 @@ router = APIRouter()
 
 # ── Request / Response Models ──────────────────────────────────────
 
+
 class CommentCreate(BaseModel):
     """Create a new comment."""
-    text: str = Field(..., min_length=1, description="Comment text (supports @mentions)")
-    position_start: Optional[int] = Field(None, ge=0, description="Start character offset for inline annotation")
-    position_end: Optional[int] = Field(None, ge=0, description="End character offset for inline annotation")
-    parent_id: Optional[str] = Field(None, description="Parent comment ID for threaded replies")
+
+    text: str = Field(
+        ..., min_length=1, description="Comment text (supports @mentions)"
+    )
+    position_start: Optional[int] = Field(
+        None, ge=0, description="Start character offset for inline annotation"
+    )
+    position_end: Optional[int] = Field(
+        None, ge=0, description="End character offset for inline annotation"
+    )
+    parent_id: Optional[str] = Field(
+        None, description="Parent comment ID for threaded replies"
+    )
 
 
 class CommentUpdate(BaseModel):
     """Update comment text."""
+
     text: str = Field(..., min_length=1, description="Updated comment text")
 
 
 class CommentResponse(BaseModel):
     """Response model for a comment."""
+
     id: str
     user_id: str
     content_id: str
@@ -55,6 +68,7 @@ class CommentResponse(BaseModel):
 
 class CommentListResponse(BaseModel):
     """Paginated list of comments."""
+
     items: List[CommentResponse]
     total: int
     page: int
@@ -63,6 +77,7 @@ class CommentListResponse(BaseModel):
 
 class ThreadResponse(BaseModel):
     """A comment thread (parent + replies)."""
+
     parent: CommentResponse
     replies: List[CommentResponse]
     reply_count: int
@@ -70,11 +85,15 @@ class ThreadResponse(BaseModel):
 
 class ReactionAdd(BaseModel):
     """Add a reaction to a comment."""
-    emoji: str = Field(..., min_length=1, max_length=10, description="Emoji to react with")
+
+    emoji: str = Field(
+        ..., min_length=1, max_length=10, description="Emoji to react with"
+    )
 
 
 class ReactionResponse(BaseModel):
     """A single reaction group."""
+
     emoji: str
     user_ids: List[str]
     count: int
@@ -82,6 +101,7 @@ class ReactionResponse(BaseModel):
 
 class MentionLookupResponse(BaseModel):
     """User mention lookup result."""
+
     id: str
     full_name: Optional[str]
     email: Optional[str]
@@ -89,7 +109,12 @@ class MentionLookupResponse(BaseModel):
 
 # ── Comment CRUD ───────────────────────────────────────────────────
 
-@router.post("/content/{content_id}/comments", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/content/{content_id}/comments",
+    response_model=CommentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_comment(
     content_id: UUID,
     body: CommentCreate,
@@ -118,7 +143,9 @@ async def create_comment(
 @router.get("/content/{content_id}/comments", response_model=CommentListResponse)
 async def list_comments(
     content_id: UUID,
-    parent_id: Optional[str] = Query(None, description="Get replies to a specific comment"),
+    parent_id: Optional[str] = Query(
+        None, description="Get replies to a specific comment"
+    ),
     is_resolved: Optional[bool] = Query(None, description="Filter by resolved status"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -204,6 +231,7 @@ async def delete_comment(
 
 # ── Thread ─────────────────────────────────────────────────────────
 
+
 @router.get("/content/comments/{comment_id}/thread", response_model=ThreadResponse)
 async def get_comment_thread(
     comment_id: str,
@@ -224,6 +252,7 @@ async def get_comment_thread(
 
 
 # ── Resolution ─────────────────────────────────────────────────────
+
 
 @router.put("/content/comments/{comment_id}/resolve", response_model=CommentResponse)
 async def resolve_comment(
@@ -259,6 +288,7 @@ async def unresolve_comment(
 
 # ── Mentions ───────────────────────────────────────────────────────
 
+
 @router.get("/comments/mentions/lookup", response_model=List[MentionLookupResponse])
 async def lookup_mentions(
     q: str = Query(..., min_length=1, description="Username prefix to search"),
@@ -270,6 +300,7 @@ async def lookup_mentions(
 
 
 # ── Reactions ──────────────────────────────────────────────────────
+
 
 @router.post("/content/comments/{comment_id}/reactions", response_model=Dict[str, Any])
 async def add_reaction(
@@ -292,7 +323,9 @@ async def add_reaction(
         )
 
 
-@router.delete("/content/comments/{comment_id}/reactions", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/content/comments/{comment_id}/reactions", status_code=status.HTTP_204_NO_CONTENT
+)
 async def remove_reaction(
     comment_id: str,
     emoji: str = Query(..., description="Emoji to remove"),
@@ -306,7 +339,9 @@ async def remove_reaction(
     )
 
 
-@router.get("/content/comments/{comment_id}/reactions", response_model=List[ReactionResponse])
+@router.get(
+    "/content/comments/{comment_id}/reactions", response_model=List[ReactionResponse]
+)
 async def get_reactions(
     comment_id: str,
     user=Depends(get_auth_user),

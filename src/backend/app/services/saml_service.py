@@ -67,7 +67,11 @@ class SAMLService:
 
     def list_providers(self, org_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """List all SAML provider configurations, optionally filtered by org."""
-        query = self.supabase.table("saml_providers").select("*").order("created_at", desc=False)
+        query = (
+            self.supabase.table("saml_providers")
+            .select("*")
+            .order("created_at", desc=False)
+        )
         if org_id:
             query = query.eq("org_id", org_id)
         result = query.execute()
@@ -75,10 +79,18 @@ class SAMLService:
 
     def get_provider(self, provider_id: str) -> Optional[Dict[str, Any]]:
         """Get a single SAML provider by ID."""
-        result = self.supabase.table("saml_providers").select("*").eq("id", provider_id).single().execute()
+        result = (
+            self.supabase.table("saml_providers")
+            .select("*")
+            .eq("id", provider_id)
+            .single()
+            .execute()
+        )
         return result.data
 
-    def get_provider_by_name(self, name: str, org_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def get_provider_by_name(
+        self, name: str, org_id: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         """Get a SAML provider by its name."""
         query = self.supabase.table("saml_providers").select("*").eq("name", name)
         if org_id:
@@ -107,7 +119,9 @@ class SAMLService:
             try:
                 metadata_xml = self._fetch_idp_metadata(metadata_url)
             except Exception as exc:
-                logger.warning(f"Failed to fetch IdP metadata from {metadata_url}: {exc}")
+                logger.warning(
+                    f"Failed to fetch IdP metadata from {metadata_url}: {exc}"
+                )
 
         # Parse metadata to extract endpoints if XML is available
         if metadata_xml:
@@ -153,13 +167,21 @@ class SAMLService:
             return self.get_provider(provider_id)
 
         # Serialize attribute_mapping if it's a dict
-        if "attribute_mapping" in fields and isinstance(fields["attribute_mapping"], dict):
+        if "attribute_mapping" in fields and isinstance(
+            fields["attribute_mapping"], dict
+        ):
             fields["attribute_mapping"] = json.dumps(fields["attribute_mapping"])
 
         # Re-fetch metadata if metadata_url updated
-        if "metadata_url" in fields and fields["metadata_url"] and "metadata_xml" not in fields:
+        if (
+            "metadata_url" in fields
+            and fields["metadata_url"]
+            and "metadata_xml" not in fields
+        ):
             try:
-                fields["metadata_xml"] = self._fetch_idp_metadata(fields["metadata_url"])
+                fields["metadata_xml"] = self._fetch_idp_metadata(
+                    fields["metadata_url"]
+                )
                 parsed = self._parse_idp_metadata(fields["metadata_xml"])
                 if parsed.get("entity_id") and "entity_id" not in fields:
                     fields["entity_id"] = parsed["entity_id"]
@@ -172,14 +194,24 @@ class SAMLService:
             except Exception as exc:
                 logger.warning(f"Failed to re-fetch metadata: {exc}")
 
-        result = self.supabase.table("saml_providers").update(fields).eq("id", provider_id).execute()
+        result = (
+            self.supabase.table("saml_providers")
+            .update(fields)
+            .eq("id", provider_id)
+            .execute()
+        )
         if not result.data:
             return None
         return result.data[0]
 
     def delete_provider(self, provider_id: str) -> bool:
         """Delete a SAML provider configuration."""
-        result = self.supabase.table("saml_providers").delete().eq("id", provider_id).execute()
+        result = (
+            self.supabase.table("saml_providers")
+            .delete()
+            .eq("id", provider_id)
+            .execute()
+        )
         return len(result.data) > 0
 
     # ── IdP Metadata Fetching & Parsing ────────────────────────────
@@ -245,7 +277,9 @@ class SAMLService:
                             ds_ns = {"ds": "http://www.w3.org/2000/09/xmldsig#"}
                             x509_data = key_desc.find(".//ds:X509Certificate", ds_ns)
                             if x509_data is None:
-                                x509_data = key_desc.find(".//{http://www.w3.org/2000/09/xmldsig#}X509Certificate")
+                                x509_data = key_desc.find(
+                                    ".//{http://www.w3.org/2000/09/xmldsig#}X509Certificate"
+                                )
                             if x509_data is not None and x509_data.text:
                                 result["certificate"] = x509_data.text.strip()
                                 break
@@ -310,7 +344,9 @@ class SAMLService:
         # Build redirect URL
         sso_url = provider["sso_url"]
         separator = "&" if "?" in sso_url else "?"
-        login_url = f"{sso_url}{separator}SAMLRequest={encoded_request}&RelayState={state}"
+        login_url = (
+            f"{sso_url}{separator}SAMLRequest={encoded_request}&RelayState={state}"
+        )
 
         return {
             "login_url": login_url,
@@ -321,8 +357,11 @@ class SAMLService:
     def _get_sp_entity_id(self) -> str:
         """Get the Service Provider entity ID from settings."""
         from app.core.config import get_settings
+
         settings = get_settings()
-        return getattr(settings, "SAML_SP_ENTITY_ID", "https://contentforge.ai/saml/metadata")
+        return getattr(
+            settings, "SAML_SP_ENTITY_ID", "https://contentforge.ai/saml/metadata"
+        )
 
     def _build_authn_request(
         self,
@@ -355,7 +394,10 @@ class SAMLService:
     def _encode_saml_request(self, request_xml: str) -> str:
         """Deflate and base64-encode a SAML request (for Redirect binding)."""
         import zlib
-        compressed = zlib.compress(request_xml.encode("utf-8"))[2:-4]  # Strip zlib header/checksum
+
+        compressed = zlib.compress(request_xml.encode("utf-8"))[
+            2:-4
+        ]  # Strip zlib header/checksum
         return base64.b64encode(compressed).decode("utf-8")
 
     # ── SAML Assertion Processing (ACS) ─────────────────────────────
@@ -412,7 +454,10 @@ class SAMLService:
             raise ValueError("SAML assertion missing NameID")
 
         email = attributes.get("email", name_id)
-        full_name = attributes.get("full_name", attributes.get("first_name", "") + " " + attributes.get("last_name", "")).strip()
+        full_name = attributes.get(
+            "full_name",
+            attributes.get("first_name", "") + " " + attributes.get("last_name", ""),
+        ).strip()
 
         # Check for existing SAML identity
         existing_identity = self._find_saml_identity(provider_id, name_id)
@@ -476,7 +521,9 @@ class SAMLService:
         except Exception as exc:
             raise ValueError(f"Failed to decode/parse SAML response: {exc}")
 
-    def _validate_assertion(self, assertion: ET.Element, provider: Dict[str, Any]) -> bool:
+    def _validate_assertion(
+        self, assertion: ET.Element, provider: Dict[str, Any]
+    ) -> bool:
         """
         Validate a SAML assertion.
 
@@ -489,20 +536,28 @@ class SAMLService:
         # Check issuer
         issuer_elem = assertion.find(".//saml:Issuer", SAML_NAMESPACES)
         if issuer_elem is None:
-            issuer_elem = assertion.find(".//{urn:oasis:names:tc:SAML:2.0:assertion}Issuer")
+            issuer_elem = assertion.find(
+                ".//{urn:oasis:names:tc:SAML:2.0:assertion}Issuer"
+            )
         if issuer_elem is not None and issuer_elem.text:
             if issuer_elem.text.strip() != provider.get("entity_id", ""):
-                logger.warning(f"SAML issuer mismatch: expected {provider.get('entity_id')}, got {issuer_elem.text.strip()}")
+                logger.warning(
+                    f"SAML issuer mismatch: expected {provider.get('entity_id')}, got {issuer_elem.text.strip()}"
+                )
 
         # Check conditions - NotOnOrAfter
         conditions = assertion.find(".//saml:Conditions", SAML_NAMESPACES)
         if conditions is None:
-            conditions = assertion.find(".//{urn:oasis:names:tc:SAML:2.0:assertion}Conditions")
+            conditions = assertion.find(
+                ".//{urn:oasis:names:tc:SAML:2.0:assertion}Conditions"
+            )
         if conditions is not None:
             not_on_or_after = conditions.get("NotOnOrAfter")
             if not_on_or_after:
                 try:
-                    expiry = datetime.fromisoformat(not_on_or_after.replace("Z", "+00:00"))
+                    expiry = datetime.fromisoformat(
+                        not_on_or_after.replace("Z", "+00:00")
+                    )
                     if expiry < datetime.now(timezone.utc):
                         raise ValueError("SAML assertion has expired (NotOnOrAfter)")
                 except ValueError:
@@ -511,32 +566,48 @@ class SAMLService:
                     logger.warning(f"Could not parse NotOnOrAfter: {not_on_or_after}")
 
         # Audience restriction
-        audience_restriction = assertion.find(".//saml:AudienceRestriction", SAML_NAMESPACES)
+        audience_restriction = assertion.find(
+            ".//saml:AudienceRestriction", SAML_NAMESPACES
+        )
         if audience_restriction is None:
-            audience_restriction = assertion.find(".//{urn:oasis:names:tc:SAML:2.0:assertion}AudienceRestriction")
+            audience_restriction = assertion.find(
+                ".//{urn:oasis:names:tc:SAML:2.0:assertion}AudienceRestriction"
+            )
         if audience_restriction is not None:
             audience = audience_restriction.find("saml:Audience", SAML_NAMESPACES)
             if audience is None:
-                audience = audience_restriction.find("{urn:oasis:names:tc:SAML:2.0:assertion}Audience")
+                audience = audience_restriction.find(
+                    "{urn:oasis:names:tc:SAML:2.0:assertion}Audience"
+                )
             if audience is not None and audience.text:
                 sp_entity_id = self._get_sp_entity_id()
                 if audience.text.strip() != sp_entity_id:
-                    logger.warning(f"SAML audience mismatch: expected {sp_entity_id}, got {audience.text.strip()}")
+                    logger.warning(
+                        f"SAML audience mismatch: expected {sp_entity_id}, got {audience.text.strip()}"
+                    )
 
         # TODO: Full signature validation with xmlsec or similar library
         # For now, we trust the IdP response since it came via secure channel
         if provider.get("certificate"):
-            logger.info("SAML certificate present but full signature validation not yet implemented")
+            logger.info(
+                "SAML certificate present but full signature validation not yet implemented"
+            )
 
         return True
 
-    def _extract_attributes(self, assertion: ET.Element, provider: Dict[str, Any]) -> Dict[str, str]:
+    def _extract_attributes(
+        self, assertion: ET.Element, provider: Dict[str, Any]
+    ) -> Dict[str, str]:
         """Extract SAML attributes using the provider's attribute mapping."""
         # Parse attribute mapping
         attribute_mapping = DEFAULT_ATTRIBUTE_MAPPINGS.copy()
         if provider.get("attribute_mapping"):
             try:
-                custom_mapping = json.loads(provider["attribute_mapping"]) if isinstance(provider["attribute_mapping"], str) else provider["attribute_mapping"]
+                custom_mapping = (
+                    json.loads(provider["attribute_mapping"])
+                    if isinstance(provider["attribute_mapping"], str)
+                    else provider["attribute_mapping"]
+                )
                 attribute_mapping.update(custom_mapping)
             except (json.JSONDecodeError, TypeError):
                 pass
@@ -545,18 +616,24 @@ class SAMLService:
         saml_attributes: Dict[str, str] = {}
         attr_elements = assertion.findall(".//saml:Attribute", SAML_NAMESPACES)
         if not attr_elements:
-            attr_elements = assertion.findall(".//{urn:oasis:names:tc:SAML:2.0:assertion}Attribute")
+            attr_elements = assertion.findall(
+                ".//{urn:oasis:names:tc:SAML:2.0:assertion}Attribute"
+            )
 
         for attr_elem in attr_elements:
             attr_name = attr_elem.get("Name", "")
             values = []
             for val_elem in attr_elem.findall("saml:AttributeValue", SAML_NAMESPACES):
                 if val_elem is None:
-                    val_elem = attr_elem.find("{urn:oasis:names:tc:SAML:2.0:assertion}AttributeValue")
+                    val_elem = attr_elem.find(
+                        "{urn:oasis:names:tc:SAML:2.0:assertion}AttributeValue"
+                    )
                 if val_elem is not None and val_elem.text:
                     values.append(val_elem.text)
             if values:
-                saml_attributes[attr_name] = values[0] if len(values) == 1 else ",".join(values)
+                saml_attributes[attr_name] = (
+                    values[0] if len(values) == 1 else ",".join(values)
+                )
 
         # Map SAML attributes to our local attributes using the mapping
         mapped: Dict[str, str] = {}
@@ -575,7 +652,9 @@ class SAMLService:
         """Extract the NameID from a SAML assertion."""
         subject = assertion.find(".//saml:Subject", SAML_NAMESPACES)
         if subject is None:
-            subject = assertion.find(".//{urn:oasis:names:tc:SAML:2.0:assertion}Subject")
+            subject = assertion.find(
+                ".//{urn:oasis:names:tc:SAML:2.0:assertion}Subject"
+            )
         if subject is not None:
             name_id = subject.find("saml:NameID", SAML_NAMESPACES)
             if name_id is None:
@@ -631,7 +710,9 @@ class SAMLService:
         state = secrets.token_urlsafe(32)
 
         separator = "&" if "?" in slo_url else "?"
-        logout_url = f"{slo_url}{separator}SAMLRequest={encoded_request}&RelayState={state}"
+        logout_url = (
+            f"{slo_url}{separator}SAMLRequest={encoded_request}&RelayState={state}"
+        )
 
         return {
             "logout_url": logout_url,
@@ -648,7 +729,9 @@ class SAMLService:
             # Check status
             status_code = root.find(".//samlp:StatusCode", SAML_NAMESPACES)
             if status_code is None:
-                status_code = root.find(".//{urn:oasis:names:tc:SAML:2.0:protocol}StatusCode")
+                status_code = root.find(
+                    ".//{urn:oasis:names:tc:SAML:2.0:protocol}StatusCode"
+                )
             status_value = "unknown"
             if status_code is not None:
                 status_value = status_code.get("Value", "unknown")
@@ -669,7 +752,9 @@ class SAMLService:
 
     # ── SAML Identity Management ────────────────────────────────────
 
-    def _find_saml_identity(self, provider_id: str, name_id: str) -> Optional[Dict[str, Any]]:
+    def _find_saml_identity(
+        self, provider_id: str, name_id: str
+    ) -> Optional[Dict[str, Any]]:
         """Find an existing SAML identity."""
         result = (
             self.supabase.table("saml_identities")
@@ -727,12 +812,24 @@ class SAMLService:
 
     def _find_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Find a user by email in the profiles table."""
-        result = self.supabase.table("profiles").select("*").eq("email", email).single().execute()
+        result = (
+            self.supabase.table("profiles")
+            .select("*")
+            .eq("email", email)
+            .single()
+            .execute()
+        )
         return result.data
 
     def _get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Get a user by ID from profiles table."""
-        result = self.supabase.table("profiles").select("*").eq("id", user_id).single().execute()
+        result = (
+            self.supabase.table("profiles")
+            .select("*")
+            .eq("id", user_id)
+            .single()
+            .execute()
+        )
         return result.data
 
     def _provision_user(
@@ -751,15 +848,17 @@ class SAMLService:
         temp_password = secrets.token_urlsafe(24)
 
         try:
-            auth_response = self.admin_supabase.auth.admin.create_user({
-                "email": email,
-                "password": temp_password,
-                "email_confirm": True,
-                "user_metadata": {
-                    "full_name": full_name,
-                    "saml_provider": provider_id,
-                },
-            })
+            auth_response = self.admin_supabase.auth.admin.create_user(
+                {
+                    "email": email,
+                    "password": temp_password,
+                    "email_confirm": True,
+                    "user_metadata": {
+                        "full_name": full_name,
+                        "saml_provider": provider_id,
+                    },
+                }
+            )
 
             if not auth_response.user:
                 raise ValueError("Failed to create user via admin API")
@@ -799,10 +898,12 @@ class SAMLService:
     def create_session_for_user(self, user_id: str) -> Optional[str]:
         """Create a Supabase session for a SAML-authenticated user."""
         try:
-            result = self.admin_supabase.auth.admin.generate_link({
-                "type": "magiclink",
-                "email": self._get_user_by_id(user_id).get("email", ""),
-            })
+            result = self.admin_supabase.auth.admin.generate_link(
+                {
+                    "type": "magiclink",
+                    "email": self._get_user_by_id(user_id).get("email", ""),
+                }
+            )
             if result and result.properties:
                 return result.properties.get("access_token")
         except Exception as exc:

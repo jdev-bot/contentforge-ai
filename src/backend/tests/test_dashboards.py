@@ -1,6 +1,7 @@
 """
 Tests for custom dashboards API.
 """
+
 import pytest
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -72,12 +73,14 @@ def build_mock_query_chain(return_data=None):
 
 # ── Dashboard Service Tests ────────────────────────────────────────
 
+
 class TestDashboardService:
     """Tests for the DashboardService class."""
 
     def test_list_dashboards(self, mock_user, sample_dashboard):
         """Test listing dashboards."""
         from app.services.dashboard_service import DashboardService
+
         service = DashboardService()
         mock_supabase = MagicMock()
         mock_query = build_mock_query_chain([sample_dashboard])
@@ -96,9 +99,12 @@ class TestDashboardService:
     def test_create_dashboard(self, mock_user):
         """Test creating a dashboard."""
         from app.services.dashboard_service import DashboardService
+
         service = DashboardService()
         mock_supabase = MagicMock()
-        mock_query = build_mock_query_chain([{"id": "new-dash", "user_id": mock_user.id, "name": "New Dashboard"}])
+        mock_query = build_mock_query_chain(
+            [{"id": "new-dash", "user_id": mock_user.id, "name": "New Dashboard"}]
+        )
         mock_supabase.table.return_value = MagicMock(
             select=MagicMock(return_value=mock_query),
             insert=MagicMock(return_value=mock_query),
@@ -107,13 +113,18 @@ class TestDashboardService:
         )
         service.supabase = mock_supabase
 
-        result = service.create_dashboard(mock_user.id, "New Dashboard", is_default=True)
+        result = service.create_dashboard(
+            mock_user.id, "New Dashboard", is_default=True
+        )
         assert result is not None
         assert result["name"] == "New Dashboard"
 
-    def test_get_dashboard_with_widgets(self, mock_user, sample_dashboard, sample_widget):
+    def test_get_dashboard_with_widgets(
+        self, mock_user, sample_dashboard, sample_widget
+    ):
         """Test getting a dashboard with widgets."""
         from app.services.dashboard_service import DashboardService
+
         service = DashboardService()
         mock_supabase = MagicMock()
 
@@ -123,6 +134,7 @@ class TestDashboardService:
 
         # First .table() call returns dashboard chain, second returns widgets chain
         call_count = [0]
+
         def table_side_effect(name):
             if name == "dashboards":
                 return MagicMock(select=MagicMock(return_value=dash_query))
@@ -141,11 +153,14 @@ class TestDashboardService:
     def test_update_dashboard(self, mock_user, sample_dashboard):
         """Test updating a dashboard."""
         from app.services.dashboard_service import DashboardService
+
         service = DashboardService()
 
-        with patch.object(service, 'get_dashboard', return_value=sample_dashboard):
+        with patch.object(service, "get_dashboard", return_value=sample_dashboard):
             mock_supabase = MagicMock()
-            mock_query = build_mock_query_chain([{**sample_dashboard, "name": "Updated Dashboard"}])
+            mock_query = build_mock_query_chain(
+                [{**sample_dashboard, "name": "Updated Dashboard"}]
+            )
             mock_supabase.table.return_value = MagicMock(
                 select=MagicMock(return_value=mock_query),
                 insert=MagicMock(return_value=mock_query),
@@ -154,22 +169,28 @@ class TestDashboardService:
             )
             service.supabase = mock_supabase
 
-            result = service.update_dashboard("dash-1", mock_user.id, name="Updated Dashboard")
+            result = service.update_dashboard(
+                "dash-1", mock_user.id, name="Updated Dashboard"
+            )
             assert result is not None
             assert result["name"] == "Updated Dashboard"
 
     def test_update_dashboard_not_found(self, mock_user):
         """Test updating a non-existent dashboard."""
         from app.services.dashboard_service import DashboardService
+
         service = DashboardService()
 
-        with patch.object(service, 'get_dashboard', return_value=None):
-            result = service.update_dashboard("nonexistent", mock_user.id, name="New Name")
+        with patch.object(service, "get_dashboard", return_value=None):
+            result = service.update_dashboard(
+                "nonexistent", mock_user.id, name="New Name"
+            )
             assert result is None
 
     def test_delete_dashboard(self, mock_user, sample_dashboard):
         """Test deleting a dashboard."""
         from app.services.dashboard_service import DashboardService
+
         service = DashboardService()
         mock_supabase = MagicMock()
         mock_query = build_mock_query_chain([{"id": "dash-1"}])
@@ -180,7 +201,7 @@ class TestDashboardService:
             delete=MagicMock(return_value=mock_query),
         )
 
-        with patch.object(service, 'get_dashboard', return_value=sample_dashboard):
+        with patch.object(service, "get_dashboard", return_value=sample_dashboard):
             service.supabase = mock_supabase
             result = service.delete_dashboard("dash-1", mock_user.id)
             assert result is True
@@ -188,18 +209,20 @@ class TestDashboardService:
     def test_delete_dashboard_not_found(self, mock_user):
         """Test deleting a non-existent dashboard."""
         from app.services.dashboard_service import DashboardService
+
         service = DashboardService()
 
-        with patch.object(service, 'get_dashboard', return_value=None):
+        with patch.object(service, "get_dashboard", return_value=None):
             result = service.delete_dashboard("nonexistent", mock_user.id)
             assert result is False
 
     def test_add_widget_invalid_type(self, mock_user, sample_dashboard):
         """Test adding a widget with invalid type."""
         from app.services.dashboard_service import DashboardService
+
         service = DashboardService()
 
-        with patch.object(service, 'get_dashboard', return_value=sample_dashboard):
+        with patch.object(service, "get_dashboard", return_value=sample_dashboard):
             with pytest.raises(ValueError, match="Invalid widget type"):
                 service.add_widget(
                     dashboard_id="dash-1",
@@ -212,9 +235,10 @@ class TestDashboardService:
     def test_add_widget_invalid_data_source(self, mock_user, sample_dashboard):
         """Test adding a widget with invalid data source."""
         from app.services.dashboard_service import DashboardService
+
         service = DashboardService()
 
-        with patch.object(service, 'get_dashboard', return_value=sample_dashboard):
+        with patch.object(service, "get_dashboard", return_value=sample_dashboard):
             with pytest.raises(ValueError, match="Invalid data source"):
                 service.add_widget(
                     dashboard_id="dash-1",
@@ -227,9 +251,12 @@ class TestDashboardService:
     def test_add_widget_success(self, mock_user, sample_dashboard):
         """Test successfully adding a widget."""
         from app.services.dashboard_service import DashboardService
+
         service = DashboardService()
         mock_supabase = MagicMock()
-        mock_query = build_mock_query_chain([{"id": "widget-1", "widget_type": "metric_card", "title": "Total Content"}])
+        mock_query = build_mock_query_chain(
+            [{"id": "widget-1", "widget_type": "metric_card", "title": "Total Content"}]
+        )
         mock_supabase.table.return_value = MagicMock(
             select=MagicMock(return_value=mock_query),
             insert=MagicMock(return_value=mock_query),
@@ -237,7 +264,7 @@ class TestDashboardService:
             delete=MagicMock(return_value=mock_query),
         )
 
-        with patch.object(service, 'get_dashboard', return_value=sample_dashboard):
+        with patch.object(service, "get_dashboard", return_value=sample_dashboard):
             service.supabase = mock_supabase
             result = service.add_widget(
                 dashboard_id="dash-1",
@@ -253,6 +280,7 @@ class TestDashboardService:
     def test_delete_widget(self, mock_user, sample_dashboard):
         """Test removing a widget."""
         from app.services.dashboard_service import DashboardService
+
         service = DashboardService()
         mock_supabase = MagicMock()
         mock_query = build_mock_query_chain([{"id": "widget-1"}])
@@ -263,7 +291,7 @@ class TestDashboardService:
             delete=MagicMock(return_value=mock_query),
         )
 
-        with patch.object(service, 'get_dashboard', return_value=sample_dashboard):
+        with patch.object(service, "get_dashboard", return_value=sample_dashboard):
             service.supabase = mock_supabase
             result = service.delete_widget("dash-1", "widget-1", mock_user.id)
             assert result is True
@@ -271,11 +299,13 @@ class TestDashboardService:
     def test_get_dashboard_data(self, mock_user, sample_dashboard, sample_widget):
         """Test getting live data for a dashboard."""
         from app.services.dashboard_service import DashboardService
+
         service = DashboardService()
 
         dashboard_with_widgets = {**sample_dashboard, "widgets": [sample_widget]}
-        with patch.object(service, 'get_dashboard', return_value=dashboard_with_widgets), \
-             patch.object(service, '_fetch_widget_data', return_value={"total": 42}):
+        with patch.object(
+            service, "get_dashboard", return_value=dashboard_with_widgets
+        ), patch.object(service, "_fetch_widget_data", return_value={"total": 42}):
             result = service.get_dashboard_data("dash-1", mock_user.id)
             assert result is not None
             assert "widgets" in result
@@ -285,18 +315,22 @@ class TestDashboardService:
 
 # ── Dashboard Router Tests ─────────────────────────────────────────
 
+
 class TestDashboardRouter:
     """Tests for the dashboard router endpoints using conftest client fixture."""
 
     def test_list_dashboards_endpoint(self, client, mock_user):
         """Test GET /api/v1/dashboards."""
-        with patch("app.routers.dashboards.get_auth_user", return_value=mock_user), \
-             patch("app.routers.dashboards.dashboard_service") as mock_service:
+        with patch(
+            "app.routers.dashboards.get_auth_user", return_value=mock_user
+        ), patch("app.routers.dashboards.dashboard_service") as mock_service:
             mock_service.list_dashboards.return_value = [
                 {"id": "dash-1", "name": "My Dashboard", "is_default": True}
             ]
 
-            response = client.get("/api/v1/dashboards", headers={"Authorization": "Bearer test"})
+            response = client.get(
+                "/api/v1/dashboards", headers={"Authorization": "Bearer test"}
+            )
             assert response.status_code == 200
             data = response.json()
             assert len(data) == 1
@@ -304,10 +338,13 @@ class TestDashboardRouter:
 
     def test_create_dashboard_endpoint(self, client, mock_user):
         """Test POST /api/v1/dashboards."""
-        with patch("app.routers.dashboards.get_auth_user", return_value=mock_user), \
-             patch("app.routers.dashboards.dashboard_service") as mock_service:
+        with patch(
+            "app.routers.dashboards.get_auth_user", return_value=mock_user
+        ), patch("app.routers.dashboards.dashboard_service") as mock_service:
             mock_service.create_dashboard.return_value = {
-                "id": "dash-new", "name": "New Dashboard", "is_default": False
+                "id": "dash-new",
+                "name": "New Dashboard",
+                "is_default": False,
             }
 
             response = client.post(
@@ -321,32 +358,43 @@ class TestDashboardRouter:
 
     def test_get_dashboard_endpoint(self, client, mock_user):
         """Test GET /api/v1/dashboards/{id}."""
-        with patch("app.routers.dashboards.get_auth_user", return_value=mock_user), \
-             patch("app.routers.dashboards.dashboard_service") as mock_service:
+        with patch(
+            "app.routers.dashboards.get_auth_user", return_value=mock_user
+        ), patch("app.routers.dashboards.dashboard_service") as mock_service:
             mock_service.get_dashboard.return_value = {
-                "id": "dash-1", "name": "My Dashboard", "widgets": []
+                "id": "dash-1",
+                "name": "My Dashboard",
+                "widgets": [],
             }
 
-            response = client.get("/api/v1/dashboards/dash-1", headers={"Authorization": "Bearer test"})
+            response = client.get(
+                "/api/v1/dashboards/dash-1", headers={"Authorization": "Bearer test"}
+            )
             assert response.status_code == 200
             data = response.json()
             assert "widgets" in data
 
     def test_get_dashboard_not_found(self, client, mock_user):
         """Test GET /api/v1/dashboards/{id} when not found."""
-        with patch("app.routers.dashboards.get_auth_user", return_value=mock_user), \
-             patch("app.routers.dashboards.dashboard_service") as mock_service:
+        with patch(
+            "app.routers.dashboards.get_auth_user", return_value=mock_user
+        ), patch("app.routers.dashboards.dashboard_service") as mock_service:
             mock_service.get_dashboard.return_value = None
 
-            response = client.get("/api/v1/dashboards/nonexistent", headers={"Authorization": "Bearer test"})
+            response = client.get(
+                "/api/v1/dashboards/nonexistent",
+                headers={"Authorization": "Bearer test"},
+            )
             assert response.status_code == 404
 
     def test_update_dashboard_endpoint(self, client, mock_user):
         """Test PUT /api/v1/dashboards/{id}."""
-        with patch("app.routers.dashboards.get_auth_user", return_value=mock_user), \
-             patch("app.routers.dashboards.dashboard_service") as mock_service:
+        with patch(
+            "app.routers.dashboards.get_auth_user", return_value=mock_user
+        ), patch("app.routers.dashboards.dashboard_service") as mock_service:
             mock_service.update_dashboard.return_value = {
-                "id": "dash-1", "name": "Updated Dashboard"
+                "id": "dash-1",
+                "name": "Updated Dashboard",
             }
 
             response = client.put(
@@ -358,19 +406,25 @@ class TestDashboardRouter:
 
     def test_delete_dashboard_endpoint(self, client, mock_user):
         """Test DELETE /api/v1/dashboards/{id}."""
-        with patch("app.routers.dashboards.get_auth_user", return_value=mock_user), \
-             patch("app.routers.dashboards.dashboard_service") as mock_service:
+        with patch(
+            "app.routers.dashboards.get_auth_user", return_value=mock_user
+        ), patch("app.routers.dashboards.dashboard_service") as mock_service:
             mock_service.delete_dashboard.return_value = True
 
-            response = client.delete("/api/v1/dashboards/dash-1", headers={"Authorization": "Bearer test"})
+            response = client.delete(
+                "/api/v1/dashboards/dash-1", headers={"Authorization": "Bearer test"}
+            )
             assert response.status_code == 204
 
     def test_add_widget_endpoint(self, client, mock_user):
         """Test POST /api/v1/dashboards/{id}/widgets."""
-        with patch("app.routers.dashboards.get_auth_user", return_value=mock_user), \
-             patch("app.routers.dashboards.dashboard_service") as mock_service:
+        with patch(
+            "app.routers.dashboards.get_auth_user", return_value=mock_user
+        ), patch("app.routers.dashboards.dashboard_service") as mock_service:
             mock_service.add_widget.return_value = {
-                "id": "widget-1", "widget_type": "metric_card", "title": "Total Content"
+                "id": "widget-1",
+                "widget_type": "metric_card",
+                "title": "Total Content",
             }
 
             response = client.post(
@@ -402,17 +456,19 @@ class TestDashboardRouter:
 
     def test_get_dashboard_data_endpoint(self, client, mock_user):
         """Test GET /api/v1/dashboards/{id}/data."""
-        with patch("app.routers.dashboards.get_auth_user", return_value=mock_user), \
-             patch("app.routers.dashboards.dashboard_service") as mock_service:
+        with patch(
+            "app.routers.dashboards.get_auth_user", return_value=mock_user
+        ), patch("app.routers.dashboards.dashboard_service") as mock_service:
             mock_service.get_dashboard_data.return_value = {
                 "dashboard_id": "dash-1",
-                "widgets": [
-                    {"widget_id": "w1", "data": {"total": 42}}
-                ],
+                "widgets": [{"widget_id": "w1", "data": {"total": 42}}],
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
             }
 
-            response = client.get("/api/v1/dashboards/dash-1/data", headers={"Authorization": "Bearer test"})
+            response = client.get(
+                "/api/v1/dashboards/dash-1/data",
+                headers={"Authorization": "Bearer test"},
+            )
             assert response.status_code == 200
             data = response.json()
             assert "widgets" in data

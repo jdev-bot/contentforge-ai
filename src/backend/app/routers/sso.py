@@ -21,14 +21,25 @@ router = APIRouter()
 
 # ── Request / Response Models ──────────────────────────────────────
 
+
 class ProviderCreate(BaseModel):
     """Create a new SSO provider configuration."""
-    name: str = Field(..., min_length=1, max_length=50, description="Provider short name (google, microsoft, okta, custom)")
+
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        description="Provider short name (google, microsoft, okta, custom)",
+    )
     display_name: str = Field(..., min_length=1, description="Human-readable name")
     client_id: str = Field(..., min_length=1, description="OIDC client ID")
     client_secret: str = Field(..., min_length=1, description="OIDC client secret")
-    discovery_url: Optional[str] = Field(None, description="OIDC discovery document URL")
-    authorization_url: Optional[str] = Field(None, description="Override authorization endpoint")
+    discovery_url: Optional[str] = Field(
+        None, description="OIDC discovery document URL"
+    )
+    authorization_url: Optional[str] = Field(
+        None, description="Override authorization endpoint"
+    )
     token_url: Optional[str] = Field(None, description="Override token endpoint")
     userinfo_url: Optional[str] = Field(None, description="Override userinfo endpoint")
     scopes: str = Field("openid email profile", description="OIDC scopes")
@@ -38,6 +49,7 @@ class ProviderCreate(BaseModel):
 
 class ProviderUpdate(BaseModel):
     """Update an SSO provider configuration."""
+
     display_name: Optional[str] = None
     client_id: Optional[str] = None
     client_secret: Optional[str] = None
@@ -52,6 +64,7 @@ class ProviderUpdate(BaseModel):
 
 class ProviderResponse(BaseModel):
     """SSO provider configuration response."""
+
     id: str
     name: str
     display_name: str
@@ -70,25 +83,33 @@ class ProviderResponse(BaseModel):
 
 class SSOInitiateRequest(BaseModel):
     """Request to initiate SSO login."""
-    provider: str = Field(..., min_length=1, description="Provider name (google, microsoft, okta, custom)")
+
+    provider: str = Field(
+        ..., min_length=1, description="Provider name (google, microsoft, okta, custom)"
+    )
     redirect_uri: str = Field(..., description="Callback URI for the SSO flow")
-    link_user: bool = Field(False, description="If true, link SSO to existing authenticated account")
+    link_user: bool = Field(
+        False, description="If true, link SSO to existing authenticated account"
+    )
 
 
 class SSOInitiateResponse(BaseModel):
     """Response with the authorization URL to redirect the user to."""
+
     authorization_url: str
     state: str
 
 
 class SSOCallbackRequest(BaseModel):
     """SSO callback with authorization code."""
+
     state: str = Field(..., description="State token from login initiation")
     code: str = Field(..., description="Authorization code from IdP")
 
 
 class SSOCallbackResponse(BaseModel):
     """Result of SSO callback processing."""
+
     action: str  # "login", "register", "linked"
     user_id: str
     email: str
@@ -98,6 +119,7 @@ class SSOCallbackResponse(BaseModel):
 
 class SSOIdentityResponse(BaseModel):
     """An SSO identity linked to a user."""
+
     id: str
     provider: str
     email: Optional[str] = None
@@ -106,6 +128,7 @@ class SSOIdentityResponse(BaseModel):
 
 
 # ── Provider Configuration CRUD ────────────────────────────────────
+
 
 @router.get("/sso/providers", response_model=List[ProviderResponse])
 async def list_providers(user=Depends(get_auth_user)):
@@ -137,7 +160,9 @@ async def get_provider(provider_id: str, user=Depends(get_auth_user)):
     """Get a single SSO provider configuration."""
     provider = sso_service.get_provider(provider_id)
     if not provider:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
+        )
     return ProviderResponse(
         id=provider["id"],
         name=provider["name"],
@@ -155,7 +180,11 @@ async def get_provider(provider_id: str, user=Depends(get_auth_user)):
     )
 
 
-@router.post("/sso/providers", response_model=ProviderResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/sso/providers",
+    response_model=ProviderResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_provider(body: ProviderCreate, user=Depends(get_auth_user)):
     """Create a new SSO provider configuration."""
     try:
@@ -197,15 +226,21 @@ async def create_provider(body: ProviderCreate, user=Depends(get_auth_user)):
 
 
 @router.patch("/sso/providers/{provider_id}", response_model=ProviderResponse)
-async def update_provider(provider_id: str, body: ProviderUpdate, user=Depends(get_auth_user)):
+async def update_provider(
+    provider_id: str, body: ProviderUpdate, user=Depends(get_auth_user)
+):
     """Update an SSO provider configuration."""
     fields = body.model_dump(exclude_none=True)
     if not fields:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update"
+        )
 
     updated = sso_service.update_provider(provider_id, **fields)
     if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
+        )
     return ProviderResponse(
         id=updated["id"],
         name=updated["name"],
@@ -228,13 +263,18 @@ async def delete_provider(provider_id: str, user=Depends(get_auth_user)):
     """Delete an SSO provider configuration."""
     deleted = sso_service.delete_provider(provider_id)
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
+        )
 
 
 # ── SSO Login Flow ────────────────────────────────────────────────
 
+
 @router.post("/sso/login", response_model=SSOInitiateResponse)
-async def initiate_sso_login(body: SSOInitiateRequest, user=Depends(get_auth_user) if True else None):
+async def initiate_sso_login(
+    body: SSOInitiateRequest, user=Depends(get_auth_user) if True else None
+):
     """
     Initiate SSO login.
 
@@ -308,6 +348,7 @@ async def sso_callback(body: SSOCallbackRequest):
 
 # ── SSO Identity Management ──────────────────────────────────────
 
+
 @router.get("/sso/identities", response_model=List[SSOIdentityResponse])
 async def list_user_identities(user=Depends(get_auth_user)):
     """List SSO identities linked to the current user."""
@@ -328,8 +369,10 @@ async def unlink_identity(identity_id: str, user=Depends(get_auth_user)):
 
 # ── Available SSO Providers (public) ─────────────────────────────
 
+
 class AvailableProvider(BaseModel):
     """Public provider info (no secrets)."""
+
     name: str
     display_name: str
     is_active: bool

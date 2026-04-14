@@ -3,6 +3,7 @@ Auto-Suggestions service for ContentForge AI.
 Analyzes user content history and patterns to provide AI-powered suggestions
 for topics, posting times, and content improvements.
 """
+
 import json
 import logging
 from datetime import datetime, timedelta, timezone
@@ -35,12 +36,16 @@ class SuggestionService:
     # Content History Analysis
     # ------------------------------------------------------------------
 
-    async def get_user_content_history(self, user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+    async def get_user_content_history(
+        self, user_id: str, limit: int = 50
+    ) -> List[Dict[str, Any]]:
         """Retrieve user's recent content for pattern analysis."""
         try:
             result = (
                 self.supabase.table("content")
-                .select("id, title, original_text, category, tags, platform, created_at, updated_at")
+                .select(
+                    "id, title, original_text, category, tags, platform, created_at, updated_at"
+                )
                 .eq("user_id", user_id)
                 .order("created_at", desc=True)
                 .limit(limit)
@@ -51,12 +56,16 @@ class SuggestionService:
             logger.error(f"Failed to get user content history: {e}")
             return []
 
-    async def get_user_engagement_data(self, user_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_user_engagement_data(
+        self, user_id: str, limit: int = 100
+    ) -> List[Dict[str, Any]]:
         """Retrieve user's content engagement/analytics data."""
         try:
             result = (
                 self.supabase.table("analytics")
-                .select("content_id, views, likes, shares, comments, engagement_rate, recorded_at")
+                .select(
+                    "content_id, views, likes, shares, comments, engagement_rate, recorded_at"
+                )
                 .eq("user_id", user_id)
                 .order("recorded_at", desc=True)
                 .limit(limit)
@@ -67,12 +76,16 @@ class SuggestionService:
             logger.error(f"Failed to get engagement data: {e}")
             return []
 
-    async def get_user_distributions(self, user_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_user_distributions(
+        self, user_id: str, limit: int = 100
+    ) -> List[Dict[str, Any]]:
         """Retrieve user's content distribution records for posting time analysis."""
         try:
             result = (
                 self.supabase.table("distributions")
-                .select("id, content_id, platform, status, published_at, engagement_metrics")
+                .select(
+                    "id, content_id, platform, status, published_at, engagement_metrics"
+                )
                 .eq("user_id", user_id)
                 .order("published_at", desc=True)
                 .limit(limit)
@@ -107,7 +120,9 @@ class SuggestionService:
 
             # Build context for AI
             history_summary = self._summarize_content_history(content_history)
-            top_performers = self._get_top_performing_content(content_history, engagement_data)
+            top_performers = self._get_top_performing_content(
+                content_history, engagement_data
+            )
 
             prompt = f"""Based on the user's content history and performance data, suggest {limit} new content topics they should write about.
 
@@ -152,7 +167,12 @@ Format your response as JSON:
             suggestions = suggestions[:limit]
 
             # Cache the result
-            cache.set(cache_key, suggestions, ttl=CACHE_TTL.get("analytics", 300), prefix=f"suggestions:{user_id}")
+            cache.set(
+                cache_key,
+                suggestions,
+                ttl=CACHE_TTL.get("analytics", 300),
+                prefix=f"suggestions:{user_id}",
+            )
 
             return suggestions
 
@@ -185,7 +205,9 @@ Format your response as JSON:
 
             # Filter by platform if specified
             if platform and distributions:
-                distributions = [d for d in distributions if d.get("platform") == platform]
+                distributions = [
+                    d for d in distributions if d.get("platform") == platform
+                ]
 
             distribution_summary = self._summarize_distributions(distributions)
             engagement_summary = self._summarize_engagement(engagement_data)
@@ -230,7 +252,12 @@ Format your response as JSON:
             suggestions = self._parse_json_response(result, "suggestions")
             suggestions = suggestions[:limit]
 
-            cache.set(cache_key, suggestions, ttl=CACHE_TTL.get("analytics", 300), prefix=f"suggestions:{user_id}")
+            cache.set(
+                cache_key,
+                suggestions,
+                ttl=CACHE_TTL.get("analytics", 300),
+                prefix=f"suggestions:{user_id}",
+            )
 
             return suggestions
 
@@ -271,7 +298,9 @@ Format your response as JSON:
             if not content_items:
                 return []
 
-            content_text = content_items[0].get("original_text") or content_items[0].get("title", "")
+            content_text = content_items[0].get("original_text") or content_items[
+                0
+            ].get("title", "")
             if not content_text:
                 return []
 
@@ -434,7 +463,9 @@ Format your response as JSON:
             tags = item.get("tags", [])
             tags_str = ", ".join(tags) if isinstance(tags, list) else str(tags)
             platform = item.get("platform", "unknown")
-            summary_parts.append(f"{i + 1}. '{title}' (Category: {category}, Platform: {platform}, Tags: {tags_str})")
+            summary_parts.append(
+                f"{i + 1}. '{title}' (Category: {category}, Platform: {platform}, Tags: {tags_str})"
+            )
 
         return "\n".join(summary_parts)
 
@@ -453,7 +484,9 @@ Format your response as JSON:
             cid = entry.get("content_id")
             if cid:
                 rate = entry.get("engagement_rate", 0)
-                if cid not in engagement_by_content or rate > engagement_by_content[cid].get("engagement_rate", 0):
+                if cid not in engagement_by_content or rate > engagement_by_content[
+                    cid
+                ].get("engagement_rate", 0):
                     engagement_by_content[cid] = entry
 
         # Sort by engagement rate
@@ -489,7 +522,9 @@ Format your response as JSON:
             status = d.get("status", "unknown")
             metrics = d.get("engagement_metrics", {})
             metrics_str = json.dumps(metrics) if metrics else "N/A"
-            lines.append(f"{i + 1}. Platform: {platform}, Published: {published}, Status: {status}, Metrics: {metrics_str}")
+            lines.append(
+                f"{i + 1}. Platform: {platform}, Published: {published}, Status: {status}, Metrics: {metrics_str}"
+            )
         return "\n".join(lines)
 
     def _summarize_engagement(self, engagement_data: List[Dict[str, Any]]) -> str:
@@ -500,7 +535,12 @@ Format your response as JSON:
         total_views = sum(e.get("views", 0) for e in engagement_data)
         total_likes = sum(e.get("likes", 0) for e in engagement_data)
         total_shares = sum(e.get("shares", 0) for e in engagement_data)
-        avg_engagement = sum(e.get("engagement_rate", 0) for e in engagement_data) / len(engagement_data) if engagement_data else 0
+        avg_engagement = (
+            sum(e.get("engagement_rate", 0) for e in engagement_data)
+            / len(engagement_data)
+            if engagement_data
+            else 0
+        )
 
         # Group by hour of day for pattern analysis
         hourly: Dict[int, List[float]] = {}
@@ -519,7 +559,12 @@ Format your response as JSON:
             reverse=True,
         )[:5]
 
-        peak_str = ", ".join([f"{h}:00 UTC (avg rate: {sum(rates)/len(rates):.2f})" for h, rates in peak_hours])
+        peak_str = ", ".join(
+            [
+                f"{h}:00 UTC (avg rate: {sum(rates)/len(rates):.2f})"
+                for h, rates in peak_hours
+            ]
+        )
 
         return (
             f"Total views: {total_views}, Total likes: {total_likes}, "

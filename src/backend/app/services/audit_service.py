@@ -3,6 +3,7 @@ Audit Log Service
 
 Handles audit log creation, querying, statistics, CSV export, and retention management.
 """
+
 import csv
 import io
 import logging
@@ -13,20 +14,22 @@ from app.core.supabase import get_supabase_client
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_ACTIONS = frozenset({
-    "content.created",
-    "content.updated",
-    "content.deleted",
-    "content.published",
-    "user.login",
-    "user.logout",
-    "user.settings_changed",
-    "project.created",
-    "project.deleted",
-    "team.member_added",
-    "team.member_removed",
-    "api_key.rotated",
-})
+SUPPORTED_ACTIONS = frozenset(
+    {
+        "content.created",
+        "content.updated",
+        "content.deleted",
+        "content.published",
+        "user.login",
+        "user.logout",
+        "user.settings_changed",
+        "project.created",
+        "project.deleted",
+        "team.member_added",
+        "team.member_removed",
+        "api_key.rotated",
+    }
+)
 
 DEFAULT_RETENTION_DAYS = 90
 
@@ -140,9 +143,7 @@ class AuditService:
     ) -> Dict[str, Any]:
         """Get audit log statistics — action counts by type."""
         query = (
-            self.supabase.table("audit_logs")
-            .select("action")
-            .eq("actor_id", user_id)
+            self.supabase.table("audit_logs").select("action").eq("actor_id", user_id)
         )
 
         if date_from:
@@ -196,24 +197,35 @@ class AuditService:
 
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow([
-            "id", "actor_id", "actor_email", "action",
-            "resource_type", "resource_id", "details",
-            "ip_address", "user_agent", "timestamp",
-        ])
+        writer.writerow(
+            [
+                "id",
+                "actor_id",
+                "actor_email",
+                "action",
+                "resource_type",
+                "resource_id",
+                "details",
+                "ip_address",
+                "user_agent",
+                "timestamp",
+            ]
+        )
         for entry in logs:
-            writer.writerow([
-                entry.get("id", ""),
-                entry.get("actor_id", ""),
-                entry.get("actor_email", ""),
-                entry.get("action", ""),
-                entry.get("resource_type", ""),
-                entry.get("resource_id", ""),
-                entry.get("details", ""),
-                entry.get("ip_address", ""),
-                entry.get("user_agent", ""),
-                entry.get("timestamp", ""),
-            ])
+            writer.writerow(
+                [
+                    entry.get("id", ""),
+                    entry.get("actor_id", ""),
+                    entry.get("actor_email", ""),
+                    entry.get("action", ""),
+                    entry.get("resource_type", ""),
+                    entry.get("resource_id", ""),
+                    entry.get("details", ""),
+                    entry.get("ip_address", ""),
+                    entry.get("user_agent", ""),
+                    entry.get("timestamp", ""),
+                ]
+            )
 
         return output.getvalue()
 
@@ -226,7 +238,9 @@ class AuditService:
         Remove audit logs older than retention period.
         Returns count of deleted entries.
         """
-        cutoff = (datetime.now(timezone.utc) - timedelta(days=retention_days)).isoformat()
+        cutoff = (
+            datetime.now(timezone.utc) - timedelta(days=retention_days)
+        ).isoformat()
 
         query = self.supabase.table("audit_logs").delete().lt("timestamp", cutoff)
 
@@ -243,6 +257,7 @@ def audit_log(action: str, resource_type: str):
     Decorator to automatically log an auditable action.
     Applied to FastAPI route handlers; extracts request context for actor info.
     """
+
     def decorator(func):
         async def wrapper(*args, **kwargs):
             # Execute the original function first
@@ -255,14 +270,21 @@ def audit_log(action: str, resource_type: str):
             if user:
                 try:
                     from app.services.audit_service import audit_service
+
                     audit_service.log(
                         actor_id=str(user.id),
                         actor_email=getattr(user, "email", ""),
                         action=action,
                         resource_type=resource_type,
                         resource_id=str(getattr(result, "id", "")) if result else "",
-                        ip_address=request.client.host if request and hasattr(request, "client") else None,
-                        user_agent=request.headers.get("user-agent") if request else None,
+                        ip_address=(
+                            request.client.host
+                            if request and hasattr(request, "client")
+                            else None
+                        ),
+                        user_agent=(
+                            request.headers.get("user-agent") if request else None
+                        ),
                     )
                 except Exception as e:
                     logger.error(f"Audit logging failed: {e}")

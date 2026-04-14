@@ -8,6 +8,7 @@ This router provides endpoints for:
 - Retrying failed events
 - Viewing integration logs and health status
 """
+
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
@@ -15,20 +16,33 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field, field_validator
 
 from app.services.integration_framework_service import (
-    EventStatus, IntegrationType, integration_framework_service)
+    EventStatus,
+    IntegrationType,
+    integration_framework_service,
+)
 
 router = APIRouter()
 
 
 # ============== Pydantic Models ==============
 
+
 class IntegrationConfigCreate(BaseModel):
     """Create integration config request model."""
+
     name: str = Field(..., min_length=1, max_length=255, description="Integration name")
-    type: str = Field(..., description="Integration type: webhook, api, polling, streaming")
-    provider: str = Field(..., min_length=1, max_length=255, description="Provider name")
-    credentials: Dict[str, Any] = Field(default_factory=dict, description="Encrypted credentials")
-    settings: Dict[str, Any] = Field(default_factory=dict, description="Integration settings")
+    type: str = Field(
+        ..., description="Integration type: webhook, api, polling, streaming"
+    )
+    provider: str = Field(
+        ..., min_length=1, max_length=255, description="Provider name"
+    )
+    credentials: Dict[str, Any] = Field(
+        default_factory=dict, description="Encrypted credentials"
+    )
+    settings: Dict[str, Any] = Field(
+        default_factory=dict, description="Integration settings"
+    )
 
     @field_validator("type")
     @classmethod
@@ -41,6 +55,7 @@ class IntegrationConfigCreate(BaseModel):
 
 class IntegrationConfigUpdate(BaseModel):
     """Update integration config request model."""
+
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     type: Optional[str] = None
     provider: Optional[str] = Field(None, min_length=1, max_length=255)
@@ -61,6 +76,7 @@ class IntegrationConfigUpdate(BaseModel):
 
 class IntegrationConfigResponse(BaseModel):
     """Integration config response model."""
+
     id: str
     user_id: str
     name: str
@@ -75,6 +91,7 @@ class IntegrationConfigResponse(BaseModel):
 
 class IntegrationTestResponse(BaseModel):
     """Integration test result response model."""
+
     success: bool
     message: str
     latency_ms: int
@@ -82,12 +99,14 @@ class IntegrationTestResponse(BaseModel):
 
 class IntegrationEventCreate(BaseModel):
     """Trigger integration event request model."""
+
     event_type: str = Field(..., min_length=1, max_length=255, description="Event type")
     payload: Dict[str, Any] = Field(default_factory=dict, description="Event payload")
 
 
 class IntegrationEventResponse(BaseModel):
     """Integration event response model."""
+
     id: str
     user_id: str
     config_id: str
@@ -100,6 +119,7 @@ class IntegrationEventResponse(BaseModel):
 
 class IntegrationLogResponse(BaseModel):
     """Integration log response model."""
+
     id: str
     config_id: str
     event_id: Optional[str] = None
@@ -110,12 +130,14 @@ class IntegrationLogResponse(BaseModel):
 
 class IntegrationLogListResponse(BaseModel):
     """Integration log list response model."""
+
     logs: List[IntegrationLogResponse]
     total: int
 
 
 class IntegrationStatusResponse(BaseModel):
     """Integration health status response model."""
+
     config_id: str
     name: str
     type: str
@@ -132,6 +154,7 @@ class IntegrationStatusResponse(BaseModel):
 
 class RetryEventResponse(BaseModel):
     """Retry event response model."""
+
     success: bool
     message: str
     event: Optional[IntegrationEventResponse] = None
@@ -143,7 +166,12 @@ from app.routers.auth import get_auth_user
 
 # ============== Integration Config Endpoints ==============
 
-@router.post("/integration-framework/configs", response_model=IntegrationConfigResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/integration-framework/configs",
+    response_model=IntegrationConfigResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def register_integration(
     config: IntegrationConfigCreate,
     user=Depends(get_auth_user),
@@ -175,11 +203,15 @@ async def register_integration(
         )
 
 
-@router.get("/integration-framework/configs", response_model=List[IntegrationConfigResponse])
+@router.get(
+    "/integration-framework/configs", response_model=List[IntegrationConfigResponse]
+)
 async def list_integrations(user=Depends(get_auth_user)):
     """List all integration configurations for the current user."""
     try:
-        integrations = await integration_framework_service.list_integrations(user_id=user.id)
+        integrations = await integration_framework_service.list_integrations(
+            user_id=user.id
+        )
         return integrations
     except Exception as e:
         raise HTTPException(
@@ -188,7 +220,10 @@ async def list_integrations(user=Depends(get_auth_user)):
         )
 
 
-@router.put("/integration-framework/configs/{config_id}", response_model=IntegrationConfigResponse)
+@router.put(
+    "/integration-framework/configs/{config_id}",
+    response_model=IntegrationConfigResponse,
+)
 async def update_integration(
     config_id: UUID,
     updates: IntegrationConfigUpdate,
@@ -222,7 +257,9 @@ async def update_integration(
         )
 
 
-@router.delete("/integration-framework/configs/{config_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/integration-framework/configs/{config_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_integration(
     config_id: UUID,
     user=Depends(get_auth_user),
@@ -249,7 +286,11 @@ async def delete_integration(
 
 # ============== Integration Test Endpoint ==============
 
-@router.post("/integration-framework/configs/{config_id}/test", response_model=IntegrationTestResponse)
+
+@router.post(
+    "/integration-framework/configs/{config_id}/test",
+    response_model=IntegrationTestResponse,
+)
 async def test_integration(
     config_id: UUID,
     user=Depends(get_auth_user),
@@ -270,7 +311,12 @@ async def test_integration(
 
 # ============== Integration Event Endpoints ==============
 
-@router.post("/integration-framework/configs/{config_id}/events", response_model=IntegrationEventResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/integration-framework/configs/{config_id}/events",
+    response_model=IntegrationEventResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def trigger_integration_event(
     config_id: UUID,
     event: IntegrationEventCreate,
@@ -299,7 +345,9 @@ async def trigger_integration_event(
         )
 
 
-@router.post("/integration-framework/events/{event_id}/retry", response_model=RetryEventResponse)
+@router.post(
+    "/integration-framework/events/{event_id}/retry", response_model=RetryEventResponse
+)
 async def retry_failed_event(
     event_id: UUID,
     user=Depends(get_auth_user),
@@ -329,7 +377,11 @@ async def retry_failed_event(
 
 # ============== Integration Logs Endpoint ==============
 
-@router.get("/integration-framework/configs/{config_id}/logs", response_model=IntegrationLogListResponse)
+
+@router.get(
+    "/integration-framework/configs/{config_id}/logs",
+    response_model=IntegrationLogListResponse,
+)
 async def get_integration_logs(
     config_id: UUID,
     limit: int = Query(100, ge=1, le=500),
@@ -354,7 +406,11 @@ async def get_integration_logs(
 
 # ============== Integration Status Endpoint ==============
 
-@router.get("/integration-framework/configs/{config_id}/status", response_model=IntegrationStatusResponse)
+
+@router.get(
+    "/integration-framework/configs/{config_id}/status",
+    response_model=IntegrationStatusResponse,
+)
 async def get_integration_status(
     config_id: UUID,
     user=Depends(get_auth_user),

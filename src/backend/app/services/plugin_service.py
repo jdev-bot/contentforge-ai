@@ -2,6 +2,7 @@
 Plugin service for the ContentForge AI plugin system.
 Handles plugin registry CRUD, lifecycle hooks, configuration, and permissions.
 """
+
 import json
 import logging
 import uuid
@@ -17,8 +18,10 @@ from app.core.supabase import get_supabase_admin_client, get_supabase_client
 # Plugin Lifecycle Hooks
 # ============================================================================
 
+
 class PluginHook(str, Enum):
     """Lifecycle hooks that plugins can subscribe to."""
+
     ON_CONTENT_CREATED = "on_content_created"
     ON_CONTENT_UPDATED = "on_content_updated"
     ON_CONTENT_DELETED = "on_content_deleted"
@@ -36,8 +39,10 @@ AVAILABLE_HOOKS = [h.value for h in PluginHook]
 # Plugin Permissions
 # ============================================================================
 
+
 class PluginPermission(str, Enum):
     """Permissions that plugins can request."""
+
     READ_CONTENT = "read_content"
     WRITE_CONTENT = "write_content"
     DELETE_CONTENT = "delete_content"
@@ -60,8 +65,14 @@ HOOK_REQUIRED_PERMISSIONS: Dict[str, List[str]] = {
     PluginHook.ON_CONTENT_CREATED: [PluginPermission.READ_CONTENT],
     PluginHook.ON_CONTENT_UPDATED: [PluginPermission.READ_CONTENT],
     PluginHook.ON_CONTENT_DELETED: [PluginPermission.READ_CONTENT],
-    PluginHook.ON_CONTENT_PUBLISHED: [PluginPermission.READ_CONTENT, PluginPermission.READ_DISTRIBUTIONS],
-    PluginHook.ON_CONTENT_ANALYZED: [PluginPermission.READ_CONTENT, PluginPermission.READ_ANALYTICS],
+    PluginHook.ON_CONTENT_PUBLISHED: [
+        PluginPermission.READ_CONTENT,
+        PluginPermission.READ_DISTRIBUTIONS,
+    ],
+    PluginHook.ON_CONTENT_ANALYZED: [
+        PluginPermission.READ_CONTENT,
+        PluginPermission.READ_ANALYTICS,
+    ],
     PluginHook.ON_ASSET_GENERATED: [PluginPermission.READ_ASSETS],
     PluginHook.ON_DISTRIBUTION_PUBLISHED: [PluginPermission.READ_DISTRIBUTIONS],
     PluginHook.ON_PROJECT_CREATED: [PluginPermission.READ_PROJECTS],
@@ -71,6 +82,7 @@ HOOK_REQUIRED_PERMISSIONS: Dict[str, List[str]] = {
 # ============================================================================
 # Plugin Service
 # ============================================================================
+
 
 class PluginService:
     """
@@ -134,10 +146,18 @@ class PluginService:
 
     async def get_plugin(self, plugin_id: str) -> Optional[Dict[str, Any]]:
         """Get a single plugin from the registry."""
-        result = self.supabase.table("plugins").select("*").eq("id", plugin_id).single().execute()
+        result = (
+            self.supabase.table("plugins")
+            .select("*")
+            .eq("id", plugin_id)
+            .single()
+            .execute()
+        )
         return result.data
 
-    async def create_plugin(self, data: Dict[str, Any], author_id: str) -> Dict[str, Any]:
+    async def create_plugin(
+        self, data: Dict[str, Any], author_id: str
+    ) -> Dict[str, Any]:
         """Register a new plugin in the marketplace."""
         now = datetime.now(timezone.utc).isoformat()
         plugin = {
@@ -169,7 +189,9 @@ class PluginService:
             raise RuntimeError("Failed to create plugin")
         return result.data[0]
 
-    async def update_plugin(self, plugin_id: str, author_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_plugin(
+        self, plugin_id: str, author_id: str, data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Update a plugin's metadata (only the author can update)."""
         existing = await self.get_plugin(plugin_id)
         if not existing:
@@ -178,8 +200,17 @@ class PluginService:
             raise PermissionError("Only the plugin author can update it")
 
         update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
-        for field in ("name", "slug", "description", "version", "category",
-                       "icon_url", "homepage_url", "repository_url", "status"):
+        for field in (
+            "name",
+            "slug",
+            "description",
+            "version",
+            "category",
+            "icon_url",
+            "homepage_url",
+            "repository_url",
+            "status",
+        ):
             if field in data:
                 update_data[field] = data[field]
 
@@ -192,7 +223,12 @@ class PluginService:
         if "default_config" in data:
             update_data["default_config"] = json.dumps(data["default_config"])
 
-        result = self.supabase.table("plugins").update(update_data).eq("id", plugin_id).execute()
+        result = (
+            self.supabase.table("plugins")
+            .update(update_data)
+            .eq("id", plugin_id)
+            .execute()
+        )
         if not result.data:
             raise RuntimeError("Failed to update plugin")
         return result.data[0]
@@ -261,14 +297,18 @@ class PluginService:
             raise RuntimeError("Failed to install plugin")
 
         # Increment download count
-        self.admin_supabase.table("plugins").update({
-            "downloads": (plugin.get("downloads") or 0) + 1,
-            "updated_at": now,
-        }).eq("id", plugin_id).execute()
+        self.admin_supabase.table("plugins").update(
+            {
+                "downloads": (plugin.get("downloads") or 0) + 1,
+                "updated_at": now,
+            }
+        ).eq("id", plugin_id).execute()
 
         return result.data[0]
 
-    async def uninstall_plugin(self, install_id: str, organization_id: str, user_id: str) -> bool:
+    async def uninstall_plugin(
+        self, install_id: str, organization_id: str, user_id: str
+    ) -> bool:
         """Uninstall a plugin from an organization."""
         # Verify the installed plugin belongs to this org
         existing = (
@@ -302,7 +342,9 @@ class PluginService:
         result = query.execute()
         return result.data or []
 
-    async def get_installed_plugin(self, install_id: str, organization_id: str) -> Optional[Dict[str, Any]]:
+    async def get_installed_plugin(
+        self, install_id: str, organization_id: str
+    ) -> Optional[Dict[str, Any]]:
         """Get a specific installed plugin instance."""
         result = (
             self.supabase.table("installed_plugins")
@@ -318,7 +360,9 @@ class PluginService:
     # Plugin Configuration
     # ------------------------------------------------------------------
 
-    async def get_plugin_config(self, install_id: str, organization_id: str) -> Dict[str, Any]:
+    async def get_plugin_config(
+        self, install_id: str, organization_id: str
+    ) -> Dict[str, Any]:
         """Get the configuration for an installed plugin."""
         installed = await self.get_installed_plugin(install_id, organization_id)
         if not installed:
@@ -367,10 +411,12 @@ class PluginService:
 
         result = (
             self.supabase.table("installed_plugins")
-            .update({
-                "is_enabled": is_enabled,
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-            })
+            .update(
+                {
+                    "is_enabled": is_enabled,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
             .eq("id", install_id)
             .eq("organization_id", organization_id)
             .execute()
@@ -383,7 +429,9 @@ class PluginService:
     # Plugin Permissions
     # ------------------------------------------------------------------
 
-    def validate_permissions(self, plugin_data: Dict[str, Any], requested_hooks: List[str]) -> List[str]:
+    def validate_permissions(
+        self, plugin_data: Dict[str, Any], requested_hooks: List[str]
+    ) -> List[str]:
         """
         Validate that the plugin's declared permissions cover its requested hooks.
         Returns a list of validation errors (empty if valid).
@@ -419,7 +467,13 @@ class PluginService:
 
     def get_plugin_permissions(self, plugin_id: str) -> List[str]:
         """Get the permissions declared by a plugin."""
-        result = self.supabase.table("plugins").select("permissions").eq("id", plugin_id).single().execute()
+        result = (
+            self.supabase.table("plugins")
+            .select("permissions")
+            .eq("id", plugin_id)
+            .single()
+            .execute()
+        )
         if not result.data:
             return []
         perms = result.data.get("permissions", [])
@@ -437,7 +491,9 @@ class PluginService:
             self._hook_handlers[hook] = []
         self._hook_handlers[hook].append(handler)
 
-    async def dispatch_hook(self, hook: str, payload: Dict[str, Any], organization_id: str):
+    async def dispatch_hook(
+        self, hook: str, payload: Dict[str, Any], organization_id: str
+    ):
         """
         Dispatch a lifecycle hook event.
 
@@ -460,7 +516,7 @@ class PluginService:
             .execute()
         )
 
-        for record in (installed.data or []):
+        for record in installed.data or []:
             plugin = record.get("plugins")
             if not plugin:
                 continue

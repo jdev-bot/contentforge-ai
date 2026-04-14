@@ -9,6 +9,7 @@ This router provides endpoints for:
 - Managing SLA alerts
 - Viewing uptime, response time, and error rate SLA data
 """
+
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
@@ -22,13 +23,19 @@ router = APIRouter()
 
 # ============== Pydantic Models ==============
 
+
 class SLAPolicyCreate(BaseModel):
     """Create SLA policy request model."""
+
     name: str = Field(..., min_length=1, max_length=255, description="Policy name")
-    metric: str = Field(..., description="Metric type: uptime, response_time, error_rate, throughput")
+    metric: str = Field(
+        ..., description="Metric type: uptime, response_time, error_rate, throughput"
+    )
     threshold: float = Field(..., description="Threshold value for the metric")
     window_minutes: int = Field(..., gt=0, description="Time window in minutes")
-    severity: str = Field(default="warning", description="Severity: critical, warning, info")
+    severity: str = Field(
+        default="warning", description="Severity: critical, warning, info"
+    )
 
     @field_validator("metric")
     @classmethod
@@ -49,6 +56,7 @@ class SLAPolicyCreate(BaseModel):
 
 class SLAPolicyUpdate(BaseModel):
     """Update SLA policy request model."""
+
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     metric: Optional[str] = None
     threshold: Optional[float] = None
@@ -79,6 +87,7 @@ class SLAPolicyUpdate(BaseModel):
 
 class SLAPolicyResponse(BaseModel):
     """SLA policy response model."""
+
     id: str
     user_id: str
     name: str
@@ -93,9 +102,14 @@ class SLAPolicyResponse(BaseModel):
 
 class SLAMetricRecord(BaseModel):
     """Record SLA metric request model."""
-    metric_type: str = Field(..., description="Metric type: uptime, response_time, error_rate, throughput")
+
+    metric_type: str = Field(
+        ..., description="Metric type: uptime, response_time, error_rate, throughput"
+    )
     value: float = Field(..., description="Metric value")
-    labels: Optional[Dict[str, str]] = Field(None, description="Optional labels for the metric")
+    labels: Optional[Dict[str, str]] = Field(
+        None, description="Optional labels for the metric"
+    )
 
     @field_validator("metric_type")
     @classmethod
@@ -108,6 +122,7 @@ class SLAMetricRecord(BaseModel):
 
 class SLAMetricResponse(BaseModel):
     """SLA metric response model."""
+
     id: str
     user_id: str
     metric_type: str
@@ -118,6 +133,7 @@ class SLAMetricResponse(BaseModel):
 
 class SLADashboardResponse(BaseModel):
     """SLA dashboard response model."""
+
     uptime_percentage: float
     avg_response_time_ms: float
     error_rate: float
@@ -128,6 +144,7 @@ class SLADashboardResponse(BaseModel):
 
 class SLAAlertResponse(BaseModel):
     """SLA alert response model."""
+
     id: str
     user_id: str
     policy_id: str
@@ -143,12 +160,14 @@ class SLAAlertResponse(BaseModel):
 
 class SLAAlertListResponse(BaseModel):
     """SLA alert list response model."""
+
     alerts: List[SLAAlertResponse]
     total: int
 
 
 class SLAUptimeResponse(BaseModel):
     """SLA uptime response model."""
+
     uptime_percentage: float
     total_samples: int
     period_days: int
@@ -157,6 +176,7 @@ class SLAUptimeResponse(BaseModel):
 
 class SLAResponseTimeResponse(BaseModel):
     """SLA response time response model."""
+
     avg_ms: float
     p50_ms: float
     p90_ms: float
@@ -169,6 +189,7 @@ class SLAResponseTimeResponse(BaseModel):
 
 class SLAErrorRateResponse(BaseModel):
     """SLA error rate response model."""
+
     error_rate: float
     total_samples: int
     period_days: int
@@ -177,6 +198,7 @@ class SLAErrorRateResponse(BaseModel):
 
 class SLAComplianceResponse(BaseModel):
     """SLA compliance check response model."""
+
     policy_id: str
     metric: str
     compliant: bool
@@ -187,6 +209,7 @@ class SLAComplianceResponse(BaseModel):
 
 class AcknowledgeAlertResponse(BaseModel):
     """Acknowledge alert response model."""
+
     success: bool
     message: str
 
@@ -197,7 +220,12 @@ from app.routers.auth import get_auth_user
 
 # ============== SLA Policy Endpoints ==============
 
-@router.post("/sla/policies", response_model=SLAPolicyResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/sla/policies",
+    response_model=SLAPolicyResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_sla_policy(
     policy: SLAPolicyCreate,
     user=Depends(get_auth_user),
@@ -300,7 +328,12 @@ async def delete_sla_policy(
 
 # ============== SLA Metrics Endpoints ==============
 
-@router.post("/sla/metrics", response_model=SLAMetricResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/sla/metrics",
+    response_model=SLAMetricResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def record_sla_metric(
     metric: SLAMetricRecord,
     user=Depends(get_auth_user),
@@ -330,6 +363,7 @@ async def record_sla_metric(
 
 # ============== SLA Dashboard Endpoint ==============
 
+
 @router.get("/sla/dashboard", response_model=SLADashboardResponse)
 async def get_sla_dashboard(user=Depends(get_auth_user)):
     """Get SLA dashboard with aggregated metrics."""
@@ -345,9 +379,12 @@ async def get_sla_dashboard(user=Depends(get_auth_user)):
 
 # ============== SLA Alerts Endpoints ==============
 
+
 @router.get("/sla/alerts", response_model=SLAAlertListResponse)
 async def list_sla_alerts(
-    acknowledged: Optional[bool] = Query(None, description="Filter by acknowledged status"),
+    acknowledged: Optional[bool] = Query(
+        None, description="Filter by acknowledged status"
+    ),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     user=Depends(get_auth_user),
@@ -368,20 +405,26 @@ async def list_sla_alerts(
         )
 
 
-@router.put("/sla/alerts/{alert_id}/acknowledge", response_model=AcknowledgeAlertResponse)
+@router.put(
+    "/sla/alerts/{alert_id}/acknowledge", response_model=AcknowledgeAlertResponse
+)
 async def acknowledge_sla_alert(
     alert_id: UUID,
     user=Depends(get_auth_user),
 ):
     """Acknowledge an SLA alert."""
     try:
-        success = await sla_service.acknowledge_alert(alert_id=alert_id, user_id=user.id)
+        success = await sla_service.acknowledge_alert(
+            alert_id=alert_id, user_id=user.id
+        )
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="SLA alert not found or you don't have permission",
             )
-        return AcknowledgeAlertResponse(success=True, message="Alert acknowledged successfully")
+        return AcknowledgeAlertResponse(
+            success=True, message="Alert acknowledged successfully"
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -393,14 +436,19 @@ async def acknowledge_sla_alert(
 
 # ============== SLA Compliance Endpoint ==============
 
-@router.get("/sla/policies/{policy_id}/compliance", response_model=SLAComplianceResponse)
+
+@router.get(
+    "/sla/policies/{policy_id}/compliance", response_model=SLAComplianceResponse
+)
 async def check_sla_compliance(
     policy_id: UUID,
     user=Depends(get_auth_user),
 ):
     """Check if current metrics comply with an SLA policy."""
     try:
-        result = await sla_service.check_compliance(policy_id=policy_id, user_id=user.id)
+        result = await sla_service.check_compliance(
+            policy_id=policy_id, user_id=user.id
+        )
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -417,6 +465,7 @@ async def check_sla_compliance(
 
 
 # ============== SLA Analytics Endpoints ==============
+
 
 @router.get("/sla/uptime", response_model=SLAUptimeResponse)
 async def get_sla_uptime(

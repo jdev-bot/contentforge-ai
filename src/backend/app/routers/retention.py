@@ -7,6 +7,7 @@ Provides endpoints for:
 - Compliance reporting (GDPR Art. 5)
 - Audit trail
 """
+
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -22,17 +23,25 @@ router = APIRouter()
 
 # ── Request / Response Models ──────────────────────────────────────
 
+
 class RetentionPolicyCreate(BaseModel):
     """Create a new retention policy."""
+
     content_type: str = Field(..., description="Content type this policy applies to")
-    archive_after_days: int = Field(..., gt=0, description="Days before content is auto-archived")
-    delete_after_days: Optional[int] = Field(None, description="Days before content is auto-deleted (must be >= archive_after_days)")
+    archive_after_days: int = Field(
+        ..., gt=0, description="Days before content is auto-archived"
+    )
+    delete_after_days: Optional[int] = Field(
+        None,
+        description="Days before content is auto-deleted (must be >= archive_after_days)",
+    )
     description: Optional[str] = Field(None, description="Human-readable description")
     is_active: bool = Field(True, description="Whether the policy is active")
 
 
 class RetentionPolicyUpdate(BaseModel):
     """Update a retention policy (all fields optional)."""
+
     content_type: Optional[str] = None
     archive_after_days: Optional[int] = Field(None, gt=0)
     delete_after_days: Optional[int] = None
@@ -42,6 +51,7 @@ class RetentionPolicyUpdate(BaseModel):
 
 class RetentionPolicyResponse(BaseModel):
     """Response model for a retention policy."""
+
     id: str
     user_id: str
     content_type: str
@@ -55,6 +65,7 @@ class RetentionPolicyResponse(BaseModel):
 
 class RetentionPolicyListResponse(BaseModel):
     """Paginated list of retention policies."""
+
     items: List[RetentionPolicyResponse]
     total: int
     page: int
@@ -63,11 +74,15 @@ class RetentionPolicyListResponse(BaseModel):
 
 class RetentionApplyRequest(BaseModel):
     """Request body for apply-retention endpoint."""
-    content_type: Optional[str] = Field(None, description="Apply only to this content type (optional)")
+
+    content_type: Optional[str] = Field(
+        None, description="Apply only to this content type (optional)"
+    )
 
 
 class RetentionApplyResponse(BaseModel):
     """Response model for apply-retention."""
+
     archived: int
     deleted: int
     policies_applied: int
@@ -76,11 +91,13 @@ class RetentionApplyResponse(BaseModel):
 
 class ComplianceRecommendation(BaseModel):
     """A compliance recommendation."""
+
     text: str
 
 
 class ComplianceReportResponse(BaseModel):
     """GDPR Article 5 compliance report."""
+
     report_generated_at: str
     gdpr_article: str
     compliance_score: int
@@ -97,7 +114,12 @@ class ComplianceReportResponse(BaseModel):
 
 # ── Endpoints ──────────────────────────────────────────────────────
 
-@router.post("/retention/policies", response_model=RetentionPolicyResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/retention/policies",
+    response_model=RetentionPolicyResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_retention_policy(
     body: RetentionPolicyCreate,
     user=Depends(get_auth_user),
@@ -203,7 +225,9 @@ async def update_retention_policy(
         )
 
 
-@router.delete("/retention/policies/{policy_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/retention/policies/{policy_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_retention_policy(
     policy_id: str,
     user=Depends(get_auth_user),
@@ -270,6 +294,7 @@ async def get_compliance_report(
 
 class RetentionAuditEntryResponse(BaseModel):
     """Response model for a retention audit entry."""
+
     id: str
     user_id: str
     action: str
@@ -281,6 +306,7 @@ class RetentionAuditEntryResponse(BaseModel):
 
 class RetentionAuditListResponse(BaseModel):
     """Paginated list of audit entries."""
+
     items: List[RetentionAuditEntryResponse]
     total: int
     page: int

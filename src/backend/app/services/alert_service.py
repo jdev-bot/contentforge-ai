@@ -8,6 +8,7 @@ This service handles:
 - Triggering alerts when thresholds are crossed
 - Managing alert lifecycle
 """
+
 import logging
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class AlertType(str, Enum):
     """Types of content performance alerts."""
+
     VIRAL = "viral"
     DECLINING = "declining"
     MILESTONE = "milestone"
@@ -29,6 +31,7 @@ class AlertType(str, Enum):
 
 class AlertStatus(str, Enum):
     """Status of an alert."""
+
     ACTIVE = "active"
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
@@ -36,6 +39,7 @@ class AlertStatus(str, Enum):
 
 class MetricName(str, Enum):
     """Available content metrics for alerting."""
+
     VIEWS = "views"
     ENGAGEMENT = "engagement"
     CLICKS = "clicks"
@@ -46,6 +50,7 @@ class MetricName(str, Enum):
 
 class AlertOperator(str, Enum):
     """Comparison operators for alert rules."""
+
     GREATER_THAN = "greater_than"
     LESS_THAN = "less_than"
     EQUALS = "equals"
@@ -79,10 +84,7 @@ class AlertService:
         self._supabase = value
 
     async def check_content_metrics(
-        self,
-        content_id: UUID,
-        user_id: UUID,
-        metrics: Dict[str, float]
+        self, content_id: UUID, user_id: UUID, metrics: Dict[str, float]
     ) -> List[Dict[str, Any]]:
         """
         Check content metrics against all active alert rules and thresholds.
@@ -107,7 +109,9 @@ class AlertService:
             triggered_alerts.append(viral_alert)
 
         # 3. Check for declining engagement (automatic)
-        declining_alert = await self._detect_declining_engagement(content_id, user_id, metrics)
+        declining_alert = await self._detect_declining_engagement(
+            content_id, user_id, metrics
+        )
         if declining_alert:
             triggered_alerts.append(declining_alert)
 
@@ -121,10 +125,7 @@ class AlertService:
         return triggered_alerts
 
     async def _check_alert_rules(
-        self,
-        content_id: UUID,
-        user_id: UUID,
-        metrics: Dict[str, float]
+        self, content_id: UUID, user_id: UUID, metrics: Dict[str, float]
     ) -> List[Dict[str, Any]]:
         """
         Check metrics against user-defined alert rules.
@@ -141,9 +142,13 @@ class AlertService:
 
         try:
             # Get all active alert rules for the user
-            result = self.supabase.table("alert_rules").select("*").eq(
-                "user_id", str(user_id)
-            ).eq("is_enabled", True).execute()
+            result = (
+                self.supabase.table("alert_rules")
+                .select("*")
+                .eq("user_id", str(user_id))
+                .eq("is_enabled", True)
+                .execute()
+            )
 
             rules = result.data or []
 
@@ -183,16 +188,24 @@ class AlertService:
                         content_id, user_id, metric_name
                     )
                     if prev_value and prev_value > 0:
-                        change_pct = abs((current_value - prev_value) / prev_value) * 100
+                        change_pct = (
+                            abs((current_value - prev_value) / prev_value) * 100
+                        )
                         if change_pct >= threshold:
                             triggered_alert = self._create_alert_from_rule(
-                                rule, content_id, user_id, current_value, threshold,
-                                extra_message=f"Change: {change_pct:.1f}%"
+                                rule,
+                                content_id,
+                                user_id,
+                                current_value,
+                                threshold,
+                                extra_message=f"Change: {change_pct:.1f}%",
                             )
 
                 if triggered_alert:
                     # Check for duplicate active alerts
-                    if not await self._alert_exists(content_id, user_id, rule.get("alert_type"), metric_name):
+                    if not await self._alert_exists(
+                        content_id, user_id, rule.get("alert_type"), metric_name
+                    ):
                         saved_alert = await self._save_alert(triggered_alert)
                         if saved_alert:
                             triggered.append(saved_alert)
@@ -209,7 +222,7 @@ class AlertService:
         user_id: UUID,
         current_value: float,
         threshold: float,
-        extra_message: str = ""
+        extra_message: str = "",
     ) -> Dict[str, Any]:
         """Create an alert dictionary from a rule."""
         alert_type = rule.get("alert_type")
@@ -232,10 +245,7 @@ class AlertService:
         }
 
     async def _detect_viral_content(
-        self,
-        content_id: UUID,
-        user_id: UUID,
-        metrics: Dict[str, float]
+        self, content_id: UUID, user_id: UUID, metrics: Dict[str, float]
     ) -> Optional[Dict[str, Any]]:
         """
         Detect if content is going viral based on engagement velocity.
@@ -274,7 +284,10 @@ class AlertService:
                 if velocity >= self.VIRAL_VELOCITY_THRESHOLD:
                     # Check if we already have an active viral alert for this content
                     if not await self._alert_exists(
-                        content_id, user_id, AlertType.VIRAL.value, MetricName.ENGAGEMENT.value
+                        content_id,
+                        user_id,
+                        AlertType.VIRAL.value,
+                        MetricName.ENGAGEMENT.value,
                     ):
                         alert = {
                             "user_id": str(user_id),
@@ -294,10 +307,7 @@ class AlertService:
         return None
 
     async def _detect_declining_engagement(
-        self,
-        content_id: UUID,
-        user_id: UUID,
-        metrics: Dict[str, float]
+        self, content_id: UUID, user_id: UUID, metrics: Dict[str, float]
     ) -> Optional[Dict[str, Any]]:
         """
         Detect if content engagement is declining significantly.
@@ -338,7 +348,10 @@ class AlertService:
                 if decline_ratio <= self.DECLINING_THRESHOLD:
                     # Check if we already have an active declining alert
                     if not await self._alert_exists(
-                        content_id, user_id, AlertType.DECLINING.value, MetricName.ENGAGEMENT.value
+                        content_id,
+                        user_id,
+                        AlertType.DECLINING.value,
+                        MetricName.ENGAGEMENT.value,
                     ):
                         alert = {
                             "user_id": str(user_id),
@@ -358,10 +371,7 @@ class AlertService:
         return None
 
     async def _check_milestones(
-        self,
-        content_id: UUID,
-        user_id: UUID,
-        metrics: Dict[str, float]
+        self, content_id: UUID, user_id: UUID, metrics: Dict[str, float]
     ) -> List[Dict[str, Any]]:
         """
         Check for milestone achievements (e.g., 1K, 10K, 100K views).
@@ -383,7 +393,9 @@ class AlertService:
         for threshold in milestone_thresholds:
             if views >= threshold:
                 # Check if this milestone was already alerted
-                if not await self._milestone_alerted(content_id, user_id, MetricName.VIEWS.value, threshold):
+                if not await self._milestone_alerted(
+                    content_id, user_id, MetricName.VIEWS.value, threshold
+                ):
                     alert = {
                         "user_id": str(user_id),
                         "alert_type": AlertType.MILESTONE.value,
@@ -401,21 +413,21 @@ class AlertService:
         return milestones
 
     async def _alert_exists(
-        self,
-        content_id: UUID,
-        user_id: UUID,
-        alert_type: str,
-        metric_name: str
+        self, content_id: UUID, user_id: UUID, alert_type: str, metric_name: str
     ) -> bool:
         """Check if an active alert already exists for this content/type/metric."""
         try:
-            result = self.supabase.table("content_alerts").select("id").eq(
-                "user_id", str(user_id)
-            ).eq("content_id", str(content_id)).eq(
-                "alert_type", alert_type
-            ).eq("metric_name", metric_name).eq(
-                "status", AlertStatus.ACTIVE.value
-            ).limit(1).execute()
+            result = (
+                self.supabase.table("content_alerts")
+                .select("id")
+                .eq("user_id", str(user_id))
+                .eq("content_id", str(content_id))
+                .eq("alert_type", alert_type)
+                .eq("metric_name", metric_name)
+                .eq("status", AlertStatus.ACTIVE.value)
+                .limit(1)
+                .execute()
+            )
 
             return len(result.data or []) > 0
 
@@ -424,21 +436,21 @@ class AlertService:
             return False
 
     async def _milestone_alerted(
-        self,
-        content_id: UUID,
-        user_id: UUID,
-        metric_name: str,
-        threshold: float
+        self, content_id: UUID, user_id: UUID, metric_name: str, threshold: float
     ) -> bool:
         """Check if a specific milestone was already alerted."""
         try:
-            result = self.supabase.table("content_alerts").select("id").eq(
-                "user_id", str(user_id)
-            ).eq("content_id", str(content_id)).eq(
-                "alert_type", AlertType.MILESTONE.value
-            ).eq("metric_name", metric_name).eq(
-                "threshold_value", threshold
-            ).limit(1).execute()
+            result = (
+                self.supabase.table("content_alerts")
+                .select("id")
+                .eq("user_id", str(user_id))
+                .eq("content_id", str(content_id))
+                .eq("alert_type", AlertType.MILESTONE.value)
+                .eq("metric_name", metric_name)
+                .eq("threshold_value", threshold)
+                .limit(1)
+                .execute()
+            )
 
             return len(result.data or []) > 0
 
@@ -500,10 +512,7 @@ class AlertService:
             logger.error(f"Error creating in-app notification: {e}")
 
     async def _store_metrics_history(
-        self,
-        content_id: UUID,
-        user_id: UUID,
-        metrics: Dict[str, float]
+        self, content_id: UUID, user_id: UUID, metrics: Dict[str, float]
     ):
         """Store current metrics for historical comparison."""
         try:
@@ -526,13 +535,17 @@ class AlertService:
         user_id: UUID,
         hours: Optional[int] = None,
         days: Optional[int] = None,
-        metric_name: Optional[str] = None
+        metric_name: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Get historical metrics for a content item."""
         try:
-            query = self.supabase.table("alert_metrics_history").select("*").eq(
-                "content_id", str(content_id)
-            ).eq("user_id", str(user_id)).order("recorded_at", desc=False)
+            query = (
+                self.supabase.table("alert_metrics_history")
+                .select("*")
+                .eq("content_id", str(content_id))
+                .eq("user_id", str(user_id))
+                .order("recorded_at", desc=False)
+            )
 
             if metric_name:
                 query = query.eq("metric_name", metric_name)
@@ -553,18 +566,20 @@ class AlertService:
             return []
 
     async def _get_previous_metric_value(
-        self,
-        content_id: UUID,
-        user_id: UUID,
-        metric_name: str
+        self, content_id: UUID, user_id: UUID, metric_name: str
     ) -> Optional[float]:
         """Get the most recent previous value for a metric."""
         try:
-            result = self.supabase.table("alert_metrics_history").select("value").eq(
-                "content_id", str(content_id)
-            ).eq("user_id", str(user_id)).eq(
-                "metric_name", metric_name
-            ).order("recorded_at", desc=True).limit(1).execute()
+            result = (
+                self.supabase.table("alert_metrics_history")
+                .select("value")
+                .eq("content_id", str(content_id))
+                .eq("user_id", str(user_id))
+                .eq("metric_name", metric_name)
+                .order("recorded_at", desc=True)
+                .limit(1)
+                .execute()
+            )
 
             if result.data and len(result.data) > 0:
                 return result.data[0].get("value")
@@ -586,10 +601,18 @@ class AlertService:
             True if successful, False otherwise
         """
         try:
-            result = self.supabase.table("content_alerts").update({
-                "status": AlertStatus.ACKNOWLEDGED.value,
-                "acknowledged_at": datetime.now(timezone.utc).isoformat(),
-            }).eq("id", str(alert_id)).eq("user_id", str(user_id)).execute()
+            result = (
+                self.supabase.table("content_alerts")
+                .update(
+                    {
+                        "status": AlertStatus.ACKNOWLEDGED.value,
+                        "acknowledged_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
+                .eq("id", str(alert_id))
+                .eq("user_id", str(user_id))
+                .execute()
+            )
 
             return len(result.data or []) > 0
 
@@ -609,9 +632,17 @@ class AlertService:
             True if successful, False otherwise
         """
         try:
-            result = self.supabase.table("content_alerts").update({
-                "status": AlertStatus.RESOLVED.value,
-            }).eq("id", str(alert_id)).eq("user_id", str(user_id)).execute()
+            result = (
+                self.supabase.table("content_alerts")
+                .update(
+                    {
+                        "status": AlertStatus.RESOLVED.value,
+                    }
+                )
+                .eq("id", str(alert_id))
+                .eq("user_id", str(user_id))
+                .execute()
+            )
 
             return len(result.data or []) > 0
 
@@ -625,7 +656,7 @@ class AlertService:
         status: Optional[str] = None,
         alert_type: Optional[str] = None,
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
     ) -> List[Dict[str, Any]]:
         """
         Get alerts for a user.
@@ -641,9 +672,12 @@ class AlertService:
             List of alerts
         """
         try:
-            query = self.supabase.table("content_alerts").select("*").eq(
-                "user_id", str(user_id)
-            ).order("created_at", desc=True)
+            query = (
+                self.supabase.table("content_alerts")
+                .select("*")
+                .eq("user_id", str(user_id))
+                .order("created_at", desc=True)
+            )
 
             if status:
                 query = query.eq("status", status)
@@ -671,9 +705,13 @@ class AlertService:
             Count of active alerts
         """
         try:
-            result = self.supabase.table("content_alerts").select("id", count="exact").eq(
-                "user_id", str(user_id)
-            ).eq("status", AlertStatus.ACTIVE.value).execute()
+            result = (
+                self.supabase.table("content_alerts")
+                .select("id", count="exact")
+                .eq("user_id", str(user_id))
+                .eq("status", AlertStatus.ACTIVE.value)
+                .execute()
+            )
 
             return result.count or 0
 
@@ -682,9 +720,7 @@ class AlertService:
             return 0
 
     async def get_alert_rules(
-        self,
-        user_id: UUID,
-        is_enabled: Optional[bool] = None
+        self, user_id: UUID, is_enabled: Optional[bool] = None
     ) -> List[Dict[str, Any]]:
         """
         Get alert rules for a user.
@@ -697,9 +733,12 @@ class AlertService:
             List of alert rules
         """
         try:
-            query = self.supabase.table("alert_rules").select("*").eq(
-                "user_id", str(user_id)
-            ).order("created_at", desc=True)
+            query = (
+                self.supabase.table("alert_rules")
+                .select("*")
+                .eq("user_id", str(user_id))
+                .order("created_at", desc=True)
+            )
 
             if is_enabled is not None:
                 query = query.eq("is_enabled", is_enabled)
@@ -719,7 +758,7 @@ class AlertService:
         metric_name: str,
         operator: str,
         threshold_value: float,
-        notification_channels: List[str]
+        notification_channels: List[str],
     ) -> Optional[Dict[str, Any]]:
         """
         Create a new alert rule.
@@ -759,10 +798,7 @@ class AlertService:
         return None
 
     async def update_alert_rule(
-        self,
-        rule_id: UUID,
-        user_id: UUID,
-        updates: Dict[str, Any]
+        self, rule_id: UUID, user_id: UUID, updates: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """
         Update an alert rule.
@@ -781,9 +817,13 @@ class AlertService:
             updates.pop("user_id", None)
             updates.pop("created_at", None)
 
-            result = self.supabase.table("alert_rules").update(updates).eq(
-                "id", str(rule_id)
-            ).eq("user_id", str(user_id)).execute()
+            result = (
+                self.supabase.table("alert_rules")
+                .update(updates)
+                .eq("id", str(rule_id))
+                .eq("user_id", str(user_id))
+                .execute()
+            )
 
             if result.data and len(result.data) > 0:
                 return result.data[0]
@@ -805,9 +845,13 @@ class AlertService:
             True if successful, False otherwise
         """
         try:
-            result = self.supabase.table("alert_rules").delete().eq(
-                "id", str(rule_id)
-            ).eq("user_id", str(user_id)).execute()
+            result = (
+                self.supabase.table("alert_rules")
+                .delete()
+                .eq("id", str(rule_id))
+                .eq("user_id", str(user_id))
+                .execute()
+            )
 
             return len(result.data or []) > 0
 
@@ -816,10 +860,7 @@ class AlertService:
             return False
 
     async def get_in_app_notifications(
-        self,
-        user_id: UUID,
-        is_read: Optional[bool] = None,
-        limit: int = 50
+        self, user_id: UUID, is_read: Optional[bool] = None, limit: int = 50
     ) -> List[Dict[str, Any]]:
         """
         Get in-app notifications for a user.
@@ -833,9 +874,13 @@ class AlertService:
             List of notifications
         """
         try:
-            query = self.supabase.table("in_app_notifications").select("*").eq(
-                "user_id", str(user_id)
-            ).order("created_at", desc=True).limit(limit)
+            query = (
+                self.supabase.table("in_app_notifications")
+                .select("*")
+                .eq("user_id", str(user_id))
+                .order("created_at", desc=True)
+                .limit(limit)
+            )
 
             if is_read is not None:
                 query = query.eq("is_read", is_read)
@@ -847,7 +892,9 @@ class AlertService:
             logger.error(f"Error getting in-app notifications: {e}")
             return []
 
-    async def mark_notification_read(self, notification_id: UUID, user_id: UUID) -> bool:
+    async def mark_notification_read(
+        self, notification_id: UUID, user_id: UUID
+    ) -> bool:
         """
         Mark an in-app notification as read.
 
@@ -859,10 +906,18 @@ class AlertService:
             True if successful, False otherwise
         """
         try:
-            result = self.supabase.table("in_app_notifications").update({
-                "is_read": True,
-                "read_at": datetime.now(timezone.utc).isoformat(),
-            }).eq("id", str(notification_id)).eq("user_id", str(user_id)).execute()
+            result = (
+                self.supabase.table("in_app_notifications")
+                .update(
+                    {
+                        "is_read": True,
+                        "read_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
+                .eq("id", str(notification_id))
+                .eq("user_id", str(user_id))
+                .execute()
+            )
 
             return len(result.data or []) > 0
 

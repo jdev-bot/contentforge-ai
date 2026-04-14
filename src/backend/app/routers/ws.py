@@ -6,12 +6,19 @@ Main WebSocket endpoint for real-time communication:
 - Room join/leave
 - Message routing to appropriate services
 """
+
 import logging
 import uuid
 from typing import Optional
 
-from fastapi import (APIRouter, HTTPException, Query, WebSocket,
-                     WebSocketDisconnect, status)
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 
 from app.core.supabase import get_supabase_client
 from app.services.collaboration_service import collaboration_service
@@ -79,11 +86,14 @@ async def websocket_endpoint(
         return
 
     # Send welcome message
-    await websocket_manager.send_to_connection(connection_id, {
-        "type": "connected",
-        "connection_id": connection_id,
-        "user_id": user_id,
-    })
+    await websocket_manager.send_to_connection(
+        connection_id,
+        {
+            "type": "connected",
+            "connection_id": connection_id,
+            "user_id": user_id,
+        },
+    )
 
     try:
         while True:
@@ -105,11 +115,14 @@ async def websocket_endpoint(
                             await presence_service.join(
                                 room, user_id, user_name, UserStatus.ONLINE
                             )
-                        await websocket_manager.send_to_connection(connection_id, {
-                            "type": "room:joined",
-                            "room": room,
-                            "members": websocket_manager.get_room_members(room),
-                        })
+                        await websocket_manager.send_to_connection(
+                            connection_id,
+                            {
+                                "type": "room:joined",
+                                "room": room,
+                                "members": websocket_manager.get_room_members(room),
+                            },
+                        )
 
             elif msg_type == "room:leave":
                 room = data.get("room", "")
@@ -117,10 +130,13 @@ async def websocket_endpoint(
                     await websocket_manager.leave_room(connection_id, room)
                     if room.startswith("content:"):
                         await presence_service.leave(room, user_id)
-                    await websocket_manager.send_to_connection(connection_id, {
-                        "type": "room:left",
-                        "room": room,
-                    })
+                    await websocket_manager.send_to_connection(
+                        connection_id,
+                        {
+                            "type": "room:left",
+                            "room": room,
+                        },
+                    )
 
             # ── Presence ─────────────────────────────────────────
             elif msg_type == "presence:status":
@@ -130,10 +146,13 @@ async def websocket_endpoint(
                     status_enum = UserStatus(new_status)
                     await presence_service.update_status(room, user_id, status_enum)
                 except ValueError:
-                    await websocket_manager.send_to_connection(connection_id, {
-                        "type": "error",
-                        "detail": f"Invalid status: {new_status}",
-                    })
+                    await websocket_manager.send_to_connection(
+                        connection_id,
+                        {
+                            "type": "error",
+                            "detail": f"Invalid status: {new_status}",
+                        },
+                    )
 
             elif msg_type == "presence:typing":
                 room = data.get("room", "")
@@ -146,20 +165,26 @@ async def websocket_endpoint(
                 result = await collaboration_service.acquire_lock(
                     content_id, user_id, user_name
                 )
-                await websocket_manager.send_to_connection(connection_id, {
-                    "type": "collab:lock_result",
-                    "content_id": content_id,
-                    **result,
-                })
+                await websocket_manager.send_to_connection(
+                    connection_id,
+                    {
+                        "type": "collab:lock_result",
+                        "content_id": content_id,
+                        **result,
+                    },
+                )
 
             elif msg_type == "collab:unlock":
                 content_id = data.get("content_id", "")
                 released = await collaboration_service.release_lock(content_id, user_id)
-                await websocket_manager.send_to_connection(connection_id, {
-                    "type": "collab:unlock_result",
-                    "content_id": content_id,
-                    "released": released,
-                })
+                await websocket_manager.send_to_connection(
+                    connection_id,
+                    {
+                        "type": "collab:unlock_result",
+                        "content_id": content_id,
+                        "released": released,
+                    },
+                )
 
             elif msg_type == "collab:edit":
                 content_id = data.get("content_id", "")
@@ -174,27 +199,34 @@ async def websocket_endpoint(
                     text=operation.get("text", ""),
                     base_version=operation.get("base_version"),
                 )
-                await websocket_manager.send_to_connection(connection_id, {
-                    "type": "collab:edit_result",
-                    "content_id": content_id,
-                    **result,
-                })
+                await websocket_manager.send_to_connection(
+                    connection_id,
+                    {
+                        "type": "collab:edit_result",
+                        "content_id": content_id,
+                        **result,
+                    },
+                )
 
             elif msg_type == "collab:cursor":
                 content_id = data.get("content_id", "")
                 cursor = data.get("cursor", {})
                 await collaboration_service.update_cursor(
-                    content_id, user_id,
+                    content_id,
+                    user_id,
                     line=cursor.get("line", 0),
                     col=cursor.get("col", 0),
                 )
 
             # ── Unknown ──────────────────────────────────────────
             else:
-                await websocket_manager.send_to_connection(connection_id, {
-                    "type": "error",
-                    "detail": f"Unknown message type: {msg_type}",
-                })
+                await websocket_manager.send_to_connection(
+                    connection_id,
+                    {
+                        "type": "error",
+                        "detail": f"Unknown message type: {msg_type}",
+                    },
+                )
 
     except WebSocketDisconnect:
         logger.info("WebSocket disconnected: %s (user=%s)", connection_id, user_id)

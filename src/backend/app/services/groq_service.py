@@ -1,6 +1,7 @@
 """
 Groq AI service for content generation.
 """
+
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
@@ -14,7 +15,7 @@ GROQ_API_URL = "https://api.groq.com/openai/v1"
 
 class GroqService:
     """Service for interacting with Groq API."""
-    
+
     def __init__(self):
         self.api_key = settings.GROQ_API_KEY
         self.model = settings.GROQ_MODEL
@@ -22,7 +23,7 @@ class GroqService:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
-    
+
     async def generate_content(
         self,
         prompt: str,
@@ -35,7 +36,7 @@ class GroqService:
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-        
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{GROQ_API_URL}/chat/completions",
@@ -51,7 +52,7 @@ class GroqService:
             response.raise_for_status()
             data = response.json()
             return data["choices"][0]["message"]["content"]
-    
+
     async def generate_social_posts(
         self,
         content: str,
@@ -62,23 +63,23 @@ class GroqService:
         system_prompt = f"""You are a social media expert. Generate {count} engaging {platform} posts from the provided content.
         Each post should be optimized for {platform}'s format and best practices.
         Make them catchy, use relevant hashtags, and include a call-to-action when appropriate."""
-        
+
         prompt = f"""Original content:
 {content}
 
 Generate {count} different {platform} posts from this content. Each should be unique and engaging."""
-        
+
         result = await self.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.8,
             max_tokens=1500,
         )
-        
+
         # Parse the result into separate posts
         posts = [post.strip() for post in result.split("\n\n") if post.strip()]
         return posts[:count]
-    
+
     async def generate_thread(
         self,
         content: str,
@@ -90,28 +91,32 @@ Generate {count} different {platform} posts from this content. Each should be un
         Each post should connect to the next.
         Hook readers in the first post, provide value in the middle, and end with a strong CTA.
         Number each post (1/, 2/, etc.)."""
-        
+
         prompt = f"""Create a viral {platform} thread from this content:
 
 {content}
 
 Make it 5-10 posts long. Each post should be under 280 characters."""
-        
+
         result = await self.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.8,
             max_tokens=2000,
         )
-        
+
         # Parse the thread
         posts = []
         for line in result.split("\n"):
             line = line.strip()
-            if line and (line.startswith(("1/", "2/", "3/", "4/", "5/", "6/", "7/", "8/", "9/", "10/"))):
+            if line and (
+                line.startswith(
+                    ("1/", "2/", "3/", "4/", "5/", "6/", "7/", "8/", "9/", "10/")
+                )
+            ):
                 posts.append(line[2:].strip())
         return posts
-    
+
     async def generate_newsletter(
         self,
         content: str,
@@ -127,7 +132,7 @@ Make it 5-10 posts long. Each post should be under 280 characters."""
         5. A friendly sign-off
         
         Format the output clearly with sections."""
-        
+
         prompt = f"""Create a newsletter from this content:
 
 {content}
@@ -135,16 +140,16 @@ Make it 5-10 posts long. Each post should be under 280 characters."""
 {f'Suggested subject: {subject_line}' if subject_line else ''}
 
 Format with clear sections: Subject, Introduction, Body, CTA, Sign-off."""
-        
+
         result = await self.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.7,
             max_tokens=2500,
         )
-        
+
         return {"newsletter": result}
-    
+
     async def generate_short_video_script(
         self,
         content: str,
@@ -158,24 +163,24 @@ Format with clear sections: Subject, Introduction, Body, CTA, Sign-off."""
         4. Suggested visual cues
         
         Format for easy reading during recording."""
-        
+
         prompt = f"""Create a viral short video script from this content:
 
 {content}
 
 Script should be 30-60 seconds when read aloud. Include hook, content, CTA, and visual cues."""
-        
+
         result = await self.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.8,
             max_tokens=1500,
         )
-        
+
         return {"script": result}
 
     # ===== SMART CONTENT EDITOR METHODS =====
-    
+
     async def rewrite_content(
         self,
         content: str,
@@ -193,7 +198,7 @@ Script should be 30-60 seconds when read aloud. Include hook, content, CTA, and 
             "enthusiastic": "excited, energetic, passionate delivery",
             "empathetic": "understanding, compassionate, emotionally resonant",
         }
-        
+
         style_descriptions = {
             "neutral": "balanced and objective, no strong persuasion",
             "persuasive": "convincing, compelling arguments, action-oriented",
@@ -202,16 +207,16 @@ Script should be 30-60 seconds when read aloud. Include hook, content, CTA, and 
             "concise": "brief, to-the-point, no fluff",
             "descriptive": "vivid imagery, sensory details, immersive",
         }
-        
+
         tone_desc = tone_descriptions.get(tone, tone_descriptions["professional"])
         style_desc = style_descriptions.get(style, style_descriptions["neutral"])
-        
+
         system_prompt = f"""You are an expert content editor. Rewrite the provided content with the following specifications:
 - Tone: {tone_desc}
 - Style: {style_desc}
 
 Maintain the core meaning and key information while adapting the presentation."""
-        
+
         prompt = f"""Rewrite the following content:
 
 ORIGINAL CONTENT:
@@ -224,18 +229,18 @@ REQUIREMENTS:
 - Ensure natural flow and readability
 
 Provide only the rewritten content without explanations."""
-        
+
         result = await self.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.7,
             max_tokens=3000,
         )
-        
+
         # Estimate tokens used (rough approximation)
         estimated_tokens = len(content.split()) + len(result.split())
         return result.strip(), estimated_tokens
-    
+
     async def expand_content(
         self,
         content: str,
@@ -244,14 +249,16 @@ Provide only the rewritten content without explanations."""
     ) -> Tuple[str, int]:
         """Expand content with more detail."""
         focus_areas = focus_areas or []
-        
+
         focus_instruction = ""
         if focus_areas:
-            focus_instruction = f"\n\nFocus on expanding these areas: {', '.join(focus_areas)}"
-        
+            focus_instruction = (
+                f"\n\nFocus on expanding these areas: {', '.join(focus_areas)}"
+            )
+
         system_prompt = f"""You are an expert content expander. Take the provided content and expand it to approximately {target_length}x its original length.
 Add depth, detail, examples, and elaboration while maintaining coherence and quality."""
-        
+
         prompt = f"""Expand the following content to approximately {target_length}x its length:
 
 ORIGINAL CONTENT:
@@ -264,17 +271,17 @@ REQUIREMENTS:
 - Ensure the expanded content flows naturally{focus_instruction}
 
 Provide only the expanded content without explanations."""
-        
+
         result = await self.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.7,
             max_tokens=4000,
         )
-        
+
         estimated_tokens = len(content.split()) + len(result.split())
         return result.strip(), estimated_tokens
-    
+
     async def condense_content(
         self,
         content: str,
@@ -282,11 +289,15 @@ Provide only the expanded content without explanations."""
         preserve_key_points: bool = True,
     ) -> Tuple[str, int]:
         """Condense content to be shorter."""
-        preserve_instruction = "Ensure all key points and main ideas are preserved." if preserve_key_points else "Condense as needed, prioritizing brevity."
-        
+        preserve_instruction = (
+            "Ensure all key points and main ideas are preserved."
+            if preserve_key_points
+            else "Condense as needed, prioritizing brevity."
+        )
+
         system_prompt = f"""You are an expert content condenser. Summarize and condense the provided content to approximately {target_percentage}% of its original length.
 {preserve_instruction} Maintain clarity and coherence."""
-        
+
         prompt = f"""Condense the following content to approximately {target_percentage}% of its length:
 
 ORIGINAL CONTENT:
@@ -300,17 +311,17 @@ REQUIREMENTS:
 - Maintain the original tone and key messages
 
 Provide only the condensed content without explanations."""
-        
+
         result = await self.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.6,
             max_tokens=2500,
         )
-        
+
         estimated_tokens = len(content.split()) + len(result.split())
         return result.strip(), estimated_tokens
-    
+
     async def optimize_content(
         self,
         content: str,
@@ -351,16 +362,24 @@ Provide only the condensed content without explanations."""
                 "best_practices": "Hook in first 3 seconds, trending sounds reference, punchy text",
             },
         }
-        
+
         specs = platform_specs.get(platform, platform_specs["blog"])
-        
-        hashtag_instruction = "Include 3-5 relevant hashtags at the end." if include_hashtags else "Do not include hashtags."
-        cta_instruction = "Include a strong call-to-action." if include_cta else "No explicit call-to-action needed."
-        
+
+        hashtag_instruction = (
+            "Include 3-5 relevant hashtags at the end."
+            if include_hashtags
+            else "Do not include hashtags."
+        )
+        cta_instruction = (
+            "Include a strong call-to-action."
+            if include_cta
+            else "No explicit call-to-action needed."
+        )
+
         system_prompt = f"""You are a {platform} content optimization expert. Adapt the content for {platform}'s format and audience.
 Platform style: {specs['style']}
 Best practices: {specs['best_practices']}"""
-        
+
         prompt = f"""Optimize this content for {platform}:
 
 ORIGINAL CONTENT:
@@ -375,19 +394,19 @@ REQUIREMENTS:
 - {cta_instruction}
 
 Provide the optimized content ready to publish on {platform}."""
-        
+
         result = await self.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.7,
             max_tokens=2000,
         )
-        
+
         # Calculate character count
         char_count = len(result.strip())
         word_count = len(result.split())
         estimated_tokens = len(content.split()) + word_count
-        
+
         return {
             "optimized_content": result.strip(),
             "platform": platform,

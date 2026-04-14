@@ -6,6 +6,7 @@ Provides endpoints for:
 - Calculating attribution using various models
 - Viewing channel performance
 """
+
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
@@ -13,8 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from app.routers.auth import get_auth_user
-from app.services.attribution_service import (AttributionModel,
-                                              attribution_service)
+from app.services.attribution_service import AttributionModel, attribution_service
 
 router = APIRouter()
 
@@ -24,15 +24,23 @@ router = APIRouter()
 
 class RecordTouchpointRequest(BaseModel):
     """Request body for recording a touchpoint."""
+
     content_id: str = Field(..., description="Content piece ID")
-    channel: str = Field(..., description="Marketing channel (e.g., organic, email, social)")
-    source: str = Field(default="", description="Traffic source (e.g., google, newsletter)")
+    channel: str = Field(
+        ..., description="Marketing channel (e.g., organic, email, social)"
+    )
+    source: str = Field(
+        default="", description="Traffic source (e.g., google, newsletter)"
+    )
     campaign: str = Field(default="", description="Campaign name or identifier")
-    event_data: Dict[str, Any] = Field(default_factory=dict, description="Optional metadata")
+    event_data: Dict[str, Any] = Field(
+        default_factory=dict, description="Optional metadata"
+    )
 
 
 class TouchpointResponse(BaseModel):
     """Response model for a touchpoint."""
+
     id: str = ""
     content_id: str
     channel: str
@@ -44,6 +52,7 @@ class TouchpointResponse(BaseModel):
 
 class AttributionResultResponse(BaseModel):
     """Response model for attribution result."""
+
     channel: str
     source: str = ""
     attribution_weight: float = 0.0
@@ -53,6 +62,7 @@ class AttributionResultResponse(BaseModel):
 
 class CalculateAttributionRequest(BaseModel):
     """Request body for calculating attribution."""
+
     content_id: str = Field(..., description="Content piece ID")
     model: str = Field(
         default="first_touch",
@@ -62,6 +72,7 @@ class CalculateAttributionRequest(BaseModel):
 
 class ChannelPerformanceResponse(BaseModel):
     """Response model for channel performance."""
+
     channel: str
     total_touchpoints: int = 0
     total_conversions: int = 0
@@ -71,6 +82,7 @@ class ChannelPerformanceResponse(BaseModel):
 
 class TouchpointListResponse(BaseModel):
     """Response model for listing touchpoints."""
+
     touchpoints: List[TouchpointResponse]
     total: int
 
@@ -78,7 +90,11 @@ class TouchpointListResponse(BaseModel):
 # ── Endpoints ────────────────────────────────────────────────
 
 
-@router.post("/attribution/touchpoints", response_model=TouchpointResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/attribution/touchpoints",
+    response_model=TouchpointResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def record_touchpoint(
     body: RecordTouchpointRequest,
     user=Depends(get_auth_user),
@@ -115,7 +131,9 @@ async def record_touchpoint(
         )
 
 
-@router.get("/attribution/touchpoints/{content_id}", response_model=TouchpointListResponse)
+@router.get(
+    "/attribution/touchpoints/{content_id}", response_model=TouchpointListResponse
+)
 async def get_touchpoints(
     content_id: str,
     user=Depends(get_auth_user),
@@ -190,7 +208,9 @@ async def calculate_attribution(
 
 @router.get("/attribution/channels", response_model=List[ChannelPerformanceResponse])
 async def get_channel_performance(
-    days: int = Query(default=30, ge=1, le=365, description="Number of days to analyze"),
+    days: int = Query(
+        default=30, ge=1, le=365, description="Number of days to analyze"
+    ),
     user=Depends(get_auth_user),
 ):
     """

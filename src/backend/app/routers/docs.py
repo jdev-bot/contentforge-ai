@@ -1,6 +1,7 @@
 """
 API documentation endpoints for OpenAPI spec and ReDoc.
 """
+
 from fastapi import APIRouter, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -22,16 +23,14 @@ async def get_openapi_json(request: Request):
         description=app.description,
         routes=app.routes,
     )
-    
+
     # Add additional info
-    openapi_schema["info"]["x-logo"] = {
-        "url": "https://contentforge.ai/logo.png"
-    }
+    openapi_schema["info"]["x-logo"] = {"url": "https://contentforge.ai/logo.png"}
     openapi_schema["servers"] = [
         {"url": str(request.base_url), "description": "Current server"},
         {"url": "https://api.contentforge.ai", "description": "Production server"},
     ]
-    
+
     return JSONResponse(content=openapi_schema)
 
 

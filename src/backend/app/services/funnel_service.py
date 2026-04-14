@@ -8,6 +8,7 @@ Provides custom funnel tracking and conversion analytics:
 - Drop-off identification and reporting
 - Date-range scoped analytics
 """
+
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -30,6 +31,7 @@ CACHE_TTL_SECONDS = 300  # 5 minutes
 
 class FunnelStep(BaseModel):
     """A single step in a funnel."""
+
     step_id: str = Field(..., description="Unique identifier for the step")
     name: str = Field(..., description="Display name of the step")
     order: int = Field(..., description="Order of the step in the funnel (0-based)")
@@ -38,23 +40,31 @@ class FunnelStep(BaseModel):
 
 class Funnel(BaseModel):
     """A funnel definition with ordered steps."""
+
     funnel_id: str = Field(..., description="Unique funnel identifier")
     name: str = Field(..., description="Funnel name")
     description: str = Field(default="", description="Funnel description")
-    steps: List[FunnelStep] = Field(default_factory=list, description="Ordered funnel steps")
+    steps: List[FunnelStep] = Field(
+        default_factory=list, description="Ordered funnel steps"
+    )
     created_at: str = Field(default="", description="Creation timestamp")
     updated_at: str = Field(default="", description="Last update timestamp")
 
 
 class FunnelConversion(BaseModel):
     """Conversion analytics for a funnel."""
+
     funnel_id: str
     step_conversions: Dict[str, int] = Field(
         default_factory=dict,
         description="Mapping of step_id to event count",
     )
-    total_entered: int = Field(default=0, description="Users who entered the first step")
-    total_completed: int = Field(default=0, description="Users who reached the last step")
+    total_entered: int = Field(
+        default=0, description="Users who entered the first step"
+    )
+    total_completed: int = Field(
+        default=0, description="Users who reached the last step"
+    )
     conversion_rate: float = Field(default=0.0, description="Overall conversion rate")
     drop_off_steps: List[Dict[str, Any]] = Field(
         default_factory=list,
@@ -68,8 +78,11 @@ class FunnelConversion(BaseModel):
 
 class FunnelEventCreate(BaseModel):
     """Request body for tracking a funnel event."""
+
     step_id: str = Field(..., description="Funnel step ID")
-    user_id: str = Field(default="", description="Optional user identifier for the event")
+    user_id: str = Field(
+        default="", description="Optional user identifier for the event"
+    )
     event_data: Dict[str, Any] = Field(
         default_factory=dict, description="Optional event metadata"
     )
@@ -152,10 +165,7 @@ class FunnelService:
             return cached
 
         result = (
-            self.supabase.table("funnels")
-            .select("*")
-            .eq("id", funnel_id)
-            .execute()
+            self.supabase.table("funnels").select("*").eq("id", funnel_id).execute()
         )
 
         if not result.data:
@@ -203,7 +213,9 @@ class FunnelService:
             True if deleted successfully.
         """
         # Delete events first
-        self.supabase.table("funnel_events").delete().eq("funnel_id", funnel_id).execute()
+        self.supabase.table("funnel_events").delete().eq(
+            "funnel_id", funnel_id
+        ).execute()
 
         # Delete funnel
         result = self.supabase.table("funnels").delete().eq("id", funnel_id).execute()
@@ -241,7 +253,9 @@ class FunnelService:
             raise ValueError(f"Funnel {funnel_id} not found")
 
         # Validate step belongs to funnel
-        step_ids = [s.get("step_id", s.get("id", "")) for s in (funnel.get("steps") or [])]
+        step_ids = [
+            s.get("step_id", s.get("id", "")) for s in (funnel.get("steps") or [])
+        ]
         if step_ids and step_id not in step_ids:
             raise ValueError(
                 f"Step {step_id} not found in funnel {funnel_id}. "
@@ -336,19 +350,33 @@ class FunnelService:
                 next_step = ordered_steps[i + 1]
                 next_id = next_step.get("step_id", next_step.get("id", ""))
 
-                current_count = len(step_users.get(current_id, set())) or step_conversions.get(current_id, 0)
-                next_count = len(step_users.get(next_id, set())) or step_conversions.get(next_id, 0)
+                current_count = len(
+                    step_users.get(current_id, set())
+                ) or step_conversions.get(current_id, 0)
+                next_count = len(
+                    step_users.get(next_id, set())
+                ) or step_conversions.get(next_id, 0)
 
                 rate = (next_count / current_count) if current_count > 0 else 0.0
                 step_conversion_rates[f"{current_id}_to_{next_id}"] = round(rate, 4)
 
         # Determine total entered and completed
-        first_step_id = ordered_steps[0].get("step_id", ordered_steps[0].get("id", "")) if ordered_steps else ""
-        last_step_id = ordered_steps[-1].get("step_id", ordered_steps[-1].get("id", "")) if ordered_steps else ""
+        first_step_id = (
+            ordered_steps[0].get("step_id", ordered_steps[0].get("id", ""))
+            if ordered_steps
+            else ""
+        )
+        last_step_id = (
+            ordered_steps[-1].get("step_id", ordered_steps[-1].get("id", ""))
+            if ordered_steps
+            else ""
+        )
 
         total_entered = step_conversions.get(first_step_id, 0)
         total_completed = step_conversions.get(last_step_id, 0)
-        conversion_rate = (total_completed / total_entered) if total_entered > 0 else 0.0
+        conversion_rate = (
+            (total_completed / total_entered) if total_entered > 0 else 0.0
+        )
 
         # Identify drop-off steps
         drop_off_steps = []
@@ -364,14 +392,20 @@ class FunnelService:
             drop_off = current_count - next_count
 
             if drop_off > 0:
-                drop_off_steps.append({
-                    "step_id": current_id,
-                    "step_name": current_step.get("name", current_id),
-                    "users_entered": current_count,
-                    "users_exited": next_count,
-                    "drop_off_count": drop_off,
-                    "drop_off_rate": round(drop_off / current_count, 4) if current_count > 0 else 0.0,
-                })
+                drop_off_steps.append(
+                    {
+                        "step_id": current_id,
+                        "step_name": current_step.get("name", current_id),
+                        "users_entered": current_count,
+                        "users_exited": next_count,
+                        "drop_off_count": drop_off,
+                        "drop_off_rate": (
+                            round(drop_off / current_count, 4)
+                            if current_count > 0
+                            else 0.0
+                        ),
+                    }
+                )
 
         # Sort drop-offs by rate descending
         drop_off_steps.sort(key=lambda x: x.get("drop_off_rate", 0), reverse=True)
@@ -386,7 +420,9 @@ class FunnelService:
             step_conversion_rates=step_conversion_rates,
         )
 
-        cache.set(cache_key, result.model_dump(), ttl=CACHE_TTL_SECONDS, prefix=CACHE_PREFIX)
+        cache.set(
+            cache_key, result.model_dump(), ttl=CACHE_TTL_SECONDS, prefix=CACHE_PREFIX
+        )
         return result
 
 

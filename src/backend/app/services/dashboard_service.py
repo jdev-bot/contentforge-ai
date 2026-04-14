@@ -3,6 +3,7 @@ Dashboard Service
 
 Handles custom dashboard and widget management with live data fetching.
 """
+
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
@@ -13,13 +14,22 @@ from app.core.supabase import get_supabase_admin_client, get_supabase_client
 logger = logging.getLogger(__name__)
 
 VALID_WIDGET_TYPES = [
-    "metric_card", "line_chart", "bar_chart", "pie_chart",
-    "table", "counter", "recent_list",
+    "metric_card",
+    "line_chart",
+    "bar_chart",
+    "pie_chart",
+    "table",
+    "counter",
+    "recent_list",
 ]
 
 VALID_DATA_SOURCES = [
-    "content_count", "distribution_stats", "quality_scores",
-    "sentiment_summary", "team_activity", "usage_stats",
+    "content_count",
+    "distribution_stats",
+    "quality_scores",
+    "sentiment_summary",
+    "team_activity",
+    "usage_stats",
 ]
 
 VALID_REFRESH_INTERVALS = [30, 60, 300, 900, 1800]  # seconds
@@ -54,7 +64,9 @@ class DashboardService:
         """List all dashboards for a user."""
         response = (
             self.supabase.table("dashboards")
-            .select("id, user_id, name, description, layout_config, is_default, created_at, updated_at")
+            .select(
+                "id, user_id, name, description, layout_config, is_default, created_at, updated_at"
+            )
             .eq("user_id", user_id)
             .order("is_default", desc=True)
             .order("created_at", desc=True)
@@ -85,11 +97,15 @@ class DashboardService:
         response = self.supabase.table("dashboards").insert(payload).execute()
         return response.data[0] if response.data else payload
 
-    def get_dashboard(self, dashboard_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+    def get_dashboard(
+        self, dashboard_id: str, user_id: str
+    ) -> Optional[Dict[str, Any]]:
         """Get a dashboard with its widgets."""
         dash_resp = (
             self.supabase.table("dashboards")
-            .select("id, user_id, name, description, layout_config, is_default, created_at, updated_at")
+            .select(
+                "id, user_id, name, description, layout_config, is_default, created_at, updated_at"
+            )
             .eq("id", dashboard_id)
             .eq("user_id", user_id)
             .maybe_single()
@@ -100,7 +116,9 @@ class DashboardService:
 
         widgets_resp = (
             self.supabase.table("dashboard_widgets")
-            .select("id, dashboard_id, widget_type, title, data_source, refresh_interval, size, position, config, created_at, updated_at")
+            .select(
+                "id, dashboard_id, widget_type, title, data_source, refresh_interval, size, position, config, created_at, updated_at"
+            )
             .eq("dashboard_id", dashboard_id)
             .order("position", desc=False)
             .execute()
@@ -156,9 +174,13 @@ class DashboardService:
             return False
 
         # Delete widgets first
-        self.supabase.table("dashboard_widgets").delete().eq("dashboard_id", dashboard_id).execute()
+        self.supabase.table("dashboard_widgets").delete().eq(
+            "dashboard_id", dashboard_id
+        ).execute()
         # Delete dashboard
-        self.supabase.table("dashboards").delete().eq("id", dashboard_id).eq("user_id", user_id).execute()
+        self.supabase.table("dashboards").delete().eq("id", dashboard_id).eq(
+            "user_id", user_id
+        ).execute()
         return True
 
     # ── Widget CRUD ────────────────────────────────────────────────
@@ -284,7 +306,9 @@ class DashboardService:
 
     # ── Live Data ──────────────────────────────────────────────────
 
-    def get_dashboard_data(self, dashboard_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+    def get_dashboard_data(
+        self, dashboard_id: str, user_id: str
+    ) -> Optional[Dict[str, Any]]:
         """Get live data for all widgets in a dashboard."""
         dashboard = self.get_dashboard(dashboard_id, user_id)
         if not dashboard:
@@ -293,14 +317,16 @@ class DashboardService:
         widgets_data = []
         for widget in dashboard.get("widgets", []):
             data = self._fetch_widget_data(widget["data_source"], user_id)
-            widgets_data.append({
-                "widget_id": widget["id"],
-                "widget_type": widget["widget_type"],
-                "title": widget["title"],
-                "data_source": widget["data_source"],
-                "refresh_interval": widget["refresh_interval"],
-                "data": data,
-            })
+            widgets_data.append(
+                {
+                    "widget_id": widget["id"],
+                    "widget_type": widget["widget_type"],
+                    "title": widget["title"],
+                    "data_source": widget["data_source"],
+                    "refresh_interval": widget["refresh_interval"],
+                    "data": data,
+                }
+            )
 
         return {
             "dashboard_id": dashboard_id,
@@ -389,7 +415,9 @@ class DashboardService:
 
             for cat_data in by_category.values():
                 scores = cat_data["scores"]
-                cat_data["average"] = round(sum(scores) / len(scores), 1) if scores else 0
+                cat_data["average"] = (
+                    round(sum(scores) / len(scores), 1) if scores else 0
+                )
                 del cat_data["scores"]
 
             return {
@@ -480,7 +508,9 @@ class DashboardService:
 
     def _unset_default_dashboards(self, user_id: str):
         """Remove is_default from all user dashboards."""
-        self.supabase.table("dashboards").update({"is_default": False}).eq("user_id", user_id).eq("is_default", True).execute()
+        self.supabase.table("dashboards").update({"is_default": False}).eq(
+            "user_id", user_id
+        ).eq("is_default", True).execute()
 
 
 # Singleton instance

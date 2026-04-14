@@ -1,6 +1,7 @@
 """
 Custom dashboards router with widget management and live data.
 """
+
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -9,29 +10,36 @@ from pydantic import BaseModel, Field
 
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
-from app.services.dashboard_service import (VALID_DATA_SOURCES,
-                                            VALID_REFRESH_INTERVALS,
-                                            VALID_WIDGET_TYPES,
-                                            dashboard_service)
+from app.services.dashboard_service import (
+    VALID_DATA_SOURCES,
+    VALID_REFRESH_INTERVALS,
+    VALID_WIDGET_TYPES,
+    dashboard_service,
+)
 
 router = APIRouter()
 
 
 # ── Pydantic Models ─────────────────────────────────────────────────
 
+
 class WidgetConfig(BaseModel):
     """Widget creation/update configuration."""
+
     widget_type: str = Field(..., description="Type of widget")
     title: str = Field(..., description="Widget title")
     data_source: str = Field(..., description="Data source for widget")
     refresh_interval: int = Field(60, description="Refresh interval in seconds")
     size: Optional[Dict[str, int]] = Field(None, description="Widget size {w, h}")
     position: Optional[int] = Field(None, description="Widget position in grid")
-    config: Optional[Dict[str, Any]] = Field(None, description="Additional widget config")
+    config: Optional[Dict[str, Any]] = Field(
+        None, description="Additional widget config"
+    )
 
 
 class WidgetUpdateConfig(BaseModel):
     """Widget update configuration (all fields optional)."""
+
     widget_type: Optional[str] = None
     title: Optional[str] = None
     data_source: Optional[str] = None
@@ -43,14 +51,18 @@ class WidgetUpdateConfig(BaseModel):
 
 class DashboardCreate(BaseModel):
     """Create a new dashboard."""
+
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
-    layout_config: Optional[Dict[str, Any]] = Field(None, description="Layout configuration")
+    layout_config: Optional[Dict[str, Any]] = Field(
+        None, description="Layout configuration"
+    )
     is_default: bool = False
 
 
 class DashboardUpdate(BaseModel):
     """Update a dashboard."""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     layout_config: Optional[Dict[str, Any]] = None
@@ -58,6 +70,7 @@ class DashboardUpdate(BaseModel):
 
 
 # ── Dashboard Endpoints ─────────────────────────────────────────────
+
 
 @router.get("/dashboards")
 async def list_dashboards(user=Depends(get_auth_user)):
@@ -104,7 +117,9 @@ async def get_dashboard(dashboard_id: str, user=Depends(get_auth_user)):
 
 
 @router.put("/dashboards/{dashboard_id}")
-async def update_dashboard(dashboard_id: str, dashboard: DashboardUpdate, user=Depends(get_auth_user)):
+async def update_dashboard(
+    dashboard_id: str, dashboard: DashboardUpdate, user=Depends(get_auth_user)
+):
     """Update a dashboard's name, description, or layout."""
     try:
         result = dashboard_service.update_dashboard(
@@ -143,8 +158,11 @@ async def delete_dashboard(dashboard_id: str, user=Depends(get_auth_user)):
 
 # ── Widget Endpoints ────────────────────────────────────────────────
 
+
 @router.post("/dashboards/{dashboard_id}/widgets", status_code=status.HTTP_201_CREATED)
-async def add_widget(dashboard_id: str, widget: WidgetConfig, user=Depends(get_auth_user)):
+async def add_widget(
+    dashboard_id: str, widget: WidgetConfig, user=Depends(get_auth_user)
+):
     """Add a widget to a dashboard."""
     try:
         if widget.widget_type not in VALID_WIDGET_TYPES:
@@ -193,7 +211,10 @@ async def add_widget(dashboard_id: str, widget: WidgetConfig, user=Depends(get_a
 
 @router.put("/dashboards/{dashboard_id}/widgets/{widget_id}")
 async def update_widget(
-    dashboard_id: str, widget_id: str, widget: WidgetUpdateConfig, user=Depends(get_auth_user)
+    dashboard_id: str,
+    widget_id: str,
+    widget: WidgetUpdateConfig,
+    user=Depends(get_auth_user),
 ):
     """Update a widget's configuration."""
     try:
@@ -207,7 +228,10 @@ async def update_widget(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid data source. Valid sources: {', '.join(VALID_DATA_SOURCES)}",
             )
-        if widget.refresh_interval and widget.refresh_interval not in VALID_REFRESH_INTERVALS:
+        if (
+            widget.refresh_interval
+            and widget.refresh_interval not in VALID_REFRESH_INTERVALS
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid refresh interval. Valid values: {', '.join(str(v) for v in VALID_REFRESH_INTERVALS)}",
@@ -242,7 +266,10 @@ async def update_widget(
         )
 
 
-@router.delete("/dashboards/{dashboard_id}/widgets/{widget_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/dashboards/{dashboard_id}/widgets/{widget_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def delete_widget(dashboard_id: str, widget_id: str, user=Depends(get_auth_user)):
     """Remove a widget from a dashboard."""
     deleted = dashboard_service.delete_widget(dashboard_id, widget_id, user.id)
@@ -254,6 +281,7 @@ async def delete_widget(dashboard_id: str, widget_id: str, user=Depends(get_auth
 
 
 # ── Live Data ──────────────────────────────────────────────────────
+
 
 @router.get("/dashboards/{dashboard_id}/data")
 async def get_dashboard_data(dashboard_id: str, user=Depends(get_auth_user)):

@@ -1,6 +1,7 @@
 """
 RSS Feed router for managing RSS feeds and importing content.
 """
+
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
@@ -17,10 +18,18 @@ router = APIRouter()
 
 
 class RSSFeedCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=255, description="Display name for the RSS feed")
+    name: str = Field(
+        ..., min_length=1, max_length=255, description="Display name for the RSS feed"
+    )
     url: HttpUrl = Field(..., description="URL of the RSS feed")
-    fetch_frequency: str = Field(default="hourly", pattern="^(hourly|daily)$", description="How often to fetch: hourly or daily")
-    auto_create_content: bool = Field(default=False, description="Automatically create content items from new entries")
+    fetch_frequency: str = Field(
+        default="hourly",
+        pattern="^(hourly|daily)$",
+        description="How often to fetch: hourly or daily",
+    )
+    auto_create_content: bool = Field(
+        default=False, description="Automatically create content items from new entries"
+    )
 
 
 class RSSFeedUpdate(BaseModel):
@@ -81,24 +90,26 @@ class RSSFetchResponse(BaseModel):
     message: str
 
 
-@router.post("/rss/feeds", response_model=RSSFeedResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/rss/feeds", response_model=RSSFeedResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_feed(
     feed_data: RSSFeedCreate,
     user=Depends(get_auth_user),
-    _: None = Depends(rate_limit_dependency)
+    _: None = Depends(rate_limit_dependency),
 ):
     """Add a new RSS feed for monitoring."""
     supabase = get_supabase_client()
-    
+
     try:
         # Validate the RSS feed URL by attempting to fetch it
         is_valid, error_msg = await rss_service.validate_feed(str(feed_data.url))
         if not is_valid:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid RSS feed URL: {error_msg}"
+                detail=f"Invalid RSS feed URL: {error_msg}",
             )
-        
+
         # Create feed record
         data = {
             "user_id": str(user.id),
@@ -108,21 +119,22 @@ async def create_feed(
             "auto_create_content": feed_data.auto_create_content,
             "status": "active",
         }
-        
+
         result = supabase.table("rss_feeds").insert(data).execute()
-        
+
         if not result.data:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create RSS feed",
             )
-        
+
         # Trigger initial fetch
         from app.tasks.rss import fetch_single_feed_task
+
         fetch_single_feed_task.delay(result.data[0]["id"], str(user.id))
-        
+
         return RSSFeedResponse(**result.data[0])
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -137,32 +149,35 @@ async def list_feeds(
     status: Optional[str] = Query(None, pattern="^(active|paused|error)$"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    user=Depends(get_auth_user)
+    user=Depends(get_auth_user),
 ):
     """List all RSS feeds for the current user."""
     supabase = get_supabase_client()
-    
+
     try:
         # Get total count
-        count_query = supabase.table("rss_feeds").select("*", count="exact").eq("user_id", str(user.id))
+        count_query = (
+            supabase.table("rss_feeds")
+            .select("*", count="exact")
+            .eq("user_id", str(user.id))
+        )
         if status:
             count_query = count_query.eq("status", status)
         count_result = count_query.execute()
         total = count_result.count or 0
-        
+
         # Get feeds
         query = supabase.table("rss_feeds").select("*").eq("user_id", str(user.id))
         if status:
             query = query.eq("status", status)
-        
+
         query = query.order("created_at", desc=True).limit(limit).offset(offset)
         result = query.execute()
-        
+
         return RSSFeedListResponse(
-            feeds=[RSSFeedResponse(**f) for f in result.data],
-            total=total
+            feeds=[RSSFeedResponse(**f) for f in result.data], total=total
         )
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -171,24 +186,28 @@ async def list_feeds(
 
 
 @router.get("/rss/feeds/{feed_id}", response_model=RSSFeedResponse)
-async def get_feed(
-    feed_id: UUID,
-    user=Depends(get_auth_user)
-):
+async def get_feed(feed_id: UUID, user=Depends(get_auth_user)):
     """Get a specific RSS feed by ID."""
     supabase = get_supabase_client()
-    
+
     try:
-        result = supabase.table("rss_feeds").select("*").eq("id", str(feed_id)).eq("user_id", str(user.id)).single().execute()
-        
+        result = (
+            supabase.table("rss_feeds")
+            .select("*")
+            .eq("id", str(feed_id))
+            .eq("user_id", str(user.id))
+            .single()
+            .execute()
+        )
+
         if not result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="RSS feed not found",
             )
-        
+
         return RSSFeedResponse(**result.data)
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -200,23 +219,28 @@ async def get_feed(
 
 @router.patch("/rss/feeds/{feed_id}", response_model=RSSFeedResponse)
 async def update_feed(
-    feed_id: UUID,
-    update_data: RSSFeedUpdate,
-    user=Depends(get_auth_user)
+    feed_id: UUID, update_data: RSSFeedUpdate, user=Depends(get_auth_user)
 ):
     """Update an RSS feed configuration."""
     supabase = get_supabase_client()
-    
+
     try:
         # Verify ownership
-        existing = supabase.table("rss_feeds").select("*").eq("id", str(feed_id)).eq("user_id", str(user.id)).single().execute()
-        
+        existing = (
+            supabase.table("rss_feeds")
+            .select("*")
+            .eq("id", str(feed_id))
+            .eq("user_id", str(user.id))
+            .single()
+            .execute()
+        )
+
         if not existing.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="RSS feed not found",
             )
-        
+
         # Build update data
         update_dict = {}
         if update_data.name is not None:
@@ -230,20 +254,25 @@ async def update_feed(
             # Clear error message when reactivating
             if update_data.status == "active":
                 update_dict["error_message"] = None
-        
+
         if not update_dict:
             return RSSFeedResponse(**existing.data)
-        
-        result = supabase.table("rss_feeds").update(update_dict).eq("id", str(feed_id)).execute()
-        
+
+        result = (
+            supabase.table("rss_feeds")
+            .update(update_dict)
+            .eq("id", str(feed_id))
+            .execute()
+        )
+
         if not result.data:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update RSS feed",
             )
-        
+
         return RSSFeedResponse(**result.data[0])
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -254,28 +283,32 @@ async def update_feed(
 
 
 @router.delete("/rss/feeds/{feed_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_feed(
-    feed_id: UUID,
-    user=Depends(get_auth_user)
-):
+async def delete_feed(feed_id: UUID, user=Depends(get_auth_user)):
     """Remove an RSS feed and all its entries."""
     supabase = get_supabase_client()
-    
+
     try:
         # Verify ownership
-        existing = supabase.table("rss_feeds").select("*").eq("id", str(feed_id)).eq("user_id", str(user.id)).single().execute()
-        
+        existing = (
+            supabase.table("rss_feeds")
+            .select("*")
+            .eq("id", str(feed_id))
+            .eq("user_id", str(user.id))
+            .single()
+            .execute()
+        )
+
         if not existing.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="RSS feed not found",
             )
-        
+
         # Delete the feed (cascades to entries)
         supabase.table("rss_feeds").delete().eq("id", str(feed_id)).execute()
-        
+
         return None
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -286,39 +319,43 @@ async def delete_feed(
 
 
 @router.post("/rss/feeds/{feed_id}/fetch", response_model=RSSFetchResponse)
-async def manual_fetch(
-    feed_id: UUID,
-    user=Depends(get_auth_user)
-):
+async def manual_fetch(feed_id: UUID, user=Depends(get_auth_user)):
     """Manually trigger a fetch for a specific RSS feed."""
     supabase = get_supabase_client()
-    
+
     try:
         # Verify ownership
-        existing = supabase.table("rss_feeds").select("*").eq("id", str(feed_id)).eq("user_id", str(user.id)).single().execute()
-        
+        existing = (
+            supabase.table("rss_feeds")
+            .select("*")
+            .eq("id", str(feed_id))
+            .eq("user_id", str(user.id))
+            .single()
+            .execute()
+        )
+
         if not existing.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="RSS feed not found",
             )
-        
+
         if existing.data.get("status") == "paused":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot fetch a paused feed. Please activate it first.",
             )
-        
+
         # Fetch the feed
         result = await rss_service.fetch_feed(str(feed_id), str(user.id))
-        
+
         return RSSFetchResponse(
             success=result["success"],
             entries_fetched=result["entries_fetched"],
             entries_new=result["entries_new"],
-            message=result["message"]
+            message=result["message"],
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -334,44 +371,50 @@ async def list_entries(
     processed: Optional[bool] = Query(None, description="Filter by processed status"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    user=Depends(get_auth_user)
+    user=Depends(get_auth_user),
 ):
     """List RSS entries for the current user's feeds."""
     supabase = get_supabase_client()
-    
+
     try:
         # Get user's feed IDs
-        feeds_query = supabase.table("rss_feeds").select("id").eq("user_id", str(user.id))
+        feeds_query = (
+            supabase.table("rss_feeds").select("id").eq("user_id", str(user.id))
+        )
         if feed_id:
             feeds_query = feeds_query.eq("id", str(feed_id))
-        
+
         feeds_result = feeds_query.execute()
         feed_ids = [f["id"] for f in feeds_result.data]
-        
+
         if not feed_ids:
             return RSSEntryListResponse(entries=[], total=0, feed_id=feed_id)
-        
+
         # Get total count
-        count_query = supabase.table("rss_entries").select("*", count="exact").in_("feed_id", feed_ids)
+        count_query = (
+            supabase.table("rss_entries")
+            .select("*", count="exact")
+            .in_("feed_id", feed_ids)
+        )
         if processed is not None:
             count_query = count_query.eq("processed", processed)
         count_result = count_query.execute()
         total = count_result.count or 0
-        
+
         # Get entries
         query = supabase.table("rss_entries").select("*").in_("feed_id", feed_ids)
         if processed is not None:
             query = query.eq("processed", processed)
-        
+
         query = query.order("published_at", desc=True).limit(limit).offset(offset)
         result = query.execute()
-        
+
         return RSSEntryListResponse(
             entries=[RSSEntryResponse(**e) for e in result.data],
             total=total,
-            feed_id=feed_id
+            feed_id=feed_id,
         )
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -380,34 +423,44 @@ async def list_entries(
 
 
 @router.get("/rss/entries/{entry_id}", response_model=RSSEntryResponse)
-async def get_entry(
-    entry_id: UUID,
-    user=Depends(get_auth_user)
-):
+async def get_entry(entry_id: UUID, user=Depends(get_auth_user)):
     """Get a specific RSS entry by ID."""
     supabase = get_supabase_client()
-    
+
     try:
         # Get entry with feed ownership check
-        result = supabase.table("rss_entries").select("*").eq("id", str(entry_id)).single().execute()
-        
+        result = (
+            supabase.table("rss_entries")
+            .select("*")
+            .eq("id", str(entry_id))
+            .single()
+            .execute()
+        )
+
         if not result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="RSS entry not found",
             )
-        
+
         # Verify ownership through feed
-        feed_result = supabase.table("rss_feeds").select("*").eq("id", result.data["feed_id"]).eq("user_id", str(user.id)).single().execute()
-        
+        feed_result = (
+            supabase.table("rss_feeds")
+            .select("*")
+            .eq("id", result.data["feed_id"])
+            .eq("user_id", str(user.id))
+            .single()
+            .execute()
+        )
+
         if not feed_result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="RSS entry not found",
             )
-        
+
         return RSSEntryResponse(**result.data)
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -420,41 +473,56 @@ async def get_entry(
 @router.post("/rss/entries/{entry_id}/import", response_model=RSSImportResponse)
 async def import_entry(
     entry_id: UUID,
-    project_id: Optional[UUID] = Query(None, description="Optional project ID to associate with"),
-    user=Depends(get_auth_user)
+    project_id: Optional[UUID] = Query(
+        None, description="Optional project ID to associate with"
+    ),
+    user=Depends(get_auth_user),
 ):
     """Import an RSS entry as content."""
     supabase = get_supabase_client()
-    
+
     try:
         # Get entry with feed ownership check
-        entry_result = supabase.table("rss_entries").select("*").eq("id", str(entry_id)).single().execute()
-        
+        entry_result = (
+            supabase.table("rss_entries")
+            .select("*")
+            .eq("id", str(entry_id))
+            .single()
+            .execute()
+        )
+
         if not entry_result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="RSS entry not found",
             )
-        
+
         entry = entry_result.data
-        
+
         # Verify ownership through feed
-        feed_result = supabase.table("rss_feeds").select("*").eq("id", entry["feed_id"]).eq("user_id", str(user.id)).single().execute()
-        
+        feed_result = (
+            supabase.table("rss_feeds")
+            .select("*")
+            .eq("id", entry["feed_id"])
+            .eq("user_id", str(user.id))
+            .single()
+            .execute()
+        )
+
         if not feed_result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="RSS entry not found",
             )
-        
+
         # Check if already imported
         if entry.get("processed") and entry.get("content_id"):
             return RSSImportResponse(
                 success=True,
                 content_id=entry["content_id"],
-                message="Entry was already imported"
+                message="Entry was already imported",
             )
-        
+
         # Import the entry
         result = await rss_service.import_entry(
             entry_id=str(entry_id),
@@ -462,15 +530,15 @@ async def import_entry(
             project_id=str(project_id) if project_id else None,
             title=entry.get("title"),
             content=entry.get("content"),
-            link=entry.get("link")
+            link=entry.get("link"),
         )
-        
+
         return RSSImportResponse(
             success=result["success"],
             content_id=result.get("content_id"),
-            message=result["message"]
+            message=result["message"],
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -483,35 +551,49 @@ async def import_entry(
 @router.post("/rss/feeds/{feed_id}/import-all", response_model=RSSImportResponse)
 async def import_all_unprocessed(
     feed_id: UUID,
-    project_id: Optional[UUID] = Query(None, description="Optional project ID to associate with"),
-    user=Depends(get_auth_user)
+    project_id: Optional[UUID] = Query(
+        None, description="Optional project ID to associate with"
+    ),
+    user=Depends(get_auth_user),
 ):
     """Import all unprocessed entries from a feed as content."""
     supabase = get_supabase_client()
-    
+
     try:
         # Verify ownership
-        feed_result = supabase.table("rss_feeds").select("*").eq("id", str(feed_id)).eq("user_id", str(user.id)).single().execute()
-        
+        feed_result = (
+            supabase.table("rss_feeds")
+            .select("*")
+            .eq("id", str(feed_id))
+            .eq("user_id", str(user.id))
+            .single()
+            .execute()
+        )
+
         if not feed_result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="RSS feed not found",
             )
-        
+
         # Get all unprocessed entries
-        entries_result = supabase.table("rss_entries").select("*").eq("feed_id", str(feed_id)).eq("processed", False).execute()
-        
+        entries_result = (
+            supabase.table("rss_entries")
+            .select("*")
+            .eq("feed_id", str(feed_id))
+            .eq("processed", False)
+            .execute()
+        )
+
         if not entries_result.data:
             return RSSImportResponse(
-                success=True,
-                message="No unprocessed entries found"
+                success=True, message="No unprocessed entries found"
             )
-        
+
         # Import each entry
         imported_count = 0
         failed_count = 0
-        
+
         for entry in entries_result.data:
             try:
                 await rss_service.import_entry(
@@ -520,17 +602,17 @@ async def import_all_unprocessed(
                     project_id=str(project_id) if project_id else None,
                     title=entry.get("title"),
                     content=entry.get("content"),
-                    link=entry.get("link")
+                    link=entry.get("link"),
                 )
                 imported_count += 1
             except Exception:
                 failed_count += 1
-        
+
         return RSSImportResponse(
             success=failed_count == 0,
-            message=f"Imported {imported_count} entries, {failed_count} failed"
+            message=f"Imported {imported_count} entries, {failed_count} failed",
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:

@@ -9,6 +9,7 @@ Advanced analytics for measuring content impact:
 - Cohort analysis (group content by publish date, compare performance)
 - Attribution modeling (which content drives conversions)
 """
+
 import json
 import logging
 from collections import defaultdict
@@ -70,7 +71,9 @@ class PerformanceService:
         metadata: optional JSON-safe dict with extra context
         """
         if event_type not in ("view", "share", "comment", "conversion"):
-            raise ValueError(f"Invalid event_type '{event_type}'. Must be view/share/comment/conversion.")
+            raise ValueError(
+                f"Invalid event_type '{event_type}'. Must be view/share/comment/conversion."
+            )
 
         row = {
             "user_id": str(user_id),
@@ -135,8 +138,8 @@ class PerformanceService:
         total_content = len(content_result.data or [])
 
         # Compute engagement rate: (shares + comments) / max(views, 1)
-        engagement_rate = (
-            (totals["shares"] + totals["comments"]) / max(totals["views"], 1)
+        engagement_rate = (totals["shares"] + totals["comments"]) / max(
+            totals["views"], 1
         )
         engagement_rate = min(round(engagement_rate, 4), 1.0)
 
@@ -152,7 +155,9 @@ class PerformanceService:
             "total_conversions": totals["conversions"],
             "total_content": total_content,
             "avg_views_per_content": round(totals["views"] / max(total_content, 1), 2),
-            "avg_conversions_per_content": round(totals["conversions"] / max(total_content, 1), 2),
+            "avg_conversions_per_content": round(
+                totals["conversions"] / max(total_content, 1), 2
+            ),
             "engagement_rate": engagement_rate,
             "performance_score": performance_score,
             "period_days": days,
@@ -165,7 +170,9 @@ class PerformanceService:
     #  Per-Content Metrics                                                  #
     # ------------------------------------------------------------------ #
 
-    async def get_content_metrics(self, content_id: UUID, user_id: UUID) -> Optional[Dict[str, Any]]:
+    async def get_content_metrics(
+        self, content_id: UUID, user_id: UUID
+    ) -> Optional[Dict[str, Any]]:
         """
         Detailed performance metrics for a single content piece.
 
@@ -206,8 +213,8 @@ class PerformanceService:
             if et in totals:
                 totals[et] += ev.get("value", 1)
 
-        engagement_rate = (
-            (totals["shares"] + totals["comments"]) / max(totals["views"], 1)
+        engagement_rate = (totals["shares"] + totals["comments"]) / max(
+            totals["views"], 1
         )
         engagement_rate = min(round(engagement_rate, 4), 1.0)
 
@@ -268,7 +275,9 @@ class PerformanceService:
             .gte("created_at", since)
             .execute()
         )
-        published_ids = {d["content_id"] for d in (dist_result.data or []) if d.get("content_id")}
+        published_ids = {
+            d["content_id"] for d in (dist_result.data or []) if d.get("content_id")
+        }
         published_count = len(published_ids)
 
         # Stage 3: engaged (content that has shares or comments)
@@ -368,8 +377,12 @@ class PerformanceService:
             return result
 
         # Determine time range
-        earliest = datetime.fromisoformat(all_content[0]["created_at"].replace("Z", "+00:00"))
-        latest = datetime.fromisoformat(all_content[-1]["created_at"].replace("Z", "+00:00"))
+        earliest = datetime.fromisoformat(
+            all_content[0]["created_at"].replace("Z", "+00:00")
+        )
+        latest = datetime.fromisoformat(
+            all_content[-1]["created_at"].replace("Z", "+00:00")
+        )
 
         # Build cohort buckets
         if cohort_size == "day":
@@ -413,25 +426,27 @@ class PerformanceService:
                 if et in totals:
                     totals[et] += ev.get("value", 1)
 
-            engagement_rate = (
-                (totals["shares"] + totals["comments"]) / max(totals["views"], 1)
+            engagement_rate = (totals["shares"] + totals["comments"]) / max(
+                totals["views"], 1
             )
             engagement_rate = min(round(engagement_rate, 4), 1.0)
 
-            conversion_rate = (
-                totals["conversions"] / max(len(content_ids), 1)
-            )
+            conversion_rate = totals["conversions"] / max(len(content_ids), 1)
             conversion_rate = min(round(conversion_rate, 4), 1.0)
 
-            cohort_data.append({
-                "cohort": label,
-                "content_count": len(content_ids),
-                "metrics": totals,
-                "engagement_rate": engagement_rate,
-                "conversion_rate": conversion_rate,
-                "avg_views": round(totals["views"] / max(len(content_ids), 1), 2),
-                "avg_conversions": round(totals["conversions"] / max(len(content_ids), 1), 2),
-            })
+            cohort_data.append(
+                {
+                    "cohort": label,
+                    "content_count": len(content_ids),
+                    "metrics": totals,
+                    "engagement_rate": engagement_rate,
+                    "conversion_rate": conversion_rate,
+                    "avg_views": round(totals["views"] / max(len(content_ids), 1), 2),
+                    "avg_conversions": round(
+                        totals["conversions"] / max(len(content_ids), 1), 2
+                    ),
+                }
+            )
 
         result = {
             "cohorts": cohort_data,
@@ -502,7 +517,7 @@ class PerformanceService:
             .execute()
         )
         dist_by_content: Dict[str, List[Dict]] = defaultdict(list)
-        for d in (dist_result.data or []):
+        for d in dist_result.data or []:
             cid = d.get("content_id")
             if cid:
                 dist_by_content[cid].append(d)
@@ -521,7 +536,9 @@ class PerformanceService:
             by_content[cid]["value"] += val
 
         # Build by_content_type attribution
-        by_type: Dict[str, Dict] = defaultdict(lambda: {"conversions": 0, "value": 0, "content_count": 0})
+        by_type: Dict[str, Dict] = defaultdict(
+            lambda: {"conversions": 0, "value": 0, "content_count": 0}
+        )
         for cid, data in by_content.items():
             content_info = content_map.get(cid, {})
             source_type = content_info.get("source_type", "unknown")
@@ -530,9 +547,13 @@ class PerformanceService:
             by_type[source_type]["content_count"] += 1
 
         # Build by_platform attribution
-        by_platform: Dict[str, Dict] = defaultdict(lambda: {"conversions": 0, "value": 0})
+        by_platform: Dict[str, Dict] = defaultdict(
+            lambda: {"conversions": 0, "value": 0}
+        )
         for cid, data in by_content.items():
-            platforms = [d.get("platform", "unknown") for d in dist_by_content.get(cid, [])]
+            platforms = [
+                d.get("platform", "unknown") for d in dist_by_content.get(cid, [])
+            ]
             if not platforms:
                 platforms = ["organic"]
             for platform in platforms:
@@ -540,17 +561,21 @@ class PerformanceService:
                 by_platform[platform]["value"] += data["value"]
 
         # Top converting content pieces
-        top_converters = sorted(by_content.items(), key=lambda x: x[1]["value"], reverse=True)[:10]
+        top_converters = sorted(
+            by_content.items(), key=lambda x: x[1]["value"], reverse=True
+        )[:10]
         top_converters_list = []
         for cid, data in top_converters:
             info = content_map.get(cid, {})
-            top_converters_list.append({
-                "content_id": cid,
-                "title": info.get("title", "Unknown"),
-                "source_type": info.get("source_type", "unknown"),
-                "conversions": data["conversions"],
-                "value": data["value"],
-            })
+            top_converters_list.append(
+                {
+                    "content_id": cid,
+                    "title": info.get("title", "Unknown"),
+                    "source_type": info.get("source_type", "unknown"),
+                    "conversions": data["conversions"],
+                    "value": data["value"],
+                }
+            )
 
         result = {
             "total_conversions": len(conversions),
@@ -558,12 +583,8 @@ class PerformanceService:
             "by_content": [
                 {"content_id": cid, **data} for cid, data in by_content.items()
             ],
-            "by_content_type": [
-                {"source_type": k, **v} for k, v in by_type.items()
-            ],
-            "by_platform": [
-                {"platform": k, **v} for k, v in by_platform.items()
-            ],
+            "by_content_type": [{"source_type": k, **v} for k, v in by_type.items()],
+            "by_platform": [{"platform": k, **v} for k, v in by_platform.items()],
             "top_converters": top_converters_list,
             "period_days": days,
         }
@@ -604,13 +625,20 @@ class PerformanceService:
         events = events_result.data or []
 
         # Group events by time bucket
-        buckets: Dict[str, Dict[str, int]] = defaultdict(lambda: {
-            "views": 0, "shares": 0, "comments": 0, "conversions": 0,
-        })
+        buckets: Dict[str, Dict[str, int]] = defaultdict(
+            lambda: {
+                "views": 0,
+                "shares": 0,
+                "comments": 0,
+                "conversions": 0,
+            }
+        )
 
         for ev in events:
             try:
-                ev_date = datetime.fromisoformat(ev["created_at"].replace("Z", "+00:00"))
+                ev_date = datetime.fromisoformat(
+                    ev["created_at"].replace("Z", "+00:00")
+                )
             except (KeyError, ValueError):
                 continue
 
@@ -688,13 +716,20 @@ class PerformanceService:
 
     def _build_daily_series(self, events: List[Dict]) -> List[Dict]:
         """Build daily time-series buckets from events."""
-        daily: Dict[str, Dict[str, int]] = defaultdict(lambda: {
-            "views": 0, "shares": 0, "comments": 0, "conversions": 0,
-        })
+        daily: Dict[str, Dict[str, int]] = defaultdict(
+            lambda: {
+                "views": 0,
+                "shares": 0,
+                "comments": 0,
+                "conversions": 0,
+            }
+        )
 
         for ev in events:
             try:
-                ev_date = datetime.fromisoformat(ev["created_at"].replace("Z", "+00:00"))
+                ev_date = datetime.fromisoformat(
+                    ev["created_at"].replace("Z", "+00:00")
+                )
             except (KeyError, ValueError):
                 continue
             key = ev_date.strftime("%Y-%m-%d")

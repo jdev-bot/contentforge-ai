@@ -1,6 +1,7 @@
 """
 Pytest configuration and fixtures for ContentForge AI tests.
 """
+
 import os
 import sys
 import pytest
@@ -8,7 +9,7 @@ from typing import Generator, Dict
 from unittest.mock import Mock, MagicMock, patch, AsyncMock
 
 # Add the app directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from fastapi.testclient import TestClient
 from fastapi import Request
@@ -24,9 +25,12 @@ os.environ["SUPABASE_URL"] = "https://test.supabase.co"
 def clear_supabase_cache():
     """Clear lru_cache between tests to prevent mock leakage."""
     from app.core.supabase import get_supabase_client
+
     get_supabase_client.cache_clear()
     yield
     get_supabase_client.cache_clear()
+
+
 os.environ["SUPABASE_KEY"] = "test-anon-key"
 os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key"
 os.environ["GROQ_API_KEY"] = "test-groq-api-key"
@@ -34,24 +38,30 @@ os.environ["RATE_LIMIT_REQUESTS"] = "1000"
 os.environ["RATE_LIMIT_WINDOW"] = "3600"
 os.environ["REDIS_URL"] = "redis://localhost:6379/0"
 
+
 # Create a no-op middleware for testing
 class NoOpMiddleware:
     def __init__(self, app):
         self.app = app
-    
+
     async def __call__(self, scope, receive, send):
         await self.app(scope, receive, send)
 
+
 # Patch the middleware classes before importing app
-with patch('app.core.rate_limit.UsageTrackingMiddleware', NoOpMiddleware):
-    with patch('app.core.error_tracking.ErrorTrackingMiddleware', NoOpMiddleware):
+with patch("app.core.rate_limit.UsageTrackingMiddleware", NoOpMiddleware):
+    with patch("app.core.error_tracking.ErrorTrackingMiddleware", NoOpMiddleware):
         from app.main import app
         from app.core.config import get_settings
         from app.routers.auth import get_auth_user
         from app.core.rate_limit import (
-            enforce_subscription_limit, check_and_increment_usage,
-            rate_limit_dependency, UsageStats, check_subscription_limit,
-            get_user_usage_stats, check_monthly_reset,
+            enforce_subscription_limit,
+            check_and_increment_usage,
+            rate_limit_dependency,
+            UsageStats,
+            check_subscription_limit,
+            get_user_usage_stats,
+            check_monthly_reset,
         )
 
 
@@ -59,7 +69,7 @@ def create_mock_auth_user(
     user_id: str = "test-user-id-123",
     email: str = "test@example.com",
     full_name: str = "Test User",
-    is_active: bool = True
+    is_active: bool = True,
 ):
     """Create a mock authenticated user."""
     user = Mock()
@@ -78,10 +88,11 @@ def _build_mock_supabase_client():
     mock_user.email = "test@example.com"
     mock_user.user_metadata = {"full_name": "Test User"}
     mock_auth.get_user.return_value = MagicMock(user=mock_user)
-    mock_auth.sign_up = MagicMock(return_value=MagicMock(
-        user=mock_user,
-        session=MagicMock(access_token="test-access-token")
-    ))
+    mock_auth.sign_up = MagicMock(
+        return_value=MagicMock(
+            user=mock_user, session=MagicMock(access_token="test-access-token")
+        )
+    )
 
     mock_query = MagicMock()
     mock_query.eq = MagicMock(return_value=mock_query)
@@ -245,10 +256,12 @@ def client() -> Generator:
     """Create a test client with mocked Supabase."""
     from fastapi.testclient import TestClient
     from unittest.mock import MagicMock, patch
-    
-    mock_client, mock_auth, mock_table, mock_storage, mock_query = _build_mock_supabase_client()
+
+    mock_client, mock_auth, mock_table, mock_storage, mock_query = (
+        _build_mock_supabase_client()
+    )
     mock_usage = _build_mock_usage_stats()
-    
+
     # Create a default mock user for dependency override
     default_mock_user = MagicMock()
     default_mock_user.id = "test-user-id-123"
@@ -256,19 +269,19 @@ def client() -> Generator:
     default_mock_user.user_metadata = {"full_name": "Test User"}
 
     active_patches = []
-    
+
     # Patch all get_supabase_client references
     for target in _SUPABASE_CLIENT_PATCH_TARGETS:
         p = _safe_patch(target, return_value=mock_client)
         if p:
             active_patches.append(p)
-    
+
     # Patch all get_supabase_admin_client references
     for target in _ADMIN_CLIENT_PATCH_TARGETS:
         p = _safe_patch(target, return_value=mock_client)
         if p:
             active_patches.append(p)
-    
+
     # Patch rate limit functions in routers that import them directly
     for func_name, modules in _RATE_LIMIT_FUNC_PATCHES.items():
         for mod in modules:
@@ -276,7 +289,7 @@ def client() -> Generator:
             p = _safe_patch(target, return_value=mock_usage)
             if p:
                 active_patches.append(p)
-    
+
     # Patch usage stats functions at the source module
     for name, ret in [
         ("get_user_usage_stats", mock_usage),
@@ -286,14 +299,14 @@ def client() -> Generator:
         p = _safe_patch(f"app.core.rate_limit.{name}", return_value=ret)
         if p:
             active_patches.append(p)
-    
+
     p = _safe_patch("app.core.rate_limit.check_monthly_reset", return_value=None)
     if p:
         active_patches.append(p)
-    
+
     # Patch Celery tasks to prevent real broker connections
     _celery_task_mock = MagicMock()
-    _celery_task_mock.delay = MagicMock(return_value=MagicMock(id='test-task-id'))
+    _celery_task_mock.delay = MagicMock(return_value=MagicMock(id="test-task-id"))
     for target in [
         "app.routers.auth.send_welcome_email_task",
         "app.routers.rss.fetch_single_feed_task",
@@ -302,30 +315,40 @@ def client() -> Generator:
         p = _safe_patch(target, _celery_task_mock)
         if p:
             active_patches.append(p)
-    
+
     # Patch Celery task delay method globally
     try:
         from app.tasks.email import send_welcome_email_task
-        send_welcome_email_task.delay = MagicMock(return_value=MagicMock(id='test-task-id'))
+
+        send_welcome_email_task.delay = MagicMock(
+            return_value=MagicMock(id="test-task-id")
+        )
     except ImportError:
         pass
     try:
         from app.tasks.rss import fetch_single_feed_task
-        fetch_single_feed_task.delay = MagicMock(return_value=MagicMock(id='test-task-id'))
+
+        fetch_single_feed_task.delay = MagicMock(
+            return_value=MagicMock(id="test-task-id")
+        )
     except (ImportError, AttributeError):
         pass
     try:
         from app.tasks.billing import send_invoice_receipt_task
-        send_invoice_receipt_task.delay = MagicMock(return_value=MagicMock(id='test-task-id'))
+
+        send_invoice_receipt_task.delay = MagicMock(
+            return_value=MagicMock(id="test-task-id")
+        )
     except (ImportError, AttributeError):
         pass
-    
+
     # Override FastAPI dependencies
     # get_auth_user override: returns mock user when Authorization header is present,
     # otherwise raises 401 — this makes "unauthorized" tests work while still
     # providing a logged-in user for normal authenticated endpoint tests.
     def _auth_user_override(request: Request = None):
         from fastapi import HTTPException, status as http_status
+
         # Check if the request has a valid auth header
         # When called as a FastAPI dependency, request is injected automatically
         has_auth = False
@@ -345,11 +368,17 @@ def client() -> Generator:
     app.dependency_overrides[get_auth_user] = _auth_user_override
     app.dependency_overrides[enforce_subscription_limit] = lambda: mock_usage
     app.dependency_overrides[rate_limit_dependency] = lambda: True
-    
+
     try:
         with TestClient(app) as test_client:
             # Store mocks on client for test access
-            test_client.mock_supabase = (mock_client, mock_auth, mock_table, mock_storage, mock_query)
+            test_client.mock_supabase = (
+                mock_client,
+                mock_auth,
+                mock_table,
+                mock_storage,
+                mock_query,
+            )
             yield test_client
     finally:
         # Clean up dependency overrides
@@ -362,7 +391,9 @@ def client() -> Generator:
 @pytest.fixture
 def mock_supabase_client():
     """Create a mock Supabase client."""
-    mock_client, mock_auth, mock_table, mock_storage, mock_query = _build_mock_supabase_client()
+    mock_client, mock_auth, mock_table, mock_storage, mock_query = (
+        _build_mock_supabase_client()
+    )
     return mock_client, mock_auth, mock_table
 
 
@@ -383,11 +414,11 @@ def mock_auth_response(mock_user):
     """Create a mock auth response."""
     mock_response = Mock()
     mock_response.user = mock_user
-    
+
     mock_session = Mock()
     mock_session.access_token = "test-access-token"
     mock_response.session = mock_session
-    
+
     return mock_response
 
 
@@ -484,9 +515,5 @@ def mock_request():
 
 def pytest_configure(config):
     """Configure pytest."""
-    config.addinivalue_line(
-        "markers", "integration: mark test as integration test"
-    )
-    config.addinivalue_line(
-        "markers", "unit: mark test as unit test"
-    )
+    config.addinivalue_line("markers", "integration: mark test as integration test")
+    config.addinivalue_line("markers", "unit: mark test as unit test")

@@ -3,6 +3,7 @@ Version History router — endpoints for listing, creating, diffing, restoring, 
 
 Route order matters: specific paths (like /diff) must come before parameterized paths (like /{version_id}).
 """
+
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
@@ -104,7 +105,9 @@ async def list_versions(
         )
 
 
-@router.get("/content/{content_id}/versions/{version_id}", response_model=VersionResponse)
+@router.get(
+    "/content/{content_id}/versions/{version_id}", response_model=VersionResponse
+)
 async def get_version(
     content_id: UUID,
     version_id: UUID,
@@ -132,7 +135,11 @@ async def get_version(
         )
 
 
-@router.post("/content/{content_id}/versions", response_model=VersionResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/content/{content_id}/versions",
+    response_model=VersionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_version(
     content_id: UUID,
     version_data: VersionCreate,
@@ -165,7 +172,10 @@ async def create_version(
         )
 
 
-@router.post("/content/{content_id}/versions/{version_id}/restore", response_model=RestoreResponse)
+@router.post(
+    "/content/{content_id}/versions/{version_id}/restore",
+    response_model=RestoreResponse,
+)
 async def restore_version(
     content_id: UUID,
     version_id: UUID,
@@ -191,7 +201,10 @@ async def restore_version(
         )
 
 
-@router.delete("/content/{content_id}/versions/{version_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/content/{content_id}/versions/{version_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def delete_version(
     content_id: UUID,
     version_id: UUID,

@@ -8,6 +8,7 @@ Multi-level sentiment analysis using Groq AI:
 - Aspect-based sentiment: per-section/paragraph analysis
 - Tone detection: formal, casual, urgent, persuasive, informative
 """
+
 import json
 import logging
 from typing import Any, Dict, List, Optional
@@ -97,8 +98,12 @@ class SentimentService:
                 "sentiment": "neutral",
                 "score": 0.0,
                 "emotions": {
-                    "joy": 0.0, "anger": 0.0, "sadness": 0.0,
-                    "fear": 0.0, "surprise": 0.0, "disgust": 0.0,
+                    "joy": 0.0,
+                    "anger": 0.0,
+                    "sadness": 0.0,
+                    "fear": 0.0,
+                    "surprise": 0.0,
+                    "disgust": 0.0,
                 },
                 "aspects": [],
                 "tone": "informative",
@@ -164,7 +169,9 @@ class SentimentService:
         return result.data[0] if result.data else row
 
     async def get_analysis(
-        self, content_id: UUID, user_id: UUID,
+        self,
+        content_id: UUID,
+        user_id: UUID,
     ) -> Optional[Dict[str, Any]]:
         """Fetch the latest sentiment analysis for a content item (with cache)."""
         cached = cache.get(str(content_id), prefix=CACHE_PREFIX)
@@ -210,7 +217,9 @@ class SentimentService:
         )
 
         rows = result.data or []
-        cache.set(f"trends:{content_id}", rows, ttl=CACHE_TTL_SECONDS, prefix=CACHE_PREFIX)
+        cache.set(
+            f"trends:{content_id}", rows, ttl=CACHE_TTL_SECONDS, prefix=CACHE_PREFIX
+        )
         return rows
 
     async def get_distribution(self, user_id: UUID) -> Dict[str, Any]:
@@ -232,7 +241,9 @@ class SentimentService:
         total = sum(distribution.values())
         percentages = {}
         if total > 0:
-            percentages = {k: round(v / total * 100, 1) for k, v in distribution.items()}
+            percentages = {
+                k: round(v / total * 100, 1) for k, v in distribution.items()
+            }
 
         return {
             "total_analyses": total,
@@ -257,7 +268,9 @@ class SentimentService:
 
             analysis = await self.analyze_sentiment(text)
             stored = await self.store_analysis(
-                content_id=content_id, user_id=user_id, analysis=analysis,
+                content_id=content_id,
+                user_id=user_id,
+                analysis=analysis,
             )
             results.append(stored)
         return results
