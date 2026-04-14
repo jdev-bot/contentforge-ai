@@ -117,11 +117,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
       - name: Install Bandit
         run: pip install bandit
 
@@ -139,12 +134,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: pip
-
       - name: Install pip-audit
         run: pip install pip-audit
 
@@ -160,15 +149,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: src/frontend/package-lock.json
-
       - name: Install dependencies
-        run: npm ci
+        run: cd src/frontend && npm ci
 
       - name: npm audit
         run: npm audit --audit-level=moderate || true
