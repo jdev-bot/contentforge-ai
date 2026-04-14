@@ -8,21 +8,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install all system dependencies (build + runtime) in one layer
+# Install build dependencies only (no libpq — app uses Supabase REST API, not psycopg2)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
-    libpq-dev \
     libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY src/backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Now remove only build-only deps, keep runtime libs
-RUN apt-get purge -y gcc g++ libpq-dev libffi-dev && \
+# Clean up build deps to shrink image
+RUN apt-get purge -y gcc g++ libffi-dev && \
     apt-get autoremove -y && \
-    apt-get install -y --no-install-recommends libpq5 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -33,4 +31,5 @@ USER appuser
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Render sets PORT env var — use it if available, fallback to 8000
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
