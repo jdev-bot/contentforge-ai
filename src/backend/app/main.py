@@ -100,6 +100,10 @@ from app.core.rate_limit import UsageTrackingMiddleware
 from app.middleware.rate_limit_headers import RateLimitHeadersMiddleware
 from app.middleware.performance import PerformanceMiddleware
 from app.middleware.request_id import RequestIDMiddleware
+from app.middleware.etag import ETagMiddleware
+
+# ETag middleware (adds 304 Not Modified for cacheable endpoints)
+app.add_middleware(ETagMiddleware)
 
 # Request ID middleware (adds X-Request-ID for tracing)
 app.add_middleware(RequestIDMiddleware)
