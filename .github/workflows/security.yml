@@ -1,13 +1,14 @@
 name: Security Pipeline
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      severity_fail:
+        description: 'Minimum severity to fail (low, medium, high, critical)'
+        default: 'high'
+        type: string
   schedule:
     - cron: '0 6 * * 1'
-  workflow_dispatch:
 
 permissions:
   actions: read

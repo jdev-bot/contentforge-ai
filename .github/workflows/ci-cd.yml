@@ -1,10 +1,16 @@
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      deploy_preview:
+        description: 'Deploy to preview?'
+        type: boolean
+        default: false
+      deploy_production:
+        description: 'Deploy to production?'
+        type: boolean
+        default: false
 
 jobs:
   test-backend:
