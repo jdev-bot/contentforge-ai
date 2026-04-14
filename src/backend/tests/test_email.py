@@ -15,9 +15,12 @@ from app.services.email_service import (
 
 
 @pytest.fixture
-def email_service():
-    """Create email service instance."""
-    return EmailService()
+def email_service(mock_settings):
+    """Create email service instance with mocked settings."""
+    service = EmailService()
+    # Re-apply settings from mock since EmailService caches in __init__
+    service.settings = mock_settings
+    return service
 
 
 @pytest.fixture
