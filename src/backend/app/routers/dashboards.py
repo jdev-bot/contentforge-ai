@@ -1,14 +1,18 @@
 """
 Custom dashboards router with widget management and live data.
 """
-from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from app.routers.auth import get_auth_user
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+
 from app.core.supabase import get_supabase_client
-from app.services.dashboard_service import dashboard_service, VALID_WIDGET_TYPES, VALID_DATA_SOURCES, VALID_REFRESH_INTERVALS
+from app.routers.auth import get_auth_user
+from app.services.dashboard_service import (VALID_DATA_SOURCES,
+                                            VALID_REFRESH_INTERVALS,
+                                            VALID_WIDGET_TYPES,
+                                            dashboard_service)
 
 router = APIRouter()
 

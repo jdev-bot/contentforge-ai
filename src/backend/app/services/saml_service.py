@@ -11,19 +11,20 @@ Handles:
 - Lazy Supabase init pattern
 """
 
-import secrets
-import time
 import base64
 import hashlib
-import logging
 import json
+import logging
+import secrets
+import time
 import uuid
-from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 from xml.etree import ElementTree as ET
 
 import httpx
-from app.core.supabase import get_supabase_client, get_supabase_admin_client
+
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 logger = logging.getLogger(__name__)
 

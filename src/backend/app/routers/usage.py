@@ -1,17 +1,15 @@
 """
 Usage tracking router for monitoring API consumption.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, UUID4
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import UUID4, BaseModel
+
+from app.core.rate_limit import (UsageStats, get_usage_history,
+                                 get_user_usage_stats)
 from app.routers.auth import get_auth_user
-from app.core.rate_limit import (
-    get_user_usage_stats,
-    get_usage_history,
-    UsageStats,
-)
 
 router = APIRouter()
 

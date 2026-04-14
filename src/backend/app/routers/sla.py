@@ -9,13 +9,13 @@ This router provides endpoints for:
 - Managing SLA alerts
 - Viewing uptime, response time, and error rate SLA data
 """
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field, field_validator
 
-from app.services.sla_service import sla_service, SLAMetricType, SLASeverity
+from app.services.sla_service import SLAMetricType, SLASeverity, sla_service
 
 router = APIRouter()
 
@@ -194,7 +194,6 @@ class AcknowledgeAlertResponse(BaseModel):
 # ============== Dependency ==============
 
 from app.routers.auth import get_auth_user
-
 
 # ============== SLA Policy Endpoints ==============
 

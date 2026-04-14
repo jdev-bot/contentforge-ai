@@ -1,10 +1,14 @@
 """
 Content extraction service.
 """
-import httpx
-from typing import Optional
-from bs4 import BeautifulSoup
+import logging
 import re
+from typing import Optional
+
+import httpx
+from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 
 class ContentExtractionService:
@@ -48,7 +52,7 @@ class ContentExtractionService:
                 return text[:50000]  # Limit to 50k characters
                 
         except Exception as e:
-            print(f"Error extracting content from URL: {e}")
+            logger.error(f"Error extracting content from URL: {e}")
             return None
     
     async def extract_from_youtube(self, video_id: str) -> Optional[str]:
@@ -62,7 +66,7 @@ class ContentExtractionService:
             return transcript[:50000]
             
         except Exception as e:
-            print(f"Error extracting YouTube transcript: {e}")
+            logger.error(f"Error extracting YouTube transcript: {e}")
             return None
     
     def clean_text(self, text: str) -> str:

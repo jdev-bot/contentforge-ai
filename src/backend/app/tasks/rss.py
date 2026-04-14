@@ -2,8 +2,8 @@
 Celery tasks for RSS feed fetching and processing.
 """
 import logging
-from typing import Optional, Dict, Any
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
 from celery import shared_task
 from celery.exceptions import MaxRetriesExceededError

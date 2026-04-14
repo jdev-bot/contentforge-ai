@@ -2,18 +2,14 @@
 Trash/Recycle Bin API routes.
 Provides endpoints for soft-deleted content management.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
+from app.core.trash import (empty_trash, get_trash_stats, list_trash,
+                            permanently_delete, restore_from_trash)
 from app.routers.auth import get_auth_user
-from app.core.trash import (
-    list_trash,
-    restore_from_trash,
-    permanently_delete,
-    get_trash_stats,
-    empty_trash,
-)
 
 router = APIRouter()
 

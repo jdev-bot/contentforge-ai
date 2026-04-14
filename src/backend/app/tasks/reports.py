@@ -80,8 +80,9 @@ def generate_single_report(self, report_id: str, user_id: str):
 )
 def cleanup_old_report_runs(self, days: int = 90):
     """Clean up report runs older than specified days."""
-    from app.core.supabase import get_supabase_admin_client
     from datetime import timedelta
+
+    from app.core.supabase import get_supabase_admin_client
 
     try:
         admin = get_supabase_admin_client()

@@ -11,9 +11,10 @@ Provides endpoints for:
 - Author profiles
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 
 from app.routers.auth import get_auth_user
 from app.services.marketplace_service import marketplace_service

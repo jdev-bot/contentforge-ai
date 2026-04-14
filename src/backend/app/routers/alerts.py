@@ -15,13 +15,8 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
-from app.services.alert_service import (
-    alert_service,
-    AlertType,
-    AlertStatus,
-    MetricName,
-    AlertOperator,
-)
+from app.services.alert_service import (AlertOperator, AlertStatus, AlertType,
+                                        MetricName, alert_service)
 
 router = APIRouter()
 

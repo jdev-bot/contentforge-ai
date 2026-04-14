@@ -5,10 +5,10 @@ Handles growth analysis, calculations, and insights for audience metrics.
 """
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.core.supabase import get_supabase_client, get_supabase_admin_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.services.groq_service import groq_service
 
 logger = logging.getLogger(__name__)

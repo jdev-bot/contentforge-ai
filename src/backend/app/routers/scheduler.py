@@ -2,20 +2,19 @@
 Scheduler router for automated content publishing.
 Provides endpoints for scheduling, managing, and monitoring scheduled posts.
 """
-from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
-
-from fastapi import APIRouter, HTTPException, status as http_status, Depends, Query
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import status as http_status
+from pydantic import BaseModel, Field
 
 from app.core.rate_limit import rate_limit_dependency
 from app.routers.auth import get_auth_user
-from app.services.scheduler_service import (
-    scheduler_service,
-    ScheduleRequest,
-    ScheduleUpdateRequest,
-)
+from app.services.scheduler_service import (ScheduleRequest,
+                                            ScheduleUpdateRequest,
+                                            scheduler_service)
 
 router = APIRouter()
 

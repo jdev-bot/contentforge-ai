@@ -2,10 +2,13 @@
 Trend detection and analysis service using AI and mock data.
 """
 import json
+import logging
 import random
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 
 from app.core.supabase import get_supabase_client
 from app.services.groq_service import groq_service
@@ -211,7 +214,7 @@ Format your response as JSON:
             return enriched_trends
             
         except Exception as e:
-            print(f"AI analysis failed: {e}")
+            logger.error(f"AI analysis failed: {e}")
             return trends
     
     def _parse_ai_analysis(self, result: str) -> Dict[str, Dict]:
@@ -239,7 +242,7 @@ Format your response as JSON:
                         "emerging_subtopics": item.get("emerging_subtopics", []),
                     }
         except Exception as e:
-            print(f"Failed to parse AI analysis: {e}")
+            logger.error(f"Failed to parse AI analysis: {e}")
         
         return analysis
     
@@ -283,7 +286,7 @@ Format your response as JSON:
                     saved_count += 1
                     
             except Exception as e:
-                print(f"Failed to save trend {trend.get('topic')}: {e}")
+                logger.error(f"Failed to save trend {trend.get('topic')}: {e}")
                 continue
         
         return saved_count
@@ -309,7 +312,7 @@ Format your response as JSON:
             return result.data or []
             
         except Exception as e:
-            print(f"Failed to get trending topics: {e}")
+            logger.error(f"Failed to get trending topics: {e}")
             return []
     
     async def get_topics_by_category(self) -> Dict[str, List[Dict[str, Any]]]:
@@ -327,7 +330,7 @@ Format your response as JSON:
             return topics_by_category
             
         except Exception as e:
-            print(f"Failed to get topics by category: {e}")
+            logger.error(f"Failed to get topics by category: {e}")
             return {}
     
     async def get_relevant_topics_for_user(
@@ -365,7 +368,7 @@ Format your response as JSON:
             return relevant_topics[:limit]
             
         except Exception as e:
-            print(f"Failed to get relevant topics: {e}")
+            logger.error(f"Failed to get relevant topics: {e}")
             return []
     
     def _calculate_relevance(self, trend: Dict, user_keywords: set) -> float:
@@ -414,7 +417,7 @@ Format your response as JSON:
             return True
             
         except Exception as e:
-            print(f"Failed to track topic for user: {e}")
+            logger.error(f"Failed to track topic for user: {e}")
             return False
     
     async def get_user_tracked_topics(self, user_id: str) -> List[Dict[str, Any]]:
@@ -427,7 +430,7 @@ Format your response as JSON:
             return result.data or []
             
         except Exception as e:
-            print(f"Failed to get user tracked topics: {e}")
+            logger.error(f"Failed to get user tracked topics: {e}")
             return []
     
     async def generate_content_from_trend(
@@ -485,7 +488,7 @@ CTA:
             return content_data
             
         except Exception as e:
-            print(f"Failed to generate content from trend: {e}")
+            logger.error(f"Failed to generate content from trend: {e}")
             return {
                 "topic": topic,
                 "platform": platform,
@@ -537,7 +540,7 @@ CTA:
                 data["cta"] = cta_section.split("\n")[0].strip()
             
         except Exception as e:
-            print(f"Failed to parse generated content: {e}")
+            logger.error(f"Failed to parse generated content: {e}")
             data["content"] = result.strip()
         
         return data
@@ -565,7 +568,7 @@ CTA:
             }
             
         except Exception as e:
-            print(f"Failed to update trending topics: {e}")
+            logger.error(f"Failed to update trending topics: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -578,7 +581,7 @@ CTA:
             result = self.supabase.table("trending_topics").delete().lt("expires_at", datetime.now(timezone.utc).isoformat()).execute()
             return len(result.data or [])
         except Exception as e:
-            print(f"Failed to cleanup expired trends: {e}")
+            logger.error(f"Failed to cleanup expired trends: {e}")
             return 0
     
     async def get_velocity_leaderboard(self, limit: int = 10) -> List[Dict[str, Any]]:
@@ -587,7 +590,7 @@ CTA:
             result = self.supabase.table("trending_topics").select("*").order("velocity", desc=True).limit(limit).execute()
             return result.data or []
         except Exception as e:
-            print(f"Failed to get velocity leaderboard: {e}")
+            logger.error(f"Failed to get velocity leaderboard: {e}")
             return []
     
     async def get_trending_insights(self) -> Dict[str, Any]:
@@ -633,7 +636,7 @@ CTA:
             }
             
         except Exception as e:
-            print(f"Failed to get trending insights: {e}")
+            logger.error(f"Failed to get trending insights: {e}")
             return {}
 
 

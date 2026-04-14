@@ -1,14 +1,15 @@
 """
 Stripe payment router for subscription management.
 """
-import stripe
-from fastapi import APIRouter, HTTPException, status, Request, Depends
-from pydantic import BaseModel
-from typing import Optional, Literal
 import logging
+from typing import Literal, Optional
+
+import stripe
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 
 from app.core.config import get_settings
-from app.core.supabase import get_supabase_client, get_supabase_admin_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 from app.tasks.email import send_invoice_receipt_task
 

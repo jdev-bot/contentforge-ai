@@ -5,10 +5,10 @@ Handles custom dashboard and widget management with live data fetching.
 """
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from app.core.supabase import get_supabase_client, get_supabase_admin_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 logger = logging.getLogger(__name__)
 

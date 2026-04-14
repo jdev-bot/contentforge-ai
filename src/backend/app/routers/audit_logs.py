@@ -3,13 +3,14 @@ Audit Logs router — endpoints for querying, exporting, and viewing audit log s
 
 Route order matters: specific paths (like /export, /stats) must come before parameterized paths (like /{log_id}).
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
+import io
+from datetime import datetime, timezone
+from typing import List, Optional
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime, timezone
-from uuid import UUID
-import io
 
 from app.routers.auth import get_auth_user
 from app.services.audit_service import audit_service

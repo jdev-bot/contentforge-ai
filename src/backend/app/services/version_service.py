@@ -3,10 +3,10 @@ Version History Service
 
 Handles version creation, diff computation, restoration, and auto-versioning for content items.
 """
-import logging
 import difflib
+import logging
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from app.core.supabase import get_supabase_client

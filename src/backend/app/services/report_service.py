@@ -3,17 +3,17 @@ Report Scheduling Service
 
 Handles scheduled report generation, email delivery, and storage.
 """
-import logging
-import io
 import csv
+import io
 import json
+import logging
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from jinja2 import Template
 
-from app.core.supabase import get_supabase_client, get_supabase_admin_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.services.email_service import get_email_service
 
 logger = logging.getLogger(__name__)

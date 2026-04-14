@@ -3,12 +3,15 @@ Smart Categorization service for ContentForge AI.
 Auto-categorizes and tags content using AI, supports content clustering.
 """
 import json
+import logging
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
+from app.core.cache import CACHE_TTL, cache
 from app.core.supabase import get_supabase_client
-from app.core.cache import cache, CACHE_TTL
 from app.services.groq_service import groq_service
+
+logger = logging.getLogger(__name__)
 
 
 class CategorizationService:
@@ -99,7 +102,7 @@ class CategorizationService:
             return saved if saved else categorization
 
         except Exception as e:
-            print(f"Failed to categorize content: {e}")
+            logger.error(f"Failed to categorize content: {e}")
             return {"error": str(e), "content_id": content_id}
 
     async def batch_categorize(
@@ -155,7 +158,7 @@ class CategorizationService:
                     await self._update_content_metadata(item["id"], categorization)
                     results.append(saved or categorization)
                 except Exception as e:
-                    print(f"Failed to categorize content {item['id']}: {e}")
+                    logger.error(f"Failed to categorize content {item['id']}: {e}")
                     continue
 
             return {
@@ -165,7 +168,7 @@ class CategorizationService:
             }
 
         except Exception as e:
-            print(f"Batch categorization failed: {e}")
+            logger.error(f"Batch categorization failed: {e}")
             return {"error": str(e), "total": 0, "categorized": 0, "results": []}
 
     # ------------------------------------------------------------------
@@ -222,7 +225,7 @@ class CategorizationService:
             return saved or tags
 
         except Exception as e:
-            print(f"Failed to auto-tag content: {e}")
+            logger.error(f"Failed to auto-tag content: {e}")
             return {"error": str(e), "content_id": content_id}
 
     async def batch_auto_tag(
@@ -278,13 +281,13 @@ class CategorizationService:
                     self.supabase.table("content").update({"tags": new_tags}).eq("id", item["id"]).execute()
                     results.append(saved or tags)
                 except Exception as e:
-                    print(f"Failed to tag content {item['id']}: {e}")
+                    logger.error(f"Failed to tag content {item['id']}: {e}")
                     continue
 
             return {"total": len(content_items), "tagged": len(results), "results": results}
 
         except Exception as e:
-            print(f"Batch auto-tag failed: {e}")
+            logger.error(f"Batch auto-tag failed: {e}")
             return {"error": str(e), "total": 0, "tagged": 0, "results": []}
 
     # ------------------------------------------------------------------
@@ -378,14 +381,14 @@ Format your response as JSON:
                 }
                 self.supabase.table("content_clusters").insert(cluster_data).execute()
             except Exception as e:
-                print(f"Failed to save clusters: {e}")
+                logger.error(f"Failed to save clusters: {e}")
 
             cache.set(cache_key, response, ttl=CACHE_TTL.get("analytics", 300), prefix=f"categorization:{user_id}")
 
             return response
 
         except Exception as e:
-            print(f"Content clustering failed: {e}")
+            logger.error(f"Content clustering failed: {e}")
             return {"error": str(e), "clusters": [], "total_content": 0}
 
     # ------------------------------------------------------------------
@@ -412,7 +415,7 @@ Format your response as JSON:
                 return result.data[0]
             return None
         except Exception as e:
-            print(f"Failed to get categorization: {e}")
+            logger.error(f"Failed to get categorization: {e}")
             return None
 
     async def get_content_tags(
@@ -435,7 +438,7 @@ Format your response as JSON:
                 return result.data[0]
             return None
         except Exception as e:
-            print(f"Failed to get content tags: {e}")
+            logger.error(f"Failed to get content tags: {e}")
             return None
 
     async def update_categorization(
@@ -459,7 +462,7 @@ Format your response as JSON:
                 return result.data[0]
             return None
         except Exception as e:
-            print(f"Failed to update categorization: {e}")
+            logger.error(f"Failed to update categorization: {e}")
             return None
 
     async def delete_categorization(self, categorization_id: str, user_id: str) -> bool:
@@ -475,7 +478,7 @@ Format your response as JSON:
             cache.delete_pattern("", prefix=f"categorization:{user_id}")
             return bool(result.data)
         except Exception as e:
-            print(f"Failed to delete categorization: {e}")
+            logger.error(f"Failed to delete categorization: {e}")
             return False
 
     async def list_categorizations(
@@ -500,7 +503,7 @@ Format your response as JSON:
             result = query.execute()
             return result.data or []
         except Exception as e:
-            print(f"Failed to list categorizations: {e}")
+            logger.error(f"Failed to list categorizations: {e}")
             return []
 
     # ------------------------------------------------------------------
@@ -643,7 +646,7 @@ Format your response as JSON:
             cache.delete_pattern("", prefix=f"categorization:{user_id}")
             return result.data[0] if result.data else None
         except Exception as e:
-            print(f"Failed to save categorization: {e}")
+            logger.error(f"Failed to save categorization: {e}")
             return None
 
     async def _save_tags(
@@ -668,7 +671,7 @@ Format your response as JSON:
             result = self.supabase.table("content_tags").insert(data).execute()
             return result.data[0] if result.data else None
         except Exception as e:
-            print(f"Failed to save tags: {e}")
+            logger.error(f"Failed to save tags: {e}")
             return None
 
     async def _update_content_metadata(
@@ -685,7 +688,7 @@ Format your response as JSON:
             self.supabase.table("content").update(update_data).eq("id", content_id).execute()
             return True
         except Exception as e:
-            print(f"Failed to update content metadata: {e}")
+            logger.error(f"Failed to update content metadata: {e}")
             return False
 
     async def _get_user_content(self, user_id: str, limit: int = 100) -> List[Dict[str, Any]]:
@@ -701,7 +704,7 @@ Format your response as JSON:
             )
             return result.data or []
         except Exception as e:
-            print(f"Failed to get user content for clustering: {e}")
+            logger.error(f"Failed to get user content for clustering: {e}")
             return []
 
     def _parse_json_response(self, response: str, key: Optional[str] = None) -> Any:
@@ -721,7 +724,7 @@ Format your response as JSON:
 
             return data
         except (json.JSONDecodeError, IndexError, KeyError) as e:
-            print(f"Failed to parse JSON response: {e}")
+            logger.error(f"Failed to parse JSON response: {e}")
             if key == "clusters":
                 return []
             return {}

@@ -1,9 +1,10 @@
 """
 Authentication router with Supabase integration.
 """
-from fastapi import APIRouter, HTTPException, status, Request, Depends
-from pydantic import BaseModel, EmailStr
 from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, EmailStr
 
 from app.core.supabase import get_supabase_client
 from app.tasks.email import send_welcome_email_task

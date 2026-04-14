@@ -2,23 +2,26 @@
 Integration router for third-party integrations.
 Includes Zapier, webhooks, and WordPress integrations.
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Request, BackgroundTasks, Header
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
-from uuid import UUID
+import logging
 import uuid
-import json
-import hmac
-import hashlib
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from app.core.supabase import get_supabase_client, get_supabase_admin_client
+from fastapi import (APIRouter, BackgroundTasks, Depends, Header,
+                     HTTPException, Request, status)
+from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
+import hashlib
+import hmac
+import json
+
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
-from app.services.integration_services import (
-    IntegrationFactory,
-    AVAILABLE_EVENT_TYPES,
-    BaseIntegrationService
-)
+from app.services.integration_services import (AVAILABLE_EVENT_TYPES,
+                                               BaseIntegrationService,
+                                               IntegrationFactory)
 
 router = APIRouter()
 
@@ -511,7 +514,7 @@ async def incoming_webhook(
             "created_at": datetime.now(timezone.utc).isoformat()
         }).execute()
     except Exception as e:
-        print(f"[Incoming Webhook] Failed to log delivery: {e}")
+        logger.error(f"[Incoming Webhook] Failed to log delivery: {e}")
     
     # Update last_used_at
     supabase.table("integrations").update({

@@ -1,11 +1,12 @@
 """
 Projects router with Supabase integration.
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Request
-from pydantic import BaseModel
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user

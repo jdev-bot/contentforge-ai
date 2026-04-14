@@ -2,15 +2,19 @@
 Integration services for third-party integrations.
 Includes Zapier, generic webhooks, and WordPress integration.
 """
-import json
-import hmac
 import hashlib
+import hmac
+import json
+import logging
 import time
 import uuid
+
 import requests
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta, timezone
+
+logger = logging.getLogger(__name__)
 from abc import ABC, abstractmethod
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 
 from app.core.config import get_settings
 
@@ -68,7 +72,7 @@ class BaseIntegrationService(ABC):
             }
             self.supabase.table("webhook_deliveries").insert(delivery_data).execute()
         except Exception as e:
-            print(f"[Integration] Failed to log delivery: {e}")
+            logger.error(f"[Integration] Failed to log delivery: {e}")
 
 
 class ZapierService(BaseIntegrationService):

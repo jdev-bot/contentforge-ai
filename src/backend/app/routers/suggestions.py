@@ -3,13 +3,15 @@ Auto-Suggestions router for ContentForge AI.
 Provides endpoints for AI-powered topic suggestions, posting time optimization,
 and content improvement recommendations.
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Query
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.core.rate_limit import check_and_increment_usage, enforce_subscription_limit, UsageStats
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
+
+from app.core.rate_limit import (UsageStats, check_and_increment_usage,
+                                 enforce_subscription_limit)
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.suggestion_service import suggestion_service

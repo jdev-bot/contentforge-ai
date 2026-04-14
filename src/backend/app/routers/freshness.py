@@ -8,15 +8,19 @@ Provides endpoints for:
 - Bulk analyzing user content
 - Dashboard statistics
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Query
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+import logging
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.routers.auth import get_auth_user
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
+
 from app.core.supabase import get_supabase_client
+from app.routers.auth import get_auth_user
 from app.services.freshness_service import freshness_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -329,7 +333,7 @@ async def bulk_analyze_content(
                 
             except Exception as e:
                 # Log error but continue with other content
-                print(f"Error analyzing content {content.get('id')}: {e}")
+                logger.error(f"Error analyzing content {content.get('id')}: {e}")
                 continue
         
         return BulkAnalyzeResponse(

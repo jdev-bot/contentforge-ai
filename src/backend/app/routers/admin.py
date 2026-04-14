@@ -1,15 +1,16 @@
 """
 Admin router for system management endpoints.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+
+from app.core.error_tracking import get_error_summary, get_recent_errors
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
-from app.core.error_tracking import get_recent_errors, get_error_summary
-from app.core.supabase import get_supabase_client, get_supabase_admin_client
 
 router = APIRouter()
 
@@ -191,6 +192,7 @@ async def delete_error(
 
 # Additional admin utilities
 import uuid
+
 
 @router.get("/admin/users/stats")
 async def get_user_stats(

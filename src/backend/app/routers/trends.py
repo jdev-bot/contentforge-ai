@@ -2,13 +2,18 @@
 Trending topics router for ContentForge AI.
 Provides endpoints for discovering and leveraging trending topics.
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Query
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+import logging
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.core.rate_limit import check_and_increment_usage, enforce_subscription_limit, UsageStats
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
+
+from app.core.rate_limit import (UsageStats, check_and_increment_usage,
+                                 enforce_subscription_limit)
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.trend_service import trend_service
@@ -314,7 +319,7 @@ async def generate_content_from_trend(
                 if result.data:
                     saved_id = result.data[0]["id"]
             except Exception as e:
-                print(f"Failed to save suggestion: {e}")
+                logger.error(f"Failed to save suggestion: {e}")
         
         return GeneratedContentResponse(
             topic=content_data["topic"],

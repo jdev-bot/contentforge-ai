@@ -3,11 +3,12 @@ Version History router — endpoints for listing, creating, diffing, restoring, 
 
 Route order matters: specific paths (like /diff) must come before parameterized paths (like /{version_id}).
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
-from pydantic import BaseModel
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel
 
 from app.routers.auth import get_auth_user
 from app.services.version_service import version_service

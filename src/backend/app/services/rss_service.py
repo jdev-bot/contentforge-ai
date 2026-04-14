@@ -2,11 +2,12 @@
 RSS Service for fetching and parsing RSS feeds.
 """
 import logging
-import httpx
-import feedparser
-from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
+
+import feedparser
+import httpx
 
 from app.core.supabase import get_supabase_admin_client
 
@@ -299,6 +300,7 @@ class RSSService:
     def _clean_text(self, text: str) -> str:
         """Clean text for word count calculation."""
         import re
+
         # Remove HTML tags
         text = re.sub(r'<[^>]+>', '', text)
         # Remove extra whitespace

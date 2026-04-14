@@ -3,17 +3,17 @@ Rate limiting and usage tracking middleware.
 """
 import logging
 import time
-from typing import Dict, Optional, Literal
+from collections import defaultdict
 from datetime import datetime, timezone
 from functools import wraps
-from collections import defaultdict
-
-from fastapi import Request, HTTPException, status, Depends
-from pydantic import BaseModel
+from typing import Dict, Literal, Optional
 from uuid import UUID
 
-from app.core.supabase import get_supabase_client
+from fastapi import Depends, HTTPException, Request, status
+from pydantic import BaseModel
+
 from app.core.config import get_settings
+from app.core.supabase import get_supabase_client
 from app.tasks.email import send_usage_alert_task
 
 logger = logging.getLogger(__name__)

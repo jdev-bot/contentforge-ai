@@ -1,8 +1,10 @@
 """
 Groq AI service for content generation.
 """
+from typing import Any, Dict, List, Optional, Tuple
+
 import httpx
-from typing import Optional, List, Dict, Any, Tuple
+
 from app.core.config import get_settings
 
 settings = get_settings()

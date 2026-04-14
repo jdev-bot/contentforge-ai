@@ -5,10 +5,10 @@ import logging
 import smtplib
 import ssl
 from datetime import datetime, timedelta
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from typing import Optional, Dict, List, Union
+from email.mime.text import MIMEText
 from enum import Enum
+from typing import Dict, List, Optional, Union
 
 import httpx
 from jinja2 import Template

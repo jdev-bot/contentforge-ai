@@ -1,13 +1,18 @@
 """
 AI Content Suggestions router for content improvement, SEO optimization, and tone adjustment.
 """
-from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+import logging
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.core.rate_limit import check_and_increment_usage, enforce_subscription_limit, UsageStats
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+
+from app.core.rate_limit import (UsageStats, check_and_increment_usage,
+                                 enforce_subscription_limit)
+
+logger = logging.getLogger(__name__)
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.groq_service import groq_service
@@ -352,7 +357,7 @@ HEADING_STRUCTURE:
                         heading_suggestions.append(line.replace('-', '').replace('1.', '').replace('2.', '').strip())
                         
         except Exception as parse_error:
-            print(f"Parse error: {parse_error}")
+            logger.error(f"Parse error: {parse_error}")
             # Use defaults if parsing fails
             pass
         

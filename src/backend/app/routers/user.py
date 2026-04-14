@@ -1,13 +1,14 @@
 """
 User management router for GDPR compliance and account operations.
 """
-from fastapi import APIRouter, HTTPException, status, Request, Depends
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta, timezone
 import json
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 
-from app.core.supabase import get_supabase_client, get_supabase_admin_client
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
+
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 
 router = APIRouter()

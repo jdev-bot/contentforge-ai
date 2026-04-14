@@ -10,12 +10,12 @@ Multi-level sentiment analysis using Groq AI:
 """
 import json
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+from app.core.cache import cache
 from app.core.supabase import get_supabase_client
 from app.services.groq_service import groq_service
-from app.core.cache import cache
 
 logger = logging.getLogger(__name__)
 

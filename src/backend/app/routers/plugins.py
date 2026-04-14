@@ -3,22 +3,19 @@ Plugin router for the ContentForge AI plugin system.
 Provides REST API endpoints for plugin registry, installation, configuration,
 and lifecycle management.
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Query
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
-from app.services.plugin_service import (
-    get_plugin_service,
-    PluginService,
-    PluginHook,
-    PluginPermission,
-    AVAILABLE_HOOKS,
-    AVAILABLE_PERMISSIONS,
-)
+from app.services.plugin_service import (AVAILABLE_HOOKS,
+                                         AVAILABLE_PERMISSIONS, PluginHook,
+                                         PluginPermission, PluginService,
+                                         get_plugin_service)
 
 router = APIRouter()
 

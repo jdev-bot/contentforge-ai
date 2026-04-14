@@ -6,13 +6,15 @@ Provides endpoints for:
 - Calculating attribution using various models
 - Viewing channel performance
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Query
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
+
 from app.routers.auth import get_auth_user
-from app.services.attribution_service import attribution_service, AttributionModel
+from app.services.attribution_service import (AttributionModel,
+                                              attribution_service)
 
 router = APIRouter()
 

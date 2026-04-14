@@ -9,15 +9,15 @@ Provides custom funnel tracking and conversion analytics:
 - Date-range scoped analytics
 """
 import logging
-from typing import Dict, List, Any, Optional
-from uuid import UUID, uuid4
-from datetime import datetime, timedelta
 from collections import defaultdict
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-from app.core.supabase import get_supabase_client
 from app.core.cache import cache
+from app.core.supabase import get_supabase_client
 
 logger = logging.getLogger(__name__)
 

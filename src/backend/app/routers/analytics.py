@@ -1,17 +1,18 @@
 """
 Analytics router for dashboard metrics and reporting.
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Response, Query
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta, timezone
-from uuid import UUID
 import csv
 import io
 import json
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from app.routers.auth import get_auth_user
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from pydantic import BaseModel, Field
+
 from app.core.supabase import get_supabase_client
+from app.routers.auth import get_auth_user
 
 router = APIRouter()
 

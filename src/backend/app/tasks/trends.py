@@ -3,6 +3,7 @@ Celery tasks for trending topics detection and updates.
 """
 import asyncio
 from datetime import datetime, timezone
+
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
@@ -27,7 +28,7 @@ def update_trending_topics_task(self):
         
         # Import here to avoid circular imports
         from app.services.trend_service import trend_service
-        
+
         # Run the async update
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -102,8 +103,8 @@ def generate_trend_content_suggestions_task(self):
     try:
         logger.info("Starting trend content suggestions generation")
         
-        from app.services.trend_service import trend_service
         from app.core.supabase import get_supabase_client
+        from app.services.trend_service import trend_service
         
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -159,8 +160,8 @@ def notify_users_of_relevant_trends_task(self):
     try:
         logger.info("Starting relevant trends notification")
         
-        from app.services.trend_service import trend_service
         from app.core.supabase import get_supabase_client
+        from app.services.trend_service import trend_service
         
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)

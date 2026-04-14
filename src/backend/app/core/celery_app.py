@@ -2,8 +2,10 @@
 Celery application configuration for background tasks.
 """
 import logging
+
 from celery import Celery
 from celery.signals import task_failure, task_success
+
 from app.core.config import get_settings
 
 settings = get_settings()

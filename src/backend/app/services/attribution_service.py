@@ -9,16 +9,16 @@ Provides multi-touch attribution analysis:
 """
 import logging
 import math
-from typing import Dict, List, Any, Optional
-from uuid import UUID
-from datetime import datetime, timedelta
 from collections import defaultdict
+from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from app.core.supabase import get_supabase_client
 from app.core.cache import cache
+from app.core.supabase import get_supabase_client
 
 logger = logging.getLogger(__name__)
 

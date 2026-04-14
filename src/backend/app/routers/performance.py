@@ -1,11 +1,12 @@
 """
 Performance Analytics router for content performance tracking and analysis.
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Query
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 
 from app.routers.auth import get_auth_user
 from app.services.performance_service import performance_service

@@ -7,7 +7,7 @@ import csv
 import io
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 
 from app.core.supabase import get_supabase_client
 

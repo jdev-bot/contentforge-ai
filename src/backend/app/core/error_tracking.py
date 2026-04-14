@@ -4,11 +4,11 @@ Error tracking middleware and utilities for logging 4xx/5xx errors.
 import logging
 import time
 import traceback
-from typing import Optional, Dict, Any
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 from uuid import uuid4
 
-from fastapi import Request, HTTPException
+from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse

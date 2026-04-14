@@ -2,14 +2,15 @@
 Search functionality for ContentForge AI.
 Provides full-text search across content, projects, and assets.
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from typing import List, Optional
-from pydantic import BaseModel
 from datetime import datetime
+from typing import List, Optional
 
-from app.routers.auth import get_auth_user
-from app.core.supabase import get_supabase_client
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
+
 from app.core.cache import cache
+from app.core.supabase import get_supabase_client
+from app.routers.auth import get_auth_user
 
 router = APIRouter()
 

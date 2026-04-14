@@ -4,11 +4,14 @@ Analyzes user content history and patterns to provide AI-powered suggestions
 for topics, posting times, and content improvements.
 """
 import json
+import logging
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 from app.core.supabase import get_supabase_client
-from app.core.cache import cache, CACHE_TTL
+
+logger = logging.getLogger(__name__)
+from app.core.cache import CACHE_TTL, cache
 from app.services.groq_service import groq_service
 
 
@@ -45,7 +48,7 @@ class SuggestionService:
             )
             return result.data or []
         except Exception as e:
-            print(f"Failed to get user content history: {e}")
+            logger.error(f"Failed to get user content history: {e}")
             return []
 
     async def get_user_engagement_data(self, user_id: str, limit: int = 100) -> List[Dict[str, Any]]:
@@ -61,7 +64,7 @@ class SuggestionService:
             )
             return result.data or []
         except Exception as e:
-            print(f"Failed to get engagement data: {e}")
+            logger.error(f"Failed to get engagement data: {e}")
             return []
 
     async def get_user_distributions(self, user_id: str, limit: int = 100) -> List[Dict[str, Any]]:
@@ -77,7 +80,7 @@ class SuggestionService:
             )
             return result.data or []
         except Exception as e:
-            print(f"Failed to get distributions: {e}")
+            logger.error(f"Failed to get distributions: {e}")
             return []
 
     # ------------------------------------------------------------------
@@ -154,7 +157,7 @@ Format your response as JSON:
             return suggestions
 
         except Exception as e:
-            print(f"Failed to suggest topics: {e}")
+            logger.error(f"Failed to suggest topics: {e}")
             return []
 
     # ------------------------------------------------------------------
@@ -232,7 +235,7 @@ Format your response as JSON:
             return suggestions
 
         except Exception as e:
-            print(f"Failed to suggest posting times: {e}")
+            logger.error(f"Failed to suggest posting times: {e}")
             return []
 
     # ------------------------------------------------------------------
@@ -315,7 +318,7 @@ Format your response as JSON:
             return suggestions[:limit]
 
         except Exception as e:
-            print(f"Failed to suggest content improvements: {e}")
+            logger.error(f"Failed to suggest content improvements: {e}")
             return []
 
     # ------------------------------------------------------------------
@@ -345,7 +348,7 @@ Format your response as JSON:
                 return result.data[0]
             return None
         except Exception as e:
-            print(f"Failed to save suggestions: {e}")
+            logger.error(f"Failed to save suggestions: {e}")
             return None
 
     async def get_saved_suggestions(
@@ -367,7 +370,7 @@ Format your response as JSON:
             result = query.execute()
             return result.data or []
         except Exception as e:
-            print(f"Failed to get saved suggestions: {e}")
+            logger.error(f"Failed to get saved suggestions: {e}")
             return []
 
     async def delete_suggestion(self, user_id: str, suggestion_id: str) -> bool:
@@ -382,7 +385,7 @@ Format your response as JSON:
             )
             return bool(result.data)
         except Exception as e:
-            print(f"Failed to delete suggestion: {e}")
+            logger.error(f"Failed to delete suggestion: {e}")
             return False
 
     # ------------------------------------------------------------------
@@ -546,7 +549,7 @@ Format your response as JSON:
 
             return []
         except (json.JSONDecodeError, IndexError, KeyError) as e:
-            print(f"Failed to parse JSON response for key '{key}': {e}")
+            logger.error(f"Failed to parse JSON response for key '{key}': {e}")
             return []
 
 

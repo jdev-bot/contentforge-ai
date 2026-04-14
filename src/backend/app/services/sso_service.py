@@ -9,15 +9,16 @@ Handles:
 - Linking SSO identities to existing accounts (sso_identities table)
 """
 
-import secrets
-import time
 import hashlib
 import logging
-from typing import Optional, Dict, Any, List
+import secrets
+import time
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlencode
 
 import httpx
-from app.core.supabase import get_supabase_client, get_supabase_admin_client
+
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 logger = logging.getLogger(__name__)
 
@@ -384,6 +385,7 @@ class SSOService:
         if id_token:
             try:
                 import jwt  # PyJWT
+
                 # Decode without verification (we trust the token endpoint)
                 claims = jwt.decode(id_token, options={"verify_signature": False})
                 return claims

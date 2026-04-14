@@ -2,11 +2,12 @@
 Celery tasks for audience growth metrics.
 """
 import logging
-from celery import shared_task
 from datetime import datetime, timedelta, timezone
 
-from app.services.audience_service import audience_service
+from celery import shared_task
+
 from app.core.supabase import get_supabase_admin_client
+from app.services.audience_service import audience_service
 
 logger = logging.getLogger(__name__)
 

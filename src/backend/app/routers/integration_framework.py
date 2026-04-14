@@ -8,17 +8,14 @@ This router provides endpoints for:
 - Retrying failed events
 - Viewing integration logs and health status
 """
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field, field_validator
 
 from app.services.integration_framework_service import (
-    integration_framework_service,
-    IntegrationType,
-    EventStatus,
-)
+    EventStatus, IntegrationType, integration_framework_service)
 
 router = APIRouter()
 
@@ -143,7 +140,6 @@ class RetryEventResponse(BaseModel):
 # ============== Dependency ==============
 
 from app.routers.auth import get_auth_user
-
 
 # ============== Integration Config Endpoints ==============
 

@@ -4,7 +4,7 @@ Handles timezone-aware scheduling, retry logic, and Celery beat integration.
 """
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 import pytz
@@ -12,8 +12,8 @@ from celery import Task
 from pydantic import BaseModel, ConfigDict
 
 from app.core.celery_app import celery_app
-from app.core.supabase import get_supabase_client
 from app.core.config import get_settings
+from app.core.supabase import get_supabase_client
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

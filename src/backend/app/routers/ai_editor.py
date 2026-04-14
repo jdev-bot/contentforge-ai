@@ -1,13 +1,15 @@
 """
 AI Content Editor router for smart content editing, rewriting, expansion, and optimization.
 """
-from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
-from app.core.rate_limit import check_and_increment_usage, enforce_subscription_limit, UsageStats
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field, validator
+
+from app.core.rate_limit import (UsageStats, check_and_increment_usage,
+                                 enforce_subscription_limit)
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.groq_service import groq_service

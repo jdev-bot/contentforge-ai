@@ -10,12 +10,13 @@ import logging
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, HTTPException, status
+from fastapi import (APIRouter, HTTPException, Query, WebSocket,
+                     WebSocketDisconnect, status)
 
 from app.core.supabase import get_supabase_client
-from app.services.websocket_manager import websocket_manager
-from app.services.presence_service import presence_service, UserStatus
 from app.services.collaboration_service import collaboration_service
+from app.services.presence_service import UserStatus, presence_service
+from app.services.websocket_manager import websocket_manager
 
 logger = logging.getLogger(__name__)
 

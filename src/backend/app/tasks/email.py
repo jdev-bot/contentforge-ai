@@ -3,21 +3,17 @@ Celery tasks for email sending with retry logic and rate limiting.
 """
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
+import httpx
 from celery import shared_task
 from celery.exceptions import MaxRetriesExceededError
-import httpx
 
 from app.core.celery_app import celery_app
 from app.core.config import get_settings
 from app.core.supabase import get_supabase_client
-from app.services.email_service import (
-    EmailService,
-    EmailPreferences,
-    EmailTemplateType,
-    get_email_service,
-)
+from app.services.email_service import (EmailPreferences, EmailService,
+                                        EmailTemplateType, get_email_service)
 
 logger = logging.getLogger(__name__)
 settings = get_settings()

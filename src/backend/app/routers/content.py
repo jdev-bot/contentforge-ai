@@ -1,17 +1,24 @@
 """
 Content router with full implementation.
 """
-from fastapi import APIRouter, HTTPException, status, UploadFile, File, Depends, Request
-from pydantic import BaseModel, HttpUrl
-from typing import Optional, List
+import logging
 from datetime import datetime
+from typing import List, Optional
 from uuid import UUID
 
-from app.core.rate_limit import check_and_increment_usage, rate_limit_dependency, enforce_subscription_limit, UsageStats
+from fastapi import (APIRouter, Depends, File, HTTPException, Request,
+                     UploadFile, status)
+from pydantic import BaseModel, HttpUrl
+
+from app.core.rate_limit import (UsageStats, check_and_increment_usage,
+                                 enforce_subscription_limit,
+                                 rate_limit_dependency)
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.extraction_service import content_extraction_service
 from app.services.groq_service import groq_service
+
+logger = logging.getLogger(__name__)
 
 from app.core.trash import soft_delete_content
 
@@ -233,7 +240,7 @@ async def generate_assets(
                     "status": "generated",
                 })
         except Exception as e:
-            print(f"Error generating threads: {e}")
+            logger.error(f"Error generating threads: {e}")
         
         # Generate LinkedIn posts
         try:
@@ -248,7 +255,7 @@ async def generate_assets(
                     "status": "generated",
                 })
         except Exception as e:
-            print(f"Error generating LinkedIn posts: {e}")
+            logger.error(f"Error generating LinkedIn posts: {e}")
         
         # Generate Newsletter
         try:
@@ -262,7 +269,7 @@ async def generate_assets(
                 "status": "generated",
             })
         except Exception as e:
-            print(f"Error generating newsletter: {e}")
+            logger.error(f"Error generating newsletter: {e}")
         
         # Generate video script
         try:
@@ -276,7 +283,7 @@ async def generate_assets(
                 "status": "generated",
             })
         except Exception as e:
-            print(f"Error generating video script: {e}")
+            logger.error(f"Error generating video script: {e}")
         
         # Insert all assets
         created_assets = []

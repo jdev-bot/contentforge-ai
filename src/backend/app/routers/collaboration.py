@@ -8,7 +8,7 @@ through the WebSocket channel (app/routers/ws.py).
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.routers.auth import get_auth_user

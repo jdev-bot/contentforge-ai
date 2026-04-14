@@ -1,14 +1,16 @@
 """
 Report scheduling router with generation and download endpoints.
 """
-from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, Field, EmailStr
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from app.routers.auth import get_auth_user
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr, Field
+
 from app.core.supabase import get_supabase_client
-from app.services.report_service import report_service, VALID_REPORT_TYPES, VALID_FORMATS
+from app.routers.auth import get_auth_user
+from app.services.report_service import (VALID_FORMATS, VALID_REPORT_TYPES,
+                                         report_service)
 
 router = APIRouter()
 

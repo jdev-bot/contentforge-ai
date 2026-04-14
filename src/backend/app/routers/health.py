@@ -2,12 +2,13 @@
 Health check endpoints with detailed component status.
 Includes database, Redis, Groq, Stripe, and n8n connectivity checks.
 """
-from fastapi import APIRouter, status, HTTPException
-from pydantic import BaseModel, Field
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
-import httpx
 import time
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+import httpx
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
 from app.core.supabase import get_supabase_client

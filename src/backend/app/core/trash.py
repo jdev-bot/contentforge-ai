@@ -2,13 +2,17 @@
 Trash/Recycle Bin functionality for ContentForge AI.
 Implements soft delete with recovery and permanent deletion.
 """
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from uuid import UUID
+
 from pydantic import BaseModel
 
-from app.core.supabase import get_supabase_client
 from app.core.config import get_settings
+from app.core.supabase import get_supabase_client
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -66,7 +70,7 @@ def soft_delete_content(content_id: str, user_id: str) -> bool:
         
         return True
     except Exception as e:
-        print(f"Failed to soft delete content: {e}")
+        logger.error(f"Failed to soft delete content: {e}")
         return False
 
 
@@ -114,7 +118,7 @@ def soft_delete_project(project_id: str, user_id: str) -> bool:
         
         return True
     except Exception as e:
-        print(f"Failed to soft delete project: {e}")
+        logger.error(f"Failed to soft delete project: {e}")
         return False
 
 
@@ -160,7 +164,7 @@ def restore_from_trash(item_id: str, user_id: str) -> bool:
         
         return True
     except Exception as e:
-        print(f"Failed to restore from trash: {e}")
+        logger.error(f"Failed to restore from trash: {e}")
         return False
 
 
@@ -200,7 +204,7 @@ def permanently_delete(item_id: str, user_id: str) -> bool:
         
         return True
     except Exception as e:
-        print(f"Failed to permanently delete: {e}")
+        logger.error(f"Failed to permanently delete: {e}")
         return False
 
 
@@ -222,7 +226,7 @@ def list_trash(user_id: str, item_type: Optional[str] = None) -> List[dict]:
         result = query.execute()
         return result.data or []
     except Exception as e:
-        print(f"Failed to list trash: {e}")
+        logger.error(f"Failed to list trash: {e}")
         return []
 
 
@@ -253,7 +257,7 @@ def get_trash_stats(user_id: str) -> dict:
             "retention_days": TRASH_RETENTION_DAYS
         }
     except Exception as e:
-        print(f"Failed to get trash stats: {e}")
+        logger.error(f"Failed to get trash stats: {e}")
         return {"total": 0, "content_count": 0, "project_count": 0, "retention_days": TRASH_RETENTION_DAYS}
 
 
@@ -280,7 +284,7 @@ def cleanup_expired_trash() -> int:
         
         return count
     except Exception as e:
-        print(f"Failed to cleanup expired trash: {e}")
+        logger.error(f"Failed to cleanup expired trash: {e}")
         return 0
 
 

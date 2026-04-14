@@ -3,13 +3,15 @@ Plugin service for the ContentForge AI plugin system.
 Handles plugin registry CRUD, lifecycle hooks, configuration, and permissions.
 """
 import json
+import logging
 import uuid
-from typing import Optional, Dict, Any, List, Callable
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
 
-from app.core.supabase import get_supabase_client, get_supabase_admin_client
+logger = logging.getLogger(__name__)
 
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 # ============================================================================
 # Plugin Lifecycle Hooks
@@ -447,7 +449,7 @@ class PluginService:
             try:
                 await handler(payload)
             except Exception as exc:
-                print(f"[PluginService] Hook handler error for {hook}: {exc}")
+                logger.error(f"[PluginService] Hook handler error for {hook}: {exc}")
 
         # Find all enabled installed plugins for this org that subscribe to this hook
         installed = (
@@ -482,7 +484,7 @@ class PluginService:
             try:
                 self.admin_supabase.table("plugin_hook_events").insert(event).execute()
             except Exception as exc:
-                print(f"[PluginService] Failed to log hook event: {exc}")
+                logger.error(f"[PluginService] Failed to log hook event: {exc}")
 
 
 # Singleton service instance

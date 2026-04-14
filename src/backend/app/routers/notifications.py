@@ -1,9 +1,10 @@
 """
 Notifications router for email preferences and settings.
 """
-from fastapi import APIRouter, HTTPException, status, Depends
+from typing import Any, Dict
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from typing import Dict, Any
 
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user

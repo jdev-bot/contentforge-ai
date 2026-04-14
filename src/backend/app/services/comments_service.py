@@ -8,13 +8,12 @@ Provides:
 - Comment mentions (@user)
 - Comment reactions (emoji reactions)
 """
-from datetime import datetime
-from typing import Dict, List, Any, Optional
-from uuid import UUID
 import re
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.supabase import get_supabase_client
-
 
 # Regex to find @mentions in comment text
 MENTION_PATTERN = re.compile(r"@(\w[\w.-]*)")

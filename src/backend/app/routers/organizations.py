@@ -1,14 +1,15 @@
 """
 Organization management router with full CRUD and member management.
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import BaseModel, EmailStr
-from typing import Optional, List
 from datetime import datetime
-from uuid import UUID
 from enum import Enum
+from typing import List, Optional
+from uuid import UUID
 
-from app.core.supabase import get_supabase_client, get_supabase_admin_client
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, EmailStr
+
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])

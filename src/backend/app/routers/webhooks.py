@@ -2,19 +2,24 @@
 Webhook endpoints for n8n integration and external system callbacks.
 Includes signature verification, idempotency, retry logic, and event logging.
 """
-from fastapi import APIRouter, Header, HTTPException, status, Depends, Request, BackgroundTasks
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta, timezone
-from uuid import UUID
-import uuid
-import hmac
 import hashlib
-import time
+import hmac
 import json
+import logging
+import time
+import uuid
+from datetime import datetime, timedelta, timezone
 from functools import wraps
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from app.core.supabase import get_supabase_client, get_supabase_admin_client
+from fastapi import (APIRouter, BackgroundTasks, Depends, Header,
+                     HTTPException, Request, status)
+from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
+
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 
 router = APIRouter()
@@ -182,7 +187,7 @@ def log_webhook_event(
         supabase.table("webhook_logs").insert(log_entry).execute()
     except Exception as e:
         # Log to console if database logging fails
-        print(f"[Webhook Log Error] Failed to log webhook: {e}")
+        logger.error(f"[Webhook Log Error] Failed to log webhook: {e}")
 
 
 # ============================================================================

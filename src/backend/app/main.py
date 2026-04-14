@@ -1,13 +1,28 @@
 """
 FastAPI application entry point.
 """
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from contextlib import asynccontextmanager
 
 from app.core.config import get_settings
-from app.routers import auth, content, projects, distributions, health, usage, docs, admin, webhooks, analytics, stripe as stripe_router, organizations, ai_suggestions, automation, notifications, user, search, trash, scheduler, ai_editor, rss, freshness, audience, trends, integrations, alerts, competitors, version_history, audit_logs, quality_scoring, sentiment, dashboards, reports, retention, comments, suggestions, categorization, performance, sso, saml, marketplace, ws, presence, collaboration, plugins, sla, integration_framework, funnel, attribution
+from app.routers import (admin, ai_editor, ai_suggestions, alerts, analytics,
+                         attribution, audience, audit_logs, auth, automation,
+                         categorization, collaboration, comments, competitors,
+                         content, dashboards, distributions, docs, freshness,
+                         funnel, health, integration_framework, integrations,
+                         marketplace, notifications, organizations,
+                         performance, plugins, presence, projects,
+                         quality_scoring, reports, retention, rss, saml,
+                         scheduler, search, sentiment, sla, sso)
+from app.routers import stripe as stripe_router
+from app.routers import (suggestions, trash, trends, usage, user,
+                         version_history, webhooks, ws)
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -19,12 +34,12 @@ from app.services.websocket_manager import websocket_manager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
     # Startup
-    print(f"🚀 Starting {settings.APP_NAME} in {settings.APP_ENV} mode")
+    logger.info(f"Starting {settings.APP_NAME} in {settings.APP_ENV} mode")
     await websocket_manager.start()
     yield
     # Shutdown
     await websocket_manager.stop()
-    print(f"🛑 Shutting down {settings.APP_NAME}")
+    logger.info(f"Shutting down {settings.APP_NAME}")
 
 
 app = FastAPI(
@@ -36,9 +51,9 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,
 )
 
+from app.core.error_tracking import ErrorTrackingMiddleware
 # Import middleware
 from app.core.rate_limit import UsageTrackingMiddleware
-from app.core.error_tracking import ErrorTrackingMiddleware
 from app.middleware.rate_limit_headers import RateLimitHeadersMiddleware
 
 # Error tracking middleware (must be first to catch all errors)

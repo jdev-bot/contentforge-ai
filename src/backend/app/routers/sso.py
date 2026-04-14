@@ -8,9 +8,10 @@ Provides endpoints for:
 - List/unlink SSO identities for current user
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 
 from app.routers.auth import get_auth_user
 from app.services.sso_service import sso_service

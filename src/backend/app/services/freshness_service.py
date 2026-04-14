@@ -6,11 +6,11 @@ This service analyzes content freshness based on:
 - Engagement (0-40 points): Based on mock/implied metrics
 - Trend relevance (0-20 points): Keywords still trending
 """
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-from uuid import UUID
 import random
 import re
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.supabase import get_supabase_client
 

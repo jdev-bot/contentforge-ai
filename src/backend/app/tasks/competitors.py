@@ -7,6 +7,7 @@ Scheduled tasks:
 """
 import asyncio
 from datetime import datetime, timedelta, timezone
+
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
@@ -31,7 +32,7 @@ def fetch_competitor_data_task(self):
         
         # Import here to avoid circular imports
         from app.services.competitor_service import competitor_service
-        
+
         # Run the async update
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -129,8 +130,8 @@ def generate_competitor_insights_task(self):
     try:
         logger.info("Starting competitor insights generation")
         
-        from app.services.competitor_service import competitor_service
         from app.core.supabase import get_supabase_client
+        from app.services.competitor_service import competitor_service
         
         supabase = get_supabase_client()
         loop = asyncio.new_event_loop()

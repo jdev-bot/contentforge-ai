@@ -3,11 +3,12 @@ Audience Growth Metrics Router
 
 API endpoints for tracking and analyzing audience growth across platforms.
 """
-from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel, Field
 
 from app.routers.auth import get_auth_user
 from app.services.audience_service import audience_service

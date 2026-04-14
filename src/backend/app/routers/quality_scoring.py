@@ -8,15 +8,17 @@ Endpoints:
 - POST   /api/v1/quality/batch                 — Batch analyze multiple items
 - GET    /api/v1/quality/suggestions/{content_id} — Get improvement suggestions
 """
-from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.routers.auth import get_auth_user
-from app.core.rate_limit import check_and_increment_usage, enforce_subscription_limit, UsageStats
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+
+from app.core.rate_limit import (UsageStats, check_and_increment_usage,
+                                 enforce_subscription_limit)
 from app.core.supabase import get_supabase_client
+from app.routers.auth import get_auth_user
 from app.services.quality_service import quality_service
 
 router = APIRouter()

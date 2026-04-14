@@ -10,9 +10,10 @@ Provides endpoints for:
 - Attribute mapping configuration
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 
 from app.routers.auth import get_auth_user
 from app.services.saml_service import saml_service

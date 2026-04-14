@@ -1,14 +1,16 @@
 """
 Automation Rules router for auto-generate, auto-publish, webhook triggers, and scheduling.
 """
-from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta, timezone
-from uuid import UUID
 from enum import Enum
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from app.core.rate_limit import check_and_increment_usage, enforce_subscription_limit, UsageStats
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+
+from app.core.rate_limit import (UsageStats, check_and_increment_usage,
+                                 enforce_subscription_limit)
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 

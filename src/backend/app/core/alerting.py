@@ -5,9 +5,10 @@ Supports email alerts via Resend and webhook notifications.
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
-import httpx
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+import httpx
 
 from app.core.config import get_settings
 

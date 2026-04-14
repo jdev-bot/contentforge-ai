@@ -8,11 +8,14 @@ Provides functionality for:
 - Topic overlap analysis
 - Performance tracking
 """
+import logging
 import random
 import re
 from collections import Counter
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
 from uuid import UUID
 
 from app.core.supabase import get_supabase_client
@@ -471,7 +474,7 @@ class CompetitorService:
                     stored_gaps.append(result.data[0])
             except Exception as e:
                 # Log but continue
-                print(f"Error storing gap: {e}")
+                logger.error(f"Error storing gap: {e}")
                 stored_gaps.append(gap)
         
         return {
@@ -618,7 +621,7 @@ class CompetitorService:
                     updated_count += 1
                     total_new_content += result.get("new_content_count", 0)
             except Exception as e:
-                print(f"Error refreshing competitor {comp['id']}: {e}")
+                logger.error(f"Error refreshing competitor {comp['id']}: {e}")
                 continue
         
         return {
@@ -643,7 +646,7 @@ class CompetitorService:
                 processed_count += 1
                 total_gaps += gap_result.get("gaps_stored", 0)
             except Exception as e:
-                print(f"Error analyzing gaps for user {user_id}: {e}")
+                logger.error(f"Error analyzing gaps for user {user_id}: {e}")
                 continue
         
         return {
