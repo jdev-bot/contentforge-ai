@@ -22,6 +22,7 @@ const PUBLIC_ROUTES = [
   '/sso',
   '/api/auth',
   '/api/health',
+  '/api/v1',
 ]
 
 // Static asset prefixes that bypass auth
