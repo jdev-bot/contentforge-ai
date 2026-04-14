@@ -1,6 +1,7 @@
 """
 Error tracking middleware and utilities for logging 4xx/5xx errors.
 """
+import logging
 import time
 import traceback
 from typing import Optional, Dict, Any
@@ -13,6 +14,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from app.core.supabase import get_supabase_client
+
+logger = logging.getLogger(__name__)
 
 
 class ErrorLogEntry(BaseModel):
@@ -80,8 +83,8 @@ def log_error_to_database(
         
     except Exception as e:
         # If database logging fails, print to console
-        print(f"Failed to log error to database: {e}")
-        print(f"Original error: {message}")
+        logger.error(f"Failed to log error to database: {e}")
+        logger.error(f"Original error: {message}")
         return None
 
 
@@ -202,7 +205,7 @@ def get_recent_errors(limit: int = 100) -> list:
         
         return result.data
     except Exception as e:
-        print(f"Failed to retrieve error logs: {e}")
+        logger.error(f"Failed to retrieve error logs: {e}")
         return []
 
 
@@ -242,5 +245,5 @@ def get_error_summary(hours: int = 24) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"Failed to retrieve error summary: {e}")
+        logger.error(f"Failed to retrieve error summary: {e}")
         return {"total": 0, "error": str(e)}

@@ -1,6 +1,6 @@
 # ContentForge AI API Documentation
 
-> Complete API Reference with 50+ Endpoints
+> Complete API Reference with 380+ Endpoints across 49 Modules
 
 ## Overview
 
@@ -8,7 +8,11 @@ The ContentForge AI API is a RESTful API for AI-powered content repurposing and 
 
 **Base URL**: `https://api.contentforge.ai/api/v1`
 
-**Current Version**: 1.0.0
+**Current Version**: 2.0.0
+
+**Route Summary**: 189 GET | 124 POST | 15 PUT | 15 PATCH | 37 DELETE
+
+**Modules**: admin, ai-editor, ai-suggestions, alerts, analytics, attribution, audience, audit-logs, auth, automation, categorization, collaboration, comments, competitors, content, dashboards, distributions, documentation, freshness, funnels, health, integration-framework, integrations, marketplace, notifications, organizations, performance, plugins, presence, projects, quality-scoring, reports, retention, rss, saml, scheduler, search, sentiment, sla, sso, stripe, suggestions, trash, trends, usage, user, version-history, webhooks
 
 ---
 

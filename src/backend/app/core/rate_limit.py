@@ -1,6 +1,7 @@
 """
 Rate limiting and usage tracking middleware.
 """
+import logging
 import time
 from typing import Dict, Optional, Literal
 from datetime import datetime, timezone
@@ -14,6 +15,8 @@ from uuid import UUID
 from app.core.supabase import get_supabase_client
 from app.core.config import get_settings
 from app.tasks.email import send_usage_alert_task
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -214,7 +217,7 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
                 )
             except Exception as email_err:
                 # Log but don't fail the request
-                print(f"Failed to queue usage alert: {email_err}")
+                logger.error(f"Failed to queue usage alert: {email_err}")
         
         remaining = float("inf") if usage_limit == float("inf") else max(0, usage_limit - new_count)
         
@@ -248,7 +251,7 @@ def log_usage_event(user_id: str, event_type: str, tokens_used: Optional[int] = 
         supabase.table("usage_logs").insert(log_data).execute()
     except Exception as e:
         # Don't fail the request if logging fails
-        print(f"Failed to log usage event: {e}")
+        logger.error(f"Failed to log usage event: {e}")
 
 
 def get_user_usage_stats(user_id: str) -> UsageStats:

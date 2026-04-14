@@ -3,6 +3,7 @@ Redis caching layer for ContentForge AI.
 Provides caching for frequently accessed data to reduce database load.
 """
 import json
+import logging
 from typing import Any, Optional, Callable, TypeVar
 from functools import wraps
 from datetime import datetime
@@ -27,6 +28,7 @@ class _CacheValue:
 
 from app.core.config import get_settings
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
 
 # Try to import redis, handle gracefully if not available
@@ -60,9 +62,9 @@ class CacheManager:
                 )
                 # Test connection
                 self._redis.ping()
-                print("✅ Redis cache connected")
+                logger.info("Redis cache connected")
             except Exception as e:
-                print(f"⚠️ Redis connection failed, using in-memory cache: {e}")
+                logger.warning(f"Redis connection failed, using in-memory cache: {e}")
                 self._redis = None
     
     def _make_key(self, key: str, prefix: str = "") -> str:
@@ -87,7 +89,7 @@ class CacheManager:
         try:
             return json.loads(value.decode('utf-8'))
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
-            print(f"Cache deserialize error: {e}")
+            logger.error(f"Cache deserialize error: {e}")
             return None
     
     def get(self, key: str, prefix: str = "") -> Optional[Any]:
@@ -107,7 +109,7 @@ class CacheManager:
                     else:
                         del self._local_cache[full_key]
         except Exception as e:
-            print(f"Cache get error: {e}")
+            logger.error(f"Cache get error: {e}")
         
         return None
     
@@ -134,7 +136,7 @@ class CacheManager:
                 }
                 return True
         except Exception as e:
-            print(f"Cache set error: {e}")
+            logger.error(f"Cache set error: {e}")
             return False
     
     def delete(self, key: str, prefix: str = "") -> bool:
@@ -148,7 +150,7 @@ class CacheManager:
                 self._local_cache.pop(full_key, None)
             return True
         except Exception as e:
-            print(f"Cache delete error: {e}")
+            logger.error(f"Cache delete error: {e}")
             return False
     
     def delete_pattern(self, pattern: str, prefix: str = "") -> int:
@@ -170,7 +172,7 @@ class CacheManager:
                     del self._local_cache[k]
                     count += 1
         except Exception as e:
-            print(f"Cache delete_pattern error: {e}")
+            logger.error(f"Cache delete_pattern error: {e}")
         
         return count
     

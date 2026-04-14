@@ -3,12 +3,15 @@ Alerting system for monitoring and notifications.
 Supports email alerts via Resend and webhook notifications.
 """
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 import httpx
 from enum import Enum
 
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 class AlertSeverity(str, Enum):
@@ -146,7 +149,7 @@ class AlertManager:
                 return response.status_code == 200
                 
         except Exception as e:
-            print(f"[AlertManager] Failed to send email alert: {e}")
+            logger.error(f"[AlertManager] Failed to send email alert: {e}")
             return False
     
     async def _send_webhook_alert(
@@ -179,7 +182,7 @@ class AlertManager:
                 return response.status_code in [200, 201, 202, 204]
                 
         except Exception as e:
-            print(f"[AlertManager] Failed to send webhook alert: {e}")
+            logger.error(f"[AlertManager] Failed to send webhook alert: {e}")
             return False
 
 

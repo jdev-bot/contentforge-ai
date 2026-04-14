@@ -4,10 +4,12 @@
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/neo-dev-org/contentforge-ai)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-000000.svg?logo=next.js)](https://nextjs.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E.svg?logo=supabase)](https://supabase.com/)
+[![Routes](https://img.shields.io/badge/API_routes-380-blue)](docs/API_COMPLETE.md)
+[![Tests](https://img.shields.io/badge/tests-530_passing-brightgreen)](docs/TESTING.md)
 
 **Transform one piece of long-form content into 20+ platform-native formats automatically using AI, then distribute across social platforms, email, and blogs with zero manual intervention.**
 
@@ -153,6 +155,31 @@ Transform your content with AI:
 | **📆 Content Calendar** | Visual calendar for content planning |
 | **🏆 Competitor Analysis** | Track competitors and identify gaps |
 
+### P4 Advanced Features
+
+| Feature | Description |
+|---------|-------------|
+| **📋 Version History** | Track content versions with full diff support |
+| **📝 Audit Logs** | Comprehensive action logging and export |
+| **⭐ Quality Scoring** | AI-powered content quality assessment |
+| **💭 Sentiment Analysis** | Real-time sentiment tracking |
+| **🎯 Auto-Suggestions** | Smart content improvement recommendations |
+| **🏷️ Smart Categorization** | AI-driven content clustering and tagging |
+| **📊 Performance Analytics** | Deep content performance insights |
+| **🗄️ Data Retention** | Configurable retention policies |
+| **💬 Comments v2** | Threaded comments with resolution tracking |
+| **🔐 SSO/OIDC** | Google, Microsoft, Okta SSO support |
+| **🔑 SAML SSO** | Enterprise SAML 2.0 authentication |
+| **🔌 Plugin System** | Extensible plugin architecture with hooks |
+| **📡 Developer SDK** | Python SDK for programmatic access |
+| **🔄 WebSocket** | Real-time collaboration and presence |
+| **🤝 Collaboration** | Multi-user real-time editing |
+| **🏪 Marketplace** | Plugin and template marketplace |
+| **📊 Funnel Tracking** | Content conversion funnel analytics |
+| **🎯 Attribution Modeling** | Channel attribution and ROI tracking |
+| **⏱️ SLA Monitoring** | Service level agreement tracking |
+| **🔗 Integration Hub** | Unified integration management framework |
+
 ### Integrations
 
 | Integration | Capabilities |
@@ -187,7 +214,7 @@ Transform your content with AI:
                          ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                         API                                      │
-│              FastAPI + Python 3.11                             │
+│              FastAPI + Python 3.12                             │
 │         Rate Limiting • JWT Auth • Validation                  │
 │                        Render                                   │
 └────────────────────────┬────────────────────────────────────────┘
