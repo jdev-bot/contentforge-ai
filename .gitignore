@@ -98,3 +98,4 @@ tmp/
 htmlcov/
 .tox/
 .nox/
+src/backend/.env.staging
