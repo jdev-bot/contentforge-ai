@@ -1,6 +1,6 @@
 # Tutorial: Using the Smart Editor
 
-> Transform your content with AI-powered editing
+> Transform your content with AI-powered editing, auto-suggestions, and platform optimization
 
 ---
 
@@ -11,9 +11,12 @@ By the end of this tutorial, you will:
 - Expand short content with more detail
 - Condense long content into summaries
 - Optimize content for specific platforms
+- Use auto-suggestions for content improvement
+- Optimize SEO with AI-powered suggestions
+- Adjust tone and style across your content
 - View your editing history
 
-**Time Required**: 20 minutes
+**Time Required**: 25 minutes
 
 ---
 
@@ -33,6 +36,9 @@ The Smart Editor is an AI-powered content transformation tool that uses advanced
 - **Expand** - Add depth, examples, and detail
 - **Condense** - Create shorter versions preserving key points
 - **Optimize** - Tailor content for specific platforms
+- **Auto-Suggest** - Get real-time improvement suggestions
+- **SEO Optimize** - Enhance search engine visibility
+- **Tone Adjust** - Fine-tune the emotional register of your content
 
 ---
 
@@ -52,6 +58,12 @@ The Smart Editor is an AI-powered content transformation tool that uses advanced
 **Option 3: From Assets**
 1. View a generated asset
 2. Click **"Edit with AI"**
+
+**Option 4: Keyboard Shortcuts**
+- `Ctrl+R` — Open Rewrite panel
+- `Ctrl+E` — Open Expand panel
+- `Ctrl+Shift+C` — Open Condense panel
+- `Ctrl+O` — Open Optimize panel
 
 ---
 
@@ -151,40 +163,6 @@ that won't crash when your traffic explodes.
 
 5. Click **"Generate Expansion"**
 
-### Example Output
-
-**Input:**
-```
-We help businesses grow through digital marketing.
-```
-
-**Output (3x expansion):**
-```
-At our core, we specialize in helping businesses 
-achieve remarkable growth through comprehensive 
-digital marketing strategies. Our approach combines 
-data-driven insights with creative execution to 
-deliver measurable results.
-
-For example, one of our clients, a mid-sized 
-e-commerce company, saw a 340% increase in organic 
-traffic within six months of implementing our 
-SEO and content marketing strategy. By targeting 
-high-intent keywords and creating valuable content,
-they went from 5,000 monthly visitors to over 22,000.
-
-Our services include:
-• Search engine optimization (SEO)
-• Pay-per-click advertising (PPC)
-• Social media marketing
-• Content creation and strategy
-• Email marketing campaigns
-
-The ROI of digital marketing speaks for itself. 
-On average, our clients see a 4:1 return on their 
-marketing investment within the first year.
-```
-
 ### Expansion Tips
 
 - Start with clear main points
@@ -205,40 +183,14 @@ marketing investment within the first year.
 
 ### Using Condense
 
-1. Enter long content:
-   ```
-   Our comprehensive guide to digital marketing 
-   covers everything from SEO to social media 
-   advertising. We dive deep into keyword research, 
-   content strategy, paid campaigns, and analytics. 
-   Learn how to optimize your website for search 
-   engines, create engaging social media content, 
-   run effective ad campaigns, and measure your 
-   results using advanced analytics tools...
-   ```
-
+1. Enter long content
 2. Select **"Condense"** tab
-
 3. Set **Target Percentage**:
    ```
    Target: 40% of original
    ```
-
 4. Check **Preserve Key Points**
-
 5. Click **"Generate Summary"**
-
-### Example Output
-
-**Input (100 words)**
-
-**Output (45 words - 45% reduction):**
-```
-Master digital marketing with our guide covering 
-SEO, social media, paid campaigns, and analytics. 
-Learn optimization, content creation, ad management, 
-and results measurement.
-```
 
 ### Condense Options
 
@@ -262,16 +214,8 @@ and results measurement.
 
 ### Using Optimize
 
-1. Enter your content:
-   ```
-   We just launched our new AI-powered content 
-   creation tool that helps businesses generate 
-   engaging social media posts, newsletters, 
-   and blog content in minutes.
-   ```
-
+1. Enter your content
 2. Select **"Optimize"** tab
-
 3. Choose **Platform**:
    ```
    [x] Twitter/X
@@ -281,76 +225,12 @@ and results measurement.
    [ ] Instagram
    [ ] TikTok
    ```
-
 4. Configure options:
    ```
    [x] Include hashtags
    [x] Include call-to-action
    ```
-
 5. Click **"Optimize"**
-
-### Platform-Specific Outputs
-
-**Twitter/X:**
-```
-🚀 Big news! Our AI content tool is LIVE
-
-Create engaging posts, newsletters & blogs 
-in MINUTES
-
-No more writer's block ✨
-
-Ready to transform your content game?
-
-Try it free →
-
-#AI #ContentCreation #Marketing
-
-234 characters
-```
-
-**LinkedIn:**
-```
-I'm thrilled to announce the launch of our 
-AI-powered content creation platform.
-
-After 18 months of development, we've built 
-something that genuinely helps businesses:
-
-✅ Create engaging social content
-✅ Draft compelling newsletters
-✅ Generate blog posts in minutes
-
-The response from our beta users has been 
-incredible—90% report saving 5+ hours per week.
-
-What would you do with an extra 5 hours?
-
-#ContentCreation #AI #BusinessGrowth
-```
-
-**Instagram:**
-```
-✨ GAME CHANGER ALERT ✨
-
-Say goodbye to content creation struggles! 
-Our AI tool is here to save you HOURS every week 🙌
-
-Swipe to see what you can create:
-→ Engaging captions
-→ Full newsletters
-→ Blog posts
-→ Social media content
-
-Drop a 🙌 if you're ready to create faster!
-
-.
-.
-.
-
-#ContentCreation #AITools #Marketing #SocialMedia #ContentStrategy
-```
 
 ### Platform Characteristics
 
@@ -365,7 +245,141 @@ Drop a 🙌 if you're ready to create faster!
 
 ---
 
-## Step 6: Review and Save
+## Step 6: Auto-Suggestions
+
+Auto-suggestions provide real-time improvement ideas as you write, helping you strengthen content without leaving the editor.
+
+### How Auto-Suggestions Work
+
+As you type or paste content, the Smart Editor analyzes your text and surfaces suggestions:
+
+1. Open content in the Smart Editor
+2. Click the **"Auto-Suggest"** panel (lightbulb icon)
+3. Review suggestions:
+
+```
+┌─────────────────────────────────────────────────────┐
+│ 💡 Auto-Suggestions                                  │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ 🔗 Add internal link                                │
+│   "Consider linking to your product page"           │
+│   [Apply] [Dismiss]                                 │
+│                                                     │
+│ 📊 Add a statistic                                  │
+│   "Claims about ROI work better with data"          │
+│   [Apply] [Dismiss]                                 │
+│                                                     │
+│ 🎯 Strengthen call-to-action                        │
+│   "Your CTA could be more specific"                 │
+│   [Apply] [Dismiss]                                 │
+│                                                     │
+│ ✂️ Shorten paragraph 3                              │
+│   "This paragraph is 2x longer than average"       │
+│   [Apply] [Dismiss]                                 │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### Types of Auto-Suggestions
+
+| Type | Description | Example |
+|------|-------------|---------|
+| **Structure** | Improve flow and organization | "Move this point before the example" |
+| **Clarity** | Simplify complex phrasing | "Replace jargon with plain language" |
+| **Engagement** | Add hooks and CTAs | "Add a question to drive engagement" |
+| **Evidence** | Support claims with data | "Add a statistic to back this claim" |
+| **SEO** | Improve search visibility | "Add a keyword in this heading" |
+| **Tone** | Adjust register | "This sounds too casual for LinkedIn" |
+
+### Applying Suggestions
+
+- **Apply** — The suggestion is automatically integrated into your content
+- **Dismiss** — Remove the suggestion from the list
+- **Batch Apply** — Accept all suggestions of a specific type
+
+---
+
+## Step 7: SEO Optimization
+
+The Smart Editor includes AI-powered SEO optimization to help your content rank better.
+
+### Access SEO Suggestions
+
+1. Open content in the Smart Editor
+2. Click the **"SEO"** tab
+3. Review SEO analysis:
+
+```
+┌─────────────────────────────────────────────────────┐
+│ 🔍 SEO Analysis                                      │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Overall Score: 72/100                               │
+│                                                     │
+│ ✅ Title: Contains primary keyword                  │
+│ ⚠️ Meta Description: Missing (add 150-160 chars)    │
+│ ✅ Headings: Proper H2/H3 structure                 │
+│ ❌ Keyword Density: "marketing" appears only 1x     │
+│ ⚠️ Internal Links: None found                       │
+│ ✅ Readability: Grade 8 (good for broad audience)    │
+│ ❌ Image Alt Tags: 0 of 3 images have alt text      │
+│                                                     │
+│ Suggested Keywords:                                 │
+│ digital marketing, content strategy, SEO tips        │
+│                                                     │
+│ [Apply SEO Fixes] [Export Report]                   │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### SEO Features
+
+- **Keyword Analysis** — Check primary and secondary keyword usage
+- **Meta Description** — AI-generated meta description suggestions
+- **Heading Structure** — Validate proper H1/H2/H3 hierarchy
+- **Readability Score** — Flesch-Kincaid grade level assessment
+- **Internal Linking** — Suggest opportunities for internal links
+- **Image Alt Tags** — Flag missing alt text
+- **Apply SEO Fixes** — One-click application of all safe fixes
+
+---
+
+## Step 8: Tone Adjustment
+
+Fine-tune the emotional register of your content without a full rewrite.
+
+### Using Tone Adjustment
+
+1. Open content in the Smart Editor
+2. Click the **"Tone"** tab
+3. See current tone analysis:
+   ```
+   Current Tone: Professional, Neutral
+   Confidence: 82%
+   ```
+4. Select target tone:
+   ```
+   Target: More Enthusiastic, Slightly Casual
+   ```
+5. Adjust intensity slider:
+   ```
+   Intensity: ████████░░ 80%
+   ```
+6. Click **"Adjust Tone"**
+
+### Tone Adjustment vs Rewrite
+
+| Feature | Tone Adjustment | Rewrite |
+|---------|----------------|---------|
+| Speed | Fast (minor changes) | Slower (full rewrite) |
+| Preservation | Keeps original structure | May restructure |
+| Control | Fine-grained intensity | Tone + style combo |
+| Best For | Subtle shifts | Major voice changes |
+
+---
+
+## Step 9: Review and Save
 
 ### Comparing Versions
 
@@ -374,6 +388,7 @@ The editor shows:
 - Generated version
 - Word/character counts
 - Tokens used
+- Quality score comparison
 
 ### Actions
 
@@ -395,7 +410,7 @@ Always review AI output before using:
 
 ---
 
-## Step 7: View Edit History
+## Step 10: View Edit History
 
 ### Accessing History
 
@@ -407,15 +422,20 @@ Always review AI output before using:
 │ Edit History                                         │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
-│ Today                                               │
+│ Today                                                │
 │ ├─ Rewrite (Witty + Persuasive)                    │
 │ │  Preview: "We're the code wizards..."            │
 │ │  Tokens: 245 • 2 hours ago                        │
 │ │  [View Full] [Use Again]                         │
 │ │                                                   │
-│ ├─ Expand (3x)                                     │
-│ │  Preview: "At our core, we specialize..."        │
-│ │  Tokens: 890 • 3 hours ago                        │
+│ ├─ Auto-Suggestion (3 applied)                     │
+│ │  Applied: Add CTA, Shorten para 3, Add stat       │
+│ │  Tokens: 180 • 2.5 hours ago                     │
+│ │  [View Full] [Use Again]                         │
+│ │                                                   │
+│ ├─ SEO Optimization (Score: 72 → 89)               │
+│ │  Applied: Meta description, Keywords, Alt tags     │
+│ │  Tokens: 320 • 3 hours ago                        │
 │ │  [View Full] [Use Again]                         │
 │                                                     │
 └─────────────────────────────────────────────────────┘
@@ -423,10 +443,11 @@ Always review AI output before using:
 
 ### History Features
 
-- **Filter** by operation type
+- **Filter** by operation type (rewrite, expand, SEO, auto-suggest, etc.)
 - **Search** past edits
 - **Reuse** previous settings
 - **Compare** versions
+- **Track quality scores** over time
 
 ---
 
@@ -450,10 +471,13 @@ Always review AI output before using:
 
 **Recommended Order:**
 1. Start with your best draft
-2. Expand if needed (add detail)
-3. Rewrite for tone/style
-4. Optimize for platform
-5. Condense if too long
+2. Use **Auto-Suggestions** for quick improvements
+3. Expand if needed (add detail)
+4. Rewrite for tone/style
+5. Run **SEO Optimization** (for blog/web content)
+6. **Adjust Tone** for fine-tuning
+7. Optimize for platform
+8. Condense if too long
 
 ### Token Usage
 
@@ -463,6 +487,9 @@ Always review AI output before using:
 | Expand | 500-2000 |
 | Condense | 200-400 |
 | Optimize | 300-600 |
+| Auto-Suggestions | 100-300 |
+| SEO Analysis | 200-400 |
+| Tone Adjustment | 150-350 |
 
 Monitor your monthly usage in the dashboard.
 
@@ -479,24 +506,24 @@ Create multiple versions from one source:
 3. **Optimize (LinkedIn)** → LinkedIn article
 4. **Condense (40%)** → Newsletter summary
 
-### Platform Adaptation
+### SEO-Optimized Blog Post
 
-Adapt one piece for multiple platforms:
-
-1. Start with blog post
-2. Optimize for Twitter
-3. Optimize for LinkedIn
-4. Optimize for Instagram
-5. Schedule all versions
+1. Write or import blog draft
+2. Run **Auto-Suggestions** → Apply structure and clarity improvements
+3. Run **SEO Optimization** → Fix meta, keywords, headings
+4. **Adjust Tone** → Match brand voice
+5. Generate social variants from the optimized version
 
 ### Content Refresh
 
 Update old content:
 
 1. Import existing blog post
-2. Rewrite with current tone
-3. Expand with new information
-4. Optimize for current platforms
+2. Run **Auto-Suggestions** → Identify dated phrasing
+3. Rewrite with current tone
+4. Expand with new information
+5. Re-optimize for current SEO landscape
+6. Compare quality scores (old vs. new)
 
 ---
 
@@ -515,19 +542,26 @@ Update old content:
 
 **Fix:**
 - Try different tone combinations
+- Use Tone Adjustment for fine control
 - Manually edit AI output
 - Set brand voice in project settings
 - Save preferred settings as templates
 
-### "Generated content has errors"
+### "Auto-suggestions aren't relevant"
 
-**Important:** AI can make mistakes.
+**Fix:**
+- Provide more context in your content
+- Set the content's target platform first
+- Try regenerating suggestions
+- Dismiss irrelevant ones and apply the rest
 
-**Always:**
-- Fact-check claims
-- Verify statistics
-- Review for accuracy
-- Edit for your voice
+### "SEO score isn't improving"
+
+**Fix:**
+- Ensure your content has sufficient length (300+ words)
+- Use "Apply SEO Fixes" for one-click improvements
+- Add suggested keywords manually
+- Check that meta descriptions are unique
 
 ---
 
@@ -539,6 +573,9 @@ You now know how to:
 - ✅ Expand content with detail
 - ✅ Condense content to summaries
 - ✅ Optimize for specific platforms
+- ✅ Use auto-suggestions for quick improvements
+- ✅ Run SEO optimization on your content
+- ✅ Fine-tune tone with adjustment controls
 - ✅ View and reuse edit history
 
 ---

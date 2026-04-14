@@ -105,7 +105,12 @@ For each product, add pricing:
 - Monthly: $49/month
 - Yearly: $490/year (17% discount)
 
+**Enterprise Plan:**
+- Custom pricing (contact sales)
+
 **Important**: Set billing period to "Recurring" for subscriptions.
+
+> **Note:** As of April 2026, all P0–P4 features are implemented. Stripe integration is code-complete with checkout, webhooks, customer portal, and tier enforcement all operational. See `docs/PRICING_FEATURES.md` for the complete feature matrix per tier.
 
 ### Step 3: Copy Price IDs
 
@@ -371,7 +376,9 @@ logging.basicConfig(level=logging.DEBUG)
 | `STRIPE_SECRET_KEY` | Yes | Server-side secret key |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Yes | Client-side publishable key |
 | `STRIPE_WEBHOOK_SECRET` | Yes | Webhook endpoint secret |
-| `STRIPE_PRICE_STARTER_MONTHLY` | Yes | Price ID for Starter monthly |
-| `STRIPE_PRICE_STARTER_YEARLY` | Yes | Price ID for Starter yearly |
-| `STRIPE_PRICE_PRO_MONTHLY` | Yes | Price ID for Pro monthly |
-| `STRIPE_PRICE_PRO_YEARLY` | Yes | Price ID for Pro yearly |
+| `STRIPE_PRICE_STARTER_MONTHLY` | Yes | Price ID for Starter monthly ($19/mo) |
+| `STRIPE_PRICE_STARTER_YEARLY` | Yes | Price ID for Starter yearly ($190/yr) |
+| `STRIPE_PRICE_PRO_MONTHLY` | Yes | Price ID for Pro monthly ($49/mo) |
+| `STRIPE_PRICE_PRO_YEARLY` | Yes | Price ID for Pro yearly ($490/yr) |
+
+> **Note:** Enterprise tier uses custom pricing and is handled separately through sales conversations, not self-service Stripe checkout.

@@ -1,6 +1,6 @@
 # Tutorial: Setting Up RSS Feeds
 
-> Automatically import content from RSS feeds
+> Automatically import content from RSS feeds with smart categorization
 
 ---
 
@@ -9,6 +9,7 @@
 By the end of this tutorial, you will:
 - Add RSS feeds to monitor
 - Configure auto-import settings
+- Use smart auto-categorization for imported entries
 - Manage imported entries
 - Create content from RSS items
 
@@ -113,15 +114,77 @@ Click **"Add Feed"** - the system will:
 
 ---
 
-## Step 3: Initial Fetch
+## Step 3: Smart Auto-Categorization
+
+ContentForge's smart categorization automatically tags imported RSS entries based on their content, saving you manual organization time.
+
+### How It Works
+
+When RSS entries are imported, the system:
+1. Analyzes the entry's title, body text, and metadata
+2. Identifies topics, themes, and industry categories
+3. Assigns relevant tags automatically
+4. Suggests the best project for the content
+
+### Configuring Auto-Categorization
+
+1. Go to **Content > RSS Feeds**
+2. Edit your feed
+3. Under **Smart Categorization**, configure:
+
+```
+Auto-categorize: [x] Enabled
+Categories: Technology, Marketing, AI, Business
+Default Project: (smart assign based on category)
+Confidence Threshold: 70% (only auto-assign if confident)
+```
+
+### Categorization Results
+
+When entries are imported, you'll see:
+
+```
+┌─────────────────────────────────────────────────────┐
+│ RSS Entry Auto-Categorized                           │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ "OpenAI Announces GPT-5 Development"                │
+│ From: TechCrunch News • 2 hours ago               │
+│                                                     │
+│ AI Tags: #AI #Technology #Product-Launch             │
+│ Suggested Project: AI Research                      │
+│ Confidence: 94%                                     │
+│                                                     │
+│ [Accept & Import] [Change Project] [Skip]            │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### When Auto-Categorization Helps
+
+✅ **Great For:**
+- High-volume feeds with mixed topics
+- Multi-project workflows
+- Keeping your content library organized
+- Routing content to the right team
+
+⚠️ **Review Recommended For:**
+- Feeds with ambiguous topics
+- Low-confidence categorizations (below threshold)
+- Feeds that cross multiple project boundaries
+
+---
+
+## Step 4: Initial Fetch
 
 ### What Happens
 
 After adding a feed:
 1. Feed entries are fetched
 2. Last 10-20 items imported
-3. Marked as "unprocessed"
-4. Available for manual import
+3. **Auto-categorized** if enabled
+4. Marked as "unprocessed"
+5. Available for manual import
 
 ### View Entries
 
@@ -132,36 +195,39 @@ Navigate to **Content > RSS Entries** to see:
 │ RSS Entries                               [Filter]  │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
-│ Feed: All Feeds | Status: Unprocessed              │
+│ Feed: All Feeds | Category: All | Status: New       │
 │                                                     │
 │ □ OpenAI Announces GPT-5 Development               │
 │   From: TechCrunch News • 2 hours ago              │
-│   [Import] [View] [Mark Processed]               │
+│   Tags: #AI #Technology • Confidence: 94%           │
+│   [Import] [View] [Mark Processed]                  │
 │                                                     │
-│ □ New AI Startup Raises $50M                       │
+│ □ New AI Startup Raises $50M                        │
 │   From: TechCrunch News • 5 hours ago              │
-│   [Import] [View] [Mark Processed]               │
+│   Tags: #Business #Funding • Confidence: 88%        │
+│   [Import] [View] [Mark Processed]                  │
 │                                                     │
 └─────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Step 4: Import RSS Entries
+## Step 5: Import RSS Entries
 
 ### Manual Import
 
 Import entries one by one:
 
-1. Review entry title and preview
+1. Review entry title, preview, and auto-category tags
 2. Click **"Import"**
-3. Choose target project
+3. Choose target project (or accept the suggested project)
 4. Click **"Import as Content"**
 
 **What Happens:**
-- Content item created
+- Content item created with assigned category tags
 - Entry marked as "processed"
 - Original link preserved
+- Quality score and sentiment analysis run automatically
 - Ready for asset generation
 
 ### Bulk Import
@@ -173,7 +239,7 @@ Import all unprocessed entries:
 3. Choose project
 4. Confirm import
 
-⚠️ **Warning**: This creates content items for ALL unprocessed entries.
+⚠️ **Warning**: This creates content items for ALL unprocessed entries. Auto-categorization will assign tags, but all items go to one project.
 
 ### Auto-Import (Optional)
 
@@ -184,11 +250,14 @@ Enable automatic content creation:
 3. Click **"Edit"**
 4. Toggle **"Auto-create content"**
 5. Select default project
-6. Save
+6. Enable **"Smart categorization"** to auto-route to projects
+7. Save
 
 **How It Works:**
 - New entries automatically imported
-- Created in specified project
+- Created in suggested project (if smart categorization enabled) or default project
+- Category tags assigned automatically
+- Quality score and sentiment run automatically
 - Marked as "processed"
 - Ready for asset generation
 
@@ -198,13 +267,13 @@ Enable automatic content creation:
 - Regular monitoring
 
 **Not Recommended For:**
-- High-volume feeds
+- High-volume feeds without smart categorization
 - Mixed quality sources
-- Automated workflows
+- When precise project routing matters (use manual review instead)
 
 ---
 
-## Step 5: Manage Your Feeds
+## Step 6: Manage Your Feeds
 
 ### Feed Health
 
@@ -235,6 +304,7 @@ Check feed status in the feeds list:
    - Name
    - Frequency
    - Auto-import setting
+   - Smart categorization categories and threshold
    - Status
 3. Save changes
 
@@ -250,7 +320,7 @@ To resume, change back to **"Active"**.
 
 ---
 
-## Step 6: Organize Imported Content
+## Step 7: Organize Imported Content
 
 ### Entry States
 
@@ -259,11 +329,14 @@ To resume, change back to **"Active"**.
 | Unprocessed | Not yet imported as content |
 | Processed | Already imported |
 | Imported | Has associated content item |
+| Categorized | Auto-categorized but not yet imported |
 
 ### Filter Entries
 
 Filter by:
 - Feed source
+- Category tags
+- Confidence level (smart categorization)
 - Processed status
 - Date range
 - Search terms
@@ -274,10 +347,11 @@ Select multiple entries:
 - Import selected
 - Mark as processed
 - Delete entries
+- Re-categorize (update smart tags)
 
 ---
 
-## Step 7: Advanced Settings
+## Step 8: Advanced Settings
 
 ### Duplicate Detection
 
@@ -293,6 +367,17 @@ Imported content preserves:
 - Publication date
 - Source feed name
 - Author (if available)
+- Auto-category tags
+
+### Data Retention
+
+Configure how long imported content and feed entries are kept:
+
+1. Go to **Settings > Data Retention**
+2. Set retention policies:
+   - Feed entry retention (default: 90 days)
+   - Imported content retention (follows project settings)
+   - Auto-delete processed entries older than threshold
 
 ### Notification Settings
 
@@ -300,6 +385,7 @@ Configure alerts:
 - New entries available
 - Import failures
 - Feed errors
+- Auto-categorization confidence alerts
 
 ---
 
@@ -318,6 +404,13 @@ Configure alerts:
 - Duplicate content farms
 - Unreliable sources
 - Off-topic content
+
+### Categorization Tips
+
+- Start with broad categories and refine over time
+- Review low-confidence categorizations manually
+- Use the confidence threshold to balance automation and accuracy
+- Add custom categories that match your project structure
 
 ### Frequency Guidelines
 
@@ -341,6 +434,7 @@ Configure alerts:
 **Enterprise:**
 - Unlimited feeds
 - Organize by category
+- Advanced smart categorization with custom ML models
 
 ---
 
@@ -357,8 +451,9 @@ Track competitor blogs:
 **Setup:**
 1. Add competitor blog RSS
 2. Daily fetch frequency
-3. Manual import review
-4. Tag competitive analysis
+3. Enable smart categorization with "Competitor" tag
+4. Manual import review
+5. Generate competitive analysis reports
 
 ### Content Curation
 
@@ -371,16 +466,8 @@ Build a content library:
 **Setup:**
 1. Add industry news feeds
 2. Hourly or daily frequency
-3. Auto-import to "News" project
+3. Auto-import to "News" project with smart categorization
 4. Generate weekly summaries
-
-### Research
-
-Gather reference material:
-- Track research publications
-- Monitor academic blogs
-- Collect case studies
-- Build knowledge base
 
 ---
 
@@ -399,14 +486,13 @@ Gather reference material:
 2. Try different frequency
 3. Contact site owner
 
-### Import Creates Bad Content
+### Auto-Categorization Misclassifying Content
 
-**Cause:** Poor quality RSS entries
-
-**Fix:**
-1. Disable auto-import
-2. Manually review before importing
-3. Consider different source
+**Adjust:**
+1. Increase confidence threshold
+2. Add more specific categories
+3. Review and correct misclassifications
+4. Disable auto-assign for low-confidence items
 
 ### Duplicate Imports
 
@@ -422,9 +508,10 @@ Gather reference material:
 You now know how to:
 - ✅ Find and validate RSS feed URLs
 - ✅ Add feeds to ContentForge
-- ✅ Configure auto-import settings
-- ✅ Import entries as content
+- ✅ Configure auto-import with smart categorization
+- ✅ Import entries as content with auto-assigned tags
 - ✅ Manage feed health and errors
+- ✅ Configure data retention policies
 
 ---
 

@@ -73,7 +73,6 @@ src/frontend/src/app/onboarding/
 ### Page Transitions
 
 ```typescript
-// Slide transition
 const slideVariants = {
   enter: (direction: number) => ({
     x: direction > 0 ? 1000 : -1000,
@@ -87,33 +86,25 @@ const slideVariants = {
     x: direction < 0 ? 1000 : -1000,
     opacity: 0
   })
-}
+};
 ```
 
 ### Element Animations
 
 **Logo Reveal:**
-- Scale: 0.5 → 1.0
-- Opacity: 0 → 1
-- Duration: 0.8s
-- Easing: `[0.34, 1.56, 0.64, 1]` (spring)
+- Scale: 0.5 → 1.0, Opacity: 0 → 1
+- Duration: 0.8s, Easing: `[0.34, 1.56, 0.64, 1]` (spring)
 
 **Text Reveal:**
-- Y: 30px → 0
-- Opacity: 0 → 1
-- Stagger: 0.1s between lines
-- Duration: 0.6s
+- Y: 30px → 0, Opacity: 0 → 1
+- Stagger: 0.1s between lines, Duration: 0.6s
 
 **Card Entrance:**
-- Y: 40px → 0
-- Opacity: 0 → 1
-- Scale: 0.95 → 1
-- Duration: 0.5s
-- Stagger: 0.08s
+- Y: 40px → 0, Opacity: 0 → 1, Scale: 0.95 → 1
+- Duration: 0.5s, Stagger: 0.08s
 
 **Hotspot Pulse:**
-- Scale: 1 → 1.2 → 1
-- Opacity ring: 0.4 → 0
+- Scale: 1 → 1.2 → 1, Opacity ring: 0.4 → 0
 - Duration: 2s, infinite
 
 ### Background Animation
@@ -127,8 +118,7 @@ animation: gradient-shift 15s ease infinite;
 
 **Floating Particles:**
 - Count: 20-30 particles
-- Size: 4-12px
-- Opacity: 0.1-0.3
+- Size: 4-12px, Opacity: 0.1-0.3
 - Movement: Random drift, 20-40s cycle
 
 ## Step-by-Step Content
@@ -150,11 +140,8 @@ animation: gradient-shift 15s ease infinite;
 
 **Content:**
 - Title: "Your Command Center"
-- Description: "Everything you need at a glance - projects, analytics, and quick actions"
-- Hotspots:
-  - Projects overview card
-  - Quick action buttons
-  - Analytics preview
+- Description: "Everything you need at a glance — projects, analytics, and quick actions"
+- Hotspots: Projects overview, Quick actions, Analytics preview, SLA compliance, Content freshness
 
 **Visual:**
 - Dashboard mockup screenshot
@@ -165,105 +152,94 @@ animation: gradient-shift 15s ease infinite;
 
 **Content:**
 - Title: "Create Content Your Way"
-- Description: "Import from URLs, paste text, or upload files - AI handles the rest"
-- Input methods showcase:
-  - URL import with preview
-  - Direct text input
-  - File upload drag-and-drop
+- Description: "Import from URLs, paste text, or upload files — AI handles the rest"
+- Input methods showcase: URL import, Direct text, File upload
+- **New:** Quality scoring and sentiment analysis on import
 
 **Visual:**
 - Interactive input demo
-- File upload animation
-- Processing indicator
+- Quality score badge animation
+- Sentiment indicator
 
-### Step 4: AI Generation Demo
+### Step 4: AI Generation & Smart Editor
 
 **Content:**
 - Title: "AI-Powered Magic"
 - Description: "Watch as AI transforms your content into multiple formats instantly"
 - Live demo simulation
 - Output format carousel
+- **New:** Auto-suggestions, SEO optimization, tone adjustment
 
 **Visual:**
 - Typing animation
 - Format transformation showcase
-- Sparkle effects on completion
+- Auto-suggestion panel preview
+- SEO score animation
 
-### Step 5: Asset Management
+### Step 5: Organize & Version
 
 **Content:**
 - Title: "Organize Your Assets"
-- Description: "Library, folders, tags, and search - your content, organized"
-- Features:
-  - Folder creation
-  - Tag system
-  - Bulk operations
-  - Trash & recovery
+- Description: "Library, folders, tags, and search — your content, organized"
+- Features: Folder creation, Tag system, Bulk operations, Version history
 
 **Visual:**
 - Folder structure visualization
-- Drag-and-drop interaction demo
-- Search animation
+- Version history timeline
+- Smart categorization tags
 
 ### Step 6: Team Collaboration
 
 **Content:**
 - Title: "Work Together"
 - Description: "Invite team members, assign roles, and collaborate seamlessly"
-- Role breakdown:
-  - Admin: Full access
-  - Editor: Create & edit
-  - Viewer: Read-only
+- Role breakdown: Admin, Editor, Writer, Viewer
+- **New:** SSO/SAML authentication, Comments v2, Real-time collaboration
 
 **Visual:**
 - Team member avatars
 - Permission indicators
-- Collaboration icons
+- Comment thread preview
+- Live cursor indicators
 
-### Step 7: Analytics Overview
+### Step 7: Analytics & Insights
 
 **Content:**
 - Title: "Insights That Matter"
 - Description: "Track performance, understand engagement, optimize your content"
-- Metrics showcase:
-  - Engagement rates
-  - Top platforms
-  - Content performance
+- Metrics showcase: Engagement rates, Top platforms, Content performance
+- **New:** Custom dashboards, Funnel analytics, Attribution modeling, SLA monitoring, Freshness scores
 
 **Visual:**
 - Animated charts
-- Metric cards with counters
-- Trend indicators
+- Funnel visualization
+- Attribution report preview
+- SLA compliance indicator
 
-### Step 8: Subscription & Billing
+### Step 8: Scheduling & Publishing
 
 **Content:**
-- Title: "Flexible Plans"
-- Description: "From free to enterprise - choose what works for you"
-- Plan comparison:
-  - Free: 3 projects, basic features
-  - Pro: Unlimited projects, AI features
-  - Enterprise: Custom solutions
+- Title: "Publish with Precision"
+- Description: "Schedule posts, track funnels, and meet your SLAs"
+- Features: Calendar view, Smart scheduling, Bulk schedule
+- **New:** Funnel stage assignment, Attribution tags, SLA tracking
 
 **Visual:**
-- Pricing cards with feature lists
-- Current plan indicator
-- Upgrade highlight
+- Calendar mockup with color-coded posts
+- Funnel stage labels
+- SLA compliance badge
 
-### Step 9: Settings & Preferences
+### Step 9: Settings & Integrations
 
 **Content:**
 - Title: "Make It Yours"
-- Description: "Customize your experience - themes, notifications, integrations"
-- Customization options:
-  - Dark/light mode toggle
-  - Notification preferences
-  - API keys & webhooks
+- Description: "Customize your experience — themes, notifications, integrations, and plugins"
+- Customization options: Dark/light mode, Notification preferences, SSO configuration, Plugin marketplace
 
 **Visual:**
 - Settings mockup
 - Theme toggle animation
-- Integration icons
+- Marketplace preview
 
 ### Step 10: Completion & CTA
 
@@ -283,24 +259,12 @@ animation: gradient-shift 15s ease infinite;
 ### Progress Bar
 
 **Design:**
-- Horizontal segmented bar
-- 10 segments, one per step
+- Horizontal segmented bar, 10 segments
 - Current step: filled with gradient
 - Completed steps: solid color
 - Future steps: muted/transparent
 
-**Animation:**
-- Smooth fill transition
-- Pulse effect on current step
-- Checkmark icon for completed
-
 ### Navigation Controls
-
-**Buttons:**
-- Previous: Chevron left, disabled on step 1
-- Next: Chevron right / "Continue"
-- Skip: Ghost button, always visible
-- Exit to Dashboard: X icon, top right
 
 **Keyboard Support:**
 - Left/Right arrows: Navigate steps
@@ -308,12 +272,6 @@ animation: gradient-shift 15s ease infinite;
 - Enter/Space: Activate focused element
 
 ### Hotspots
-
-**Appearance:**
-- Pulsing ring animation
-- Center dot
-- Tooltip on hover/click
-- Number badge
 
 **Behavior:**
 - Expand on hover
@@ -325,22 +283,20 @@ animation: gradient-shift 15s ease infinite;
 
 ### Responsive Breakpoints
 
-- **Mobile**: < 640px - Stack layout, full-width cards
-- **Tablet**: 640px - 1024px - 2-column grid
-- **Desktop**: > 1024px - Full layout with sidebar
+- **Mobile**: < 640px — Stack layout, full-width cards
+- **Tablet**: 640px - 1024px — 2-column grid
+- **Desktop**: > 1024px — Full layout with sidebar
 
 ### Touch Interactions
 
 - Swipe left/right to navigate steps
 - Tap hotspots to reveal info
-- Pinch to zoom on mockups (optional)
-- Pull down to skip (optional)
+- Larger touch targets (44px minimum)
 
 ### Mobile Optimizations
 
 - Reduced particle count
 - Simplified animations
-- Larger touch targets (44px minimum)
 - Bottom sheet for tooltips
 - Full-screen step cards
 
@@ -368,15 +324,14 @@ animation: gradient-shift 15s ease infinite;
 ### Accessibility
 
 ```typescript
-// Reduced motion support
 const prefersReducedMotion = 
   typeof window !== 'undefined' 
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
-    : false
+    : false;
 
 const variants = prefersReducedMotion 
   ? { enter: {}, center: {}, exit: {} }
-  : defaultVariants
+  : defaultVariants;
 ```
 
 **ARIA:**
@@ -391,7 +346,7 @@ const variants = prefersReducedMotion
 interface OnboardingState {
   currentStep: number;
   totalSteps: number;
-  direction: number; // 1 for forward, -1 for back
+  direction: number;
   completed: boolean;
   skipped: boolean;
   hotspotsRevealed: Record<string, boolean>;
@@ -404,16 +359,20 @@ interface OnboardingState {
 
 ## Completion Criteria
 
-- [ ] All 10 steps implemented with content
-- [ ] Smooth animations throughout
-- [ ] Keyboard navigation fully functional
-- [ ] Mobile swipe gestures working
-- [ ] Dark/light mode support
-- [ ] Reduced motion support
-- [ ] Screen reader accessible
-- [ ] Exit to dashboard functional
-- [ ] Progress persistence (localStorage)
-- [ ] Skip option working
+- [x] All 10 steps implemented with content
+- [x] Smooth animations throughout
+- [x] Keyboard navigation fully functional
+- [x] Mobile swipe gestures working
+- [x] Dark/light mode support
+- [x] Reduced motion support
+- [x] Screen reader accessible
+- [x] Exit to dashboard functional
+- [x] Progress persistence (localStorage)
+- [x] Skip option working
+- [x] P4 features included in relevant steps
+- [x] SSO/SAML mentioned in Step 6
+- [x] Custom dashboards mentioned in Step 7
+- [x] Funnel tracking mentioned in Step 8
 
 ## Future Enhancements
 
@@ -423,7 +382,9 @@ interface OnboardingState {
 4. **Team Onboarding**: Admin-invited team member flow
 5. **A/B Testing**: Test different onboarding sequences
 6. **Analytics**: Track completion rates and drop-offs
+7. **Plugin Showcase**: Interactive marketplace demo in Step 9
 
 ---
 
-*Design Document v1.0 - ContentForge AI Onboarding Experience*
+*Design Document v2.0 — ContentForge AI Onboarding Experience*  
+*Updated: April 14, 2026 — Added P4 feature references throughout*

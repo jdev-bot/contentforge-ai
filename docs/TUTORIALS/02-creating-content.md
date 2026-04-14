@@ -10,7 +10,8 @@ By the end of this tutorial, you will:
 - Import content from different sources
 - Extract text from URLs and YouTube videos
 - Generate multiple content assets
-- Understand the content workflow
+- Check quality scores and sentiment analysis
+- Manage version history for your content
 
 **Time Required**: 20 minutes
 
@@ -63,7 +64,9 @@ The system will:
 2. Extract the main article text
 3. Clean and format the content
 4. Calculate word count
-5. Store in your project
+5. **Assign a quality score** — an AI-generated assessment of content readability, structure, and depth
+6. **Run sentiment analysis** — detect tone (positive, neutral, negative) and emotional cues
+7. Store in your project
 
 **Time**: 10-30 seconds
 
@@ -76,13 +79,15 @@ Once complete, you'll see:
 Title: 10 Marketing Tips Article
 Source: URL
 Word Count: 1,247
+Quality Score: 82/100
+Sentiment: Positive (0.73)
 Status: Completed
 
 Original Text:
 [Full article text extracted and displayed]
 
 Actions:
-[💎 Generate Assets] [Edit] [Delete]
+[💎 Generate Assets] [Edit] [View History] [Delete]
 ```
 
 ---
@@ -96,10 +101,6 @@ Actions:
 3. Paste a YouTube URL:
    ```
    Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ
-   ```
-   Or short URL:
-   ```
-   Example: https://youtu.be/dQw4w9WgXcQ
    ```
 4. Choose a project
 5. Add a title:
@@ -115,22 +116,9 @@ The system will:
 2. Fetch transcript (if available)
 3. Clean and format text
 4. Remove timestamps (optional)
+5. Assign quality score and sentiment
 
 **Note**: Videos without captions/transcripts cannot be processed.
-
-### Supported Video Types
-
-✅ **Works Well:**
-- Videos with captions/subtitles
-- Podcast videos
-- Tutorial videos
-- Interview videos
-
-❌ **Doesn't Work:**
-- Private videos
-- Videos without captions
-- Age-restricted videos
-- Region-blocked videos
 
 ---
 
@@ -149,12 +137,7 @@ The system will:
 2. Select **"Direct Text"**
 3. Choose a project
 4. Add a title
-5. Paste or type your content:
-   ```
-   Our company helps small businesses grow through 
-   digital marketing. We offer SEO, social media 
-   management, and content creation services...
-   ```
+5. Paste or type your content
 6. Click **"Save Content"**
 
 ---
@@ -176,7 +159,7 @@ Once your content is imported, generate repurposed assets:
 
 ### AI Processing
 
-The AI will create:
+The AI will create each asset and assign a **quality score**:
 
 **Twitter Thread (5-7 tweets):**
 ```
@@ -189,6 +172,9 @@ our clients 3x their revenue:
 
 Tweet 2/7 1/ Focus on retention before acquisition...
 [continues]
+
+Quality Score: 78/100
+Sentiment: Positive (enthusiastic)
 ```
 
 **LinkedIn Post:**
@@ -199,27 +185,9 @@ I analyzed 100+ marketing campaigns and found
 [Professional, long-form content]
 
 #Marketing #BusinessGrowth
-```
 
-**Newsletter:**
-```
-Subject: 10 Marketing Strategies That Actually Work
-
-Hi [Name],
-
-This week I'm sharing the exact strategies...
-
-[Full newsletter format]
-```
-
-**Video Script:**
-```
-[0:00-0:15] Hook: "What if I told you 90% of 
-businesses are making the same marketing mistake?"
-
-[0:15-0:30] Problem statement...
-
-[Full script with timestamps]
+Quality Score: 85/100
+Sentiment: Professional (neutral-positive)
 ```
 
 ### Review and Edit
@@ -229,10 +197,88 @@ Each generated asset can be:
 - ✍️ **Edited** - Modify in AI Editor
 - 🗑️ **Deleted** - Remove if not useful
 - 📤 **Scheduled** - Add to publishing queue
+- 📊 **Quality Reviewed** - Check quality score details
 
 ---
 
-## Step 6: Manage Your Content
+## Step 6: View Quality Scores
+
+Quality scores help you assess content effectiveness before publishing.
+
+### Score Breakdown
+
+| Score Range | Rating | Recommendation |
+|-------------|--------|----------------|
+| 90-100 | Excellent | Ready to publish |
+| 75-89 | Good | Minor tweaks optional |
+| 60-74 | Fair | Consider revisions |
+| Below 60 | Needs Work | Significant edits recommended |
+
+### What Quality Scores Measure
+
+- **Readability** — Sentence length, vocabulary level, structure
+- **Clarity** — Main message clarity, logical flow
+- **Engagement** — Hook strength, call-to-action presence
+- **SEO Potential** — Keyword usage, heading structure (for blog content)
+
+### Sentiment Analysis
+
+ContentForge also provides sentiment analysis for imported and generated content:
+
+- **Positive** — Content that conveys enthusiasm, success, or optimism
+- **Neutral** — Factual or informational content
+- **Negative** — Content addressing problems or challenges
+- **Mixed** — Content with varying emotional tones
+
+Use sentiment to:
+- Match tone to platform (LinkedIn: professional; Twitter: casual)
+- Ensure brand voice consistency
+- Avoid unintended negative messaging
+
+---
+
+## Step 7: Manage Version History
+
+ContentForge tracks all changes to your content, so you never lose work.
+
+### Access Version History
+
+1. Open any content item
+2. Click **"History"** tab
+3. View all saved versions
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Version History                                      │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ v3 (Current) • 2026-04-14 10:30 AM                │
+│ Quality Score: 85 | Sentiment: Positive            │
+│ [View] [Compare with v2]                           │
+│                                                     │
+│ v2 • 2026-04-14 09:15 AM                           │
+│ Quality Score: 72 | Sentiment: Neutral             │
+│ [View] [Restore] [Compare with v1]                 │
+│                                                     │
+│ v1 (Original) • 2026-04-13 04:00 PM                │
+│ Quality Score: 80 | Sentiment: Positive            │
+│ [View] [Restore]                                   │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### Version History Features
+
+- **Compare** — View diff between two versions side by side
+- **Restore** — Revert to a previous version
+- **Track Quality** — See how quality scores change over edits
+- **Audit Trail** — See who made changes and when (team accounts)
+
+> **Tip**: Version history is automatically created whenever you save content, generate assets, or use the Smart Editor.
+
+---
+
+## Step 8: Manage Your Content
 
 ### Content List View
 
@@ -243,33 +289,41 @@ Navigate to **Content** to see all your items:
 │ All Content                              [+ New]  │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
-│ ▼ Project: All Projects | Status: All             │
+│ ▼ Project: All Projects | Status: All              │
+│ ▼ Quality: All | Sentiment: All                     │
 │                                                     │
-│ □ 10 Marketing Tips Article                      │
-│   URL • 1,247 words • 4 assets • Completed        │
-│   [✍️ Edit] [💎 Assets] [🗑️ Delete]            │
+│ □ 10 Marketing Tips Article                        │
+│   URL • 1,247 words • 4 assets • Score: 82         │
+│   [✍️ Edit] [💎 Assets] [📜 History] [🗑️ Delete] │
 │                                                     │
 │ □ Marketing Strategy Video                         │
-│   YouTube • 2,341 words • 4 assets • Completed   │
-│   [✍️ Edit] [💎 Assets] [🗑️ Delete]            │
+│   YouTube • 2,341 words • 4 assets • Score: 78    │
+│   [✍️ Edit] [💎 Assets] [📜 History] [🗑️ Delete] │
 │                                                     │
 └─────────────────────────────────────────────────────┘
 ```
+
+### Filter by Quality and Sentiment
+
+- Filter content by **quality score range** (e.g., show only content scoring 80+)
+- Filter by **sentiment** (positive, neutral, negative)
+- Combine filters with project, source type, and date
 
 ### Actions Available
 
 | Action | Description |
 |--------|-------------|
-| View | See full content |
+| View | See full content with quality score |
 | Edit | Modify text |
 | Assets | View generated assets |
+| History | View version history |
 | Generate | Create more assets |
 | Schedule | Add to publishing queue |
 | Delete | Move to trash |
 
 ---
 
-## Step 7: Organize with Projects
+## Step 9: Organize with Projects
 
 ### Assign Content to Projects
 
@@ -305,11 +359,12 @@ Use the project filter to:
 
 ### Generation Tips
 
-1. **Review before scheduling** - Always check AI output
-2. **Edit for your voice** - AI learns from your edits
-3. **Add context** - Include industry specifics
-4. **Use brand voice settings** - Configure in project
-5. **Generate multiple versions** - Choose the best
+1. **Review quality scores** — Higher scores tend to publish better
+2. **Edit for your voice** — AI learns from your edits
+3. **Check sentiment** — Ensure tone matches your platform
+4. **Use version history** — Compare edits to see what works
+5. **Add context** — Include industry specifics
+6. **Use brand voice settings** — Configure in project
 
 ---
 
@@ -329,26 +384,17 @@ Use the project filter to:
 - Use "Import Text" for paywalled content
 - Contact support with URL
 
-### "Transcript not available"
+### "Quality score seems low"
 
 **Causes:**
-- No captions on video
-- Auto-captions disabled
-- Video is private
+- Content is too short (< 200 words)
+- Poor structure or formatting
+- Mixed topics without clear focus
 
 **Solutions:**
-- Check video has captions
-- Try a different video
-- Use direct text input with summary
-
-### "Content too short"
-
-**Minimum:** 300 characters recommended
-
-**Fix:**
-- Add more detail
-- Combine multiple sources
-- Expand with AI Editor
+- Expand content before generating
+- Improve structure with headings
+- Focus on a single topic
 
 ---
 
@@ -356,7 +402,7 @@ Use the project filter to:
 
 Now you have content imported, try:
 
-1. **[Using the Smart Editor](04-smart-editor.md)** - Refine your generated content
+1. **[Using the Smart Editor](04-smart-editor.md)** - Refine your generated content with AI suggestions
 2. **[Setting up RSS Feeds](03-rss-feeds.md)** - Automate content import
 3. **[Scheduling Posts](05-scheduling-posts.md)** - Publish your assets
 
@@ -367,7 +413,8 @@ Now you have content imported, try:
 You now know how to:
 - ✅ Import content from URLs, YouTube, and text
 - ✅ Generate multiple content assets with AI
-- ✅ Review and edit generated content
+- ✅ Review quality scores and sentiment analysis
+- ✅ Track changes with version history
 - ✅ Organize content in projects
 
 **Questions?** Contact support@contentforge.ai

@@ -1,6 +1,6 @@
 # Tutorial: Scheduling Posts
 
-> Automate your content publishing with scheduled posts
+> Automate your content publishing with scheduled posts, funnel tracking, and SLA monitoring
 
 ---
 
@@ -10,10 +10,13 @@ By the end of this tutorial, you will:
 - Schedule posts for future publication
 - Use smart scheduling recommendations
 - Manage your publishing queue
+- Track content through your marketing funnel
+- Attribute results to specific content pieces
+- Monitor SLA compliance for publishing commitments
 - Bulk schedule multiple posts
 - Handle failed posts and retries
 
-**Time Required**: 20 minutes
+**Time Required**: 25 minutes
 
 ---
 
@@ -42,14 +45,15 @@ Before starting:
 ├─────────────────────────────────────────────────────┤
 │                                                     │
 │ 📊 Stats Summary:                                  │
-│   Pending: 3 | Published: 12 | Failed: 1        │
+│   Pending: 3 | Published: 12 | Failed: 1           │
+│   SLA Compliance: 98.5% | On-time Rate: 96%        │
 │                                                     │
 │ [+ Schedule New Post]                              │
 │                                                     │
 │ Upcoming Posts:                                    │
-│ ├─ Tomorrow 9:00 AM - Twitter Thread            │
-│ ├─ Apr 15 2:00 PM - LinkedIn Article            │
-│ └─ Apr 16 10:00 AM - Newsletter                 │
+│ ├─ Tomorrow 9:00 AM - Twitter Thread               │
+│ ├─ Apr 15 2:00 PM - LinkedIn Article               │
+│ └─ Apr 16 10:00 AM - Newsletter                    │
 │                                                     │
 └─────────────────────────────────────────────────────┘
 ```
@@ -82,11 +86,9 @@ Timezone: America/New_York
 **Optional Settings:**
 
 ```
-Asset Type: thread
-Settings:
-  ├─ thread_mode: true
-  ├─ auto_hashtags: true
-  └─ first_tweet_only: false
+Funnel Stage: Awareness
+Attribution Tags: q2-campaign, blog-repurpose
+SLA Deadline: 2026-04-15 10:00 (1hr buffer)
 ```
 
 ### Platform Selection
@@ -114,7 +116,8 @@ Click **"Schedule Post"** - the system will:
 1. Validate the content
 2. Add to publishing queue
 3. Set status to "pending"
-4. Show confirmation
+4. Track funnel stage and attribution
+5. Show confirmation
 
 ---
 
@@ -127,6 +130,7 @@ Click **"Schedule Post"** - the system will:
    - Platform peak hours
    - Your historical engagement
    - Industry benchmarks
+   - Funnel stage performance data
 
 ### Best Time Defaults
 
@@ -138,43 +142,175 @@ Click **"Schedule Post"** - the system will:
 | Facebook | 9:00 AM, 1:00 PM, 3:00 PM |
 | TikTok | 7:00 AM, 12:00 PM, 7:00 PM, 9:00 PM |
 
-### Timezone Considerations
+---
 
-**Select the timezone for your audience:**
+## Step 4: Funnel Tracking
 
-- Local business: Your timezone
-- National audience: Central US
-- Global audience: UTC
-- Specific region: Target timezone
+Funnel tracking lets you see how content moves prospects through your marketing funnel.
+
+### Setting Funnel Stages
+
+When scheduling a post, assign it a funnel stage:
+
+| Stage | Description | Content Types |
+|-------|-------------|---------------|
+| **Awareness** | Top of funnel — attracting new audiences | Blog posts, infographics, social posts |
+| **Interest** | Engaging curious prospects | Educational content, how-tos |
+| **Consideration** | Nurturing toward decision | Case studies, comparisons, webinars |
+| **Conversion** | Driving action | Demos, trials, pricing, CTAs |
+| **Retention** | Keeping existing customers | Updates, tips, community content |
+
+### Assigning Funnel Stages
+
+1. When creating a schedule, select **"Funnel Stage"**
+2. Choose the appropriate stage
+3. Optionally add **"Attribution Tags"** for campaign tracking
+
+```
+Schedule Post:
+
+Content: "10 Marketing Tips Thread"
+Platform: Twitter
+Funnel Stage: Awareness
+Attribution Tags: q2-campaign, awareness-phase
+```
+
+### Viewing Funnel Analytics
+
+Navigate to **Analytics > Funnel** to see:
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Content Funnel Analysis                              │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Awareness → Interest → Consideration → Conversion   │
+│   420 posts  210 posts   85 posts      32 posts     │
+│   ──────70%────→ ────60%────→ ────50%────→          │
+│                                                     │
+│ Top Performing (Awareness):                          │
+│ 1. "AI Marketing Tips" - 1,240 engagements          │
+│ 2. "Industry Trends" - 890 engagements             │
+│                                                     │
+│ Drop-off Point: Consideration → Conversion (50%)    │
+│ Recommendation: Add more case studies & demos        │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Step 4: View Publishing Queue
+## Step 5: Attribution Modeling
 
-### Queue Statuses
+Attribution modeling helps you understand which content pieces and campaigns drive results.
 
-| Status | Description | Actions |
-|--------|-------------|---------|
-| Pending | Waiting for scheduled time | Edit, Cancel |
-| Scheduled | Time set, ready | Edit, Cancel |
-| Processing | Currently publishing | Wait |
-| Published | Successfully posted | View post |
-| Failed | Error occurred | Retry, Edit |
-| Cancelled | User cancelled | Reschedule |
+### How Attribution Works
 
-### Queue Management
+Each scheduled post can carry attribution tags that link it to campaigns, channels, and content sources. When engagement data comes in, ContentForge attributes results back to the originating content.
 
-**Actions Available:**
+### Setting Up Attribution
 
-1. **Edit** - Change time or content
-2. **Cancel** - Remove from queue
-3. **Publish Now** - Immediate publication
-4. **Retry** - Retry failed posts
-5. **Duplicate** - Clone schedule
+1. When scheduling, add **Attribution Tags**:
+   ```
+   Campaign: q2-2026-launch
+   Channel: organic-social
+   Source: blog-repurpose
+   Content Type: thread
+   ```
+2. Tags are automatically included in UTM parameters when applicable
+3. Engagement and conversion data flows back to the content item
+
+### Attribution Models
+
+| Model | Description | Best For |
+|-------|-------------|----------|
+| **First Touch** | Credit to the first content that brought the user | Brand awareness campaigns |
+| **Last Touch** | Credit to the content before conversion | Direct response campaigns |
+| **Linear** | Equal credit across all touchpoints | Multi-channel strategies |
+| **Time Decay** | More credit to recent touchpoints | Long sales cycles |
+
+Configure your attribution model in **Analytics > Attribution > Settings**.
+
+### Viewing Attribution Reports
+
+Navigate to **Analytics > Attribution** to see:
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Attribution Report - Q2 2026 Campaign                │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Top Attributed Content:                             │
+│ 1. "10 Marketing Tips" → 45 conversions ($12.3k)    │
+│ 2. "Product Launch Thread" → 32 conversions ($8.9k) │
+│ 3. "Case Study Newsletter" → 28 conversions ($7.4k) │
+│                                                     │
+│ Channel Attribution:                                │
+│ ├─ Organic Social: 42% of conversions              │
+│ ├─ Email: 31% of conversions                       │
+│ └─ Blog: 27% of conversions                        │
+│                                                     │
+│ Model: Last Touch (change in Settings)              │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Step 5: Bulk Scheduling
+## Step 6: SLA Monitoring
+
+SLA monitoring ensures you meet your publishing commitments and content delivery targets.
+
+### Setting Up SLA Policies
+
+1. Go to **Analytics > SLA**
+2. Click **"Create SLA Policy"**
+3. Configure:
+
+```
+SLA Policy: Daily Publishing Commitment
+
+Target: Publish at least 3 posts per day
+Schedule Window: 8:00 AM - 8:00 PM (ET)
+Grace Period: 30 minutes
+Alert: Email + In-app if SLA at risk
+Escalation: Notify team lead if SLA breached
+```
+
+### SLA Dashboard
+
+```
+┌─────────────────────────────────────────────────────┐
+│ SLA Monitoring                                       │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Active SLAs: 2                                     │
+│                                                     │
+│ 📊 Daily Publishing (3 posts/day)                   │
+│   Today: 2/3 published (67%)                       │
+│   Status: 🟡 At Risk — 1 more needed by 8:00 PM    │
+│   Compliance (30d): 98.5%                          │
+│                                                     │
+│ 📊 Weekly Content (15 posts/week)                   │
+│   This Week: 12/15 published (80%)                  │
+│   Status: 🟢 On Track — 3 remaining by Sunday      │
+│   Compliance (30d): 96%                             │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### SLA Alerts
+
+| Alert Type | Trigger | Recipient |
+|------------|---------|-----------|
+| **At Risk** | Below target with time remaining | Content creator |
+| **Breached** | SLA target missed | Creator + team lead |
+| **Recovered** | SLA back on track after breach | Creator |
+| **Weekly Summary** | SLA compliance for the week | Team |
+
+---
+
+## Step 7: Bulk Scheduling
 
 ### When to Use Bulk Schedule
 
@@ -187,51 +323,29 @@ Click **"Schedule Post"** - the system will:
 
 1. Go to **Distribute > Schedule**
 2. Click **"Bulk Schedule"**
-3. Select content to schedule:
-   ```
-   [x] Blog Post Analysis
-   [x] Twitter Thread
-   [x] LinkedIn Article
-   [x] Newsletter
-   ```
-
-4. Configure schedule:
-   ```
-   Platform: Twitter
-   Start Time: Apr 15, 2026 9:00 AM
-   Interval: 60 minutes
-   Timezone: America/New_York
-   ```
-
-5. Review schedule preview:
-   ```
-   Apr 15 09:00 - Blog Post Analysis
-   Apr 15 10:00 - Twitter Thread
-   Apr 15 11:00 - LinkedIn Article
-   Apr 15 12:00 - Newsletter
-   ```
-
+3. Select content to schedule
+4. Configure schedule (time, platform, funnel stage, attribution tags)
+5. Review schedule preview
 6. Click **"Schedule All"**
 
 ### Bulk Schedule Tips
 
 - Space posts 1-2 hours apart minimum
 - Mix content types for variety
+- Assign funnel stages to each post
+- Add consistent attribution tags for campaign tracking
 - Consider platform-specific timing
 - Leave buffer time for engagement
 
 ---
 
-## Step 6: Manage Scheduled Posts
+## Step 8: Manage Scheduled Posts
 
 ### Edit a Scheduled Post
 
 1. Find post in queue
 2. Click **"Edit"**
-3. Update:
-   - Schedule time
-   - Content
-   - Platform settings
+3. Update schedule time, content, funnel stage, attribution tags
 4. Save changes
 
 **Restrictions:**
@@ -259,7 +373,7 @@ Bypass the schedule and publish now:
 
 ---
 
-## Step 7: Handle Failed Posts
+## Step 9: Handle Failed Posts
 
 ### Common Failure Reasons
 
@@ -282,100 +396,29 @@ Bypass the schedule and publish now:
 - System retries failed posts automatically
 - Up to 3 attempts with backoff
 - Manual retry available anytime
-
-### Fix and Retry
-
-If retry fails:
-
-1. Click **"Edit"** on failed post
-2. Review error message
-3. Fix issue:
-   - Reconnect account if auth expired
-   - Edit content if policy violation
-   - Shorten if over character limit
-4. Save and retry
+- SLA policies may trigger alerts on repeated failures
 
 ---
 
-## Step 8: View Schedule Calendar
+## Step 10: View Schedule Calendar
 
 ### Calendar View
 
 Navigate to **Distribute > Calendar**:
 
-```
-┌─────────────────────────────────────────────────────┐
-│ Content Calendar - April 2026                        │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│ Sun  Mon  Tue  Wed  Thu  Fri  Sat                 │
-│       1    2    3    4    5    6                  │
-│  7    8    9   10   11   12   13                  │
-│ 14   15   16   17   18   19   20                  │
-│      [🐦] [📄]                                     │
-│                                                     │
-│ 21   22   23   24   25   26   27                  │
-│      [📧]                                         │
-│                                                     │
-│ 28   29   30                                       │
-│                                                     │
-│                                                     │
-│ 🐦 = Twitter  📄 = LinkedIn  📧 = Newsletter      │
-└─────────────────────────────────────────────────────┘
-```
+- **Month view** — See entire month at a glance
+- **Week view** — Detailed weekly schedule
+- **Day view** — Hour-by-hour breakdown
+- **List view** — Sortable post list with funnel stages
 
 ### Calendar Features
-
-- **Month view** - See entire month
-- **Week view** - Detailed weekly schedule
-- **Day view** - Hour-by-hour breakdown
-- **List view** - Sortable post list
-
-### Calendar Actions
 
 - Click date to schedule new post
 - Drag post to reschedule
 - Click post to edit
 - Filter by platform
-
----
-
-## Step 9: Monitor Queue Statistics
-
-### Stats Dashboard
-
-View key metrics:
-
-```
-┌─────────────────────────────────────────────────────┐
-│ Publishing Statistics                                │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│ Total Posts: 156                                   │
-│ ├─ Published: 142 (91%)                           │
-│ ├─ Pending: 10                                     │
-│ ├─ Failed: 3                                       │
-│ └─ Cancelled: 1                                    │
-│                                                     │
-│ Success Rate: 97.9%                                │
-│ Avg Time to Publish: 2.3 minutes                   │
-│                                                     │
-│ By Platform:                                       │
-│ ├─ Twitter: 89 posts                               │
-│ ├─ LinkedIn: 45 posts                              │
-│ └─ Newsletter: 22 posts                            │
-│                                                     │
-└─────────────────────────────────────────────────────┘
-```
-
-### Understanding Metrics
-
-| Metric | Good Range |
-|--------|------------|
-| Success Rate | >95% |
-| Failed Posts | <5% |
-| Pending Time | <1 week |
-| Platform Distribution | Balanced |
+- Color-coded by funnel stage
+- SLA deadlines shown as markers
 
 ---
 
@@ -383,40 +426,31 @@ View key metrics:
 
 ### Scheduling Strategy
 
-1. **Plan ahead** - Schedule 2-4 weeks in advance
-2. **Maintain consistency** - Post at regular intervals
-3. **Consider timing** - Post when audience is active
-4. **Mix content types** - Variety keeps engagement
-5. **Leave gaps** - Room for spontaneous content
+1. **Plan ahead** — Schedule 2-4 weeks in advance
+2. **Maintain consistency** — Post at regular intervals
+3. **Consider timing** — Post when audience is active
+4. **Mix content types** — Variety keeps engagement
+5. **Track funnel stages** — Ensure balanced content across the funnel
+6. **Use attribution** — Know what content drives results
 
-### Content Calendar
+### Funnel Strategy
 
-**Weekly Template:**
 ```
-Monday: Industry news/insights
-Tuesday: Educational content
-Wednesday: Behind-the-scenes
-Thursday: User-generated content
-Friday: Fun/casual content
-Weekend: Minimal or none
+Recommended Content Mix:
+
+Awareness: 40% of posts (blog repurposes, industry news)
+Interest: 25% of posts (how-tos, educational)
+Consideration: 20% (case studies, comparisons)
+Conversion: 10% (CTAs, demos, pricing)
+Retention: 5% (updates, tips)
 ```
 
-### Platform-Specific Tips
+### SLA Management
 
-**Twitter/X:**
-- 3-5 tweets per day
-- Space 2-3 hours apart
-- Use threads for longer content
-
-**LinkedIn:**
-- 1 post per weekday
-- Morning or evening works best
-- Professional tone
-
-**Instagram:**
-- 1 post per day
-- Stories can be more frequent
-- Evening posts often perform better
+- Set realistic SLA targets based on team capacity
+- Use grace periods to avoid false alarms
+- Monitor compliance weekly, not just daily
+- Adjust SLA targets when team size changes
 
 ---
 
@@ -430,29 +464,29 @@ Weekend: Minimal or none
 3. Content meets platform requirements
 4. Not rate limited
 
-### Wrong Time Published
+### SLA Showing "Breached" Unexpectedly
 
 **Common Issues:**
-- Wrong timezone selected
-- Daylight saving time
-- Timezone mismatch
+- Timezone mismatch between SLA and schedule
+- Grace period too short
+- Failed posts not retried in time
 
 **Fix:**
-- Always set correct timezone
-- Use platform's timezone
-- Double-check schedule
+- Align SLA and schedule timezones
+- Extend grace period for reliability
+- Enable auto-retry for failed posts
 
-### Bulk Schedule Error
+### Attribution Data Missing
 
 **Causes:**
-- Too many posts at once
-- Invalid content selected
-- Platform rate limits
+- No attribution tags assigned to scheduled posts
+- UTM parameters not configured
+- Engagement data not yet available
 
 **Fix:**
-- Schedule in smaller batches
-- Verify all content is valid
-- Space posts further apart
+- Add attribution tags when scheduling
+- Check Analytics > Attribution > Settings for UTM config
+- Wait 24-48 hours for engagement data to flow in
 
 ---
 
@@ -461,6 +495,9 @@ Weekend: Minimal or none
 You now know how to:
 - ✅ Schedule posts for future publication
 - ✅ Use smart scheduling recommendations
+- ✅ Track content through marketing funnel stages
+- ✅ Use attribution modeling to measure content ROI
+- ✅ Monitor SLA compliance for publishing commitments
 - ✅ Bulk schedule multiple posts
 - ✅ Manage the publishing queue
 - ✅ Handle failed posts and retries
@@ -473,8 +510,8 @@ You now know how to:
 Now that you can schedule posts:
 
 1. **[Team Collaboration](06-team-collaboration.md)** - Work with your team
-2. **[Analytics & Insights](07-analytics.md)** - Track scheduled post performance
-3. **[Performance Alerts](../FEATURES_GUIDE.md#performance-alerts)** - Get notified of important events
+2. **[Analytics & Insights](07-analytics.md)** - Track funnel and attribution performance
+3. **[Custom Dashboards](07-analytics.md#custom-dashboards)** — Build dashboards for SLA and funnel tracking
 
 ---
 

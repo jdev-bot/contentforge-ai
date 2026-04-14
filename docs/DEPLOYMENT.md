@@ -14,20 +14,70 @@ ContentForge AI uses a split deployment architecture:
 | Database | Supabase | Cloud-hosted PostgreSQL |
 | File Storage | Cloudflare R2 | Cloud object storage |
 
+**Tech Stack:** Python 3.13 · Node v22.22.2 · FastAPI · Next.js 14
+
 ---
 
 ## Prerequisites
 
-Before deploying, ensure you have:
+### System Requirements
 
-1. **Vercel Account** - Sign up at [vercel.com](https://vercel.com)
-2. **Render Account** - Sign up at [render.com](https://render.com)
-3. **Supabase Project** - Create at [supabase.com](https://supabase.com)
-4. **Cloudflare Account** - For R2 storage at [cloudflare.com](https://dash.cloudflare.com)
-5. **API Keys Ready:**
-   - Groq API key ([console.groq.com](https://console.groq.com))
-   - Resend API key ([resend.com](https://resend.com))
-   - Stripe API keys ([dashboard.stripe.com](https://dashboard.stripe.com))
+| Requirement | Version | Purpose |
+|-------------|---------|---------|
+| Python | 3.13+ | Backend runtime |
+| Node.js | v22.22.2+ | Frontend build |
+| Docker | 20.10+ | Container runtime (local dev) |
+| Git | 2.40+ | Source control |
+
+### Accounts Required
+
+1. **Vercel Account** — Sign up at [vercel.com](https://vercel.com)
+2. **Render Account** — Sign up at [render.com](https://render.com)
+3. **Supabase Project** — Create at [supabase.com](https://supabase.com)
+4. **Cloudflare Account** — For R2 storage at [cloudflare.com](https://dash.cloudflare.com)
+
+### API Keys Required
+
+| Key | Source | Purpose |
+|-----|--------|---------|
+| Groq API key | [console.groq.com](https://console.groq.com) | AI content generation (GLM-5.1) |
+| Resend API key | [resend.com](https://resend.com) | Email delivery |
+| Stripe API keys | [dashboard.stripe.com](https://dashboard.stripe.com) | Payment processing |
+| Stripe Webhook Secret | Stripe dashboard | Webhook verification |
+
+---
+
+## CI/CD Pipeline
+
+### Self-Hosted Runner
+
+All CI/CD workflows run on a **self-hosted GitHub Actions runner**:
+
+| Property | Value |
+|----------|-------|
+| Runner name | `srv1503460` |
+| OS | Ubuntu 25.10 |
+| Python | 3.13 (via venv at `/home/claw/actions-runner/venv`) |
+| Node.js | v22.22.2 |
+| Runner type | Self-hosted, Linux, x64 |
+
+### Pipeline Status: All 4 GREEN ✅
+
+| Workflow | File | Trigger | Description |
+|----------|------|---------|-------------|
+| Backend Tests | `backend-tests.yml` | `workflow_dispatch` | pytest (530 passed, 41 skipped) |
+| Frontend Build | `frontend-build.yml` | `workflow_dispatch` | Next.js build + lint |
+| CI/CD | `ci-cd.yml` | `workflow_dispatch` | Combined pipeline |
+| Security Scan | `security.yml` | `workflow_dispatch` | TruffleHog, Bandit, pip-audit, npm audit |
+
+### CI Configuration Notes
+
+- All workflows use `runs-on: self-hosted`
+- Python venv shared across steps (created once, reused)
+- Deep system tests excluded from CI (`--ignore=tests/deep_system_test`)
+- Test timeout configured to prevent hung runs
+- Security scans for infra-dependent checks are non-blocking
+- No `setup-python` or `setup-node` actions (pre-installed on runner)
 
 ---
 
@@ -110,19 +160,6 @@ vercel --prod
 6. Add environment variables from `.env.staging`
 7. Click **"Deploy"**
 
-#### Option C: Using Deploy Script
-
-```bash
-# Navigate to project root
-cd /path/to/contentforge-ai
-
-# Run deployment script
-./scripts/deploy-frontend.sh
-
-# For production deployment
-./scripts/deploy-frontend.sh --prod
-```
-
 ---
 
 ## Production Deployment
@@ -131,10 +168,10 @@ cd /path/to/contentforge-ai
 
 ```bash
 # Copy and configure production variables
-cp .env.production .env.production.local
+cp .env.production.template .env.production.local
 ```
 
-Update all `your_*` placeholders with actual values.
+Update all `your_*` placeholders with actual values. **Never commit `.env.production.local` to git.**
 
 ### Step 2: Deploy Backend (Production)
 
@@ -154,11 +191,6 @@ Follow the same steps as staging, but with production service names:
 vercel --prod
 ```
 
-Or use the deploy script:
-```bash
-./scripts/deploy-frontend.sh --prod
-```
-
 ---
 
 ## Required Environment Variables
@@ -171,13 +203,15 @@ Or use the deploy script:
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Supabase settings |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | Supabase settings |
 
+> **Note:** `NEXT_PUBLIC_GROQ_API_KEY` has been removed. Groq API calls are proxied through the backend.
+
 ### Backend (Render)
 
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `SUPABASE_URL` | Supabase project URL | ✅ Yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service key | ✅ Yes |
-| `GROQ_API_KEY` | Groq API key | ✅ Yes |
+| `GROQ_API_KEY` | Groq API key (GLM-5.1) | ✅ Yes |
 | `RESEND_API_KEY` | Resend email API | ⚠️ Email features |
 | `STRIPE_SECRET_KEY` | Stripe secret key | ⚠️ Payments |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook secret | ⚠️ Payments |
@@ -188,9 +222,12 @@ Or use the deploy script:
 | `R2_PUBLIC_URL` | R2 public URL | ✅ Yes |
 | `N8N_WEBHOOK_URL` | n8n webhook URL | ⚠️ Workflows |
 | `N8N_API_KEY` | n8n API key | ⚠️ Workflows |
-| `REDIS_URL` | Redis connection string | ✅ Auto-generated |
+| `REDIS_URL` | Redis connection string (with auth) | ✅ Auto-generated |
+| `REDIS_PASSWORD` | Redis authentication password | ✅ Yes |
 | `JWT_SECRET_KEY` | JWT signing key | ✅ Auto-generated |
 | `ENCRYPTION_KEY` | Data encryption key | ✅ Auto-generated |
+| `CORS_ORIGINS` | Allowed CORS origins (comma-separated) | ✅ Yes |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT token expiry | ⚠️ Default: 10080 |
 
 ---
 
@@ -203,7 +240,7 @@ Or use the deploy script:
 curl https://contentforge-ai-api.onrender.com/api/v1/health
 
 # Expected response:
-# {"status":"healthy","timestamp":"...","version":"1.0.0"}
+# {"status":"healthy","timestamp":"...","version":"2.0.0"}
 ```
 
 ### Frontend Verification
@@ -215,11 +252,26 @@ curl -I https://contentforge-ai.vercel.app
 # Expected: HTTP 200 OK
 ```
 
+### Performance Headers Check
+
+```bash
+# Verify middleware headers
+curl -v https://contentforge-ai-api.onrender.com/api/v1/health 2>&1 | grep -E "X-Response-Time|X-Request-ID|X-RateLimit|ETag"
+```
+
+Expected headers:
+- `X-Response-Time: <n>ms`
+- `X-Request-ID: <uuid>`
+- `X-RateLimit-Limit: <n>`
+- `X-RateLimit-Remaining: <n>`
+
 ### API Documentation
 
 Access interactive API docs at:
 - **Swagger UI**: `https://contentforge-ai-api.onrender.com/docs`
 - **ReDoc**: `https://contentforge-ai-api.onrender.com/redoc`
+
+> **Note:** API docs are disabled when `DEBUG=false` (production).
 
 ---
 
@@ -229,6 +281,7 @@ Access interactive API docs at:
 |--------|---------|-------|
 | `./scripts/deploy-frontend.sh` | Deploy Next.js to Vercel | `./scripts/deploy-frontend.sh [--prod]` |
 | `./scripts/deploy-backend.sh` | Deploy FastAPI to Render | `./scripts/deploy-backend.sh [--apply]` |
+| `./scripts/backup-database.sh` | Database backup | `./scripts/backup-database.sh` |
 
 ---
 
@@ -255,6 +308,26 @@ Or use Vercel dashboard → Deployments → Click "..." → "Promote to Producti
 
 ---
 
+## Security Checklist (Pre-Production)
+
+- [x] All API keys in environment variables (no hardcoded secrets)
+- [x] `.env.production` removed from git tracking
+- [x] Redis authentication configured
+- [x] Groq API key backend-only (not in `NEXT_PUBLIC_` env)
+- [x] `pickle` deserialization replaced with JSON
+- [x] RSS HTML sanitized with DOMPurify
+- [x] `python-jose` replaced with `PyJWT`
+- [x] `hashlib.md5` replaced with `hashlib.sha256`
+- [x] Docker services use `.env` (no hardcoded credentials)
+- [ ] Content Security Policy headers configured
+- [ ] CORS origins narrowed to production domains
+- [ ] Sentry/error tracking configured
+- [ ] Rate limiting middleware activated
+- [ ] Database RLS policies verified
+- [ ] SSL/TLS certificates verified
+
+---
+
 ## Troubleshooting
 
 ### Backend Issues
@@ -264,7 +337,9 @@ Or use Vercel dashboard → Deployments → Click "..." → "Promote to Producti
 | Build fails | Check `render.yaml` syntax; verify Dockerfile exists |
 | Health check fails | Ensure `/api/v1/health` endpoint responds with 200 |
 | Environment variables not set | Check Render dashboard → Environment tab |
-| Redis connection error | Verify `REDIS_URL` is correctly set from service |
+| Redis connection error | Verify `REDIS_URL` includes password: `redis://:password@host:6379/0` |
+| Cache not working | Check Redis availability; in-memory fallback will activate |
+| Slow requests logged | Check PerformanceMiddleware warnings (>2s) |
 
 ### Frontend Issues
 
@@ -274,6 +349,7 @@ Or use Vercel dashboard → Deployments → Click "..." → "Promote to Producti
 | API calls fail | Verify `BACKEND_API_URL` is correctly set |
 | Environment variables undefined | Check Vercel dashboard → Settings → Environment Variables |
 | 404 on API routes | Ensure rewrites are configured in `vercel.json` |
+| SSO login fails | Check SSO provider configuration and callback URLs |
 
 ---
 
@@ -303,8 +379,14 @@ Via Render dashboard → Service → Logs
 
 ### Health Monitoring
 - Backend: `/api/v1/health`
+- Backend (detailed): `/api/v1/health/detailed`
 - Frontend: Check Vercel dashboard for analytics
+
+### Performance Monitoring
+- `X-Response-Time` header on all API responses
+- Slow request logging (>2s) via PerformanceMiddleware
+- `X-Request-ID` for distributed request tracing
 
 ---
 
-*Last updated: 2026-04-12*
+*Last updated: 2026-04-14*

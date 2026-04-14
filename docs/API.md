@@ -6,13 +6,25 @@ The ContentForge AI API is a RESTful API for AI-powered content repurposing and 
 
 **Base URL**: `https://api.contentforge.ai/api/v1`
 
-**Current Version**: 1.0.0
+**Current Version**: 2.0.0
+
+**Route Summary**: 375 routes across 49 modules (184 GET | 124 POST | 15 PUT | 15 PATCH | 37 DELETE)
+
+> **Full endpoint listing:** See [API_COMPLETE.md](./API_COMPLETE.md) for the complete reference of all 375 endpoints with parameters, request/response schemas, and examples.
 
 ---
 
 ## Authentication
 
 The API uses JWT Bearer token authentication. All endpoints (except public health checks and authentication endpoints) require a valid access token.
+
+### Authentication Methods
+
+| Method | Endpoints | Description |
+|--------|-----------|-------------|
+| **Email/Password** | `POST /auth/login`, `POST /auth/register` | Standard credential auth via Supabase |
+| **OIDC SSO** | `POST /sso/*`, `GET /sso/callback` | OpenID Connect single sign-on |
+| **SAML SSO** | `POST /saml/*`, `GET /saml/acs` | SAML 2.0 single sign-on |
 
 ### Getting a Token
 
@@ -30,64 +42,101 @@ Authorization: Bearer <your_access_token>
 
 ---
 
-## API Endpoints
+## API Endpoint Categories
 
-### Authentication Endpoints
+### Core Endpoints (6 modules)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/register` | Register a new user |
-| POST | `/auth/login` | Login and get access token |
-| POST | `/auth/logout` | Logout current user |
-| GET | `/auth/me` | Get current user profile |
-| PATCH | `/auth/me` | Update user profile |
+| Module | Key Endpoints | Description |
+|--------|--------------|-------------|
+| **auth** | `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/me` | Authentication & authorization |
+| **user** | `/user/profile`, `/user/preferences` | User profile management |
+| **organizations** | `/organizations`, `/organizations/{id}/members` | Organization CRUD & membership |
+| **health** | `/health`, `/health/detailed` | System health checks |
+| **docs** | `/docs/openapi.json` | API documentation |
+| **admin** | `/admin/users`, `/admin/stats` | Administrative functions |
 
-### Content Endpoints
+### Content Management (4 modules)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/content` | Create new content from source |
-| GET | `/content` | List all user content |
-| GET | `/content/{id}` | Get specific content |
-| DELETE | `/content/{id}` | Delete content |
-| POST | `/content/{id}/generate` | Generate repurposed assets |
-| GET | `/content/{id}/assets` | List generated assets |
+| Module | Key Endpoints | Description |
+|--------|--------------|-------------|
+| **projects** | `/projects`, `/projects/{id}` | Project CRUD operations |
+| **content** | `/content`, `/content/{id}/generate` | Content generation & management |
+| **distributions** | `/distributions`, `/distributions/{id}/publish` | Distribution tracking & management |
+| **rss** | `/rss/feeds`, `/rss/entries` | RSS feed management |
 
-### Project Endpoints
+### AI Features (2 modules)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/projects` | Create new project |
-| GET | `/projects` | List all projects |
-| GET | `/projects/{id}` | Get specific project |
-| PATCH | `/projects/{id}` | Update project |
-| DELETE | `/projects/{id}` | Delete project |
+| Module | Key Endpoints | Description |
+|--------|--------------|-------------|
+| **ai_editor** | `/ai/edit/rewrite`, `/ai/edit/expand`, `/ai/edit/condense`, `/ai/edit/optimize` | AI content editing operations |
+| **ai_suggestions** | `/ai/suggestions`, `/ai/suggestions/{id}/apply` | AI-powered content suggestions |
 
-### Distribution Endpoints
+### P4 Wave 1 — Insights & Reporting (6 modules)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/distributions` | Create distribution |
-| GET | `/distributions` | List distributions |
-| GET | `/distributions/{id}` | Get specific distribution |
-| POST | `/distributions/{id}/publish` | Publish to platform |
+| Module | Key Endpoints | Description |
+|--------|--------------|-------------|
+| **version_history** | `/content/{id}/versions`, `/content/{id}/versions/{vid}/rollback` | Content version tracking & rollback |
+| **audit_logs** | `/audit-logs`, `/audit-logs/export` | System audit trail |
+| **quality_scoring** | `/content/{id}/quality`, `/quality/bulk` | Content quality metrics |
+| **sentiment** | `/sentiment/analyze`, `/sentiment/trends` | Sentiment analysis |
+| **dashboards** | `/dashboards`, `/dashboards/{id}/widgets` | Custom dashboard CRUD |
+| **reports** | `/reports`, `/reports/{id}/generate` | Report generation & scheduling |
 
-### Usage & Health Endpoints
+### P4 Wave 2 — Intelligence & Governance (5 modules)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check (public) |
-| GET | `/usage` | Get usage statistics |
+| Module | Key Endpoints | Description |
+|--------|--------------|-------------|
+| **suggestions** | `/suggestions`, `/suggestions/auto` | Auto-suggestion engine |
+| **categorization** | `/categorization`, `/categorization/cluster` | Smart categorization & clustering |
+| **performance** | `/performance/metrics`, `/performance/trends` | Performance analytics |
+| **retention** | `/retention/policies`, `/retention/execute` | Data retention policies |
+| **comments** | `/content/{id}/comments`, `/comments/{id}/replies` | Comments v2 with threading & resolution |
 
-### AI Content Editor Endpoints
+### P4 Wave 3 — Enterprise & Extensibility (7 modules)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/ai/edit/rewrite` | Rewrite content with different tone/style |
-| POST | `/ai/edit/expand` | Expand content with more detail |
-| POST | `/ai/edit/condense` | Condense content to be shorter |
-| POST | `/ai/edit/optimize` | Optimize content for specific platform |
-| GET | `/ai/edit/history` | Get editor operation history |
+| Module | Key Endpoints | Description |
+|--------|--------------|-------------|
+| **sso** | `/sso/providers`, `/sso/callback` | OIDC SSO authentication |
+| **saml** | `/saml/metadata`, `/saml/acs` | SAML 2.0 SSO authentication |
+| **plugins** | `/plugins`, `/plugins/{id}/install` | Plugin system management |
+| **ws** | `/ws/connect` | WebSocket real-time connections |
+| **collaboration** | `/collaboration/sessions`, `/collaboration/changes` | Real-time collaboration |
+| **marketplace** | `/marketplace/plugins`, `/marketplace/templates` | Plugin/template marketplace |
+| **notifications** | `/notifications`, `/notifications/{id}/read` | Notification management |
+
+### P4 Wave 4 — Analytics & Integration (4 modules)
+
+| Module | Key Endpoints | Description |
+|--------|--------------|-------------|
+| **funnel** | `/funnels`, `/funnels/{id}/stages` | Funnel tracking & analysis |
+| **attribution** | `/attribution/models`, `/attribution/analyze` | Attribution modeling |
+| **sla** | `/sla/definitions`, `/sla/alerts` | SLA monitoring & alerting |
+| **integration_framework** | `/integrations/hub`, `/integrations/hub/{id}/configure` | Integration Hub framework |
+
+### Analytics & Monitoring (6 modules)
+
+| Module | Key Endpoints | Description |
+|--------|--------------|-------------|
+| **analytics** | `/analytics/dashboard`, `/analytics/kpis` | Analytics & reporting |
+| **freshness** | `/freshness/scores`, `/freshness/bulk` | Content freshness scoring |
+| **trends** | `/trends`, `/trends/emerging` | Trend tracking & analysis |
+| **audience** | `/audience/segments`, `/audience/metrics` | Audience analytics |
+| **alerts** | `/alerts`, `/alerts/{id}/acknowledge` | Alert management |
+| **competitors** | `/competitors`, `/competitors/{id}/compare` | Competitor analysis |
+
+### Automation & Utility (9 modules)
+
+| Module | Key Endpoints | Description |
+|--------|--------------|-------------|
+| **automation** | `/automation/rules`, `/automation/rules/{id}/trigger` | Automation rules engine |
+| **scheduler** | `/scheduler/schedules`, `/scheduler/schedules/{id}/execute` | Content scheduling |
+| **search** | `/search`, `/search/suggestions` | Full-text search |
+| **trash** | `/trash`, `/trash/{id}/restore` | Soft-delete & recovery |
+| **usage** | `/usage`, `/usage/stats` | Usage tracking & rate limits |
+| **webhooks** | `/webhooks`, `/webhooks/{id}/deliveries` | External service webhooks |
+| **integrations** | `/integrations`, `/integrations/{id}/connect` | Third-party integrations |
+| **stripe** | `/stripe/checkout`, `/stripe/webhook` | Payment processing |
+| **presence** | `/presence/online`, `/presence/{user_id}` | Real-time user presence |
 
 ---
 
@@ -135,14 +184,6 @@ curl -X POST "https://api.contentforge.ai/api/v1/auth/register" \
 }
 ```
 
-**Error Response (400 Bad Request):**
-
-```json
-{
-  "detail": "Registration failed"
-}
-```
-
 ---
 
 ### POST /api/v1/auth/login
@@ -156,17 +197,6 @@ Login to obtain an access token.
   "email": "user@example.com",
   "password": "securepassword123"
 }
-```
-
-**curl Example:**
-
-```bash
-curl -X POST "https://api.contentforge.ai/api/v1/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "securepassword123"
-  }'
 ```
 
 **Success Response (200 OK):**
@@ -185,14 +215,6 @@ curl -X POST "https://api.contentforge.ai/api/v1/auth/login" \
 }
 ```
 
-**Error Response (401 Unauthorized):**
-
-```json
-{
-  "detail": "Invalid credentials"
-}
-```
-
 ---
 
 ## AI Content Editor Examples
@@ -201,34 +223,14 @@ curl -X POST "https://api.contentforge.ai/api/v1/auth/login" \
 
 Rewrite content with a different tone and style.
 
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
-
 **Request Body:**
 
 ```json
 {
-  "content": "Our company provides excellent software development services. We help businesses build scalable applications.",
+  "content": "Our company provides excellent software development services.",
   "tone": "witty",
   "style": "persuasive"
 }
-```
-
-**curl Example:**
-
-```bash
-curl -X POST "https://api.contentforge.ai/api/v1/ai/edit/rewrite" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "Our company provides excellent software development services. We help businesses build scalable applications.",
-    "tone": "witty",
-    "style": "persuasive"
-  }'
 ```
 
 **Success Response (200 OK):**
@@ -246,111 +248,9 @@ curl -X POST "https://api.contentforge.ai/api/v1/ai/edit/rewrite" \
 }
 ```
 
-**Supported Tones:**
-- `casual` - Relaxed, conversational
-- `professional` - Business-appropriate
-- `witty` - Clever and humorous
-- `formal` - Academic and sophisticated
-- `friendly` - Warm and approachable
-- `authoritative` - Confident and expert
-- `enthusiastic` - Excited and energetic
-- `empathetic` - Understanding and compassionate
+**Supported Tones:** casual, professional, witty, formal, friendly, authoritative, enthusiastic, empathetic
 
-**Supported Styles:**
-- `neutral` - Balanced and objective
-- `persuasive` - Convincing and compelling
-- `informative` - Educational and factual
-- `storytelling` - Narrative-driven
-- `concise` - Brief and to-the-point
-- `descriptive` - Vivid and sensory
-
----
-
-### POST /api/v1/ai/edit/expand
-
-Expand content with more detail and depth.
-
-**Request Body:**
-
-```json
-{
-  "content": "We help businesses grow through digital marketing.",
-  "target_length": 3,
-  "focus_areas": ["strategies", "case studies"]
-}
-```
-
-**curl Example:**
-
-```bash
-curl -X POST "https://api.contentforge.ai/api/v1/ai/edit/expand" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "We help businesses grow through digital marketing.",
-    "target_length": 3,
-    "focus_areas": ["strategies", "case studies"]
-  }'
-```
-
-**Success Response (200 OK):**
-
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440001",
-  "operation": "expand",
-  "original_content": "We help businesses grow through digital marketing.",
-  "expanded_content": "At our core, we specialize in helping businesses achieve remarkable growth through comprehensive digital marketing strategies. Our approach combines data-driven insights with creative execution to deliver measurable results...",
-  "target_length": 3,
-  "actual_expansion_ratio": 2.8,
-  "tokens_used": 890,
-  "created_at": "2026-04-13T11:31:00Z"
-}
-```
-
----
-
-### POST /api/v1/ai/edit/condense
-
-Condense content while preserving key points.
-
-**Request Body:**
-
-```json
-{
-  "content": "Our comprehensive guide to digital marketing covers everything from SEO to social media advertising. We dive deep into keyword research, content strategy, paid campaigns, and analytics. Learn how to optimize your website for search engines, create engaging social media content, run effective ad campaigns, and measure your results using advanced analytics tools.",
-  "target_percentage": 40,
-  "preserve_key_points": true
-}
-```
-
-**curl Example:**
-
-```bash
-curl -X POST "https://api.contentforge.ai/api/v1/ai/edit/condense" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "Our comprehensive guide to digital marketing covers everything...",
-    "target_percentage": 40,
-    "preserve_key_points": true
-  }'
-```
-
-**Success Response (200 OK):**
-
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440002",
-  "operation": "condense",
-  "original_content": "Our comprehensive guide to digital marketing covers everything...",
-  "condensed_content": "Master digital marketing with our guide covering SEO, social media, paid campaigns, and analytics. Learn optimization, content creation, ad management, and results measurement.",
-  "target_percentage": 40,
-  "actual_reduction_percentage": 45.2,
-  "tokens_used": 320,
-  "created_at": "2026-04-13T11:32:00Z"
-}
-```
+**Supported Styles:** neutral, persuasive, informative, storytelling, concise, descriptive
 
 ---
 
@@ -362,272 +262,69 @@ Optimize content for a specific platform.
 
 ```json
 {
-  "content": "We just launched our new AI-powered content creation tool that helps businesses generate engaging social media posts, newsletters, and blog content in minutes.",
+  "content": "We just launched our new AI-powered content creation tool.",
   "platform": "twitter",
   "include_hashtags": true,
   "include_cta": true
 }
 ```
 
-**curl Example:**
-
-```bash
-curl -X POST "https://api.contentforge.ai/api/v1/ai/edit/optimize" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "We just launched our new AI-powered content creation tool...",
-    "platform": "twitter",
-    "include_hashtags": true,
-    "include_cta": true
-  }'
-```
-
-**Success Response (200 OK):**
-
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440003",
-  "operation": "optimize",
-  "original_content": "We just launched our new AI-powered content creation tool...",
-  "optimized_content": "🚀 Big news! Our AI content tool is LIVE\n\nCreate engaging posts, newsletters & blogs in MINUTES\n\nNo more writer's block ✨\n\nReady to transform your content game?\n\nTry it free →\n\n#AI #ContentCreation #Marketing",
-  "platform": "twitter",
-  "character_count": 234,
-  "word_count": 32,
-  "tokens_used": 450,
-  "created_at": "2026-04-13T11:33:00Z"
-}
-```
-
-**Supported Platforms:**
-- `twitter` - Up to 280 characters, punchy style
-- `linkedin` - Professional, thought leadership
-- `blog` - SEO-optimized, structured format
-- `newsletter` - Personal, conversational
-- `instagram` - Engaging captions with hashtags
-- `tiktok` - Trendy, authentic style
+**Supported Platforms:** twitter, linkedin, blog, newsletter, instagram, tiktok
 
 ---
 
-### GET /api/v1/ai/edit/history
+## P4 Endpoint Examples
 
-Get history of AI editor operations.
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-```
-
-**Query Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| limit | integer | Number of results (default: 50) |
-| operation | string | Filter by operation type |
-
-**curl Example:**
+### Version History
 
 ```bash
-# Get all history
-curl "https://api.contentforge.ai/api/v1/ai/edit/history" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
+# List versions for a content item
+curl "https://api.contentforge.ai/api/v1/content/{id}/versions" \
+  -H "Authorization: Bearer <token>"
 
-# Filter by operation type
-curl "https://api.contentforge.ai/api/v1/ai/edit/history?operation=rewrite&limit=10" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
+# Rollback to a specific version
+curl -X POST "https://api.contentforge.ai/api/v1/content/{id}/versions/{version_id}/rollback" \
+  -H "Authorization: Bearer <token>"
 ```
 
-**Success Response (200 OK):**
-
-```json
-[
-  {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "content_id": "content-uuid",
-    "operation": "rewrite",
-    "original_preview": "Our company provides...",
-    "result_preview": "We're the code wizards...",
-    "tokens_used": 245,
-    "created_at": "2026-04-13T11:30:00Z"
-  },
-  {
-    "id": "550e8400-e29b-41d4-a716-446655440003",
-    "operation": "optimize",
-    "original_preview": "We just launched...",
-    "result_preview": "🚀 Big news!...",
-    "tokens_used": 450,
-    "created_at": "2026-04-13T11:33:00Z"
-  }
-]
-```
-
----
-
-### POST /api/v1/content
-
-Create new content from a source (URL, YouTube, or text).
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
-
-**Request Body:**
-
-```json
-{
-  "title": "My Blog Post Analysis",
-  "source": {
-    "type": "url",
-    "url": "https://example.com/article"
-  },
-  "project_id": "project-uuid"
-}
-```
-
-**curl Example:**
+### Quality Scoring
 
 ```bash
-curl -X POST "https://api.contentforge.ai/api/v1/content" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+# Get quality score for content
+curl "https://api.contentforge.ai/api/v1/content/{id}/quality" \
+  -H "Authorization: Bearer <token>"
+
+# Bulk quality analysis
+curl -X POST "https://api.contentforge.ai/api/v1/quality/bulk" \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{
-    "title": "My Blog Post Analysis",
-    "source": {
-      "type": "url",
-      "url": "https://example.com/article"
-    },
-    "project_id": "550e8400-e29b-41d4-a716-446655440000"
-  }'
+  -d '{"content_ids": ["id1", "id2", "id3"]}'
 ```
 
-**Alternative - YouTube Source:**
+### Funnel Tracking
 
 ```bash
-curl -X POST "https://api.contentforge.ai/api/v1/content" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+# List funnels
+curl "https://api.contentforge.ai/api/v1/funnels" \
+  -H "Authorization: Bearer <token>"
+
+# Get funnel stage analytics
+curl "https://api.contentforge.ai/api/v1/funnels/{id}/stages" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Integration Hub
+
+```bash
+# List available integrations
+curl "https://api.contentforge.ai/api/v1/integrations/hub" \
+  -H "Authorization: Bearer <token>"
+
+# Configure an integration
+curl -X POST "https://api.contentforge.ai/api/v1/integrations/hub/{id}/configure" \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{
-    "title": "YouTube Video Summary",
-    "source": {
-      "type": "youtube",
-      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-    },
-    "project_id": "550e8400-e29b-41d4-a716-446655440000"
-  }'
-```
-
-**Alternative - Text Source:**
-
-```bash
-curl -X POST "https://api.contentforge.ai/api/v1/content" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Direct Text Input",
-    "source": {
-      "type": "text",
-      "text": "Your raw text content here..."
-    },
-    "project_id": "550e8400-e29b-41d4-a716-446655440000"
-  }'
-```
-
-**Success Response (201 Created):**
-
-```json
-{
-  "id": "content-uuid",
-  "project_id": "project-uuid",
-  "user_id": "user-uuid",
-  "title": "My Blog Post Analysis",
-  "source_type": "url",
-  "source_url": "https://example.com/article",
-  "original_text": "Extracted text content from the URL...",
-  "word_count": 1500,
-  "status": "completed",
-  "created_at": "2026-04-12T14:00:00Z",
-  "updated_at": "2026-04-12T14:00:00Z"
-}
-```
-
-**Error Response (400 Bad Request):**
-
-```json
-{
-  "detail": "Invalid source URL"
-}
-```
-
----
-
-### GET /api/v1/content
-
-List all content for the authenticated user.
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-```
-
-**Query Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| project_id | UUID | Filter by project |
-| status | string | Filter by status (pending, completed, failed) |
-
-**curl Example:**
-
-```bash
-# List all content
-curl "https://api.contentforge.ai/api/v1/content" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
-
-# Filter by project
-curl "https://api.contentforge.ai/api/v1/content?project_id=550e8400-e29b-41d4-a716-446655440000" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
-
-# Filter by status
-curl "https://api.contentforge.ai/api/v1/content?status=completed" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
-```
-
-**Success Response (200 OK):**
-
-```json
-[
-  {
-    "id": "content-uuid-1",
-    "project_id": "project-uuid",
-    "user_id": "user-uuid",
-    "title": "My Blog Post Analysis",
-    "source_type": "url",
-    "source_url": "https://example.com/article",
-    "original_text": "Extracted text content...",
-    "word_count": 1500,
-    "status": "completed",
-    "created_at": "2026-04-12T14:00:00Z",
-    "updated_at": "2026-04-12T14:00:00Z"
-  },
-  {
-    "id": "content-uuid-2",
-    "project_id": "project-uuid",
-    "user_id": "user-uuid",
-    "title": "YouTube Video Summary",
-    "source_type": "youtube",
-    "source_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    "original_text": "Video transcript...",
-    "word_count": 2500,
-    "status": "completed",
-    "created_at": "2026-04-12T13:00:00Z",
-    "updated_at": "2026-04-12T13:00:00Z"
-  }
-]
+  -d '{"settings": {"api_key": "...", "sync_interval": 300}}'
 ```
 
 ---
@@ -648,8 +345,9 @@ All API errors follow this format:
 |------|---------|
 | 200 | Success |
 | 201 | Created successfully |
-| 400 | Bad request - invalid input |
-| 401 | Unauthorized - invalid or missing token |
+| 304 | Not Modified (ETag match) |
+| 400 | Bad request — invalid input |
+| 401 | Unauthorized — invalid or missing token |
 | 404 | Resource not found |
 | 429 | Rate limit exceeded |
 | 500 | Internal server error |
@@ -666,7 +364,7 @@ API requests are subject to rate limiting based on subscription tier:
 | Pro | 1,000 | 100 |
 | Enterprise | 10,000 | Unlimited |
 
-Rate limit headers are included in responses:
+Rate limit headers are included in all responses:
 
 ```
 X-RateLimit-Limit: 100
@@ -676,27 +374,40 @@ X-RateLimit-Reset: 1713520800
 
 ---
 
+## Performance Response Headers
+
+All API responses include performance and tracing headers:
+
+| Header | Description |
+|--------|-------------|
+| `X-Response-Time` | Request processing time in milliseconds |
+| `X-Request-ID` | Unique identifier for request tracing |
+| `ETag` | Resource version hash (conditional requests) |
+| `Cache-Control` | Caching directives |
+
+---
+
 ## Data Types
 
 ### Content Status
 
-- `pending` - Content is being processed
-- `completed` - Content extraction complete
-- `failed` - Content extraction failed
+- `pending` — Content is being processed
+- `completed` — Content extraction complete
+- `failed` — Content extraction failed
 
 ### Asset Types
 
-- `thread` - Twitter/X thread
-- `social_post` - Social media post
-- `newsletter` - Email newsletter
-- `video_script` - Short-form video script
+- `thread` — Twitter/X thread
+- `social_post` — Social media post
+- `newsletter` — Email newsletter
+- `video_script` — Short-form video script
 
 ### Source Types
 
-- `url` - Web page URL
-- `youtube` - YouTube video URL
-- `text` - Raw text input
-- `upload` - Uploaded file (audio/video)
+- `url` — Web page URL
+- `youtube` — YouTube video URL
+- `text` — Raw text input
+- `upload` — Uploaded file (audio/video)
 
 ---
 
@@ -718,3 +429,7 @@ For API support or questions:
 - Documentation: https://docs.contentforge.ai
 - Support Email: support@contentforge.ai
 - Status Page: https://status.contentforge.ai
+
+---
+
+*Last updated: 2026-04-14*

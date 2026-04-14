@@ -1,6 +1,6 @@
 # Tutorial: Analytics & Insights
 
-> Track, analyze, and optimize your content performance
+> Track, analyze, and optimize your content performance with advanced analytics, custom dashboards, and funnel tracking
 
 ---
 
@@ -9,11 +9,15 @@
 By the end of this tutorial, you will:
 - Navigate the analytics dashboard
 - Understand key performance metrics
+- Build and share custom dashboards
+- Track content through marketing funnels
+- Use attribution modeling to measure content ROI
+- Monitor SLA compliance
+- Track content freshness and competitor activity
+- View performance analytics
 - Export data for reporting
-- Use insights to improve content
-- Set up custom reports
 
-**Time Required**: 20 minutes
+**Time Required**: 30 minutes
 
 ---
 
@@ -30,7 +34,7 @@ Before starting:
 ### Navigation
 
 1. Click **"Analytics"** in main navigation
-2. Or find **"Analytics"** widget on dashboard
+2. Or find the **"Analytics"** widget on dashboard
 
 ### Analytics Overview
 
@@ -43,12 +47,15 @@ Before starting:
 │ ├─ Total Content: 42                               │
 │ ├─ Total Assets: 156                                 │
 │ ├─ Published Posts: 78                             │
-│ ├─ Success Rate: 87.6%                             │
+│ ├─ Success Rate: 97.5%                             │
+│ ├─ SLA Compliance: 98.5%                           │
+│ ├─ Content Freshness: 85% (last 7 days)            │
 │ └─ Growth (30d): +12 content, +45 assets           │
 │                                                     │
 │ 📈 Performance Charts                                │
 │ ├─ Content created over time                       │
-│ ├─ Assets by type                                  │
+│ ├─ Funnel stage distribution                       │
+│ ├─ Attribution by channel                          │
 │ └─ Publishing success rate                         │
 │                                                     │
 │ 🎯 Recent Activity                                   │
@@ -70,6 +77,8 @@ Before starting:
 | **Total Assets** | Generated repurposed content | Growing |
 | **Published Posts** | Successfully published | Growing |
 | **Success Rate** | Published / Attempted | >90% |
+| **SLA Compliance** | Posts meeting SLA targets | >95% |
+| **Content Freshness** | % content updated in last 7 days | >70% |
 | **Content Growth** | New content (30 days) | Consistent |
 | **Asset Growth** | New assets (30 days) | Consistent |
 
@@ -86,10 +95,11 @@ Before starting:
 - Text - Direct input
 - Upload - File uploads
 
-**Time-Based:**
-- Daily creation count
-- Weekly trends
-- Monthly summaries
+**By Quality Score:**
+- Excellent (90-100) — Ready to publish
+- Good (75-89) — Minor tweaks optional
+- Fair (60-74) — Consider revisions
+- Needs Work (<60) — Significant edits recommended
 
 ### Asset Metrics
 
@@ -127,143 +137,384 @@ Failed:      ███ 2%
 
 ---
 
-## Step 3: View Detailed Analytics
+## Step 3: Performance Analytics
 
-### Content Analytics
+Performance analytics provide deeper insights into how your content performs over time.
 
-**Access:** Analytics > Content
+### Access Performance Analytics
 
-**Metrics Available:**
-- Content count by status
-- Creation timeline
-- Word count distribution
-- Source type breakdown
-- Content age analysis
+1. Go to **Analytics > Performance**
+2. Select time range and filters
 
-**Example Report:**
+### Performance Metrics
+
+| Metric | Description | Use Case |
+|--------|-------------|----------|
+| **Publishing Velocity** | Posts published per day/week | Track team output |
+| **Engagement Rate** | Avg. engagement per post | Measure content quality |
+| **Quality Score Trend** | Average quality over time | Track content improvement |
+| **Sentiment Distribution** | Positive/neutral/negative ratios | Monitor brand voice |
+| **Platform Efficiency** | Success rate by platform | Optimize distribution |
+| **Generation Speed** | Time from import to asset | Measure AI efficiency |
+
+### Performance Trends
+
 ```
-Content Analysis (Last 30 Days)
-
-Created: 12
-├─ From URLs: 5
-├─ From YouTube: 3
-└─ Direct text: 4
-
-Status:
-├─ Completed: 11 (92%)
-└─ Failed: 1 (8%)
-
-Average word count: 1,245
-```
-
-### Asset Analytics
-
-**Access:** Analytics > Assets
-
-**Metrics Available:**
-- Assets by type
-- Assets by platform
-- Generation success rate
-- Token usage
-- Popular content sources
-
-**Example Report:**
-```
-Asset Generation (Last 30 Days)
-
-Generated: 45 assets
-├─ Threads: 15
-├─ LinkedIn Posts: 12
-├─ Newsletters: 10
-└─ Video Scripts: 8
-
-Success Rate: 96%
-Average tokens per asset: 850
-```
-
-### Distribution Analytics
-
-**Access:** Analytics > Distributions
-
-**Metrics Available:**
-- Posts by platform
-- Publishing success rate
-- Time-to-publish
-- Failed post reasons
-- Platform engagement
-
-**Example Report:**
-```
-Distribution Performance
-
-Total Attempts: 80
-├─ Successful: 78 (97.5%)
-└─ Failed: 2 (2.5%)
-
-By Platform:
-├─ Twitter: 40 posts, 100% success
-├─ LinkedIn: 25 posts, 96% success
-└─ Instagram: 15 posts, 93% success
-
-Average time to publish: 1.8 minutes
+┌─────────────────────────────────────────────────────┐
+│ Performance Analytics (Last 30 Days)                 │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Publishing Velocity                                 │
+│ Week 1: 12 posts  ████████░░                        │
+│ Week 2: 15 posts  ██████████░                       │
+│ Week 3: 18 posts  ████████████                     │
+│ Week 4: 20 posts  █████████████                    │
+│ Trend: 📈 +67% over 4 weeks                        │
+│                                                     │
+│ Avg. Quality Score                                 │
+│ Week 1: 72  ████████████░░░░░░                     │
+│ Week 2: 78  ██████████████░░░░                     │
+│ Week 3: 81  ███████████████░░░                     │
+│ Week 4: 85  ████████████████░░                     │
+│ Trend: 📈 +18% over 4 weeks                        │
+│                                                     │
+│ Sentiment Distribution                             │
+│ Positive: 62% ████████████████░░░░░░░░             │
+│ Neutral:  28% ████████░░░░░░░░░░░░░░               │
+│ Negative: 10% ████░░░░░░░░░░░░░░░░░░░              │
+│                                                     │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Step 4: Usage Analytics
+## Step 4: Custom Dashboards
 
-### Track Your Usage
+Custom dashboards let you create personalized views of the metrics that matter most to you.
 
-**Access:** Analytics > Usage
+### Create a Custom Dashboard
 
-**Available Views:**
-- Daily usage counts
-- Weekly summaries
-- Monthly reports
-- Feature utilization
-
-### Usage Breakdown
+1. Go to **Analytics > Dashboards**
+2. Click **"New Dashboard"**
+3. Configure:
 
 ```
-Usage This Month
+Dashboard Name: Marketing Team Overview
 
-Content Generations: 8/10
-├─ Used: 8
-└─ Remaining: 2
+Widgets:
+├─ Publishing Velocity (line chart)
+├─ Quality Score Average (gauge)
+├─ Funnel Stage Distribution (bar chart)
+├─ SLA Compliance (percentage)
+├─ Top 5 Performing Content (table)
+└─ Content Freshness (indicator)
 
-Scheduled Posts: 3/5
-├─ Used: 3
-└─ Remaining: 2
-
-RSS Feeds: 1/1 (Free) or 1/10 (Pro)
-
-Resets on: May 1, 2026
+Filters:
+├─ Project: Marketing Campaign
+├─ Date Range: Last 30 days
+└─ Platform: All
 ```
 
-### Feature Utilization
+4. Click **"Create Dashboard"**
 
-See which features you use most:
+### Dashboard Widgets
+
+| Widget Type | Best For | Example |
+|-------------|----------|---------|
+| **Line Chart** | Trends over time | Publishing velocity weekly |
+| **Bar Chart** | Comparisons | Funnel stage distribution |
+| **Gauge** | Single metric with target | SLA compliance at 98% |
+| **Table** | Detailed data | Top performing content |
+| **Indicator** | Status at a glance | Content freshness: 🟢 Good |
+| **Pie Chart** | Proportions | Platform distribution |
+
+### Share Dashboards
+
+1. Open your custom dashboard
+2. Click **"Share"**
+3. Choose visibility:
+   - **Private** — Only you
+   - **Team** — All organization members
+   - **Specific Members** — Select individuals
+4. Team members can view (but not edit) shared dashboards
+
+### Scheduled Dashboard Reports
+
+Get dashboard snapshots delivered to your inbox:
 
 ```
-Feature Usage (Last 30 Days)
-
-Most Used:
-1. AI Content Editor: 25 uses
-2. Scheduled Publishing: 8 uses
-3. Content Import: 5 uses
-4. RSS Import: 12 uses
-5. Smart Editor: 20 uses
+Report Settings:
+Frequency: Weekly (Monday 9:00 AM)
+Recipients: team@acme.com
+Format: PDF summary + link to live dashboard
+Include: All widgets + executive summary
 ```
 
 ---
 
-## Step 5: Export Data
+## Step 5: Funnel Analytics
+
+Funnel analytics show how content moves prospects through your marketing funnel.
+
+### Access Funnel Analytics
+
+1. Go to **Analytics > Funnel**
+2. Select date range and project
+
+### Funnel View
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Content Funnel Analysis                              │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Awareness → Interest → Consideration → Conversion   │
+│  420 posts   210 posts   85 posts      32 posts     │
+│  ─────50%────→ ──60%──→ ────38%───→                 │
+│                                                     │
+│ Stage Breakdown:                                     │
+│                                                     │
+│ Awareness (420 posts)                                │
+│ ├─ Avg. Quality Score: 78                           │
+│ ├─ Avg. Engagement: 245                             │
+│ └─ Top Content: "AI Marketing Tips" (1,240 eng.)    │
+│                                                     │
+│ Interest (210 posts)                                │
+│ ├─ Avg. Quality Score: 82                           │
+│ ├─ Avg. Engagement: 380                             │
+│ └─ Top Content: "How to Automate Content" (890)     │
+│                                                     │
+│ Consideration (85 posts)                            │
+│ ├─ Avg. Quality Score: 85                          │
+│ ├─ Avg. Engagement: 620                             │
+│ └─ Top Content: "Case Study: ROI of AI" (520)       │
+│                                                     │
+│ Conversion (32 posts)                               │
+│ ├─ Avg. Quality Score: 88                          │
+│ ├─ Avg. Engagement: 890                            │
+│ └─ Top Content: "Free Trial CTA" (340 conv.)        │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### Funnel Optimization Tips
+
+- **Large drop-off at any stage** → Create more content for that funnel stage
+- **Low quality scores at a stage** → Improve content with Smart Editor
+- **High engagement but low conversion** → Strengthen CTAs
+- **Imbalanced funnel** → Adjust content mix (aim for 40/25/20/10/5 split)
+
+---
+
+## Step 6: Attribution Modeling
+
+Attribution modeling helps you understand which content pieces and campaigns drive results.
+
+### Access Attribution Analytics
+
+1. Go to **Analytics > Attribution**
+2. Select attribution model
+3. Choose date range
+
+### Attribution Models
+
+| Model | Description | Best For |
+|-------|-------------|----------|
+| **First Touch** | Credit to the first content that brought the user | Brand awareness campaigns |
+| **Last Touch** | Credit to the content before conversion | Direct response campaigns |
+| **Linear** | Equal credit across all touchpoints | Multi-channel strategies |
+| **Time Decay** | More credit to recent touchpoints | Long sales cycles |
+
+### Attribution Report
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Attribution Report - Q2 2026 Campaign                │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Top Attributed Content:                             │
+│ 1. "10 Marketing Tips" → 45 conversions ($12.3k)    │
+│ 2. "Product Launch Thread" → 32 conversions ($8.9k) │
+│ 3. "Case Study Newsletter" → 28 conversions ($7.4k) │
+│                                                     │
+│ Channel Attribution:                                │
+│ ├─ Organic Social: 42% of conversions              │
+│ ├─ Email: 31% of conversions                       │
+│ └─ Blog: 27% of conversions                        │
+│                                                     │
+│ Funnel Attribution:                                │
+│ ├─ Awareness content: 35% of first-touch credit    │
+│ ├─ Conversion content: 55% of last-touch credit    │
+│ └─ Consideration: Highest ROI per post ($210/post) │
+│                                                     │
+│ Model: Last Touch (change in Settings)              │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## Step 7: SLA Monitoring
+
+SLA monitoring tracks whether you're meeting your publishing commitments.
+
+### Access SLA Monitoring
+
+1. Go to **Analytics > SLA**
+2. View all active SLA policies
+
+### SLA Dashboard
+
+```
+┌─────────────────────────────────────────────────────┐
+│ SLA Monitoring                                       │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ 📊 Daily Publishing (3 posts/day)                    │
+│   Today: 2/3 published (67%)                       │
+│   Status: 🟡 At Risk — 1 more needed by 8:00 PM    │
+│   30-Day Compliance: 98.5%                         │
+│                                                     │
+│ 📊 Weekly Content (15 posts/week)                   │
+│   This Week: 12/15 published (80%)                  │
+│   Status: 🟢 On Track — 3 remaining by Sunday       │
+│   30-Day Compliance: 96%                            │
+│                                                     │
+│ 📊 Response Time (< 4 hours for review)             │
+│   Avg Review Time: 2.8 hours                       │
+│   Status: 🟢 Meeting SLA                            │
+│   30-Day Compliance: 99%                            │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### SLA Alert Types
+
+| Alert | Trigger | Action |
+|-------|---------|--------|
+| 🟢 On Track | Within target | No action |
+| 🟡 At Risk | Below target, time remaining | Publish/create content |
+| 🔴 Breached | Target missed | Review causes, adjust |
+| ✅ Recovered | Back on track after breach | Continue monitoring |
+
+---
+
+## Step 8: Content Freshness Scores
+
+Content freshness scores tell you how current your content library is.
+
+### Access Freshness Scores
+
+1. Go to **Analytics > Content Health**
+2. View freshness overview
+
+### Freshness Metrics
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| **Fresh (80-100%)** | Most content updated within 7 days | Maintain pace |
+| **Aging (50-79%)** | Content updated within 30 days | Plan refresh cycle |
+| **Stale (Below 50%)** | Significant content older than 30 days | Schedule content updates |
+
+### Freshness Dashboard
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Content Freshness                                    │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Overall Freshness: 78% 🟢                           │
+│                                                     │
+│ By Project:                                         │
+│ ├─ Marketing Campaign: 92% 🟢                      │
+│ ├─ Product Launch: 65% 🟡                           │
+│ └─ Evergreen Blog: 42% 🔴                           │
+│                                                     │
+│ Stale Content (30+ days):                            │
+│ ├─ "2025 Industry Report" — Last updated 45 days ago│
+│ ├─ "Getting Started Guide" — Last updated 60 days ago│
+│ └─ [3 more items]                                   │
+│                                                     │
+│ Recommendation: Schedule refresh for 5 stale items  │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### Keeping Content Fresh
+
+- Set up automated RSS imports for new source material
+- Use the Smart Editor to refresh old content
+- Schedule monthly content review cycles
+- Monitor freshness scores in custom dashboards
+
+---
+
+## Step 9: Competitor Tracking
+
+Track competitor content activity to identify opportunities and gaps.
+
+### Setting Up Competitor Tracking
+
+1. Go to **Analytics > Competitors**
+2. Click **"Add Competitor"**
+3. Enter competitor's public blog/website URL
+4. Configure tracking:
+   ```
+   Competitor: TechCorp Blog
+   URL: https://techcorp.com/blog
+   RSS Feed: https://techcorp.com/blog/feed/ (auto-detected)
+   Track: Publishing frequency, topics, engagement
+   ```
+5. Click **"Start Tracking"**
+
+### Competitor Dashboard
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Competitor Tracking                                  │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Competitors Tracked: 3                              │
+│                                                     │
+│ TechCorp Blog                                        │
+│ ├─ Publishing: 8 posts/week                        │
+│ ├─ Top Topics: AI, Cloud, Security                 │
+│ ├─ Avg. Quality Score: 82 (your avg: 85) 🟢        │
+│ └─ Last Post: 2 hours ago                          │
+│                                                     │
+│ MarketLeader Blog                                    │
+│ ├─ Publishing: 12 posts/week                       │
+│ ├─ Top Topics: Marketing, SaaS, Growth             │
+│ ├─ Avg. Quality Score: 88 (your avg: 85) 🟡       │
+│ └─ Last Post: 6 hours ago                          │
+│                                                     │
+│ Content Gaps (topics they cover, you don't):        │
+│ ├─ "Cloud Security Best Practices"                  │
+│ ├─ "SaaS Pricing Strategies"                        │
+│ └─ "Remote Team Management"                         │
+│                                                     │
+│ [Create Content for Gap]                             │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### Using Competitor Insights
+
+- **Content Gaps** — Topics competitors cover that you don't (opportunity!)
+- **Publishing Frequency** — Compare output and adjust your schedule
+- **Topic Trends** — See what's resonating in your industry
+- **Quality Comparison** — Benchmark your content quality against competitors
+
+---
+
+## Step 10: Export Data
 
 ### Export Formats
 
 **Available Formats:**
 - **CSV** - Spreadsheet compatible (Excel, Google Sheets)
 - **JSON** - Structured data for developers
+- **PDF** - Formatted reports for stakeholders
 
 ### What to Export
 
@@ -273,118 +524,19 @@ Most Used:
 | Asset history | Reporting, analysis |
 | Usage tracking | Billing verification |
 | Activity log | Audit trail |
+| Funnel report | Campaign analysis |
+| Attribution report | ROI documentation |
+| SLA report | Compliance evidence |
 
 ### Export Content
 
 1. Go to **Analytics > Export**
-2. Select data type:
-   ```
-   [x] Content
-   [ ] Assets
-   [ ] Distributions
-   [ ] Usage
-   ```
-
-3. Set date range:
-   ```
-   From: 2026-03-01
-   To: 2026-04-13
-   ```
-
-4. Choose format:
-   ```
-   Format: [x] CSV  [ ] JSON
-   ```
-
-5. Click **"Export"**
-
-### CSV Export Example
-
-```csv
-ID,Title,Source Type,Word Count,Status,Created At
-123,Blog Post Analysis,url,1247,completed,2026-04-01T10:00:00Z
-124,Video Summary,youtube,2341,completed,2026-04-02T14:30:00Z
-125,Meeting Notes,text,456,completed,2026-04-03T09:15:00Z
-```
-
-### JSON Export Example
-
-```json
-{
-  "export_info": {
-    "exported_at": "2026-04-13T10:00:00Z",
-    "user_id": "user-uuid",
-    "days_exported": 30
-  },
-  "content": [
-    {
-      "id": "content-uuid",
-      "title": "Blog Post Analysis",
-      "source_type": "url",
-      "word_count": 1247,
-      "status": "completed"
-    }
-  ],
-  "summary": {
-    "total_content": 42,
-    "total_assets": 156
-  }
-}
-```
+2. Select data type, date range, and format
+3. Click **"Export"**
 
 ---
 
-## Step 6: Use Insights for Improvement
-
-### Identify Trends
-
-**Look For:**
-- Content types that generate most assets
-- Platforms with highest success rates
-- Times when content performs best
-- Topics that get most engagement
-
-### Actionable Insights
-
-**Example Analysis:**
-
-```
-Insight: Twitter threads have 40% higher 
-engagement than single tweets.
-
-Action: Generate more threads from blog content.
-
----
-
-Insight: LinkedIn posts published at 8am 
-get 2x more views.
-
-Action: Schedule LinkedIn content for morning.
-
----
-
-Insight: Video scripts have highest conversion 
-to publishing (85%).
-
-Action: Prioritize video content creation.
-```
-
-### Performance Comparison
-
-Compare periods:
-
-```
-This Month vs Last Month
-
-Content Created: +25% 📈
-Assets Generated: +32% 📈
-Published Posts: +18% 📈
-Success Rate: +2% 📈
-```
-
----
-
-## Step 7: Advanced Analytics (Pro+)
+## Step 11: Advanced Analytics (Pro+)
 
 ### Custom Reports
 
@@ -392,24 +544,8 @@ Create custom analytics views:
 
 1. Go to **Analytics > Custom Reports**
 2. Click **"New Report"**
-3. Configure metrics:
-
-```
-Report Name: Q2 Marketing Performance
-
-Metrics to Include:
-[x] Content created
-[x] Assets generated
-[x] Posts by platform
-[x] Success rates
-[x] Engagement metrics
-
-Filters:
-Project: Marketing Campaign
-Date Range: Apr 1 - Jun 30
-```
-
-4. Save and schedule (optional)
+3. Configure metrics, filters, and schedule
+4. Save
 
 ### Scheduled Reports
 
@@ -427,6 +563,9 @@ Include:
 [x] Publishing stats
 [x] Performance highlights
 [x] Week-over-week comparison
+[x] SLA compliance
+[x] Funnel analysis
+[x] Competitor activity
 ```
 
 ### Team Analytics (Organizations)
@@ -437,29 +576,32 @@ View team performance:
 Team Performance - April 2026
 
 Content by Member:
-├─ Sarah: 15 pieces
-├─ John: 12 pieces
-└─ Mike: 8 pieces
+├─ Sarah: 15 pieces (avg quality: 84)
+├─ John: 12 pieces (avg quality: 80)
+└─ Mike: 8 pieces (avg quality: 77)
 
 Best Performing Content:
-├─ "Product Launch" by Sarah
-├─ "Industry Trends" by John
-└─ "Customer Story" by Mike
+├─ "Product Launch" by Sarah (1,240 engagement)
+├─ "Industry Trends" by John (890 engagement)
+└─ "Customer Story" by Mike (670 engagement)
 
-Team Success Rate: 94%
+Team SLA Compliance: 98.5%
+Team Success Rate: 97.2%
 ```
 
 ---
 
-## Step 8: Set Goals and Track Progress
+## Step 12: Set Goals and Track Progress
 
 ### Define Content Goals
 
 **Example Goals:**
 - Publish 20 posts per month
 - Maintain >95% success rate
+- Achieve average quality score >80
+- SLA compliance >98%
+- Content freshness >75%
 - Generate 50 assets monthly
-- Grow content library by 30%
 
 ### Track Progress
 
@@ -474,19 +616,17 @@ Monthly Goals Progress
 ✅ Current: 97.5%
 📊 Exceeding target
 
-🎯 Target: 50 assets
-✅ Current: 45 assets
-📊 90% complete - On track
-```
+🎯 Target: Quality score avg >80
+✅ Current: 83
+📊 Exceeding target
 
-### Celebrate Milestones
+🎯 Target: SLA compliance >98%
+✅ Current: 98.5%
+📊 Meeting target
 
-```
-🏆 Milestones Reached
-
-100th Content Item: Apr 5, 2026
-500th Asset Generated: Apr 10, 2026
-50th Published Post: Apr 12, 2026
+🎯 Target: Content freshness >75%
+✅ Current: 78%
+📊 Meeting target
 ```
 
 ---
@@ -497,35 +637,33 @@ Monthly Goals Progress
 
 **Weekly:**
 - Check publishing success rate
-- Review failed posts
-- Monitor usage limits
+- Review SLA compliance
+- Monitor freshness scores
+- Review competitor activity
 
 **Monthly:**
 - Full analytics review
 - Compare to previous month
+- Funnel and attribution analysis
 - Identify trends
 - Adjust strategy
 
 **Quarterly:**
 - Deep dive analysis
 - Set new goals
+- Review custom dashboards
 - Plan content strategy
+- Evaluate competitor shifts
 
 ### Data-Driven Decisions
 
 **Use analytics to:**
-- Focus on high-performing content types
+- Focus on high-performing content types and funnel stages
 - Optimize publishing times
-- Improve success rates
-- Allocate resources effectively
-
-### Sharing Insights
-
-**Export for stakeholders:**
-- Executive summaries
-- Performance reports
-- ROI calculations
-- Trend analysis
+- Improve quality scores with Smart Editor
+- Allocate resources based on attribution data
+- Maintain SLA compliance
+- Keep content fresh with scheduled refreshes
 
 ---
 
@@ -539,20 +677,26 @@ Monthly Goals Progress
 3. Wait a moment and retry
 4. Contact support if persists
 
-### Data Seems Incorrect
+### Funnel Data Not Showing
 
 **Check:**
-- Correct date range selected
-- Proper filters applied
-- Data hasn't been deleted
-- Account is correct
+1. Content has funnel stages assigned
+2. Date range includes scheduled content
+3. Attribution tags are configured
 
-### Export Fails
+### Attribution Data Missing
 
-**Common Issues:**
-- Large date range (try smaller)
-- Browser timeout (try again)
-- Insufficient permissions
+**Check:**
+1. Attribution tags assigned to scheduled posts
+2. Engagement data has had time to flow in (24-48 hours)
+3. Attribution model is configured in settings
+
+### Competitor Tracking Not Updating
+
+**Check:**
+1. Competitor RSS feed is still active
+2. Fetch frequency is configured
+3. Competitor site hasn't blocked scraping
 
 ---
 
@@ -561,9 +705,14 @@ Monthly Goals Progress
 You now know how to:
 - ✅ Navigate the analytics dashboard
 - ✅ Understand key performance metrics
-- ✅ View detailed analytics by category
+- ✅ Build and share custom dashboards
+- ✅ Track content through marketing funnels
+- ✅ Use attribution modeling to measure content ROI
+- ✅ Monitor SLA compliance
+- ✅ Track content freshness scores
+- ✅ Monitor competitor activity
+- ✅ View performance analytics and trends
 - ✅ Export data for reporting
-- ✅ Use insights to improve content strategy
 - ✅ Set and track content goals
 
 ---
@@ -572,9 +721,9 @@ You now know how to:
 
 Now that you understand analytics:
 
-1. **[Performance Alerts](../FEATURES_GUIDE.md#performance-alerts)** - Get notified of important events
-2. **[Competitor Analysis](../FEATURES_GUIDE.md#competitor-analysis)** - Compare to competition
-3. **[Trending Topics](../FEATURES_GUIDE.md#trending-topics)** - Create timely content
+1. **[Scheduling Posts](05-scheduling-posts.md)** — Set up funnel tracking and SLA policies
+2. **[Team Collaboration](06-team-collaboration.md)** — Share dashboards with your team
+3. **[Custom Dashboards](#step-4-custom-dashboards)** — Build your first dashboard
 
 ---
 

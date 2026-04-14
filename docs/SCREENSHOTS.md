@@ -1,38 +1,41 @@
-# ContentForge AI - Screenshot Capture Workflow
+# ContentForge AI - Screenshot Reference
 
-This document describes the automated screenshot capture workflow using Chrome/Chromium and Playwright.
+This document catalogs all available screenshots for ContentForge AI.
 
-## Prerequisites
+## Screenshot Directory
 
-### Chrome/Chromium Installation
+All screenshots are stored in `docs/screenshots/`.
 
-The system uses Playwright's bundled Chromium browser which is installed automatically.
+## Available Screenshots
 
-```bash
-# Install Playwright Chromium browser (already in devDependencies)
-npx playwright install chromium
-```
+### Core Application Screens
 
-**Verified browsers:**
-- Chromium (bundled with Playwright)
-- Chrome (if installed locally)
+| Screenshot | File | Description |
+|-----------|------|-------------|
+| Login Page | `login.png` | Main login/signup page |
+| Login Page (Mobile) | `login-page-mobile.png` | Login page on mobile viewport |
+| Login (Signup Mode) | `login-signup-mode.png` | Login page in signup mode |
+| Dashboard | `dashboard.png` | Main dashboard with stats and widgets |
+| Dashboard (Mobile) | `dashboard-mobile.png` | Dashboard on mobile viewport |
+| Dashboard Overview | `dashboard-overview.png` | Dashboard overview widget |
+| Content Tab | `content-tab.png` | Content library listing |
+| Create Content | `content_new.png` | Content creation page |
+| Create Content (New) | `content-new-page.png` | New content creation page |
+| Create Project | `projects-new-page.png` | New project creation form |
+| Settings | `settings.png` | User settings page |
 
-### Required Dependencies
+### Backend/API Screenshots
 
-```bash
-# From src/frontend/package.json
-cd src/frontend
-npm install
-```
+| Screenshot | File | Description |
+|-----------|------|-------------|
+| Login Page (HTML) | `real/login-page.html` | Rendered login page HTML |
+| API Docs | `real/api-docs.html` | Backend API documentation |
+| Health Response | `real/health-response.json` | Health endpoint JSON response |
+| Backend Log | `real/backend.log` | Backend startup log |
 
-Required dev dependencies:
-- `@playwright/test`: For screenshot capture
-- `puppeteer-core`: Alternative browser automation
-- `node-screenshots`: Native screenshot capture
+## Screenshot Capture
 
-## Screenshot Capture Process
-
-### Manual Capture with Playwright
+### Manual Capture
 
 ```bash
 # Capture a single screenshot
@@ -44,121 +47,71 @@ npx playwright screenshot \
   docs/screenshots/login.png
 ```
 
-### Options
-
-- `--browser=chromium`: Use Chromium browser (lightweight, fast)
-- `--viewport-size=1280,720`: Desktop viewport dimensions
-- `--full-page`: Capture full page, not just viewport
-- `--wait-for-timeout=5000`: Wait for page to load (5 seconds)
-
-### Automated Screenshot Script
-
-Use the provided script to start services and capture screenshots automatically:
+### Automated Capture
 
 ```bash
 # From project root
 ./scripts/capture-screenshots.sh
 ```
 
-This script will:
-1. Start the backend API server (port 8000)
-2. Start the frontend dev server (port 3000)
-3. Wait for services to be ready
-4. Capture screenshots of key pages:
-   - `/login` - Login page
-   - `/dashboard` - Dashboard (requires authentication)
-5. Stop services after capture
-
-## Screenshot Locations
-
-All screenshots are saved to:
-```
-docs/screenshots/
-├── login.png              # Login/signup page
-├── dashboard.png          # Main dashboard
-├── content-tab.png        # Content management
-├── content-new-page.png   # Create content form
-├── projects-tab.png       # Projects list
-├── analytics-tab.png      # Analytics view
-└── real/                  # Production screenshots
-```
-
-## Development Workflow
-
-### Adding New Screenshots
-
-1. Start the application:
-   ```bash
-   ./scripts/dev-start.sh
-   ```
-
-2. Capture specific pages:
-   ```bash
-   npx playwright screenshot \
-     --browser=chromium \
-     --viewport-size=1280,720 \
-     --full-page \
-     http://localhost:3000/PATH \
-     docs/screenshots/NAME.png
-   ```
-
-3. Verify screenshots in `docs/screenshots/`
-
-### Automated Workflow
-
-The capture script handles the full workflow:
-- Backend startup with uvicorn
-- Frontend dev server startup
-- Health check polling
-- Screenshot capture at multiple resolutions
-- Automatic cleanup
-
-## Troubleshooting
-
-### Chrome not found
-
-```bash
-# Install Playwright browsers
-npx playwright install
-
-# Or install system Chromium
-# Ubuntu/Debian:
-sudo apt-get install chromium-browser
-
-# macOS:
-brew install chromium
-```
-
-### Port conflicts
-
-The script uses ports 8000 (backend) and 3000 (frontend). Ensure these are free:
-
-```bash
-# Check if ports are in use
-lsof -i :8000
-lsof -i :3000
-
-# Kill processes if needed
-kill $(lsof -t -i :8000)
-kill $(lsof -t -i :3000)
-```
-
-### Screenshots show loading states
-
-Increase wait time before capture:
+### Capture with Wait
 
 ```bash
 npx playwright screenshot \
   --browser=chromium \
   --viewport-size=1280,720 \
+  --full-page \
   --wait-for-timeout=10000 \
   http://localhost:3000 \
   docs/screenshots/page.png
 ```
 
+## Screenshot Guidelines
+
+### Recommended Resolutions
+
+| Type | Viewport | Filename Pattern |
+|------|----------|-----------------|
+| Desktop | 1280×720 | `feature-name.png` |
+| Desktop (Full) | 1280×900 | `feature-name-full.png` |
+| Mobile | 375×812 | `feature-name-mobile.png` |
+| Tablet | 768×1024 | `feature-name-tablet.png` |
+
+### Naming Convention
+
+- Use lowercase, hyphen-separated names
+- Include feature or page name
+- Append `-mobile` or `-tablet` for responsive variants
+- Examples: `dashboard.png`, `schedule-calendar.png`, `analytics-funnel.png`
+
+## Screenshots Needed (P4 Features)
+
+The following P4 feature screenshots should be captured when staging environment is available:
+
+| Feature | Screenshot | Priority |
+|---------|-----------|----------|
+| Quality Score | `quality-score-badge.png` | High |
+| Sentiment Analysis | `sentiment-badge.png` | High |
+| Version History | `version-history.png` | Medium |
+| Custom Dashboards | `custom-dashboard.png` | High |
+| Auto-Suggestions | `auto-suggestions.png` | High |
+| SEO Optimization | `seo-analysis.png` | Medium |
+| Tone Adjustment | `tone-adjustment.png` | Medium |
+| Funnel Analytics | `funnel-analytics.png` | High |
+| Attribution Report | `attribution-report.png` | High |
+| SLA Monitoring | `sla-monitoring.png` | Medium |
+| Content Freshness | `content-freshness.png` | Medium |
+| Competitor Tracking | `competitor-tracking.png` | Medium |
+| SSO Configuration | `sso-config.png` | Low |
+| Comments v2 | `comments-v2.png` | Medium |
+| Collaboration | `collaboration-view.png` | Medium |
+| Marketplace | `marketplace.png` | Low |
+| Schedule Calendar | `schedule-calendar.png` | High |
+| Smart Editor | `smart-editor-full.png` | High |
+
 ## CI/CD Integration
 
-For automated documentation updates:
+For automated screenshot updates:
 
 ```yaml
 # .github/workflows/screenshots.yml
@@ -183,9 +136,6 @@ jobs:
           path: docs/screenshots/
 ```
 
-## Notes
+---
 
-- Screenshots are captured with a 1280x720 viewport (standard desktop)
-- Full-page screenshots capture the entire scrollable content
-- The script includes a 10-second delay for page hydration
-- Authentication may be required for dashboard screenshots
+*Updated: April 14, 2026*

@@ -1,6 +1,10 @@
 # ContentForge AI - Local Deployment Guide
 
-Step-by-step instructions to run ContentForge AI on your local machine for manual testing.
+Step-by-step instructions to run ContentForge AI on your local machine for development and testing.
+
+**Last Updated:** April 14, 2026  
+**Python Version:** 3.13+  
+**Node.js Version:** 20+
 
 ---
 
@@ -8,10 +12,11 @@ Step-by-step instructions to run ContentForge AI on your local machine for manua
 
 Make sure you have these installed:
 
-- **Python 3.11+** (`python3 --version`)
+- **Python 3.13+** (`python3 --version`)
 - **Node.js 20+** (`node --version`)
 - **Redis** (for Celery background tasks)
 - **Git** with SSH configured for `github.com`
+- **Docker and Docker Compose** (for local services)
 - **A Supabase account** (free tier works)
 - **A Groq account** (free tier: 14M tokens/month)
 
@@ -82,7 +87,7 @@ Go to **Settings → API** in your Supabase dashboard. You need:
 4. Click **"Create API Key"**
 5. Copy the key (starts with `gsk_`)
 
-Free tier gives you 14M tokens/month — more than enough for testing.
+Free tier gives you 14M tokens/month — more than enough for development.
 
 ---
 
@@ -94,11 +99,14 @@ Free tier gives you 14M tokens/month — more than enough for testing.
 cd contentforge-ai/src/backend
 
 python3 -m venv venv
-source venv/bin.activate  # on macOS/Linux
+source venv/bin/activate  # on macOS/Linux
 # OR: venv\Scripts\activate  # on Windows
 
 pip install --upgrade pip
 pip install -r requirements.txt
+
+# Install pre-commit hooks
+pre-commit install
 ```
 
 ### 4b. Create the Backend `.env` File
@@ -141,7 +149,7 @@ EOF
 
 ### 4c. Install and Start Redis
 
-Redis is required for Celery (background task queue).
+Redis is required for Celery (background task queue) and caching.
 
 **Linux (Debian/Ubuntu):**
 ```bash
@@ -153,6 +161,11 @@ sudo systemctl start redis-server
 ```bash
 brew install redis
 brew services start redis
+```
+
+**Docker:**
+```bash
+docker run -d --name redis -p 6379:6379 redis:7-alpine
 ```
 
 **Verify Redis is running:**
@@ -202,7 +215,7 @@ source venv/bin/activate
 celery -A app.core.celery_app beat --loglevel=info
 ```
 
-> 💡 **Without Celery**, the app still works — you just won't have background tasks (scheduled publishing, RSS auto-import, trend detection). Start with just the API server and add Celery when you need those features.
+> 💡 **Without Celery**, the app still works — you just won't have background tasks (scheduled publishing, RSS auto-import, trend detection).
 
 ---
 
@@ -236,8 +249,6 @@ NEXT_PUBLIC_R2_PUBLIC_URL=
 EOF
 ```
 
-**Replace the values** same as Step 4b.
-
 ### 5c. Start the Frontend Dev Server
 
 ```bash
@@ -266,9 +277,104 @@ You should see:
 
 ---
 
-## Step 7: Test the Features
+## Step 7: Run Tests
 
-Here's what you can test and how:
+### Backend Tests
+
+```bash
+cd contentforge-ai/src/backend
+source venv/bin/activate
+
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=app --cov-report=term-missing
+
+# Run specific test
+pytest tests/test_stripe_webhooks.py -v
+```
+
+**Current status:** 530 backend tests passing, 163/164 deep system tests (99.4%)
+
+### Frontend Tests
+
+```bash
+cd contentforge-ai/src/frontend
+npm test
+```
+
+### Code Quality Checks
+
+```bash
+# Python
+cd src/backend
+black --check .
+isort --check-only .
+flake8 .
+mypy . --strict
+
+# TypeScript
+cd src/frontend
+npx tsc --noEmit
+npx eslint .
+```
+
+---
+
+## Step 8: Docker Setup (Alternative)
+
+If you prefer Docker for local development:
+
+```bash
+# Start all services
+docker-compose up -d
+
+# This starts:
+# - Backend API (port 8000)
+# - Frontend (port 3000)
+# - Redis (port 6379)
+# - Celery worker
+# - Celery beat scheduler
+```
+
+---
+
+## Self-Hosted CI/CD Runner
+
+The project uses a self-hosted GitHub Actions runner for CI/CD.
+
+### Setup
+
+1. Go to your GitHub repository → **Settings → Actions → Runners**
+2. Click **"New self-hosted runner"**
+3. Follow the download and configuration instructions for your OS
+4. Install as a service:
+   ```bash
+   ./svc.sh install
+   ./svc.sh start
+   ```
+
+### Runner Requirements
+- Python 3.13+
+- Node.js 20+
+- Redis
+- Docker (for containerized tests)
+
+### CI Pipelines
+
+| Pipeline | Purpose | Trigger |
+|----------|---------|---------|
+| Backend Tests | pytest suite | Push/PR to main |
+| Frontend Build | TypeScript + ESLint | Push/PR to main |
+| Lint/Format | black, isort, flake8, mypy | Push/PR to main |
+| Security Scan | Dependency + code scanning | Push/PR to main |
+
+**All 4 pipelines must be green before merge.**
+
+---
+
+## Step 9: Test the Features
 
 | Feature | How to Test |
 |---------|-------------|
@@ -286,11 +392,22 @@ Here's what you can test and how:
 | **Integrations** | Settings → Integrations → Configure webhooks |
 | **Search** | Press Ctrl+K → Search content |
 | **Onboarding** | Navigate to `/onboarding` → Walk through the guide |
+| **Version History** | Content item → History tab → View versions, rollback |
+| **Quality Scoring** | Content item → Quality tab → See AI quality metrics |
+| **Sentiment Analysis** | Content item → Sentiment indicator |
+| **Custom Dashboards** | Dashboard → Customize → Drag widgets |
+| **Audit Logs** | Settings → Audit Log → View activity |
+| **SSO Configuration** | Settings → Security → Configure OIDC/SAML |
+| **Plugin Manager** | Settings → Plugins → Install/enable/configure |
+| **Marketplace** | Dashboard → Marketplace → Browse and install |
+| **SLA Monitoring** | Dashboard → SLA → View compliance |
+| **Funnel Analytics** | Dashboard → Analytics → Funnel view |
+| **Attribution** | Dashboard → Analytics → Attribution view |
 | **API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) |
 
 ---
 
-## Step 8: Verify Everything Works
+## Step 10: Verify Everything Works
 
 Run this quick checklist:
 
@@ -301,6 +418,8 @@ Run this quick checklist:
 - [ ] Can import content (try a blog post URL)
 - [ ] AI features work (Smart Editor rewrite/expand)
 - [ ] Dashboard shows content and stats
+- [ ] All tests pass: `pytest`
+- [ ] Code quality clean: `black --check . && isort --check-only .`
 - [ ] API docs accessible at `/docs`
 
 ---
@@ -330,6 +449,9 @@ Ensure `CORS_ORIGINS=["http://localhost:3000"]` is set in the backend `.env`.
 
 ### Database errors (table not found)
 You likely missed a migration. Re-run Step 2b — make sure all migration files were executed in order.
+
+### Pre-commit hooks failing
+Run `pre-commit run --all-files` to see which hooks fail, then fix and re-run.
 
 ---
 
@@ -379,12 +501,12 @@ npm run dev
 │  FastAPI Backend  (http://localhost:8000)         │
 │  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │
 │  │ API Router│  │ Services │  │ Groq AI      │   │
-│  │ (50+ endp)│  │          │  │ Integration  │   │
+│  │ (375 endp)│  │ (34 svc) │  │ Integration  │   │
 │  └──────┬────┘  └────┬─────┘  └──────────────┘   │
 │         │            │                            │
-│  ┌──────▼────────────▼─────┐                     │
-│  │     Supabase Client     │                     │
-│  └──────────┬──────────────┘                     │
+│  ┌──────▼────────────▼─────┐  ┌───────────────┐  │
+│  │     Supabase Client     │  │ Redis Cache    │  │
+│  └──────────┬──────────────┘  └───────────────┘  │
 └─────────────┼────────────────────────────────────┘
               │
               ▼
@@ -394,11 +516,6 @@ npm run dev
 │  │ PostgreSQL│  │ Auth      │                      │
 │  │ Database  │  │ Service   │                      │
 │  └──────────┘  └──────────┘                      │
-└─────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────┐
-│  Redis  (localhost:6379)                         │
-│  Celery Broker + Result Backend                  │
 └─────────────────────────────────────────────────┘
 ```
 

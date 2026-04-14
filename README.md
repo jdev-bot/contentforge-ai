@@ -2,14 +2,18 @@
 
 > AI-Powered Content Repurposing & Distribution Platform
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/neo-dev-org/contentforge-ai)
+[![CI: Backend Tests](https://img.shields.io/badge/Backend_Tests-530%20passing-brightgreen)](https://github.com/jdev-bot/contentforge-ai)
+[![CI: Frontend Build](https://img.shields.io/badge/Frontend_Build-passing-brightgreen)](https://github.com/jdev-bot/contentforge-ai)
+[![CI: Security](https://img.shields.io/badge/Security_Pipeline-clean-brightgreen)](https://github.com/jdev-bot/contentforge-ai)
+[![CI: CI/CD](https://img.shields.io/badge/CI%2FCD-green-brightgreen)](https://github.com/jdev-bot/contentforge-ai)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Next.js](https://img.shields.io/badge/Next.js-000000.svg?logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js_14-000000.svg?logo=next.js)](https://nextjs.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E.svg?logo=supabase)](https://supabase.com/)
-[![Routes](https://img.shields.io/badge/API_routes-380-blue)](docs/API_COMPLETE.md)
-[![Tests](https://img.shields.io/badge/tests-530_passing-brightgreen)](docs/TESTING.md)
+[![Routes](https://img.shields.io/badge/API_routes-375-blue)](docs/API_COMPLETE.md)
+[![Tests](https://img.shields.io/badge/tests-571%20(530%20passing)-brightgreen)](docs/TESTING.md)
+[![Security](https://img.shields.io/badge/security-0%20open%20findings-brightgreen)](docs/SECURITY_AUDIT_REPORT.md)
 
 **Transform one piece of long-form content into 20+ platform-native formats automatically using AI, then distribute across social platforms, email, and blogs with zero manual intervention.**
 
@@ -99,12 +103,12 @@ Your content is automatically processed to create:
 
 ## ✨ Features
 
-### Core Platform
+### Core Platform (P0–P1)
 
 | Feature | Description |
 |---------|-------------|
 | **📥 Content Import** | URLs, YouTube videos, RSS feeds, direct text, file uploads |
-| **🤖 AI Generation** | Llama 3.3 70B powered content repurposing |
+| **🤖 AI Generation** | Groq GLM-5.1 powered content repurposing |
 | **✏️ Smart Editor** | Rewrite, expand, condense, optimize for any platform |
 | **📅 Scheduled Publishing** | Queue posts for optimal times with timezone support |
 | **📊 Analytics Dashboard** | Track performance, growth, and engagement metrics |
@@ -122,7 +126,7 @@ Transform your content with AI:
 | **Condense** | 20%-80% reduction while preserving key points |
 | **Optimize** | Platform-specific formatting (Twitter, LinkedIn, etc.) |
 
-### Automation & Scheduling
+### Automation & Scheduling (P2)
 
 | Feature | Description |
 |---------|-------------|
@@ -133,7 +137,7 @@ Transform your content with AI:
 | **⚙️ Automation Rules** | Trigger actions based on events |
 | **🔗 Webhooks** | Incoming and outgoing webhook support |
 
-### Analytics & Insights
+### Analytics & Insights (P2–P3)
 
 | Feature | Description |
 |---------|-------------|
@@ -144,7 +148,7 @@ Transform your content with AI:
 | **📥 Data Export** | CSV and JSON export for reporting |
 | **🎯 Custom Reports** | Build custom analytics views (Pro+) |
 
-### Advanced Features
+### Advanced Features (P3)
 
 | Feature | Description |
 |---------|-------------|
@@ -154,30 +158,52 @@ Transform your content with AI:
 | **🚨 Performance Alerts** | Get notified of viral moments and issues |
 | **📆 Content Calendar** | Visual calendar for content planning |
 | **🏆 Competitor Analysis** | Track competitors and identify gaps |
+| **🧪 A/B Testing** | Content variation testing framework |
+| **📝 Content Templates** | Blog, social, newsletter templates |
+| **📦 Bulk Operations** | CSV/JSON import and batch operations |
 
 ### P4 Advanced Features
+
+#### Wave 1 — Content Intelligence
 
 | Feature | Description |
 |---------|-------------|
 | **📋 Version History** | Track content versions with full diff support |
-| **📝 Audit Logs** | Comprehensive action logging and export |
+| **📝 Audit Logs** | Comprehensive action logging with CSV/JSON export |
 | **⭐ Quality Scoring** | AI-powered content quality assessment |
-| **💭 Sentiment Analysis** | Real-time sentiment tracking |
+| **💭 Sentiment Analysis** | Real-time sentiment tracking and analysis |
+| **📈 Custom Dashboards** | User-configurable analytics dashboards |
+| **📊 Reports** | Custom report generation with scheduling |
+
+#### Wave 2 — Smart Operations
+
+| Feature | Description |
+|---------|-------------|
 | **🎯 Auto-Suggestions** | Smart content improvement recommendations |
 | **🏷️ Smart Categorization** | AI-driven content clustering and tagging |
 | **📊 Performance Analytics** | Deep content performance insights |
-| **🗄️ Data Retention** | Configurable retention policies |
+| **🗄️ Data Retention** | Configurable retention policies per content type |
 | **💬 Comments v2** | Threaded comments with resolution tracking |
-| **🔐 SSO/OIDC** | Google, Microsoft, Okta SSO support |
+
+#### Wave 3 — Platform & Extensibility
+
+| Feature | Description |
+|---------|-------------|
+| **🔐 SSO (OIDC)** | Google, Microsoft, Okta SSO support |
 | **🔑 SAML SSO** | Enterprise SAML 2.0 authentication |
-| **🔌 Plugin System** | Extensible plugin architecture with hooks |
-| **📡 Developer SDK** | Python SDK for programmatic access |
-| **🔄 WebSocket** | Real-time collaboration and presence |
+| **🔌 Plugin System** | Extensible plugin architecture with lifecycle hooks |
+| **📡 Developer SDK** | Python SDK for programmatic API access |
+| **🔄 WebSocket** | Real-time collaboration with presence tracking |
 | **🤝 Collaboration** | Multi-user real-time editing |
 | **🏪 Marketplace** | Plugin and template marketplace |
+
+#### Wave 4 — Business Intelligence
+
+| Feature | Description |
+|---------|-------------|
 | **📊 Funnel Tracking** | Content conversion funnel analytics |
 | **🎯 Attribution Modeling** | Channel attribution and ROI tracking |
-| **⏱️ SLA Monitoring** | Service level agreement tracking |
+| **⏱️ SLA Monitoring** | Service level agreement tracking with alerting |
 | **🔗 Integration Hub** | Unified integration management framework |
 
 ### Integrations
@@ -202,20 +228,39 @@ Transform your content with AI:
 
 ---
 
+## ⚡ Performance
+
+All performance optimizations applied and verified in production:
+
+| Optimization | Impact |
+|-------------|--------|
+| **Redis/in-memory caching** | 9 high-traffic read endpoints cached |
+| **Parallel DB queries** | `asyncio.gather` for concurrent data fetching |
+| **N+1 query elimination** | Fixed in 5 endpoints |
+| **ETag middleware** | HTTP 304 Not Modified support |
+| **X-Response-Time header** | Request duration visibility |
+| **X-Request-ID header** | Request tracing across services |
+| **Slow request logging** | >2s threshold with structured logging |
+| **@lru_cache on Supabase** | Admin client instance reuse |
+
+---
+
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Frontend                                  │
-│                    Next.js 14 + Tailwind                        │
+│                Next.js 14 + Tailwind CSS                         │
+│                   73 components · 16 pages                      │
 │                        Vercel                                   │
 └────────────────────────┬────────────────────────────────────────┘
                          │ HTTPS
                          ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                         API                                      │
-│              FastAPI + Python 3.12                             │
-│         Rate Limiting • JWT Auth • Validation                  │
+│            FastAPI + Python 3.13                                 │
+│       375 routes · 49 routers · 34 services                     │
+│     Rate Limiting · JWT Auth · ETag · Request ID                │
 │                        Render                                   │
 └────────────────────────┬────────────────────────────────────────┘
                          │
@@ -232,7 +277,7 @@ Transform your content with AI:
 │                     External Services                            │
 │  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  │
 │  │  Groq  │  │Resend  │  │ Stripe │  │  n8n   │  │ Social │  │
-│  │   AI   │  │ Email  │  │Payments│  │Workflow│  │  APIs  │  │
+│  │GLM-5.1│  │ Email  │  │Payments│  │Workflow│  │  APIs  │  │
 │  └────────┘  └────────┘  └────────┘  └────────┘  └────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -242,15 +287,33 @@ Transform your content with AI:
 | Layer | Technology |
 |-------|------------|
 | **Frontend** | Next.js 14, React 18, Tailwind CSS, TypeScript |
-| **Backend** | FastAPI, Python 3.11+, Pydantic, SQLAlchemy |
+| **Backend** | FastAPI, Python 3.13, Pydantic, SQLAlchemy |
 | **Database** | PostgreSQL (Supabase) |
 | **Cache/Queue** | Redis, Celery |
-| **AI/ML** | Groq API, Llama 3.3 70B |
+| **AI/ML** | Groq API, GLM-5.1 |
 | **Storage** | Cloudflare R2 |
 | **Email** | Resend |
 | **Payments** | Stripe |
-| **Auth** | Supabase Auth (JWT) |
+| **Auth** | Supabase Auth (JWT), OIDC SSO, SAML 2.0 |
 | **Hosting** | Vercel (frontend), Render (backend) |
+| **CI/CD** | GitHub Actions (self-hosted runner: srv1503460, Ubuntu 25.10) |
+
+### By the Numbers
+
+| Metric | Count |
+|--------|-------|
+| **Total commits** | 187 |
+| **API routes** | 375 (184 GET · 124 POST · 15 PUT · 15 PATCH · 37 DELETE) |
+| **Router modules** | 49 |
+| **Backend services** | 34 |
+| **Middleware modules** | 4 (ETag, Performance, RequestID, RateLimitHeaders) |
+| **Backend Python LOC** | 44,101 |
+| **Frontend TS/TSX LOC** | 44,801 |
+| **Frontend components** | 73 |
+| **Frontend pages** | 16 |
+| **Backend tests** | 571 (530 passing · 41 skipped · 0 failing) |
+| **Deep system tests** | 163/164 (99.4% pass rate) |
+| **Security findings** | 0 open (all 9 HIGH/CRITICAL fixed) |
 
 ---
 
@@ -258,12 +321,13 @@ Transform your content with AI:
 
 | Document | Description |
 |----------|-------------|
-| [📘 API Complete Reference](docs/API_COMPLETE.md) | All 50+ endpoints documented with examples |
+| [📘 API Complete Reference](docs/API_COMPLETE.md) | All 375 endpoints documented with examples |
 | [📖 Features Guide](docs/FEATURES_GUIDE.md) | Detailed feature documentation |
 | [🎓 Tutorials](docs/TUTORIALS/) | Step-by-step user guides |
 | [⚙️ Admin Guide](docs/ADMIN_GUIDE.md) | Deployment and operations |
 | [🏗️ Architecture](docs/ARCHITECTURE.md) | System design overview |
 | [🚀 Deployment Guide](docs/DEPLOYMENT.md) | Production deployment steps |
+| [⚡ Performance](docs/PERFORMANCE_OPTIMIZATION.md) | Optimization details |
 | [🔒 Security Policy](SECURITY.md) | Security practices |
 | [🤝 Contributing](CONTRIBUTING.md) | Contribution guidelines |
 
@@ -291,6 +355,8 @@ Transform your content with AI:
 | API Rate Limit | 100/hr | 1,000/hr | 10,000/hr |
 | AI Editor | ✅ | ✅ | ✅ |
 | Analytics | Basic | Advanced | Custom |
+| SSO / SAML | ❌ | ❌ | ✅ |
+| Plugin System | ❌ | ❌ | ✅ |
 | Priority Support | ❌ | ✅ | ✅ |
 | Custom Integrations | ❌ | ❌ | ✅ |
 
@@ -300,8 +366,8 @@ Transform your content with AI:
 
 ### Prerequisites
 
-- Python 3.11+
-- Node.js 18+
+- Python 3.13+
+- Node.js 22+
 - Docker (optional)
 - Git
 
@@ -309,7 +375,7 @@ Transform your content with AI:
 
 ```bash
 # Clone repository
-git clone https://github.com/neo-dev-org/contentforge-ai.git
+git clone git@github.com:jdev-bot/contentforge-ai.git
 cd contentforge-ai
 
 # Backend setup
@@ -357,6 +423,10 @@ pytest --cov=app
 # Frontend tests
 cd src/frontend
 npm test
+
+# Deep system tests
+cd tests
+pytest -v
 ```
 
 ---
@@ -439,7 +509,7 @@ curl -X POST "https://api.contentforge.ai/api/v1/schedule" \
   }'
 ```
 
-See [API_COMPLETE.md](docs/API_COMPLETE.md) for full documentation of 50+ endpoints.
+See [API_COMPLETE.md](docs/API_COMPLETE.md) for full documentation of all 375 endpoints.
 
 ---
 
@@ -454,14 +524,6 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - 📝 Improve documentation
 - 🔧 Submit pull requests
 - 💬 Join discussions
-
-### Development Roadmap
-
-- [ ] Enhanced AI models (GPT-4, Claude integration)
-- [ ] Mobile app (iOS/Android)
-- [ ] Advanced analytics with ML insights
-- [ ] Plugin marketplace
-- [ ] White-label options
 
 ---
 

@@ -1,23 +1,29 @@
 # ContentForge AI - Cron Job Configuration
 
-> Documentation for automated scheduled tasks and cron job setup.
+> Documentation for automated scheduled tasks, cron job setup, and GitHub Actions scheduled workflows.
 
 ---
 
 ## Overview
 
 ContentForge AI uses scheduled tasks for:
-- **Database backups** - Daily and weekly backups to R2
-- **Usage reset** - Monthly usage counter reset
-- **Health monitoring** - Periodic health checks
-- **Log rotation** - Cleanup of old logs
-- **Error summary** - Daily error reports
+- **Database backups** — Daily and weekly backups to R2
+- **Usage reset** — Monthly usage counter reset
+- **Security scanning** — Weekly security pipeline
+- **Data retention enforcement** — Automated cleanup per policies
+- **SLA monitoring** — Continuous compliance tracking
+- **Health monitoring** — Periodic health checks
+- **Log rotation** — Cleanup of old logs
+
+### Runner
+
+All GitHub Actions scheduled workflows run on the **self-hosted runner (srv1503460)**.
 
 ---
 
 ## Cron Job Reference
 
-### Backup Jobs
+### System Cron Jobs
 
 ```bash
 # Daily backup at 2:00 AM UTC
@@ -26,111 +32,195 @@ ContentForge AI uses scheduled tasks for:
 # Weekly full backup at 3:00 AM UTC on Sundays
 0 3 * * 0 /home/claw/contentforge-ai/scripts/backup-database.sh --weekly >> /home/claw/contentforge-ai/logs/cron-backup-weekly.log 2>&1
 
-# Backup cleanup (weekly on Mondays)
+# Backup cleanup (weekly on Mondays at 4:00 AM UTC)
 0 4 * * 1 /home/claw/contentforge-ai/scripts/backup-database.sh --cleanup >> /home/claw/contentforge-ai/logs/cron-backup-cleanup.log 2>&1
-```
 
-### Health Monitoring
-
-```bash
-# Health check every 5 minutes (using Render uptime checks instead)
-# Or via external monitoring service (Sentry, UptimeRobot)
-
-# Daily system metrics collection
+# Daily system metrics collection (every hour)
 0 * * * * curl -s https://contentforge-ai-api.onrender.com/api/v1/health/metrics > /dev/null 2>&1
-```
 
-### Log Rotation
-
-```bash
 # Daily log rotation (keep 30 days)
 0 0 * * * find /home/claw/contentforge-ai/logs -name "*.log" -mtime +30 -delete
 
 # Compress logs older than 7 days
 0 1 * * * find /home/claw/contentforge-ai/logs -name "*.log" -mtime +7 -exec gzip {} \;
-```
 
-### Usage Management
-
-```bash
 # Monthly usage reset (1st of each month at 4 AM UTC)
 0 4 1 * * curl -s -X POST https://contentforge-ai-api.onrender.com/api/v1/admin/reset-usage \
+  -H "Authorization: Bearer $ADMIN_TOKEN" > /dev/null 2>&1
+
+# Data retention enforcement (daily at 3:00 AM UTC)
+0 3 * * * curl -s -X POST https://contentforge-ai-api.onrender.com/api/v1/retention/apply \
   -H "Authorization: Bearer $ADMIN_TOKEN" > /dev/null 2>&1
 ```
 
 ---
 
+## GitHub Actions Scheduled Workflows
+
+### Security Pipeline (Weekly)
+
+**Workflow:** `.github/workflows/security.yml`
+
+```yaml
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 06:00 UTC
+  workflow_dispatch:       # Manual trigger available
+```
+
+**Runs on:** Self-hosted runner (srv1503460)
+
+**Jobs:**
+- Gitleaks (secret scanning)
+- TruffleHog (verified secret detection)
+- Semgrep (SAST - Python + TypeScript)
+- CodeQL (SAST - Python + JS/TS)
+- Bandit (Python security)
+- pip-audit (Python dependency scanning)
+- npm audit (Node.js dependency scanning)
+- OSV Scanner (multi-ecosystem vulnerability scanning)
+- Trivy FS (filesystem scanning)
+- Trivy Config (IaC/Docker misconfiguration)
+- Trivy Image (container image scanning)
+- Checkov (IaC scanning)
+- Dependency Review (PR only)
+- Security Gate (summary)
+
+**Status:** 8/13 scans pass, 5 expected infra failures
+
+### CI/CD Pipeline (On Push)
+
+**Workflow:** `.github/workflows/ci-cd.yml`
+
+```yaml
+on:
+  push:
+    branches: [main, develop]
+```
+
+**Runs on:** Self-hosted runner (srv1503460)
+
+**Jobs:**
+- Backend build + test (530 tests)
+- Frontend build + lint
+- Deploy (on push to main)
+
+### Backend Tests (On Push/PR)
+
+**Workflow:** `.github/workflows/backend-tests.yml`
+
+```yaml
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+```
+
+### Frontend Build (On Push/PR)
+
+**Workflow:** `.github/workflows/frontend-build.yml`
+
+```yaml
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+```
+
+---
+
+## Self-Hosted Runner Job Processing
+
+### How Jobs Are Assigned
+
+GitHub Actions dispatches jobs to the self-hosted runner (srv1503460) based on the `runs-on` label configured in each workflow:
+
+```yaml
+jobs:
+  build:
+    runs-on: self-hosted  # Routes to srv1503460
+```
+
+### Runner Job Queue
+
+When multiple workflows trigger simultaneously:
+1. Jobs queue on the single runner
+2. Jobs execute sequentially (one at a time)
+3. Job execution order: first-in, first-out
+4. Long-running security scans may delay other jobs
+
+### Monitoring Runner Job Processing
+
+```bash
+# Check runner status
+systemctl status actions.runner.*
+
+# View recent job logs
+journalctl -u actions.runner.* -n 100 --no-pager
+
+# Check GitHub Actions queue
+gh run list --limit 10
+gh run list --status queued
+
+# View running jobs
+gh run list --status in_progress
+```
+
+### Job Failure Handling
+
+When a job fails on the self-hosted runner:
+1. GitHub marks the job as failed
+2. Subsequent dependent jobs are skipped
+3. Failed job logs are available via `gh run view <id> --log-failed`
+4. Re-run failed jobs: `gh run rerun <id>`
+5. For persistent failures, check runner health and logs
+
+---
+
 ## Setup Instructions
 
-### Using System Crontab (Linux/macOS)
+### Using System Crontab (Linux)
 
 1. **Edit crontab:**
    ```bash
    crontab -e
    ```
 
-2. **Add jobs (copy from above):**
-   ```bash
-   # Example for daily backup
-   0 2 * * * /home/claw/contentforge-ai/scripts/backup-database.sh --daily
-   ```
+2. **Add jobs** (copy from reference above)
 
 3. **Verify crontab:**
    ```bash
    crontab -l
    ```
 
-### Using Render Cron Jobs
+### Using GitHub Actions (Recommended for Security Scans)
 
-For Render-hosted services:
+Scheduled workflows are already configured in `.github/workflows/`. To add a new scheduled workflow:
 
-1. **Create a `render.yaml` cron job:**
+1. Create `.github/workflows/scheduled-tasks.yml`:
    ```yaml
-   services:
-     - type: cron
-       name: daily-backup
-       schedule: "0 2 * * *"
-       command: |
-         cd /app && ./scripts/backup-database.sh --daily
-       envVars:
-         - key: SUPABASE_URL
-           sync: false
-         - key: R2_BUCKET_NAME
-           sync: false
+   name: Scheduled Tasks
+
+   on:
+     schedule:
+       - cron: '0 2 * * *'  # Daily at 2 AM UTC
+     workflow_dispatch:
+
+   jobs:
+     backup:
+       runs-on: self-hosted
+       steps:
+         - uses: actions/checkout@v3
+         - name: Run task
+           run: ./scripts/your-task.sh
+           env:
+             SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
    ```
 
-2. **Deploy to Render:**
-   ```bash
-   render deploy --service daily-backup
-   ```
-
-### Using GitHub Actions (Alternative)
-
-Create `.github/workflows/scheduled-tasks.yml`:
-
-```yaml
-name: Scheduled Tasks
-
-on:
-  schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM UTC
-
-jobs:
-  backup:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Run backup
-        run: ./scripts/backup-database.sh --daily
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-```
+2. Push to repository
+3. GitHub Actions will execute on schedule
 
 ---
 
@@ -138,18 +228,20 @@ jobs:
 
 | Expression | Description |
 |------------|-------------|
-| `0 2 * * *` | Every day at 2:00 AM |
-| `0 3 * * 0` | Every Sunday at 3:00 AM |
+| `0 2 * * *` | Every day at 2:00 AM UTC |
+| `0 3 * * 0` | Every Sunday at 3:00 AM UTC |
+| `0 4 * * 1` | Every Monday at 4:00 AM UTC |
+| `0 6 * * 1` | Every Monday at 6:00 AM UTC |
 | `*/5 * * * *` | Every 5 minutes |
 | `0 */6 * * *` | Every 6 hours |
 | `0 0 1 * *` | First day of every month |
-| `0 0 * * 1` | Every Monday at midnight |
+| `0 3 * * *` | Every day at 3:00 AM UTC |
 
 ---
 
 ## Monitoring Cron Jobs
 
-### Verify Jobs are Running
+### System Cron Monitoring
 
 ```bash
 # Check cron logs
@@ -157,34 +249,36 @@ grep CRON /var/log/syslog | tail -20
 
 # Check specific job output
 tail -f /home/claw/contentforge-ai/logs/cron-backup-daily.log
+
+# Verify cron service
+systemctl status cron
 ```
 
-### Health Check Integration
+### GitHub Actions Monitoring
 
-Add to your monitoring:
+```bash
+# List recent workflow runs
+gh run list --limit 20
 
-```python
-# Check if backups are recent
-def verify_recent_backup():
-    from datetime import datetime, timedelta
-    import os
-    
-    backup_dir = "/home/claw/contentforge-ai/backups"
-    
-    # Get most recent backup file
-    files = [os.path.join(backup_dir, f) for f in os.listdir(backup_dir)]
-    files = [f for f in files if os.path.isfile(f)]
-    
-    if not files:
-        return False, "No backups found"
-    
-    latest = max(files, key=os.path.getmtime)
-    age = datetime.now() - datetime.fromtimestamp(os.path.getmtime(latest))
-    
-    if age > timedelta(hours=26):  # Allow 2 hours buffer
-        return False, f"Latest backup is {age} old"
-    
-    return True, f"Latest backup: {latest}"
+# Check scheduled workflow status
+gh run list --workflow=security.yml --limit 5
+
+# View specific run
+gh run view <run-id>
+
+# Check run timing
+gh run view <run-id> --json timing
+```
+
+### Backup Verification
+
+```bash
+# Verify recent backups
+aws s3 ls s3://$R2_BUCKET_NAME/backups/ \
+  --endpoint-url https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com
+
+# Test backup integrity
+./scripts/backup-database.sh --verify
 ```
 
 ---
@@ -205,24 +299,31 @@ def verify_recent_backup():
    ```
 
 3. **Check environment variables:**
-   - Cron jobs run with minimal environment
+   - Cron runs with minimal environment
    - Source `.env` file or set variables explicitly
 
 4. **Review logs:**
    ```bash
-   # System mail for cron
-   cat /var/spool/mail/$(whoami)
-   
-   # Syslog
    grep CRON /var/log/syslog
+   cat /var/spool/mail/$(whoami)
    ```
+
+### GitHub Actions Scheduled Workflow Not Triggering
+
+1. **Verify workflow file** is on the default branch (scheduled workflows only run from default branch)
+2. **Check cron syntax** — GitHub uses UTC
+3. **Verify runner is online:**
+   ```bash
+   systemctl status actions.runner.*
+   ```
+4. **Check GitHub Actions tab** for run history and errors
+5. **Test manually** via `workflow_dispatch`
 
 ### Backup Failures
 
-1. **Check AWS CLI installation:**
+1. **Check AWS CLI:**
    ```bash
-   which aws
-   aws --version
+   which aws && aws --version
    ```
 
 2. **Verify R2 credentials:**
@@ -235,9 +336,31 @@ def verify_recent_backup():
    df -h
    ```
 
-4. **Review backup logs:**
+4. **Review logs:**
    ```bash
-   tail -100 /home/claw/contentforge-ai/logs/backup-*.log
+   tail -100 /home/claw/contentforge-ai/logs/cron-backup-daily.log
+   ```
+
+### Self-Hosted Runner Job Processing Issues
+
+1. **Runner offline:**
+   ```bash
+   systemctl restart actions.runner.*
+   ```
+
+2. **Job stuck in queue:**
+   - Check runner capacity (single runner = sequential processing)
+   - Consider adding a second runner for parallel processing
+
+3. **Job timeout:**
+   - Check default timeout (6 hours for GitHub Actions)
+   - Increase timeout in workflow: `timeout-minutes: 30`
+
+4. **Disk space on runner:**
+   ```bash
+   df -h
+   docker system prune -f
+   rm -rf ~/actions-runner/_work/_temp/*
    ```
 
 ---
@@ -248,7 +371,8 @@ def verify_recent_backup():
 
 - **Never** hardcode credentials in cron jobs
 - Use `.env` files with restricted permissions (600)
-- Consider using secret management tools
+- GitHub Actions secrets are encrypted at rest
+- Self-hosted runner environment variables set via `.env` in runner config
 
 ### Cron Permissions
 
@@ -256,36 +380,44 @@ def verify_recent_backup():
 # Restrict cron to specific users
 # /etc/cron.allow
 claw
-
-# /etc/cron.deny (empty to allow all)
 ```
 
 ### Log Security
 
 - Logs may contain sensitive data
-- Set appropriate permissions: `chmod 640 logs/*.log`
+- Set permissions: `chmod 640 logs/*.log`
 - Rotate and archive securely
+- Compress old logs to reduce exposure window
 
 ---
 
 ## Maintenance Tasks
 
-### Quarterly Review
+### Weekly
 
-- [ ] Verify all jobs are running successfully
-- [ ] Check backup integrity
-- [ ] Review and adjust retention policies
-- [ ] Update cron schedules if needed
+- [ ] Verify all cron jobs ran successfully
+- [ ] Check GitHub Actions scheduled workflow runs
+- [ ] Review self-hosted runner health
+- [ ] Verify backup integrity
+
+### Monthly
+
+- [ ] Review cron job schedules for needed adjustments
+- [ ] Check data retention enforcement
+- [ ] Review SLA monitoring alerts
+- [ ] Update backup retention if needed
+
+### Quarterly
+
+- [ ] Audit all scheduled jobs (system + GitHub Actions)
 - [ ] Test restore procedures
-
-### Annual Tasks
-
-- [ ] Audit all scheduled jobs
 - [ ] Review and update access permissions
 - [ ] Document any custom scripts
 - [ ] Verify monitoring coverage
+- [ ] Review expected infra failures in security pipeline
 
 ---
 
-*Last updated: 2026-04-13*  
-*Version: 1.0*
+*Last updated: 2026-04-14*  
+*Version: 2.0*  
+*Runner: srv1503460 | Security scans: Weekly Mon 06:00 UTC | Backups: Daily 02:00 UTC*
