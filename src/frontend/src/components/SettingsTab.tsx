@@ -118,7 +118,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
       setDeletionStatus(status)
     } catch (error) {
       // Deletion status endpoint may not exist yet, that's OK
-      console.log('Deletion status not available')
+      // Deletion status not available
     }
   }
 

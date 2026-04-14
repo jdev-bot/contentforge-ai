@@ -414,7 +414,7 @@ export function AlertsPanel({
                 <AlertRulesConfig 
                   rules={mockAlertRules}
                   onSave={(rules) => {
-                    console.log('Saving rules:', rules)
+                    // Saving rules
                     setShowRules(false)
                   }}
                 />

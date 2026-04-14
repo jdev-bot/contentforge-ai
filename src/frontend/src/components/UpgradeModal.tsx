@@ -80,7 +80,7 @@ export default function UpgradeModal({ isOpen, onClose, currentTier }: UpgradeMo
     setTimeout(() => {
       setLoading(null)
       // In production, redirect to Stripe checkout
-      console.log(`Redirecting to checkout for ${tier} plan...`)
+      // Redirecting to checkout for ${tier} plan
       alert('Stripe checkout integration coming in Phase 2!')
     }, 1000)
   }
