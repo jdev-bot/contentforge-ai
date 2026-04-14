@@ -9,6 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
+from app.core.cache import cache, CACHE_TTL
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 
@@ -68,6 +69,11 @@ async def create_project(project: ProjectCreate, user=Depends(get_auth_user)):
             )
 
         created_project = result.data[0]
+
+        # Invalidate project caches for this user
+        cache.delete("projects", prefix=f"user:{user.id}")
+        cache.delete_pattern("project_", prefix=f"user:{user.id}")
+
         return ProjectResponse(**created_project)
 
     except Exception as e:
@@ -80,6 +86,12 @@ async def create_project(project: ProjectCreate, user=Depends(get_auth_user)):
 @router.get("/projects", response_model=List[ProjectResponse])
 async def list_projects(user=Depends(get_auth_user), is_active: Optional[bool] = None):
     """List all projects for the current user."""
+    # Check cache first
+    cache_key = f"projects:{is_active}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return [ProjectResponse(**p) for p in cached]
+
     supabase = get_supabase_client()
 
     try:
@@ -92,7 +104,10 @@ async def list_projects(user=Depends(get_auth_user), is_active: Optional[bool] =
 
         result = query.execute()
 
-        return [ProjectResponse(**p) for p in result.data]
+        project_list = [ProjectResponse(**p) for p in result.data]
+        # Cache the result
+        cache.set(cache_key, [p.model_dump() for p in project_list], ttl=CACHE_TTL["project_list"], prefix=f"user:{user.id}")
+        return project_list
 
     except Exception as e:
         raise HTTPException(
@@ -104,6 +119,12 @@ async def list_projects(user=Depends(get_auth_user), is_active: Optional[bool] =
 @router.get("/projects/{project_id}", response_model=ProjectResponse)
 async def get_project(project_id: UUID, user=Depends(get_auth_user)):
     """Get a specific project."""
+    # Check cache first
+    cache_key = f"project_detail:{project_id}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return ProjectResponse(**cached)
+
     supabase = get_supabase_client()
 
     try:
@@ -122,7 +143,10 @@ async def get_project(project_id: UUID, user=Depends(get_auth_user)):
                 detail="Project not found",
             )
 
-        return ProjectResponse(**result.data)
+        project_item = ProjectResponse(**result.data)
+        # Cache the result
+        cache.set(cache_key, project_item.model_dump(), ttl=CACHE_TTL["project_list"], prefix=f"user:{user.id}")
+        return project_item
 
     except HTTPException:
         raise
@@ -186,6 +210,10 @@ async def update_project(
                 detail="Failed to update project",
             )
 
+        # Invalidate project caches for this user
+        cache.delete("projects", prefix=f"user:{user.id}")
+        cache.delete_pattern("project_", prefix=f"user:{user.id}")
+
         return ProjectResponse(**result.data[0])
 
     except HTTPException:
@@ -217,6 +245,10 @@ async def delete_project(project_id: UUID, user=Depends(get_auth_user)):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Project not found",
             )
+
+        # Invalidate project caches for this user
+        cache.delete("projects", prefix=f"user:{user.id}")
+        cache.delete_pattern("project_", prefix=f"user:{user.id}")
 
         return None
 

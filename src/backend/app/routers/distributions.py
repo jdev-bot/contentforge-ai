@@ -9,6 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
+from app.core.cache import cache, CACHE_TTL
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 
@@ -93,6 +94,10 @@ async def create_distribution(
                 detail="Failed to create distribution",
             )
 
+        # Invalidate distribution caches for this user
+        cache.delete_pattern("dist_", prefix=f"user:{user.id}")
+        cache.delete_pattern("analytics_", prefix=f"user:{user.id}")
+
         return DistributionResponse(**result.data[0])
 
     except HTTPException:
@@ -111,6 +116,12 @@ async def list_distributions(
     user=Depends(get_auth_user),
 ):
     """List all distributions for the current user."""
+    # Check cache first
+    cache_key = f"dist_list:{status}:{platform}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return [DistributionResponse(**d) for d in cached]
+
     supabase = get_supabase_client()
 
     try:
@@ -125,7 +136,10 @@ async def list_distributions(
 
         result = query.execute()
 
-        return [DistributionResponse(**d) for d in result.data]
+        dist_list = [DistributionResponse(**d) for d in result.data]
+        # Cache the result
+        cache.set(cache_key, [d.model_dump() for d in dist_list], ttl=120, prefix=f"user:{user.id}")
+        return dist_list
 
     except Exception as e:
         raise HTTPException(
@@ -137,6 +151,12 @@ async def list_distributions(
 @router.get("/distributions/{distribution_id}", response_model=DistributionResponse)
 async def get_distribution(distribution_id: UUID, user=Depends(get_auth_user)):
     """Get a specific distribution."""
+    # Check cache first
+    cache_key = f"dist_detail:{distribution_id}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return DistributionResponse(**cached)
+
     supabase = get_supabase_client()
 
     try:
@@ -155,7 +175,10 @@ async def get_distribution(distribution_id: UUID, user=Depends(get_auth_user)):
                 detail="Distribution not found",
             )
 
-        return DistributionResponse(**result.data)
+        dist_item = DistributionResponse(**result.data)
+        # Cache the result
+        cache.set(cache_key, dist_item.model_dump(), ttl=120, prefix=f"user:{user.id}")
+        return dist_item
 
     except HTTPException:
         raise
@@ -289,11 +312,18 @@ async def update_distribution(
                 detail="Failed to update distribution",
             )
 
+        # Invalidate distribution caches for this user
+        cache.delete_pattern("dist_", prefix=f"user:{user.id}")
+        cache.delete_pattern("analytics_", prefix=f"user:{user.id}")
+
         return DistributionResponse(**result.data[0])
 
     except HTTPException:
         raise
     except Exception as e:
+        # Invalidate distribution caches for this user
+        cache.delete_pattern("dist_", prefix=f"user:{user.id}")
+        cache.delete_pattern("analytics_", prefix=f"user:{user.id}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -335,6 +365,10 @@ async def cancel_distribution(distribution_id: UUID, user=Depends(get_auth_user)
         supabase.table("distributions").delete().eq(
             "id", str(distribution_id)
         ).execute()
+
+        # Invalidate distribution caches for this user
+        cache.delete_pattern("dist_", prefix=f"user:{user.id}")
+        cache.delete_pattern("analytics_", prefix=f"user:{user.id}")
 
         return None
 

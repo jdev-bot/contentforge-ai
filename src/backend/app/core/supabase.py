@@ -17,8 +17,9 @@ def get_supabase_client() -> Client:
     return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
 
+@lru_cache()
 def get_supabase_admin_client() -> Client:
-    """Get Supabase client with service role (for admin operations)."""
+    """Get cached Supabase client with service role (for admin operations)."""
     if not settings.SUPABASE_SERVICE_ROLE_KEY:
         raise ValueError("SUPABASE_SERVICE_ROLE_KEY not configured")
     return create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)

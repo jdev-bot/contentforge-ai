@@ -98,8 +98,12 @@ from app.core.error_tracking import ErrorTrackingMiddleware
 # Import middleware
 from app.core.rate_limit import UsageTrackingMiddleware
 from app.middleware.rate_limit_headers import RateLimitHeadersMiddleware
+from app.middleware.performance import PerformanceMiddleware
 
-# Error tracking middleware (must be first to catch all errors)
+# Performance monitoring (adds X-Response-Time header, logs slow requests)
+app.add_middleware(PerformanceMiddleware)
+
+# Error tracking middleware (must be early to catch all errors)
 app.add_middleware(ErrorTrackingMiddleware)
 
 # Rate limit headers middleware (adds X-RateLimit headers)

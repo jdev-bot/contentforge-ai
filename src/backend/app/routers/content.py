@@ -10,6 +10,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel, HttpUrl
 
+from app.core.cache import cache, CACHE_TTL
 from app.core.rate_limit import (
     UsageStats,
     check_and_increment_usage,
@@ -135,6 +136,10 @@ async def create_content(
                 detail="Failed to create content",
             )
 
+        # Invalidate content caches for this user
+        cache.delete_pattern("content_", prefix=f"user:{user.id}")
+        cache.delete_pattern("analytics_", prefix=f"user:{user.id}")
+
         return ContentResponse(**result.data[0])
 
     except Exception as e:
@@ -151,6 +156,12 @@ async def list_content(
     user=Depends(get_auth_user),
 ):
     """List all content for the current user."""
+    # Check cache first
+    cache_key = f"content_list:{project_id}:{status}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return [ContentResponse(**c) for c in cached]
+
     supabase = get_supabase_client()
 
     try:
@@ -165,7 +176,10 @@ async def list_content(
 
         result = query.execute()
 
-        return [ContentResponse(**c) for c in result.data]
+        content_list = [ContentResponse(**c) for c in result.data]
+        # Cache the result
+        cache.set(cache_key, [c.model_dump() for c in content_list], ttl=CACHE_TTL["content_list"], prefix=f"user:{user.id}")
+        return content_list
 
     except Exception as e:
         raise HTTPException(
@@ -177,6 +191,12 @@ async def list_content(
 @router.get("/content/{content_id}", response_model=ContentResponse)
 async def get_content(content_id: UUID, user=Depends(get_auth_user)):
     """Get specific content."""
+    # Check cache first
+    cache_key = f"content_detail:{content_id}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return ContentResponse(**cached)
+
     supabase = get_supabase_client()
 
     try:
@@ -195,7 +215,10 @@ async def get_content(content_id: UUID, user=Depends(get_auth_user)):
                 detail="Content not found",
             )
 
-        return ContentResponse(**result.data)
+        content_item = ContentResponse(**result.data)
+        # Cache the result
+        cache.set(cache_key, content_item.model_dump(), ttl=CACHE_TTL["content_detail"], prefix=f"user:{user.id}")
+        return content_item
 
     except HTTPException:
         raise
@@ -328,6 +351,10 @@ async def generate_assets(
             "id", str(content_id)
         ).execute()
 
+        # Invalidate content caches for this user
+        cache.delete_pattern("content_", prefix=f"user:{user.id}")
+        cache.delete_pattern("analytics_", prefix=f"user:{user.id}")
+
         return created_assets
 
     except HTTPException:
@@ -342,6 +369,12 @@ async def generate_assets(
 @router.get("/content/{content_id}/assets", response_model=List[GeneratedAsset])
 async def list_assets(content_id: UUID, user=Depends(get_auth_user)):
     """List generated assets for content."""
+    # Check cache first
+    cache_key = f"content_assets:{content_id}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return [GeneratedAsset(**a) for a in cached]
+
     supabase = get_supabase_client()
 
     try:
@@ -354,7 +387,10 @@ async def list_assets(content_id: UUID, user=Depends(get_auth_user)):
             .execute()
         )
 
-        return [GeneratedAsset(**a) for a in result.data]
+        assets_list = [GeneratedAsset(**a) for a in result.data]
+        # Cache the result
+        cache.set(cache_key, [a.model_dump() for a in assets_list], ttl=CACHE_TTL["content_detail"], prefix=f"user:{user.id}")
+        return assets_list
 
     except Exception as e:
         raise HTTPException(
@@ -419,6 +455,10 @@ async def delete_content(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Content not found",
                 )
+
+        # Invalidate content caches for this user
+        cache.delete_pattern("content_", prefix=f"user:{user.id}")
+        cache.delete_pattern("analytics_", prefix=f"user:{user.id}")
 
         return None
 

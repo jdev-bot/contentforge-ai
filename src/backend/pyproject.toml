@@ -13,7 +13,6 @@ asyncio_mode = "strict"
 filterwarnings = [
     "ignore::DeprecationWarning:gotrue",
     "ignore::PendingDeprecationWarning:multipart",
-    "ignore::PydanticDeprecatedSince20",
 ]
 
 [tool.mypy]

@@ -23,12 +23,18 @@ os.environ["SUPABASE_URL"] = "https://test.supabase.co"
 
 @pytest.fixture(autouse=True)
 def clear_supabase_cache():
-    """Clear lru_cache between tests to prevent mock leakage."""
+    """Clear lru_cache and in-memory cache between tests to prevent mock leakage."""
     from app.core.supabase import get_supabase_client
+    from app.core.cache import cache
 
     get_supabase_client.cache_clear()
+    # Clear in-memory cache between tests
+    if hasattr(cache, '_local_cache'):
+        cache._local_cache.clear()
     yield
     get_supabase_client.cache_clear()
+    if hasattr(cache, '_local_cache'):
+        cache._local_cache.clear()
 
 
 os.environ["SUPABASE_KEY"] = "test-anon-key"

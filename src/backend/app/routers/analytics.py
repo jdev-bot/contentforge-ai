@@ -2,6 +2,7 @@
 Analytics router for dashboard metrics and reporting.
 """
 
+import asyncio
 import csv
 import io
 import json
@@ -12,6 +13,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 
+from app.core.cache import cache, CACHE_TTL
 from app.core.supabase import get_supabase_client
 from app.routers.auth import get_auth_user
 
@@ -137,15 +139,29 @@ async def get_dashboard_kpis(user=Depends(get_auth_user)):
     """
     Get key performance indicators for the dashboard.
     """
+    # Check cache first
+    cache_key = f"dashboard_kpis:{user.id}"
+    cached = cache.get(cache_key, prefix="analytics")
+    if cached is not None:
+        return KPIDashboardResponse(**cached)
+
     supabase = get_supabase_client()
 
     try:
-        # Get all content for user
-        content_result = (
-            supabase.table("content")
-            .select("created_at")
-            .eq("user_id", str(user.id))
-            .execute()
+        # Run all three queries in parallel for better performance
+        def fetch_content():
+            return supabase.table("content").select("created_at").eq("user_id", str(user.id)).execute()
+
+        def fetch_assets():
+            return supabase.table("generated_assets").select("created_at").eq("user_id", str(user.id)).execute()
+
+        def fetch_distributions():
+            return supabase.table("distributions").select("status").eq("user_id", str(user.id)).execute()
+
+        content_result, assets_result, distributions_result = await asyncio.gather(
+            asyncio.to_thread(fetch_content),
+            asyncio.to_thread(fetch_assets),
+            asyncio.to_thread(fetch_distributions),
         )
 
         content_items = content_result.data or []
@@ -160,14 +176,6 @@ async def get_dashboard_kpis(user=Depends(get_auth_user)):
             >= thirty_days_ago
         )
 
-        # Get all assets for user
-        assets_result = (
-            supabase.table("generated_assets")
-            .select("created_at")
-            .eq("user_id", str(user.id))
-            .execute()
-        )
-
         assets = assets_result.data or []
         total_assets = len(assets)
 
@@ -177,14 +185,6 @@ async def get_dashboard_kpis(user=Depends(get_auth_user)):
             for item in assets
             if datetime.fromisoformat(item["created_at"].replace("Z", "+00:00"))
             >= thirty_days_ago
-        )
-
-        # Get all distributions for user
-        distributions_result = (
-            supabase.table("distributions")
-            .select("status")
-            .eq("user_id", str(user.id))
-            .execute()
         )
 
         distributions = distributions_result.data or []
@@ -201,7 +201,7 @@ async def get_dashboard_kpis(user=Depends(get_auth_user)):
             (published_count / completed_count * 100) if completed_count > 0 else 0.0
         )
 
-        return KPIDashboardResponse(
+        result = KPIDashboardResponse(
             total_content=total_content,
             total_assets=total_assets,
             total_distributions=total_distributions,
@@ -210,6 +210,9 @@ async def get_dashboard_kpis(user=Depends(get_auth_user)):
             asset_growth_30d=asset_growth_30d,
             distribution_success_rate=round(success_rate, 2),
         )
+        # Cache the result
+        cache.set(cache_key, result.model_dump(), ttl=CACHE_TTL["analytics"], prefix="analytics")
+        return result
 
     except Exception as e:
         raise HTTPException(
@@ -229,6 +232,12 @@ async def get_distribution_metrics(user=Depends(get_auth_user)):
     - by_platform: Breakdown by platform with success rates
     - success_rate: Overall success rate (0-1)
     """
+    # Check cache first
+    cache_key = f"distribution_metrics:{user.id}"
+    cached = cache.get(cache_key, prefix="analytics")
+    if cached is not None:
+        return DistributionMetricsResponse(**cached)
+
     supabase = get_supabase_client()
 
     try:
@@ -292,12 +301,15 @@ async def get_distribution_metrics(user=Depends(get_auth_user)):
             (published_count / completed_count) if completed_count > 0 else 0.0
         )
 
-        return DistributionMetricsResponse(
+        result = DistributionMetricsResponse(
             total_distributions=total_distributions,
             by_status=by_status,
             by_platform=by_platform,
             success_rate=round(overall_success_rate, 2),
         )
+        # Cache the result
+        cache.set(cache_key, result.model_dump(), ttl=CACHE_TTL["analytics"], prefix="analytics")
+        return result
 
     except Exception as e:
         raise HTTPException(
@@ -317,6 +329,12 @@ async def get_content_metrics(user=Depends(get_auth_user)):
     - total_views: Total views (placeholder for future)
     - last_30_days_count: Content created in last 30 days
     """
+    # Check cache first
+    cache_key = f"content_metrics:{user.id}"
+    cached = cache.get(cache_key, prefix="analytics")
+    if cached is not None:
+        return ContentMetricsResponse(**cached)
+
     supabase = get_supabase_client()
 
     try:
@@ -350,12 +368,15 @@ async def get_content_metrics(user=Depends(get_auth_user)):
             >= thirty_days_ago
         )
 
-        return ContentMetricsResponse(
+        result = ContentMetricsResponse(
             total_content=total_content,
             by_status=by_status,
             total_views=None,  # Placeholder for future view tracking
             last_30_days_count=last_30_days_count,
         )
+        # Cache the result
+        cache.set(cache_key, result.model_dump(), ttl=CACHE_TTL["analytics"], prefix="analytics")
+        return result
 
     except Exception as e:
         raise HTTPException(
@@ -374,6 +395,12 @@ async def get_asset_metrics(user=Depends(get_auth_user)):
     - by_type: Breakdown by asset type (thread, social_post, newsletter, etc.)
     - by_platform: Breakdown by platform (twitter, linkedin, etc.)
     """
+    # Check cache first
+    cache_key = f"asset_metrics:{user.id}"
+    cached = cache.get(cache_key, prefix="analytics")
+    if cached is not None:
+        return AssetMetricsResponse(**cached)
+
     supabase = get_supabase_client()
 
     try:
@@ -407,11 +434,14 @@ async def get_asset_metrics(user=Depends(get_auth_user)):
             for k, v in platform_counts.items()
         ]
 
-        return AssetMetricsResponse(
+        result = AssetMetricsResponse(
             total_assets=total_assets,
             by_type=by_type,
             by_platform=by_platform,
         )
+        # Cache the result
+        cache.set(cache_key, result.model_dump(), ttl=CACHE_TTL["analytics"], prefix="analytics")
+        return result
 
     except Exception as e:
         raise HTTPException(
@@ -438,6 +468,12 @@ async def get_usage_metrics(
     - total_in_period: Total usage events in the period
     - average_daily: Average daily usage
     """
+    # Check cache first
+    cache_key = f"usage_metrics:{user.id}:{days}"
+    cached = cache.get(cache_key, prefix="analytics")
+    if cached is not None:
+        return UsageMetricsResponse(**cached)
+
     supabase = get_supabase_client()
 
     try:
@@ -510,13 +546,16 @@ async def get_usage_metrics(
         total_in_period = len(usage_items)
         average_daily = total_in_period / days if total_in_period > 0 else 0.0
 
-        return UsageMetricsResponse(
+        result = UsageMetricsResponse(
             daily_counts=daily_counts_list,
             weekly_counts=weekly_counts_list,
             monthly_counts=monthly_counts_list,
             total_in_period=total_in_period,
             average_daily=round(average_daily, 2),
         )
+        # Cache the result
+        cache.set(cache_key, result.model_dump(), ttl=CACHE_TTL["usage_stats"], prefix="analytics")
+        return result
 
     except Exception as e:
         raise HTTPException(

@@ -11,6 +11,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 
+from app.core.cache import cache
 from app.routers.auth import get_auth_user
 from app.services.audience_service import audience_service
 
@@ -134,11 +135,20 @@ async def get_growth_metrics(
     user=Depends(get_auth_user),
 ):
     """Get audience growth metrics for the authenticated user."""
+    # Check cache first
+    cache_key = f"audience_growth:{platform}:{days}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return GrowthMetricsResponse(**cached)
+
     try:
         metrics = audience_service.get_growth_metrics(
             user_id=str(user.id), platform=platform, days=days
         )
-        return GrowthMetricsResponse(**metrics)
+        result = GrowthMetricsResponse(**metrics)
+        # Cache the result
+        cache.set(cache_key, result.model_dump(), ttl=300, prefix=f"user:{user.id}")
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -157,11 +167,20 @@ async def get_platforms_metrics(
     user=Depends(get_auth_user),
 ):
     """Get audience metrics grouped by platform."""
+    # Check cache first
+    cache_key = f"audience_platforms:{days}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return [PlatformMetricsResponse(**p) for p in cached]
+
     try:
         platforms = audience_service.get_platforms_metrics(
             user_id=str(user.id), days=days
         )
-        return [PlatformMetricsResponse(**p) for p in platforms]
+        result_list = [PlatformMetricsResponse(**p) for p in platforms]
+        # Cache the result
+        cache.set(cache_key, [p.model_dump() for p in result_list], ttl=300, prefix=f"user:{user.id}")
+        return result_list
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -182,13 +201,22 @@ async def get_historical_data(
     user=Depends(get_auth_user),
 ):
     """Get historical audience data for the authenticated user."""
+    # Check cache first
+    cache_key = f"audience_history:{platform}:{metric_type}:{days}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return HistoricalDataResponse(**cached)
+
     try:
         data = audience_service.get_historical_data(
             user_id=str(user.id), platform=platform, metric_type=metric_type, days=days
         )
-        return HistoricalDataResponse(
+        result = HistoricalDataResponse(
             platform=platform, metric_type=metric_type, days=days, data=data
         )
+        # Cache the result
+        cache.set(cache_key, result.model_dump(), ttl=300, prefix=f"user:{user.id}")
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -220,6 +248,9 @@ async def record_metric(metric: AudienceMetricCreate, user=Depends(get_auth_user
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to record metric",
             )
+
+        # Invalidate audience caches for this user
+        cache.delete_pattern("audience_", prefix=f"user:{user.id}")
 
         return AudienceMetricResponse(**recorded)
     except HTTPException:
@@ -280,6 +311,10 @@ async def receive_webhook(platform: str, payload: WebhookPayload, request: Reque
             recorded_at=payload.timestamp,
         )
 
+        # Invalidate audience caches for this user
+        if user_id:
+            cache.delete_pattern("audience_", prefix=f"user:{user_id}")
+
         return WebhookResponse(
             success=True,
             message=f"Successfully recorded {payload.metric_type} metric for {platform}",
@@ -305,9 +340,18 @@ async def get_insights(
     user=Depends(get_auth_user),
 ):
     """Get AI-generated audience insights for the authenticated user."""
+    # Check cache first
+    cache_key = f"audience_insights:{days}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return AudienceInsightsResponse(**cached)
+
     try:
         insights = audience_service.generate_insights(user_id=str(user.id), days=days)
-        return AudienceInsightsResponse(**insights)
+        result = AudienceInsightsResponse(**insights)
+        # Cache the result
+        cache.set(cache_key, result.model_dump(), ttl=300, prefix=f"user:{user.id}")
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -325,6 +369,8 @@ async def generate_snapshot(user=Depends(get_auth_user)):
     """Generate a new growth snapshot for the authenticated user."""
     try:
         snapshot = audience_service.calculate_growth_snapshot(user_id=str(user.id))
+        # Invalidate audience caches for this user
+        cache.delete_pattern("audience_", prefix=f"user:{user.id}")
         return {
             "success": True,
             "message": "Growth snapshot created successfully",
@@ -359,6 +405,9 @@ async def delete_metric(metric_id: UUID, user=Depends(get_auth_user)):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Metric not found"
             )
+
+        # Invalidate audience caches for this user
+        cache.delete_pattern("audience_", prefix=f"user:{user.id}")
 
         return None
     except HTTPException:

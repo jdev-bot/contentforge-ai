@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
+from app.core.cache import cache
 from app.core.rate_limit import (
     UsageStats,
     check_and_increment_usage,
@@ -128,12 +129,21 @@ async def list_trending_topics(
     """
     check_and_increment_usage(str(user.id))
 
+    # Check cache first
+    cache_key = f"trends:{category}:{limit}:{min_score}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return [TrendingTopicResponse(**t) for t in cached]
+
     try:
         trends = await trend_service.get_trending_topics(
             category=category, limit=limit, min_score=min_score
         )
 
-        return [TrendingTopicResponse(**trend) for trend in trends]
+        result_list = [TrendingTopicResponse(**trend) for trend in trends]
+        # Cache the result
+        cache.set(cache_key, [t.model_dump() for t in result_list], ttl=300, prefix=f"user:{user.id}")
+        return result_list
 
     except Exception as e:
         raise HTTPException(
@@ -155,12 +165,21 @@ async def get_relevant_trends(
     """
     check_and_increment_usage(str(user.id))
 
+    # Check cache first
+    cache_key = f"trends_relevant:{limit}"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return [TrendingTopicWithRelevance(**t) for t in cached]
+
     try:
         trends = await trend_service.get_relevant_topics_for_user(
             user_id=str(user.id), limit=limit
         )
 
-        return [TrendingTopicWithRelevance(**trend) for trend in trends]
+        result_list = [TrendingTopicWithRelevance(**trend) for trend in trends]
+        # Cache the result
+        cache.set(cache_key, [t.model_dump() for t in result_list], ttl=300, prefix=f"user:{user.id}")
+        return result_list
 
     except Exception as e:
         raise HTTPException(
@@ -180,6 +199,12 @@ async def get_trends_by_category(
     """
     check_and_increment_usage(str(user.id))
 
+    # Check cache first
+    cache_key = "trends_categories"
+    cached = cache.get(cache_key, prefix=f"user:{user.id}")
+    if cached is not None:
+        return [TrendCategoryResponse(**c) for c in cached]
+
     try:
         topics_by_category = await trend_service.get_topics_by_category()
 
@@ -198,6 +223,8 @@ async def get_trends_by_category(
         # Sort by topic count
         result.sort(key=lambda x: x.topic_count, reverse=True)
 
+        # Cache the result
+        cache.set(cache_key, [c.model_dump() for c in result], ttl=300, prefix=f"user:{user.id}")
         return result
 
     except Exception as e:
