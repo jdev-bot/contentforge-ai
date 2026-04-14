@@ -1,16 +1,28 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn, signUp } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { Sparkles, Zap, Shield, CheckCircle, Mail } from 'lucide-react'
+import { Sparkles, Zap, Shield, CheckCircle, Mail, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+const APP_ENV = process.env.NEXT_PUBLIC_APP_ENV || 'production'
+const isStaging = APP_ENV === 'staging'
+const SIGNUP_ENABLED = process.env.NEXT_PUBLIC_SIGNUP_ENABLED !== 'false'
+
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full" /></div>}>
+      <LoginContent />
+    </Suspense>
+  )
+}
+
+function LoginContent() {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -19,6 +31,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo') || '/'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,7 +47,9 @@ export default function LoginPage() {
         const { error } = await signUp(email, password, fullName)
         if (error) throw error
       }
-      router.push('/')
+      // Redirect to the page the user was trying to access, or home
+      const destination = redirectTo || '/'
+      router.push(destination)
       router.refresh()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -129,9 +145,17 @@ export default function LoginPage() {
               <CardDescription className="mt-2">
                 {isLogin 
                   ? 'Sign in to access your content workspace'
-                  : 'Start transforming your content with AI'
+                  : isStaging 
+                    ? 'Join the ContentForge staging environment'
+                    : 'Start transforming your content with AI'
                 }
               </CardDescription>
+              {isStaging && (
+                <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+                  <Lock className="w-4 h-4 flex-shrink-0" />
+                  <span>Invite-only access — Contact an admin for an account.</span>
+                </div>
+              )}
             </CardHeader>
             
             <CardContent className="pt-6">
@@ -186,7 +210,12 @@ export default function LoginPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {!isLogin && (
+                {!isLogin && !SIGNUP_ENABLED && !isStaging && (
+                  <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400">
+                    Self-registration is currently disabled. Please contact an administrator for an invite.
+                  </div>
+                )}
+                {!isLogin && SIGNUP_ENABLED && (
                   <Input
                     type="text"
                     label="Full Name"
@@ -258,19 +287,25 @@ export default function LoginPage() {
               </form>
               
               <div className="mt-6 text-center">
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {isLogin ? "Don't have an account? " : "Already have an account? "}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsLogin(!isLogin)
-                      setError('')
-                    }}
-                    className="text-blue-600 hover:text-blue-500 font-medium transition-colors"
-                  >
-                    {isLogin ? 'Sign Up' : 'Sign In'}
-                  </button>
-                </p>
+                {SIGNUP_ENABLED || isStaging ? (
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {isLogin ? "Don't have an account? " : "Already have an account? "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLogin(!isLogin)
+                        setError('')
+                      }}
+                      className="text-blue-600 hover:text-blue-500 font-medium transition-colors"
+                    >
+                      {isLogin ? 'Sign Up' : 'Sign In'}
+                    </button>
+                  </p>
+                ) : (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Registration is invite-only. Contact an administrator.
+                  </p>
+                )}
               </div>
 
               {/* Feature list for mobile */}

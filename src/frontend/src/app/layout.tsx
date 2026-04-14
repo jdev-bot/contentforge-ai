@@ -5,6 +5,7 @@ import { ToastProvider } from "@/hooks/useToast";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import CookieConsent from "@/components/CookieConsent";
+import { StagingBanner } from "@/components/StagingBanner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,11 +13,27 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+const APP_ENV = process.env.NEXT_PUBLIC_APP_ENV || 'production';
+const isStaging = APP_ENV === 'staging';
+
 export const metadata: Metadata = {
   title: "ContentForge AI - Content Repurposing Platform",
   description: "Transform your content into 20+ formats with AI-powered repurposing and distribution",
   keywords: ["AI", "content", "marketing", "social media", "repurposing"],
   authors: [{ name: "ContentForge" }],
+  // Block indexing in staging
+  ...(isStaging && {
+    robots: {
+      index: false,
+      follow: false,
+      nocache: true,
+      googleBot: {
+        index: false,
+        follow: false,
+        noimageindex: true,
+      },
+    },
+  }),
   openGraph: {
     title: "ContentForge AI",
     description: "Transform your content with AI power",
@@ -54,7 +71,10 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="system" storageKey="contentforge-theme">
           <ErrorBoundary>
             <ToastProvider>
-              {children}
+              <StagingBanner />
+              <div className={isStaging ? 'pt-8' : ''}>
+                {children}
+              </div>
               <CookieConsent />
             </ToastProvider>
           </ErrorBoundary>
