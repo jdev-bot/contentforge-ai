@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -65,6 +65,14 @@ const PROVIDER_COLORS: Record<string, string> = {
 type ViewState = 'select' | 'callback' | 'identities' | 'link-success'
 
 export default function SSOLoginPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
+      <SSOLoginContent />
+    </Suspense>
+  )
+}
+
+function SSOLoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { showToast } = useToast()
