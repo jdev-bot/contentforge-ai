@@ -99,20 +99,26 @@ async def export_user_data(user=Depends(get_auth_user)):
         )
         org_members = org_members_result.data or []
 
+        # Batch-fetch organizations instead of N+1 queries
+        org_ids = [m.get("org_id") for m in org_members if m.get("org_id")]
+        orgs_by_id: Dict[str, dict] = {}
+        if org_ids:
+            orgs_result = (
+                supabase.table("organizations")
+                .select("*")
+                .in_("id", org_ids)
+                .execute()
+            )
+            for o in orgs_result.data or []:
+                orgs_by_id[o["id"]] = o
+
         organizations = []
         for member in org_members:
             org_id = member.get("org_id")
-            if org_id:
-                org_result = (
-                    supabase.table("organizations")
-                    .select("*")
-                    .eq("id", org_id)
-                    .execute()
-                )
-                if org_result.data:
-                    org_data = org_result.data[0]
-                    org_data["membership_role"] = member.get("role")
-                    organizations.append(org_data)
+            if org_id and org_id in orgs_by_id:
+                org_data = dict(orgs_by_id[org_id])
+                org_data["membership_role"] = member.get("role")
+                organizations.append(org_data)
 
         # Get usage statistics
         usage_result = (

@@ -360,7 +360,8 @@ async def bulk_analyze_content(
             "outdated": 0,
         }
 
-        # Analyze each content item
+        # Analyze each content item and collect upsert data
+        upsert_batch = []
         for content in content_result.data:
             try:
                 analysis = freshness_service.analyze_content(content)
@@ -368,7 +369,7 @@ async def bulk_analyze_content(
                     analysis["freshness_score"]
                 )
 
-                # Upsert freshness score
+                # Collect freshness data for batch upsert
                 freshness_data = {
                     "content_id": content["id"],
                     "user_id": str(user.id),
@@ -378,10 +379,7 @@ async def bulk_analyze_content(
                     "factors": analysis["factors"],
                     "recommendations": analysis["recommendations"],
                 }
-
-                supabase.table("content_freshness_scores").upsert(
-                    freshness_data, on_conflict="content_id,user_id"
-                ).execute()
+                upsert_batch.append(freshness_data)
 
                 freshness_scores.append(
                     {
@@ -399,6 +397,12 @@ async def bulk_analyze_content(
                 # Log error but continue with other content
                 logger.error(f"Error analyzing content {content.get('id')}: {e}")
                 continue
+
+        # Batch upsert all freshness scores at once
+        if upsert_batch:
+            supabase.table("content_freshness_scores").upsert(
+                upsert_batch, on_conflict="content_id,user_id"
+            ).execute()
 
         return BulkAnalyzeResponse(
             total_analyzed=len(freshness_scores),
