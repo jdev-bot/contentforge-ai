@@ -14,7 +14,7 @@ from fastapi import Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
 from app.core.config import get_settings
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.tasks.email import send_usage_alert_task
 
 logger = logging.getLogger(__name__)
@@ -111,7 +111,7 @@ class UsageStats(BaseModel):
 
 def get_user_subscription_tier(user_id: str) -> str:
     """Get user's subscription tier from database."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -136,7 +136,7 @@ def get_subscription_limit(tier: str) -> int:
 
 def check_monthly_reset(user_id: str) -> bool:
     """Check if monthly usage should be reset (first day of month)."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -180,7 +180,7 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
     Check user's monthly usage and increment if under limit.
     Returns current usage stats.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Check for monthly reset first
@@ -271,7 +271,7 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
 
 def log_usage_event(user_id: str, event_type: str, tokens_used: Optional[int] = None):
     """Log a usage event to the usage_logs table."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         log_data = {
@@ -288,7 +288,7 @@ def log_usage_event(user_id: str, event_type: str, tokens_used: Optional[int] = 
 
 def get_user_usage_stats(user_id: str) -> UsageStats:
     """Get current usage statistics for a user."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Check for monthly reset
@@ -342,7 +342,7 @@ def get_user_usage_stats(user_id: str) -> UsageStats:
 
 def get_usage_history(user_id: str, limit: int = 100):
     """Get usage history for a user."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -525,9 +525,9 @@ class UsageTrackingMiddleware:
         if auth_header.startswith("Bearer "):
             token = auth_header.replace("Bearer ", "")
             try:
-                from app.core.supabase import get_supabase_client
+                from app.core.supabase import get_supabase_admin_client
 
-                supabase = get_supabase_client()
+                supabase = get_supabase_admin_client()
                 user = supabase.auth.get_user(token)
 
                 if user and user.user:
