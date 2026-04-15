@@ -2123,7 +2123,7 @@ export async function getRSSEntries(
   if (options?.startDate) params.append('start_date', options.startDate)
   if (options?.endDate) params.append('end_date', options.endDate)
   
-  const url = `${API_URL}/rss/entries}${params.toString() ? `?${params.toString()}` : ''}`
+  const url = `${API_URL}/rss/entries${params.toString() ? `?${params.toString()}` : ''}`
   const response = await fetch(url, { headers })
   
   if (!response.ok) {
@@ -3154,7 +3154,7 @@ export async function getPerformanceFunnel(): Promise<FunnelStage[]> {
 
 export async function getPerformanceCohorts(): Promise<CohortData[]> {
   const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/performance/cohorts`, { headers })
+  const response = await fetch(`${API_URL}/performance/cohort`, { headers })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch performance cohorts')
@@ -3174,7 +3174,7 @@ export async function getPerformanceAttribution(): Promise<AttributionData[]> {
 
 export async function getPerformanceTrend(days: number = 30): Promise<TrendDataPoint[]> {
   const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/performance/trend?days=${days}`, { headers })
+  const response = await fetch(`${API_URL}/performance/trends?days=${days}`, { headers })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch performance trend')

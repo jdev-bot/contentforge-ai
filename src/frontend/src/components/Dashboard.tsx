@@ -311,7 +311,7 @@ export default function Dashboard({ user }: DashboardProps) {
         return (
           <ErrorBoundary onReset={() => setActiveTab('comments')}>
             <Suspense fallback={fallback}>
-              <CommentsPanel contentId="default" />
+              <CommentsPanel />
             </Suspense>
           </ErrorBoundary>
         )
@@ -319,7 +319,7 @@ export default function Dashboard({ user }: DashboardProps) {
         return (
           <ErrorBoundary onReset={() => setActiveTab('version-history')}>
             <Suspense fallback={fallback}>
-              <VersionHistory contentId="default" />
+              <VersionHistory />
             </Suspense>
           </ErrorBoundary>
         )

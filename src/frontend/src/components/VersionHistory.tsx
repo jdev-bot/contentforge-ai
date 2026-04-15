@@ -34,12 +34,12 @@ import {
 } from '@/lib/api'
 
 interface VersionHistoryProps {
-  contentId: string
+  contentId?: string
 }
 
 export default function VersionHistory({ contentId }: VersionHistoryProps) {
   const [history, setHistory] = useState<VersionHistoryResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(!contentId)
   const [selectedVersion, setSelectedVersion] = useState<ContentVersion | null>(null)
   const [compareMode, setCompareMode] = useState(false)
   const [compareOld, setCompareOld] = useState<ContentVersion | null>(null)
@@ -51,6 +51,7 @@ export default function VersionHistory({ contentId }: VersionHistoryProps) {
   const { showToast } = useToast()
 
   const fetchData = useCallback(async () => {
+    if (!contentId) return
     try {
       setIsLoading(true)
       const data = await getContentVersions(contentId)
@@ -70,7 +71,7 @@ export default function VersionHistory({ contentId }: VersionHistoryProps) {
   }, [fetchData])
 
   const handleCompare = useCallback(async () => {
-    if (!compareOld || !compareNew) return
+    if (!contentId || !compareOld || !compareNew) return
     try {
       setIsComparing(true)
       const result = await compareVersions(
@@ -87,7 +88,7 @@ export default function VersionHistory({ contentId }: VersionHistoryProps) {
   }, [contentId, compareOld, compareNew, showToast])
 
   const handleRestore = useCallback(async () => {
-    if (!restoreTarget) return
+    if (!contentId || !restoreTarget) return
     try {
       setIsRestoring(true)
       await restoreContentVersion(contentId, restoreTarget.id)
@@ -129,6 +130,16 @@ export default function VersionHistory({ contentId }: VersionHistoryProps) {
       (a, b) => b.version_number - a.version_number
     )
   }, [history])
+
+  if (!contentId) {
+    return (
+      <EmptyState
+        icon="file"
+        title="No Content Selected"
+        description="Select a content item to view its version history."
+      />
+    )
+  }
 
   if (isLoading) {
     return (

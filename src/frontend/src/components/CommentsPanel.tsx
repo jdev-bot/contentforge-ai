@@ -55,7 +55,7 @@ const EMOJI_OPTIONS: EMOJI_OPTION[] = [
 ]
 
 interface CommentsPanelProps {
-  contentId: string
+  contentId?: string
 }
 
 // Reactions state per comment (fetched separately or embedded)
@@ -66,7 +66,7 @@ interface ReactionMap {
 export default function CommentsPanel({ contentId }: CommentsPanelProps) {
   const [comments, setComments] = useState<ContentComment[]>([])
   const [reactions, setReactions] = useState<Record<string, ReactionMap>>({})
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!contentId)
   const [newComment, setNewComment] = useState('')
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
@@ -80,6 +80,7 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
   const { showToast } = useToast()
 
   const loadComments = useCallback(async () => {
+    if (!contentId) return
     try {
       setLoading(true)
       const result = await getComments(contentId)
@@ -115,7 +116,7 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
   const getReplies = (commentId: string) => comments.filter(c => c.parent_id === commentId)
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return
+    if (!contentId || !newComment.trim()) return
     try {
       const created = await createComment(contentId, { text: newComment.trim() })
       setComments(prev => [...prev, created])
@@ -128,7 +129,7 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
   }
 
   const handleAddReply = async (parentId: string) => {
-    if (!replyText.trim()) return
+    if (!contentId || !replyText.trim()) return
     try {
       const created = await createComment(contentId, {
         text: replyText.trim(),
@@ -261,6 +262,16 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
   const getAuthorName = (comment: ContentComment) => {
     // The backend returns user_id; we can try to resolve from mentions or show user_id prefix
     return comment.user_id.slice(0, 8)
+  }
+
+  if (!contentId) {
+    return (
+      <div className="flex flex-col items-center py-16">
+        <MessageSquare className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4" />
+        <h3 className="text-lg font-semibold text-slate-500 dark:text-slate-400 mb-2">No Content Selected</h3>
+        <p className="text-sm text-slate-400 dark:text-slate-500">Select a content item to view and manage its comments.</p>
+      </div>
+    )
   }
 
   if (loading) {
