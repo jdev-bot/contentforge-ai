@@ -1,13 +1,18 @@
-# Render Blueprint for ContentForge AI Backend
-# Deploy with: https://render.com/docs/blueprint-spec
+# Render Blueprint for ContentForge AI — Staging
+# Deploy via: https://dashboard.render.com/blueprints
 
 services:
   # FastAPI Backend Service
   - type: web
     name: contentforge-ai-api
-    runtime: docker
-    dockerfilePath: ./infra/docker/Dockerfile.backend
+    runtime: python
+    repo: "https://github.com/jdev-bot/contentforge-ai"
+    buildCommand: "pip install -r src/backend/requirements.txt"
+    startCommand: "cd src/backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     plan: free
+    branch: main
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.0
@@ -17,8 +22,6 @@ services:
         value: https://contentforge-ai-api.onrender.com
       - key: NEXT_PUBLIC_SIGNUP_ENABLED
         value: "false"
-      - key: PORT
-        value: 8000
       # Database - Supabase
       - key: SUPABASE_URL
         sync: false
@@ -30,38 +33,22 @@ services:
       # Email - Resend
       - key: RESEND_API_KEY
         sync: false
-      # Payments - Stripe
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      - key: STRIPE_WEBHOOK_SECRET
-        sync: false
-      # Storage - Cloudflare R2
-      - key: R2_ACCOUNT_ID
-        sync: false
-      - key: R2_ACCESS_KEY_ID
-        sync: false
-      - key: R2_SECRET_ACCESS_KEY
-        sync: false
-      - key: R2_BUCKET_NAME
-        value: contentforge-ai-staging
-      # Redis (internal or external)
+      # Redis
       - key: REDIS_URL
         fromService:
           type: redis
           name: contentforge-ai-redis
           property: connectionString
-      # Security
+      # CORS
       - key: CORS_ORIGINS
-        value: '["https://contentforge-ai-git-main-jdev-bots-projects-ce69c014.vercel.app","https://frontend-theta-seven-65.vercel.app"]'
+        value: '["https://contentforge-ai.vercel.app"]'
+      # Security (auto-generated)
+      - key: SECRET_KEY
+        generateValue: true
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: ENCRYPTION_KEY
         generateValue: true
-    buildCommand: "pip install -r src/backend/requirements.txt"
-    startCommand: "cd src/backend && uvicorn app.main:app --host 0.0.0.0 --port 8000"
-    healthCheckPath: /api/v1/health
-    autoDeploy: true
-    branch: main
 
   # Redis for Celery task queue
   - type: redis
@@ -73,37 +60,13 @@ services:
   # Background Worker (Celery)
   - type: worker
     name: contentforge-ai-worker
-    runtime: docker
-    dockerfilePath: ./infra/docker/Dockerfile.backend
-    plan: free
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.0
-      - key: APP_ENV
-        value: staging
-      # Same env vars as API service
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: GROQ_API_KEY
-        sync: false
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: contentforge-ai-redis
-          property: connectionString
+    runtime: python
+    repo: "https://github.com/jdev-bot/contentforge-ai"
     buildCommand: "pip install -r src/backend/requirements.txt"
     startCommand: "cd src/backend && celery -A app.celery worker --loglevel=info --concurrency=2"
-    autoDeploy: true
-    branch: main
-
-  # Optional: Celery Beat Scheduler
-  - type: worker
-    name: contentforge-ai-scheduler
-    runtime: docker
-    dockerfilePath: ./infra/docker/Dockerfile.backend
     plan: free
+    branch: main
+    autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.0
@@ -120,7 +83,9 @@ services:
           type: redis
           name: contentforge-ai-redis
           property: connectionString
-    buildCommand: "pip install -r src/backend/requirements.txt"
-    startCommand: "cd src/backend && celery -A app.celery beat --loglevel=info"
-    autoDeploy: true
-    branch: main
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
