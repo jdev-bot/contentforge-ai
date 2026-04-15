@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp, Bell, Users2, Target, Zap, Award, Activity, Lightbulb, Tag, Shield, MessageSquare, GitBranch, ScrollText, LayoutDashboard, Puzzle, Store, Filter, PieChart, Heart, Network } from 'lucide-react'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp, Bell, Users2, Target, Zap, Award, Activity, Lightbulb, Tag, Shield, MessageSquare, GitBranch, ScrollText, LayoutDashboard, Puzzle, Store, Filter, PieChart, Heart, Network, ChevronDown, ChevronRight } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
@@ -61,6 +61,11 @@ export default function Dashboard({ user }: DashboardProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showSearchModal, setShowSearchModal] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    insights: false,
+    system: true,
+    extensions: true,
+  })
   const router = useRouter()
 
   // Handle scroll for glass effect
@@ -72,40 +77,90 @@ export default function Dashboard({ user }: DashboardProps) {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Memoize tabs array to prevent unnecessary re-renders
-  const tabs = useMemo(() => [
-    { id: 'content', name: 'Content', icon: FileText, badge: null },
-    { id: 'projects', name: 'Projects', icon: Folder, badge: null },
-    { id: 'schedule', name: 'Schedule', icon: Calendar, badge: null },
-    { id: 'team-calendar', name: 'Team Calendar', icon: Users2, badge: 'New' },
-    { id: 'rss', name: 'RSS Feeds', icon: Rss, badge: null },
-    { id: 'freshness', name: 'Freshness', icon: Leaf, badge: null },
-    { id: 'trends', name: 'Trends', icon: TrendingUp, badge: null },
-    { id: 'distributions', name: 'Distributions', icon: Share2, badge: null },
-    { id: 'analytics', name: 'Analytics', icon: BarChart3, badge: null },
-    { id: 'competitors', name: 'Competitors', icon: Target, badge: 'New' },
-    { id: 'team', name: 'Team', icon: Users, badge: null },
-    { id: 'alerts', name: 'Alerts', icon: Bell, badge: null },
-    { id: 'integrations', name: 'Integrations', icon: Zap, badge: 'New' },
-    { id: 'quality', name: 'Quality', icon: Award, badge: null },
-    { id: 'sentiment', name: 'Sentiment', icon: Activity, badge: null },
-    { id: 'suggestions', name: 'Suggestions', icon: Lightbulb, badge: 'New' },
-    { id: 'categorization', name: 'Categories', icon: Tag, badge: 'New' },
-    { id: 'performance', name: 'Performance', icon: BarChart3, badge: null },
-    { id: 'retention', name: 'Retention', icon: Shield, badge: null },
-    { id: 'comments', name: 'Comments', icon: MessageSquare, badge: null },
-    { id: 'version-history', name: 'History', icon: GitBranch, badge: 'New' },
-    { id: 'audit-logs', name: 'Audit', icon: ScrollText, badge: 'New' },
-    { id: 'custom-dashboards', name: 'Dashboards', icon: LayoutDashboard, badge: 'New' },
-    { id: 'plugins', name: 'Plugins', icon: Puzzle, badge: 'New' },
-    { id: 'marketplace', name: 'Marketplace', icon: Store, badge: 'New' },
-    { id: 'funnels', name: 'Funnels', icon: Filter, badge: 'New' },
-    { id: 'attribution', name: 'Attribution', icon: PieChart, badge: 'New' },
-    { id: 'sla', name: 'SLA', icon: Heart, badge: 'New' },
-    { id: 'integration-hub', name: 'Integrations Hub', icon: Network, badge: 'New' },
-    { id: 'settings', name: 'Settings', icon: Settings, badge: null },
-    { id: 'trash', name: 'Trash', icon: Trash2, badge: null },
+  // Memoize section groups for organized sidebar navigation
+  const sidebarSections = useMemo(() => [
+    {
+      id: 'content',
+      label: 'Content',
+      tabs: [
+        { id: 'content', name: 'Content', icon: FileText, badge: null },
+        { id: 'projects', name: 'Projects', icon: Folder, badge: null },
+        { id: 'schedule', name: 'Schedule', icon: Calendar, badge: null },
+        { id: 'rss', name: 'RSS Feeds', icon: Rss, badge: null },
+        { id: 'freshness', name: 'Freshness', icon: Leaf, badge: null },
+      ]
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      tabs: [
+        { id: 'analytics', name: 'Analytics', icon: BarChart3, badge: null },
+        { id: 'trends', name: 'Trends', icon: TrendingUp, badge: null },
+        { id: 'distributions', name: 'Distributions', icon: Share2, badge: null },
+        { id: 'performance', name: 'Performance', icon: BarChart3, badge: null },
+        { id: 'funnels', name: 'Funnels', icon: Filter, badge: 'New' },
+        { id: 'attribution', name: 'Attribution', icon: PieChart, badge: 'New' },
+        { id: 'competitors', name: 'Competitors', icon: Target, badge: 'New' },
+      ]
+    },
+    {
+      id: 'insights',
+      label: 'Insights',
+      tabs: [
+        { id: 'quality', name: 'Quality', icon: Award, badge: null },
+        { id: 'sentiment', name: 'Sentiment', icon: Activity, badge: null },
+        { id: 'categorization', name: 'Categories', icon: Tag, badge: 'New' },
+        { id: 'suggestions', name: 'Suggestions', icon: Lightbulb, badge: 'New' },
+      ]
+    },
+    {
+      id: 'team',
+      label: 'Team',
+      tabs: [
+        { id: 'team', name: 'Team', icon: Users, badge: null },
+        { id: 'team-calendar', name: 'Team Calendar', icon: Users2, badge: 'New' },
+        { id: 'comments', name: 'Comments', icon: MessageSquare, badge: null },
+        { id: 'version-history', name: 'History', icon: GitBranch, badge: 'New' },
+      ]
+    },
+    {
+      id: 'system',
+      label: 'System',
+      tabs: [
+        { id: 'alerts', name: 'Alerts', icon: Bell, badge: null },
+        { id: 'audit-logs', name: 'Audit', icon: ScrollText, badge: 'New' },
+        { id: 'custom-dashboards', name: 'Dashboards', icon: LayoutDashboard, badge: 'New' },
+        { id: 'sla', name: 'SLA', icon: Heart, badge: 'New' },
+        { id: 'retention', name: 'Retention', icon: Shield, badge: null },
+      ]
+    },
+    {
+      id: 'extensions',
+      label: 'Extensions',
+      tabs: [
+        { id: 'integrations', name: 'Integrations', icon: Zap, badge: 'New' },
+        { id: 'integration-hub', name: 'Integrations Hub', icon: Network, badge: 'New' },
+        { id: 'plugins', name: 'Plugins', icon: Puzzle, badge: 'New' },
+        { id: 'marketplace', name: 'Marketplace', icon: Store, badge: 'New' },
+      ]
+    },
+    {
+      id: 'account',
+      label: null, // No section header — always visible
+      tabs: [
+        { id: 'settings', name: 'Settings', icon: Settings, badge: null },
+        { id: 'trash', name: 'Trash', icon: Trash2, badge: null },
+      ]
+    },
   ], [])
+
+  // Flat tabs array for keyboard shortcuts (backward compat)
+  const tabs = useMemo(() => sidebarSections.flatMap(s => s.tabs), [sidebarSections])
+
+  // Toggle section collapse
+  const toggleSection = (sectionId: string) => {
+    setCollapsedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }))
+  }
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -511,51 +566,79 @@ export default function Dashboard({ user }: DashboardProps) {
         <div className="flex flex-col md:flex-row gap-8">
           {/* Sidebar - Desktop */}
           <aside className="hidden md:block w-64 flex-shrink-0">
-            <nav className="sticky top-24 space-y-1">
-              {tabs.map((tab, index) => {
-                const Icon = tab.icon
-                const isActive = activeTab === tab.id
+            <nav className="sticky top-24 space-y-2">
+              {sidebarSections.map((section) => {
+                const isCollapsed = collapsedSections[section.id] ?? false
+                const hasActiveTab = section.tabs.some(t => t.id === activeTab)
+                // Auto-expand if active tab is in this section
+                const shouldShow = !isCollapsed || hasActiveTab
                 
                 return (
-                  <Tooltip key={tab.id} content={`Alt+${index + 1}`} position="right" delay={1000}>
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={cn(
-                        'w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200',
-                        'group relative overflow-hidden',
-                        isActive
-                          ? 'bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-lg shadow-blue-500/25'
-                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className={cn(
-                          'h-5 w-5 transition-colors',
-                          isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
-                        )} />
-                        <span>{tab.name}</span>
-                      </div>
+                  <div key={section.id}>
+                    {/* Section Header (collapsible) */}
+                    {section.label ? (
+                      <button
+                        onClick={() => toggleSection(section.id)}
+                        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                      >
+                        <span>{section.label}</span>
+                        {isCollapsed && !hasActiveTab ? (
+                          <ChevronRight className="w-3 h-3" />
+                        ) : (
+                          <ChevronDown className="w-3 h-3" />
+                        )}
+                      </button>
+                    ) : (
+                      <div className="mt-3 border-t border-slate-200 dark:border-slate-700/50 pt-2" />
+                    )}
+                    
+                    {/* Section Tabs */}
+                    {shouldShow && section.tabs.map((tab) => {
+                      const Icon = tab.icon
+                      const isActive = activeTab === tab.id
                       
-                      {tab.badge && (
-                        <Badge 
-                          variant={isActive ? 'default' : 'primary'} 
-                          size="sm"
-                          className={cn(
-                            'ml-2',
-                            isActive && 'bg-white/20 text-white border-white/30'
-                          )}
-                        >
-                          {tab.badge}
-                        </Badge>
-                      )}
-                      
-                      {/* Active indicator */}
-                      {isActive && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-violet-600/20 animate-pulse" />
-                      )}
-                    </button>
-                  </Tooltip>
+                      return (
+                        <Tooltip key={tab.id} content={`Alt+${tabs.indexOf(tab) + 1}`} position="right" delay={1000}>
+                          <button
+                            onClick={() => setActiveTab(tab.id)}
+                            className={cn(
+                              'w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200',
+                              'group relative overflow-hidden',
+                              isActive
+                                ? 'bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-lg shadow-blue-500/25'
+                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Icon className={cn(
+                                'h-4 w-4 transition-colors',
+                                isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                              )} />
+                              <span>{tab.name}</span>
+                            </div>
+                            
+                            {tab.badge && (
+                              <Badge 
+                                variant={isActive ? 'default' : 'primary'} 
+                                size="sm"
+                                className={cn(
+                                  'ml-2',
+                                  isActive && 'bg-white/20 text-white border-white/30'
+                                )}
+                              >
+                                {tab.badge}
+                              </Badge>
+                            )}
+                            
+                            {/* Active indicator */}
+                            {isActive && (
+                              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-violet-600/20 animate-pulse" />
+                            )}
+                          </button>
+                        </Tooltip>
+                      )
+                    })}
+                  </div>
                 )
               })}
             </nav>
@@ -582,37 +665,11 @@ export default function Dashboard({ user }: DashboardProps) {
               <TrendingTopicsWidget />
             </div>
             
-            {/* Keyboard Shortcuts Info */}
-            <div className="mt-6 p-4 rounded-2xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wider">
-                Keyboard Shortcuts
+            {/* Quick Tip */}
+            <div className="mt-6 p-3 rounded-2xl bg-slate-100/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Press <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">Ctrl+K</kbd> to search
               </p>
-              <div className="space-y-2 text-xs text-slate-500 dark:text-slate-400">
-                <div className="flex justify-between items-center">
-                  <span>New Content</span>
-                  <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 font-mono">
-                    Ctrl+N
-                  </kbd>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>New Project</span>
-                  <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 font-mono">
-                    Ctrl+P
-                  </kbd>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Search</span>
-                  <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 font-mono">
-                    Ctrl+K
-                  </kbd>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Switch Tab</span>
-                  <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 font-mono">
-                    Alt+1-8
-                  </kbd>
-                </div>
-              </div>
             </div>
           </aside>
 
@@ -665,45 +722,70 @@ export default function Dashboard({ user }: DashboardProps) {
                   </div>
                 </div>
                 
-                <nav className="p-4 space-y-1">
-                  {tabs.map((tab) => {
-                    const Icon = tab.icon
-                    const isActive = activeTab === tab.id
+                <nav className="p-4 space-y-2">
+                  {sidebarSections.map((section) => {
+                    const isCollapsed = collapsedSections[section.id] ?? false
+                    const hasActiveTab = section.tabs.some(t => t.id === activeTab)
+                    const shouldShow = !isCollapsed || hasActiveTab
                     
                     return (
-                      <button
-                        key={tab.id}
-                        onClick={() => {
-                          setActiveTab(tab.id)
-                          setMobileMenuOpen(false)
-                        }}
-                        className={cn(
-                          'w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200',
-                          isActive
-                            ? 'bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-lg shadow-blue-500/25'
-                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon className={cn(
-                            'h-5 w-5',
-                            isActive ? 'text-white' : 'text-slate-400'
-                          )} />
-                          <span>{tab.name}</span>
-                        </div>
-                        
-                        {tab.badge && (
-                          <Badge 
-                            variant={isActive ? 'default' : 'primary'} 
-                            size="sm"
-                            className={cn(
-                              isActive && 'bg-white/20 text-white border-white/30'
-                            )}
+                      <div key={section.id}>
+                        {section.label ? (
+                          <button
+                            onClick={() => toggleSection(section.id)}
+                            className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider"
                           >
-                            {tab.badge}
-                          </Badge>
+                            <span>{section.label}</span>
+                            {isCollapsed && !hasActiveTab ? (
+                              <ChevronRight className="w-3 h-3" />
+                            ) : (
+                              <ChevronDown className="w-3 h-3" />
+                            )}
+                          </button>
+                        ) : (
+                          <div className="mt-2 border-t border-slate-200 dark:border-slate-700/50 pt-2" />
                         )}
-                      </button>
+                        
+                        {shouldShow && section.tabs.map((tab) => {
+                          const Icon = tab.icon
+                          const isActive = activeTab === tab.id
+                          
+                          return (
+                            <button
+                              key={tab.id}
+                              onClick={() => {
+                                setActiveTab(tab.id)
+                                setMobileMenuOpen(false)
+                              }}
+                              className={cn(
+                                'w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200',
+                                isActive
+                                  ? 'bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-lg shadow-blue-500/25'
+                                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                              )}
+                            >
+                              <div className="flex items-center gap-3">
+                                <Icon className={cn(
+                                  'h-4 w-4',
+                                  isActive ? 'text-white' : 'text-slate-400'
+                                )} />
+                                <span>{tab.name}</span>
+                              </div>
+                              {tab.badge && (
+                                <Badge 
+                                  variant={isActive ? 'default' : 'primary'} 
+                                  size="sm"
+                                  className={cn(
+                                    isActive && 'bg-white/20 text-white border-white/30'
+                                  )}
+                                >
+                                  {tab.badge}
+                                </Badge>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
                     )
                   })}
                 </nav>
