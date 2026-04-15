@@ -32,6 +32,7 @@ import {
   condenseContent,
   optimizeContent,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 
 // Animation variants
 const panelVariants = {
@@ -244,7 +245,7 @@ export default function SmartEditor({
       setShowPreview(true)
       showToast(`${activeMode?.charAt(0).toUpperCase()}${activeMode?.slice(1)} complete!`, 'success')
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Processing failed'
+      const errorMsg = formatApiError(err, 'Processing failed')
       setError(errorMsg)
       showToast(errorMsg, 'error')
     } finally {
@@ -283,7 +284,7 @@ export default function SmartEditor({
       setHasChanges(false)
       showToast('Content saved successfully', 'success')
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to save'
+      const errorMsg = formatApiError(err, 'Failed to save')
       showToast(errorMsg, 'error')
     }
   }

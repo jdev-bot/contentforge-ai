@@ -11,6 +11,7 @@ import {
   RSSEntry,
   RSSFeed,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -134,7 +135,7 @@ export default function RSSEntriesPanel({ selectedFeedId, onImportSuccess }: RSS
       onImportSuccess?.()
     } catch (error) {
       console.error('Failed to import entry:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to import entry', 'error')
+      showToast(formatApiError(error, 'Failed to import entry'), 'error')
     } finally {
       setImportingId(null)
     }
@@ -152,7 +153,7 @@ export default function RSSEntriesPanel({ selectedFeedId, onImportSuccess }: RSS
       onImportSuccess?.()
     } catch (error) {
       console.error('Failed to bulk import:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to import entries', 'error')
+      showToast(formatApiError(error, 'Failed to import entries'), 'error')
     } finally {
       setBulkImporting(false)
     }

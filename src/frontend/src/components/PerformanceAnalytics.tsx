@@ -50,6 +50,7 @@ import {
   type AttributionData,
   type TrendDataPoint,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#3b82f6', '#60a5fa', '#93c5fd', '#2563eb']
 
@@ -82,7 +83,7 @@ export default function PerformanceAnalytics() {
       setAttribution(at)
       setTrend(tr)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch performance data'
+      const message = formatApiError(err, 'Failed to fetch performance data')
       showToast(message, 'error')
     } finally {
       setLoading(false)

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { listDistributions, Distribution } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -21,7 +22,7 @@ export default function DistributionsTab() {
       const data = await listDistributions()
       setDistributions(data)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load distributions')
+      setError(formatApiError(err, 'Failed to load distributions'))
     } finally {
       setLoading(false)
     }

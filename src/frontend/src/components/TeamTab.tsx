@@ -17,6 +17,7 @@ import {
   transferOwnership,
   leaveOrganization,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
@@ -138,7 +139,7 @@ export default function TeamTab({ user }: TeamTabProps) {
       await loadOrganizations()
     } catch (error) {
       console.error('Failed to create organization:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to create organization', 'error')
+      showToast(formatApiError(error, 'Failed to create organization'), 'error')
     } finally {
       setIsSubmitting(false)
     }
@@ -175,7 +176,7 @@ export default function TeamTab({ user }: TeamTabProps) {
       setSelectedOrg(org)
     } catch (error) {
       console.error('Failed to invite member:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to invite member', 'error')
+      showToast(formatApiError(error, 'Failed to invite member'), 'error')
     } finally {
       setIsSubmitting(false)
     }
@@ -193,7 +194,7 @@ export default function TeamTab({ user }: TeamTabProps) {
       setSelectedOrg(org)
     } catch (error) {
       console.error('Failed to update role:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to update role', 'error')
+      showToast(formatApiError(error, 'Failed to update role'), 'error')
     } finally {
       setActionLoading(null)
     }
@@ -212,7 +213,7 @@ export default function TeamTab({ user }: TeamTabProps) {
       setSelectedOrg(org)
     } catch (error) {
       console.error('Failed to remove member:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to remove member', 'error')
+      showToast(formatApiError(error, 'Failed to remove member'), 'error')
     } finally {
       setActionLoading(null)
     }
@@ -231,7 +232,7 @@ export default function TeamTab({ user }: TeamTabProps) {
       await loadOrganizations()
     } catch (error) {
       console.error('Failed to delete organization:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to delete organization', 'error')
+      showToast(formatApiError(error, 'Failed to delete organization'), 'error')
     } finally {
       setActionLoading(null)
     }
@@ -250,7 +251,7 @@ export default function TeamTab({ user }: TeamTabProps) {
       setSelectedOrg(org)
     } catch (error) {
       console.error('Failed to transfer ownership:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to transfer ownership', 'error')
+      showToast(formatApiError(error, 'Failed to transfer ownership'), 'error')
     } finally {
       setActionLoading(null)
     }
@@ -269,7 +270,7 @@ export default function TeamTab({ user }: TeamTabProps) {
       await loadOrganizations()
     } catch (error) {
       console.error('Failed to leave organization:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to leave organization', 'error')
+      showToast(formatApiError(error, 'Failed to leave organization'), 'error')
     } finally {
       setActionLoading(null)
     }

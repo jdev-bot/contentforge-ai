@@ -2,6 +2,31 @@ import { supabase } from './supabase'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 
+/** Format API error messages into user-friendly strings */
+export function formatApiError(error: unknown, fallback = 'Something went wrong'): string {
+  if (error instanceof Error) {
+    const msg = error.message
+    // Supabase PGRST errors
+    if (msg.includes('PGRST205') || msg.includes('does not exist')) return 'This feature is not yet available'
+    if (msg.includes('PGRST116')) return 'No data found'
+    if (msg.includes('PGRST200')) return 'Relationship not found'
+    // HTTP error mapping
+    if (msg.includes('404') || msg.includes('Not Found')) return 'Resource not found'
+    if (msg.includes('403') || msg.includes('Forbidden')) return 'You don\'t have permission to access this'
+    if (msg.includes('401') || msg.includes('Unauthorized')) return 'Please sign in again'
+    if (msg.includes('429') || msg.includes('Rate limit')) return 'Too many requests — please wait a moment'
+    if (msg.includes('500') || msg.includes('Internal Server Error')) return 'Server error — please try again later'
+    if (msg.includes('502') || msg.includes('Bad Gateway')) return 'Service temporarily unavailable'
+    if (msg.includes('503')) return 'Service temporarily unavailable'
+    // Stripe placeholder
+    if (msg.includes('stripe') || msg.includes('checkout')) return 'Payment system not configured yet'
+    // Fallback to message if it\'s short and readable
+    if (msg.length < 100) return msg
+    return fallback
+  }
+  return fallback
+}
+
 export interface ContentSource {
   type: 'url' | 'youtube' | 'text' | 'upload'
   url?: string

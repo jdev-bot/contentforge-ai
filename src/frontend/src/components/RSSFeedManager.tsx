@@ -10,6 +10,7 @@ import {
   RSSFeed,
   RSSFeedRequest,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -118,7 +119,7 @@ export default function RSSFeedManager({ onFeedSelect, selectedFeedId }: RSSFeed
       loadFeeds()
     } catch (error) {
       console.error('Failed to add RSS feed:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to add RSS feed', 'error')
+      showToast(formatApiError(error, 'Failed to add RSS feed'), 'error')
     } finally {
       setSubmitting(false)
     }

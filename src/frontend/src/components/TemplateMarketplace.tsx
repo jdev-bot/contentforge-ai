@@ -47,6 +47,7 @@ import {
   type MarketplaceTag,
   type MarketplaceRating,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 
 type ViewMode = 'gallery' | 'detail' | 'publish'
 
@@ -186,7 +187,7 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
       // Refresh detail
       loadTemplateDetail(selectedTemplateId)
     } catch (error: unknown) {
-      showToast(error instanceof Error ? error.message : 'Failed to install template', 'error')
+      showToast(formatApiError(error, 'Failed to install template'), 'error')
     } finally {
       setIsInstalling(false)
     }
@@ -208,7 +209,7 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
       setRatings(result.ratings || [])
       loadTemplateDetail(selectedTemplateId)
     } catch (error: unknown) {
-      showToast(error instanceof Error ? error.message : 'Failed to submit rating', 'error')
+      showToast(formatApiError(error, 'Failed to submit rating'), 'error')
     } finally {
       setIsSubmittingRating(false)
     }
@@ -236,7 +237,7 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
       setViewMode('gallery')
       loadTemplates()
     } catch (error: unknown) {
-      showToast(error instanceof Error ? error.message : 'Failed to publish template', 'error')
+      showToast(formatApiError(error, 'Failed to publish template'), 'error')
     } finally {
       setIsPublishing(false)
     }

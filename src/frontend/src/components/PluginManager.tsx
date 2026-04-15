@@ -14,6 +14,7 @@ import {
   type PluginListResponse,
   type InstalledPluginListResponse,
 } from '../lib/api'
+import { formatApiError } from '../lib/api'
 
 // ============================================================================
 // Types
@@ -58,7 +59,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
       })
       setPlugins(result.plugins)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch plugins')
+      setError(formatApiError(err, 'Failed to fetch plugins'))
     } finally {
       setLoading(false)
     }
@@ -71,7 +72,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
       const result: InstalledPluginListResponse = await listInstalledPlugins(organizationId)
       setInstalledPlugins(result.plugins)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch installed plugins')
+      setError(formatApiError(err, 'Failed to fetch installed plugins'))
     } finally {
       setLoading(false)
     }
@@ -95,7 +96,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
       await fetchInstalled()
       await fetchPlugins()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to install plugin')
+      setError(formatApiError(err, 'Failed to install plugin'))
     } finally {
       setLoading(false)
     }
@@ -109,7 +110,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
       await uninstallPlugin(installId, organizationId)
       await fetchInstalled()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to uninstall plugin')
+      setError(formatApiError(err, 'Failed to uninstall plugin'))
     } finally {
       setLoading(false)
     }
@@ -121,7 +122,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
       await togglePluginApi(installId, organizationId, !isEnabled)
       await fetchInstalled()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to toggle plugin')
+      setError(formatApiError(err, 'Failed to toggle plugin'))
     }
   }
 
@@ -143,7 +144,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
       setConfiguringPlugin(null)
       await fetchInstalled()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to save config')
+      setError(formatApiError(err, 'Failed to save config'))
     } finally {
       setConfigSaving(false)
     }

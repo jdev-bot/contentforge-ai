@@ -17,6 +17,7 @@ import {
   Legend,
 } from 'recharts'
 import { getAnalyticsSummary, exportAnalyticsCSV, exportAnalyticsJSON, AnalyticsSummaryData } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -57,7 +58,7 @@ export default function AnalyticsDashboard() {
       const analyticsData = await getAnalyticsSummary(DATE_RANGE_DAYS[dateRange])
       setData(analyticsData)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load analytics data')
+      setError(formatApiError(err, 'Failed to load analytics data'))
     } finally {
       setLoading(false)
     }
@@ -83,7 +84,7 @@ export default function AnalyticsDashboard() {
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to export data')
+      setError(formatApiError(err, 'Failed to export data'))
     } finally {
       setExporting(false)
     }

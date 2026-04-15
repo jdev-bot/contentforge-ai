@@ -37,6 +37,7 @@ import {
   type ContentComment,
   type MentionUser,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 
 interface EMOJI_OPTION {
   emoji: string
@@ -123,7 +124,7 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
       setReactions(prev => ({ ...prev, [created.id]: {} }))
       setNewComment('')
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to add comment'
+      const message = formatApiError(err, 'Failed to add comment')
       showToast(message, 'error')
     }
   }
@@ -142,7 +143,7 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
       // Auto-expand parent thread
       setExpandedThreads(prev => new Set([...prev, parentId]))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to add reply'
+      const message = formatApiError(err, 'Failed to add reply')
       showToast(message, 'error')
     }
   }

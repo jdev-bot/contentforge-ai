@@ -39,6 +39,7 @@ import {
   ChevronDown,
   AlertCircle,
 } from 'lucide-react'
+import { formatApiError } from '@/lib/api'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 
@@ -434,7 +435,7 @@ export default function CustomDashboards() {
         await selectDashboard(defaultDash.id)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dashboards')
+      setError(formatApiError(err, 'Failed to load dashboards'))
     } finally {
       setLoading(false)
     }
@@ -446,7 +447,7 @@ export default function CustomDashboards() {
       setActiveDashboard(data)
       await fetchLiveData(id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard')
+      setError(formatApiError(err, 'Failed to load dashboard'))
     }
   }, [])
 
@@ -495,7 +496,7 @@ export default function CustomDashboards() {
       setNewName('')
       await selectDashboard(result.id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create dashboard')
+      setError(formatApiError(err, 'Failed to create dashboard'))
     } finally {
       setCreating(false)
     }
@@ -511,7 +512,7 @@ export default function CustomDashboards() {
         setLiveData([])
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete dashboard')
+      setError(formatApiError(err, 'Failed to delete dashboard'))
     }
   }
 
@@ -526,7 +527,7 @@ export default function CustomDashboards() {
         setActiveDashboard(prev => prev ? { ...prev, is_default: true } : null)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to set default')
+      setError(formatApiError(err, 'Failed to set default'))
     }
   }
 
@@ -541,7 +542,7 @@ export default function CustomDashboards() {
       setShowWidgetModal(false)
       await fetchLiveData(activeDashboard.id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add widget')
+      setError(formatApiError(err, 'Failed to add widget'))
     }
   }
 
@@ -556,7 +557,7 @@ export default function CustomDashboards() {
       setEditingWidget(null)
       await selectDashboard(activeDashboard.id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update widget')
+      setError(formatApiError(err, 'Failed to update widget'))
     }
   }
 
@@ -567,7 +568,7 @@ export default function CustomDashboards() {
       setActiveDashboard(prev => prev ? { ...prev, widgets: prev.widgets.filter(w => w.id !== widgetId) } : null)
       setLiveData(prev => prev.filter(w => w.widget_id !== widgetId))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove widget')
+      setError(formatApiError(err, 'Failed to remove widget'))
     }
   }
 

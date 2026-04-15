@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { useToast } from '@/hooks/useToast'
 import { createCheckoutSession, createPortalSession, getSubscriptionStatus, SubscriptionStatus } from '@/lib/stripe'
+import { formatApiError } from '@/lib/api'
 import { 
-  Check, 
+  Check,
   X, 
   Loader2,
   Crown,
@@ -97,7 +98,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
       window.location.href = url
     } catch (error: unknown) {
       console.error('Failed to create checkout:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to start checkout'
+      const errorMessage = formatApiError(error, 'Failed to start checkout')
       showToast(errorMessage, 'error')
     } finally {
       setLoading(null)
@@ -111,7 +112,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
       window.open(url, '_blank')
     } catch (error: unknown) {
       console.error('Failed to open portal:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to open billing portal'
+      const errorMessage = formatApiError(error, 'Failed to open billing portal')
       showToast(errorMessage, 'error')
     } finally {
       setLoading(null)

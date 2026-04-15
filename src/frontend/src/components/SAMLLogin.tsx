@@ -29,6 +29,7 @@ import {
   initiateSAMLLogin,
   type SAMLProvider,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 
 interface SAMLLoginProps {
   isOpen: boolean
@@ -105,7 +106,7 @@ export default function SAMLLogin({ isOpen, onClose, onLoginSuccess }: SAMLLogin
       // Redirect to IdP
       window.location.href = result.login_url
     } catch (error: unknown) {
-      showToast(error instanceof Error ? error.message : 'SAML login failed', 'error')
+      showToast(formatApiError(error, 'SAML login failed'), 'error')
     } finally {
       setIsLoading(false)
     }
@@ -129,7 +130,7 @@ export default function SAMLLogin({ isOpen, onClose, onLoginSuccess }: SAMLLogin
       }))
       showToast('Metadata fetched successfully', 'success')
     } catch (error: unknown) {
-      showToast(error instanceof Error ? error.message : 'Failed to fetch metadata', 'error')
+      showToast(formatApiError(error, 'Failed to fetch metadata'), 'error')
     } finally {
       setIsFetchingMetadata(false)
     }
@@ -158,7 +159,7 @@ export default function SAMLLogin({ isOpen, onClose, onLoginSuccess }: SAMLLogin
       loadProviders()
       setActiveTab('login')
     } catch (error: unknown) {
-      showToast(error instanceof Error ? error.message : 'Failed to create provider', 'error')
+      showToast(formatApiError(error, 'Failed to create provider'), 'error')
     } finally {
       setIsLoading(false)
     }
@@ -554,7 +555,7 @@ export default function SAMLLogin({ isOpen, onClose, onLoginSuccess }: SAMLLogin
                           // Update attribute mapping via API
                           import('@/lib/api').then(api => api.updateSAMLAttributeMapping(selectedProviderForMapping, attributeMapping))
                             .then(() => showToast('Attribute mapping updated', 'success'))
-                            .catch((err: unknown) => showToast(err instanceof Error ? err.message : 'Failed to update mapping', 'error'))
+                            .catch((err: unknown) => showToast(formatApiError(err, 'Failed to update mapping'), 'error'))
                         }
                       }}
                     >

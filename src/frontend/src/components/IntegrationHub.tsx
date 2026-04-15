@@ -42,6 +42,7 @@ import {
   type IntegrationLogData,
   type IntegrationStatusData,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 
 const INTEGRATION_TYPES = [
   {
@@ -125,7 +126,7 @@ export default function IntegrationHub() {
       }
       setIntegrationStatuses(statusMap)
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load integrations'
+      const message = formatApiError(error, 'Failed to load integrations')
       showToast(message, 'error')
     } finally {
       setLoading(false)
@@ -161,7 +162,7 @@ export default function IntegrationHub() {
       if (error instanceof SyntaxError) {
         showToast('Invalid JSON in credentials or settings', 'error')
       } else {
-        const message = error instanceof Error ? error.message : 'Failed to create integration'
+        const message = formatApiError(error, 'Failed to create integration')
         showToast(message, 'error')
       }
     }
@@ -187,7 +188,7 @@ export default function IntegrationHub() {
       resetForm()
       await fetchIntegrations()
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to update integration'
+      const message = formatApiError(error, 'Failed to update integration')
       showToast(message, 'error')
     }
   }
@@ -201,7 +202,7 @@ export default function IntegrationHub() {
       }
       await fetchIntegrations()
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to delete integration'
+      const message = formatApiError(error, 'Failed to delete integration')
       showToast(message, 'error')
     }
   }
@@ -216,7 +217,7 @@ export default function IntegrationHub() {
       }))
       showToast(result.success ? 'Connection test successful' : `Test failed: ${result.message}`, result.success ? 'success' : 'error')
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Connection test failed'
+      const message = formatApiError(error, 'Connection test failed')
       setTestResults(prev => ({
         ...prev,
         [configId]: { success: false, message },
@@ -235,7 +236,7 @@ export default function IntegrationHub() {
       })
       showToast('Event triggered successfully', 'success')
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to trigger event'
+      const message = formatApiError(error, 'Failed to trigger event')
       showToast(message, 'error')
     }
   }
@@ -247,7 +248,7 @@ export default function IntegrationHub() {
       setSelectedIntegration(configId)
       setActiveView('logs')
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load logs'
+      const message = formatApiError(error, 'Failed to load logs')
       showToast(message, 'error')
     }
   }
@@ -257,7 +258,7 @@ export default function IntegrationHub() {
       await retryFailedEvent(eventId)
       showToast('Event retry initiated', 'success')
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to retry event'
+      const message = formatApiError(error, 'Failed to retry event')
       showToast(message, 'error')
     }
   }

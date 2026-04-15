@@ -36,6 +36,7 @@ import {
   type SLADashboardData,
   type SLAAlert as SLAAlertData,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 
 type TimeRange = '24h' | '7d' | '30d'
 
@@ -90,7 +91,7 @@ export default function SLAMonitoring() {
       setDashboard(dash)
       setAlerts(Array.isArray(alrt) ? alrt : [])
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load SLA data'
+      const message = formatApiError(error, 'Failed to load SLA data')
       showToast(message, 'error')
     } finally {
       setLoading(false)
@@ -115,7 +116,7 @@ export default function SLAMonitoring() {
       resetForm()
       await fetchData()
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to create SLA policy'
+      const message = formatApiError(error, 'Failed to create SLA policy')
       showToast(message, 'error')
     }
   }
@@ -135,7 +136,7 @@ export default function SLAMonitoring() {
       resetForm()
       await fetchData()
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to update SLA policy'
+      const message = formatApiError(error, 'Failed to update SLA policy')
       showToast(message, 'error')
     }
   }
@@ -146,7 +147,7 @@ export default function SLAMonitoring() {
       showToast('SLA policy deleted', 'success')
       await fetchData()
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to delete SLA policy'
+      const message = formatApiError(error, 'Failed to delete SLA policy')
       showToast(message, 'error')
     }
   }
@@ -157,7 +158,7 @@ export default function SLAMonitoring() {
       showToast('Alert acknowledged', 'success')
       await fetchData()
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to acknowledge alert'
+      const message = formatApiError(error, 'Failed to acknowledge alert')
       showToast(message, 'error')
     }
   }

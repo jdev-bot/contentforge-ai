@@ -28,6 +28,7 @@ import {
   type Suggestion,
   type SuggestionType,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 
 type FilterType = 'all' | SuggestionType
 
@@ -66,7 +67,7 @@ export default function SuggestionPanel() {
       const data = await getSuggestions(filter === 'all' ? undefined : filter)
       setSuggestions(data)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch suggestions'
+      const message = formatApiError(err, 'Failed to fetch suggestions')
       showToast(message, 'error')
     } finally {
       setLoading(false)
@@ -89,7 +90,7 @@ export default function SuggestionPanel() {
       setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
       showToast('The suggestion has been applied.', 'success')
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to accept suggestion'
+      const message = formatApiError(err, 'Failed to accept suggestion')
       showToast(message, 'error')
     }
   }
@@ -100,7 +101,7 @@ export default function SuggestionPanel() {
       setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
       showToast('Suggestion dismissed', 'info')
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to dismiss suggestion'
+      const message = formatApiError(err, 'Failed to dismiss suggestion')
       showToast(message, 'error')
     }
   }

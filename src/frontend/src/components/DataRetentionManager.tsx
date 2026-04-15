@@ -45,6 +45,7 @@ import {
   type ComplianceReport,
   type RetentionAuditEntry,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 
 type ActiveView = 'policies' | 'compliance' | 'audit'
 
@@ -82,7 +83,7 @@ export default function DataRetentionManager() {
       setCompliance(comp)
       setAuditTrail(audit)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch retention data'
+      const message = formatApiError(err, 'Failed to fetch retention data')
       showToast(message, 'error')
     } finally {
       setLoading(false)
@@ -113,7 +114,7 @@ export default function DataRetentionManager() {
       await fetchData()
       showToast('Retention policy created', 'success')
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create policy'
+      const message = formatApiError(err, 'Failed to create policy')
       showToast(message, 'error')
     }
   }
@@ -132,7 +133,7 @@ export default function DataRetentionManager() {
       await fetchData()
       showToast('Policy updated', 'success')
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update policy'
+      const message = formatApiError(err, 'Failed to update policy')
       showToast(message, 'error')
     }
   }
@@ -144,7 +145,7 @@ export default function DataRetentionManager() {
       await fetchData()
       showToast('Policy deleted', 'info')
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete policy'
+      const message = formatApiError(err, 'Failed to delete policy')
       showToast(message, 'error')
     }
   }

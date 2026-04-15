@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getUserProfile, updateUserProfile, getUsageSummary, UserProfile, UsageStats, exportUserData, deleteUserAccount, restoreUserAccount, getDeletionStatus } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 import { getSubscriptionStatus, createPortalSession, SubscriptionStatus, getStripeConfig } from '@/lib/stripe'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -133,7 +134,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
       showToast('Profile updated successfully', 'success')
     } catch (error: unknown) {
       console.error('Failed to update profile:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile'
+      const errorMessage = formatApiError(error, 'Failed to update profile')
       showToast(errorMessage, 'error')
     } finally {
       setSaving(false)
@@ -158,7 +159,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
       window.open(url, '_blank')
     } catch (error: unknown) {
       console.error('Failed to open portal:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to open billing portal'
+      const errorMessage = formatApiError(error, 'Failed to open billing portal')
       showToast(errorMessage, 'error')
     } finally {
       setPortalLoading(false)
@@ -185,7 +186,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
       showToast('Your data has been exported successfully', 'success')
     } catch (error: unknown) {
       console.error('Failed to export data:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to export data'
+      const errorMessage = formatApiError(error, 'Failed to export data')
       showToast(errorMessage, 'error')
     } finally {
       setExportLoading(false)
@@ -207,7 +208,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
       showToast(result.message, 'success')
     } catch (error: unknown) {
       console.error('Failed to delete account:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to request account deletion'
+      const errorMessage = formatApiError(error, 'Failed to request account deletion')
       showToast(errorMessage, 'error')
     } finally {
       setDeleteLoading(false)
@@ -223,7 +224,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
       showToast('Account restored successfully', 'success')
     } catch (error: unknown) {
       console.error('Failed to restore account:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to restore account'
+      const errorMessage = formatApiError(error, 'Failed to restore account')
       showToast(errorMessage, 'error')
     } finally {
       setRestoreLoading(false)

@@ -27,6 +27,7 @@ import {
   type CategorizationResult,
   type CategoryTag,
 } from '@/lib/api'
+import { formatApiError } from '@/lib/api'
 
 interface ContentItem {
   id: string
@@ -48,7 +49,7 @@ export default function CategorizationPanel() {
       const data = await getCategorization()
       setCategorizations(data)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch categorizations'
+      const message = formatApiError(err, 'Failed to fetch categorizations')
       showToast(message, 'error')
     } finally {
       setLoading(false)
@@ -78,7 +79,7 @@ export default function CategorizationPanel() {
       setEditingId(null)
       showToast('Manual override saved.', 'success')
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update categories'
+      const message = formatApiError(err, 'Failed to update categories')
       showToast(message, 'error')
     }
   }
