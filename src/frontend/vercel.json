@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "https://years-sing-glad-scratch.trycloudflare.com/api/v1/:path*"
+      "destination": "https://contentforge-ai-api.onrender.com/api/v1/:path*"
     }
   ]
 }
