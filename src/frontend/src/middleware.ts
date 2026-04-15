@@ -25,16 +25,10 @@ export async function middleware(request: NextRequest) {
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, nosnippet, noarchive')
 
     if (!isPublicRoute(pathname)) {
-      // Log all cookies for debugging
-      const allCookies = request.cookies.getAll()
-      const cookieNames = allCookies.map(c => c.name)
-      console.log(`[MW] ${pathname} | cookies: ${cookieNames.join(', ') || 'NONE'}`)
-
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
       if (!supabaseUrl || !supabaseKey) {
-        console.log(`[MW] Missing env vars: URL=${!!supabaseUrl} KEY=${!!supabaseKey}`)
         const loginUrl = new URL('/login', request.url)
         loginUrl.searchParams.set('redirectTo', pathname)
         return NextResponse.redirect(loginUrl)
@@ -55,16 +49,14 @@ export async function middleware(request: NextRequest) {
           },
         })
 
-        const { data, error } = await supabase.auth.getUser()
-        console.log(`[MW] getUser result: user=${!!data.user} error=${error?.message || 'none'}`)
+        const { data } = await supabase.auth.getUser()
 
         if (!data.user) {
           const loginUrl = new URL('/login', request.url)
           loginUrl.searchParams.set('redirectTo', pathname)
           return NextResponse.redirect(loginUrl)
         }
-      } catch (err) {
-        console.log(`[MW] Exception: ${err}`)
+      } catch {
         const loginUrl = new URL('/login', request.url)
         loginUrl.searchParams.set('redirectTo', pathname)
         return NextResponse.redirect(loginUrl)
