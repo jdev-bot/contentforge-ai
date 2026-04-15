@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ def log_error_to_database(
     Returns the error log ID if successful, None otherwise.
     """
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
 
         error_data = {
             "id": str(uuid4()),
@@ -113,7 +113,7 @@ class ErrorTrackingMiddleware(BaseHTTPMiddleware):
                 from app.core.supabase import get_supabase_client
 
                 token = auth_header.replace("Bearer ", "")
-                supabase = get_supabase_client()
+                supabase = _get_anon_client()
                 user = supabase.auth.get_user(token)
                 if user and user.user:
                     user_id = str(user.user.id)
@@ -203,7 +203,7 @@ class ErrorTrackingMiddleware(BaseHTTPMiddleware):
 def get_recent_errors(limit: int = 100) -> list:
     """Get recent errors from the database."""
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         result = (
             supabase.table("error_logs")
             .select("*")
@@ -221,7 +221,7 @@ def get_recent_errors(limit: int = 100) -> list:
 def get_error_summary(hours: int = 24) -> Dict[str, Any]:
     """Get error summary statistics."""
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
 
         # Get time threshold
         from datetime import timedelta

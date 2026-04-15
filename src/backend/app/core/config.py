@@ -2,11 +2,15 @@
 Application configuration using Pydantic Settings.
 """
 
+import json
+import logging
 from functools import lru_cache
 from typing import List, Optional
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -52,7 +56,7 @@ class Settings(BaseSettings):
         default=None, alias="STRIPE_WEBHOOK_SECRET"
     )
 
-    # CORS
+    # CORS — accepts JSON array ("[\"https://...\"]") or comma-separated string ("https://a,https://b")
     CORS_ORIGINS: List[str] = Field(
         default=["http://localhost:3000"], alias="CORS_ORIGINS"
     )
@@ -76,6 +80,28 @@ class Settings(BaseSettings):
     OKTA_CLIENT_SECRET: Optional[str] = Field(default=None, alias="OKTA_CLIENT_SECRET")
     OKTA_DOMAIN: Optional[str] = Field(default=None, alias="OKTA_DOMAIN")
     SSO_BASE_URL: str = Field(default="http://localhost:3000", alias="SSO_BASE_URL")
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS_ORIGINS from env var — supports JSON array or comma-separated string."""
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                return ["http://localhost:3000"]
+            # Try JSON parse first (e.g. '["https://example.com"]')
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+                return [parsed]
+            except (json.JSONDecodeError, TypeError):
+                pass
+            # Fall back to comma-separated (e.g. "https://a.com,https://b.com")
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        if isinstance(v, list):
+            return v
+        return [v]
 
     class Config:
         env_file = ".env"
