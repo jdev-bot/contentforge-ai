@@ -79,7 +79,7 @@ async def export_user_data(user=Depends(get_auth_user)):
         assets = []
         if content_ids:
             assets_result = (
-                supabase.table("assets")
+                supabase.table("generated_assets")
                 .select("*")
                 .in_("content_id", content_ids)
                 .execute()
