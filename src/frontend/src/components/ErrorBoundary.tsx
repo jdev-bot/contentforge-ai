@@ -65,23 +65,23 @@ export class ErrorBoundary extends Component<Props, State> {
               <AlertCircle className="h-8 w-8 text-red-600" />
             </div>
 
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
               Something went wrong
             </h2>
 
-            <p className="text-gray-600 mb-6">
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
               We apologize for the inconvenience. An unexpected error occurred while loading this section.
             </p>
 
             {/* Show error details in development */}
             {process.env.NODE_ENV === 'development' && this.state.error && (
-              <div className="mb-6 p-4 bg-gray-100 rounded-lg text-left">
+              <div className="mb-6 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg text-left">
                 <p className="text-sm font-mono text-red-600 mb-2">
                   {this.state.error.message}
                 </p>
                 {this.state.errorInfo && (
-                  <details className="text-xs text-gray-600">
-                    <summary className="cursor-pointer hover:text-gray-800">
+                  <details className="text-xs text-slate-600 dark:text-slate-400">
+                    <summary className="cursor-pointer hover:text-slate-800 dark:text-slate-200">
                       Stack trace
                     </summary>
                     <pre className="mt-2 p-2 bg-white rounded overflow-auto max-h-40">
@@ -150,10 +150,10 @@ export function TabErrorBoundary({ children, sectionName }: ErrorBoundaryWrapper
           <div className="mx-auto h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
             <AlertCircle className="h-6 w-6 text-red-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
             {sectionName} failed to load
           </h3>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             There was an error loading the {sectionName.toLowerCase()} section.
           </p>
           <Button

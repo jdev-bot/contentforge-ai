@@ -122,7 +122,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       case 'project':
         return <FolderOpen className="h-5 w-5 text-purple-500" />
       default:
-        return <FileText className="h-5 w-5 text-gray-500" />
+        return <FileText className="h-5 w-5 text-slate-500 dark:text-slate-400" />
     }
   }
 
@@ -142,7 +142,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     const parts = text.split(new RegExp(`(${query})`, 'gi'))
     return parts.map((part, i) => 
       part.toLowerCase() === query.toLowerCase() ? (
-        <mark key={i} className="bg-yellow-200 text-gray-900 rounded px-0.5">{part}</mark>
+        <mark key={i} className="bg-yellow-200 text-slate-900 dark:text-slate-100 rounded px-0.5">{part}</mark>
       ) : (
         part
       )
@@ -153,33 +153,33 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 pt-[10vh]">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden">
+      <div className="bg-slate-50 dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden">
         {/* Search Input */}
-        <div className="border-b border-gray-200">
+        <div className="border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3 px-4 py-4">
-            <Search className="h-5 w-5 text-gray-400 flex-shrink-0" />
+            <Search className="h-5 w-5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
             <input
               ref={inputRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search content, projects..."
-              className="flex-1 text-lg outline-none text-gray-900 placeholder:text-gray-400"
+              className="flex-1 text-lg outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:text-slate-500"
             />
-            {loading && <Loader2 className="h-5 w-5 text-gray-400 animate-spin flex-shrink-0" />}
+            {loading && <Loader2 className="h-5 w-5 text-slate-400 dark:text-slate-500 animate-spin flex-shrink-0" />}
             {!loading && query && (
               <button
                 onClick={() => setQuery('')}
-                className="p-1 hover:bg-gray-100 rounded-full"
+                className="p-1 hover:bg-slate-100 dark:bg-slate-800 rounded-full"
               >
-                <X className="h-5 w-5 text-gray-400" />
+                <X className="h-5 w-5 text-slate-400 dark:text-slate-500" />
               </button>
             )}
             <button
               onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded-full"
+              className="p-1 hover:bg-slate-100 dark:bg-slate-800 rounded-full"
             >
-              <X className="h-5 w-5 text-gray-400" />
+              <X className="h-5 w-5 text-slate-400 dark:text-slate-500" />
             </button>
           </div>
         </div>
@@ -193,11 +193,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 <button
                   key={index}
                   onClick={() => setQuery(suggestion.text)}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                  className="w-full px-4 py-2 text-left hover:bg-slate-50 dark:bg-slate-900 flex items-center gap-3"
                 >
-                  <Search className="h-4 w-4 text-gray-400" />
-                  <span className="text-gray-700">{highlightMatch(suggestion.text, query)}</span>
-                  <span className="text-xs text-gray-400 capitalize ml-auto">{suggestion.type}</span>
+                  <Search className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                  <span className="text-slate-700 dark:text-slate-300">{highlightMatch(suggestion.text, query)}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500 capitalize ml-auto">{suggestion.type}</span>
                 </button>
               ))}
             </div>
@@ -206,18 +206,18 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
           {/* No Results */}
           {query.length >= 2 && !loading && results.length === 0 && suggestions.length === 0 && (
             <div className="py-12 text-center">
-              <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                <Search className="h-6 w-6 text-gray-400" />
+              <div className="mx-auto w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3">
+                <Search className="h-6 w-6 text-slate-400 dark:text-slate-500" />
               </div>
-              <p className="text-gray-600">No results found for {query}</p>
-              <p className="text-sm text-gray-500 mt-1">Try different keywords or check your spelling</p>
+              <p className="text-slate-600 dark:text-slate-400">No results found for {query}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Try different keywords or check your spelling</p>
             </div>
           )}
 
           {/* Search Results */}
           {results.length > 0 && (
             <div className="py-2">
-              <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase">
+              <div className="px-4 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
                 {total} result{total !== 1 ? 's' : ''} found
               </div>
               
@@ -226,7 +226,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   key={result.id}
                   href={getItemLink(result)}
                   onClick={onClose}
-                  className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors group"
+                  className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:bg-slate-900 transition-colors group"
                 
                   >
                   <div className="flex-shrink-0 mt-0.5">
@@ -235,28 +235,28 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-gray-900 truncate">
+                      <h4 className="font-medium text-slate-900 dark:text-slate-100 truncate">
                         {highlightMatch(result.title, query)}
                       </h4>
-                      <span className="text-xs text-gray-400 capitalize">
+                      <span className="text-xs text-slate-400 dark:text-slate-500 capitalize">
                         {result.type}
                       </span>
                     </div>
                     
                     {result.matched_text && (
-                      <p className="text-sm text-gray-600 mt-0.5 line-clamp-2">
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-2">
                         {highlightMatch(result.matched_text, query)}
                       </p>
                     )}
                     
                     {result.project_name && (
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         in {result.project_name}
                       </p>
                     )}
                   </div>
                   
-                  <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 flex-shrink-0" />
+                  <ArrowRight className="h-4 w-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:text-slate-400 flex-shrink-0" />
                 </Link>
               ))}
             </div>
@@ -264,12 +264,12 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-4 py-3 bg-gray-50 flex items-center justify-between text-xs text-gray-500">
+        <div className="border-t border-slate-200 dark:border-slate-700 px-4 py-3 bg-slate-50 dark:bg-slate-900 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-4">
-            <span>Use <kbd className="px-1.5 py-0.5 bg-white border rounded text-gray-600">↑</kbd> <kbd className="px-1.5 py-0.5 bg-white border rounded text-gray-600">↓</kbd> to navigate</span>
-            <span><kbd className="px-1.5 py-0.5 bg-white border rounded text-gray-600">Enter</kbd> to select</span>
+            <span>Use <kbd className="px-1.5 py-0.5 bg-white border rounded text-slate-600 dark:text-slate-400">↑</kbd> <kbd className="px-1.5 py-0.5 bg-white border rounded text-slate-600 dark:text-slate-400">↓</kbd> to navigate</span>
+            <span><kbd className="px-1.5 py-0.5 bg-white border rounded text-slate-600 dark:text-slate-400">Enter</kbd> to select</span>
           </div>
-          <span><kbd className="px-1.5 py-0.5 bg-white border rounded text-gray-600">Esc</kbd> to close</span>
+          <span><kbd className="px-1.5 py-0.5 bg-white border rounded text-slate-600 dark:text-slate-400">Esc</kbd> to close</span>
         </div>
       </div>
     </div>

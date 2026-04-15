@@ -248,7 +248,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
       case 'starter':
         return <Sparkles className="h-5 w-5 text-blue-600" />
       default:
-        return <CreditCard className="h-5 w-5 text-gray-500" />
+        return <CreditCard className="h-5 w-5 text-slate-500 dark:text-slate-400" />
     }
   }
 
@@ -277,7 +277,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
         )
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-medium">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium">
             Inactive
           </span>
         )
@@ -288,7 +288,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Settings</h2>
         </div>
         
         <Card>
@@ -316,7 +316,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Settings</h2>
       </div>
 
       {/* Profile Settings */}
@@ -327,26 +327,26 @@ export default function SettingsTab({ user }: SettingsTabProps) {
               <User className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Profile</h3>
-              <p className="text-sm text-gray-500">Manage your personal information</p>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Profile</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Manage your personal information</p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Email Address
               </label>
               <Input
                 value={profile?.email || user.email}
                 disabled
-                className="bg-gray-50"
+                className="bg-slate-50 dark:bg-slate-900"
               />
-              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Email cannot be changed</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Full Name
               </label>
               <Input
@@ -394,24 +394,24 @@ export default function SettingsTab({ user }: SettingsTabProps) {
               {getPlanIcon(profile?.subscription_tier)}
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Subscription</h3>
-              <p className="text-sm text-gray-500">Manage your plan and billing</p>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Subscription</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Manage your plan and billing</p>
             </div>
           </div>
 
           <div className="space-y-6">
             {/* Current Plan */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
               <div>
-                <p className="text-sm text-gray-600">Current Plan</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Current Plan</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <p className="text-lg font-semibold text-gray-900 capitalize">
+                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-100 capitalize">
                     {profile?.subscription_tier || 'Free'}
                   </p>
                   {getStatusBadge(subscription?.status)}
                 </div>
                 {subscription?.current_period_end && (
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                     Renews on {formatDate(subscription.current_period_end)}
                   </p>
                 )}
@@ -453,14 +453,14 @@ export default function SettingsTab({ user }: SettingsTabProps) {
             </div>
 
             {/* Usage */}
-            <div className="pt-4 border-t border-gray-200">
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
               <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-600">Monthly Usage</span>
+                <span className="text-slate-600 dark:text-slate-400">Monthly Usage</span>
                 <span className="font-medium">
                   {usageStats?.monthly_usage_count || 0} / {usageStats?.monthly_usage_limit || 10}
                 </span>
               </div>
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
                     (usageStats?.percentage_used || 0) > 80 ? 'bg-red-500' : 
@@ -470,10 +470,10 @@ export default function SettingsTab({ user }: SettingsTabProps) {
                 />
               </div>
               <div className="flex justify-between mt-2">
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
                   {usageStats?.percentage_used || 0}% used
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
                   {usageStats?.remaining || 0} remaining
                 </span>
               </div>
@@ -503,15 +503,15 @@ export default function SettingsTab({ user }: SettingsTabProps) {
               <Key className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">API Keys</h3>
-              <p className="text-sm text-gray-500">Manage your integration keys</p>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">API Keys</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Manage your integration keys</p>
             </div>
           </div>
 
           <div className="space-y-4">
             {/* Stripe Key */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Stripe Publishable Key
               </label>
               <div className="flex gap-2">
@@ -541,14 +541,14 @@ export default function SettingsTab({ user }: SettingsTabProps) {
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Used for payment processing
               </p>
             </div>
 
             {/* Groq Key */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Groq API Key
               </label>
               <div className="flex gap-2">
@@ -578,7 +578,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Used for AI content generation
               </p>
             </div>
@@ -600,8 +600,8 @@ export default function SettingsTab({ user }: SettingsTabProps) {
               <Shield className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Data & Privacy</h3>
-              <p className="text-sm text-gray-500">Manage your personal data and privacy settings</p>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Data & Privacy</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Manage your personal data and privacy settings</p>
             </div>
           </div>
 
@@ -637,13 +637,13 @@ export default function SettingsTab({ user }: SettingsTabProps) {
             )}
 
             {/* Download My Data */}
-            <div className="flex items-start justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-start justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
               <div>
-                <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                <h4 className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   <Download className="h-4 w-4" />
                   Download My Data
                 </h4>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                   Export all your personal data including content, projects, and activity logs in JSON format.
                   This is in compliance with GDPR data portability rights.
                 </p>
@@ -696,10 +696,10 @@ export default function SettingsTab({ user }: SettingsTabProps) {
               <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Delete Account</h3>
             </div>
             
-            <p className="text-gray-600 mb-4">
+            <p className="text-slate-600 dark:text-slate-400 mb-4">
               This action will schedule your account for deletion. You will have 30 days to restore 
               your account. After 30 days, all your data including content, projects, and personal 
               information will be permanently deleted.
@@ -710,7 +710,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
             </div>
             
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Type DELETE to confirm:
               </label>
               <Input

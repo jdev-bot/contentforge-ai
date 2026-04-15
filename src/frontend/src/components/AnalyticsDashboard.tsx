@@ -170,7 +170,7 @@ export default function AnalyticsDashboard() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Analytics Dashboard</h2>
           <Button onClick={loadData} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             Retry
@@ -193,15 +193,15 @@ export default function AnalyticsDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Analytics Dashboard</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Track your content performance and usage metrics
           </p>
         </div>
         
         <div className="flex items-center gap-2">
           {/* Date Range Selector */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
+          <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
             {(['7d', '30d', '90d'] as DateRange[]).map((range) => (
               <button
                 key={range}
@@ -209,8 +209,8 @@ export default function AnalyticsDashboard() {
                 disabled={loading}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                   dateRange === range
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100'
                 }`}
               >
                 {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
@@ -267,9 +267,9 @@ export default function AnalyticsDashboard() {
                     ) : null}
                   </div>
                   <div className="mt-4">
-                    <p className="text-2xl font-bold text-gray-900">{kpi.value}</p>
-                    <p className="text-sm text-gray-500">{kpi.title}</p>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{kpi.value}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{kpi.title}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                       {typeof kpi.change === 'number' ? `+${kpi.change} ` : `${kpi.change} `}
                       {kpi.changeLabel}
                     </p>
@@ -284,7 +284,7 @@ export default function AnalyticsDashboard() {
         {/* Usage Over Time */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">
+            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               Usage Over Time
             </CardTitle>
           </CardHeader>
@@ -326,7 +326,7 @@ export default function AnalyticsDashboard() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-64 flex flex-col items-center justify-center text-gray-400">
+              <div className="h-64 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
                 <Activity className="h-12 w-12 mb-2" />
                 <p>No usage data available</p>
               </div>
@@ -337,7 +337,7 @@ export default function AnalyticsDashboard() {
         {/* Content by Type */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">
+            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               Assets by Type
             </CardTitle>
           </CardHeader>
@@ -376,7 +376,7 @@ export default function AnalyticsDashboard() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-64 flex flex-col items-center justify-center text-gray-400">
+              <div className="h-64 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
                 <Sparkles className="h-12 w-12 mb-2" />
                 <p>No assets generated yet</p>
               </div>
@@ -390,7 +390,7 @@ export default function AnalyticsDashboard() {
         {/* Platform Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">
+            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               Platform Distribution
             </CardTitle>
           </CardHeader>
@@ -428,7 +428,7 @@ export default function AnalyticsDashboard() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-64 flex flex-col items-center justify-center text-gray-400">
+              <div className="h-64 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
                 <Share2 className="h-12 w-12 mb-2" />
                 <p>No distributions yet</p>
               </div>
@@ -439,7 +439,7 @@ export default function AnalyticsDashboard() {
         {/* Platform Success Rates */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">
+            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               Platform Success Rates
             </CardTitle>
           </CardHeader>
@@ -453,10 +453,10 @@ export default function AnalyticsDashboard() {
                 {platformData.map((platform) => (
                   <div key={platform.name} className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="font-medium text-gray-700">{platform.name}</span>
-                      <span className="text-gray-500">{platform.value} distributions</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">{platform.name}</span>
+                      <span className="text-slate-500 dark:text-slate-400">{platform.value} distributions</span>
                     </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
                           platform.successRate >= 80 ? 'bg-green-500' :
@@ -465,14 +465,14 @@ export default function AnalyticsDashboard() {
                         style={{ width: `${platform.successRate}%` }}
                       />
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {Math.round(platform.successRate)}% success rate
                     </p>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="h-64 flex flex-col items-center justify-center text-gray-400">
+              <div className="h-64 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
                 <Activity className="h-12 w-12 mb-2" />
                 <p>No distribution data available</p>
               </div>
@@ -485,7 +485,7 @@ export default function AnalyticsDashboard() {
       {data?.usageSummary?.stats && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               Monthly Usage
             </CardTitle>
@@ -494,12 +494,12 @@ export default function AnalyticsDashboard() {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-600">API Calls</span>
+                  <span className="text-slate-600 dark:text-slate-400">API Calls</span>
                   <span className="font-medium">
                     {data.usageSummary.stats.monthly_usage_count} / {data.usageSummary.stats.monthly_usage_limit > 0 ? data.usageSummary.stats.monthly_usage_limit : '∞'}
                   </span>
                 </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
                       data.usageSummary.stats.percentage_used > 80 ? 'bg-red-500' :
@@ -508,7 +508,7 @@ export default function AnalyticsDashboard() {
                     style={{ width: `${Math.min(data.usageSummary.stats.percentage_used, 100)}%` }}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   {data.usageSummary.stats.percentage_used}% used this month
                   {data.usageSummary.stats.monthly_usage_limit === -1 && ' (Unlimited)'}
                 </p>
@@ -516,20 +516,20 @@ export default function AnalyticsDashboard() {
               
               {data.usageSummary.recent_activity.length > 0 && (
                 <div className="mt-6">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Recent Activity</h4>
+                  <h4 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3">Recent Activity</h4>
                   <div className="space-y-2">
                     {data.usageSummary.recent_activity.slice(0, 5).map((activity, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg"
                       >
                         <div className="flex items-center gap-3">
                           <div className="h-2 w-2 rounded-full bg-blue-500" />
-                          <span className="text-sm text-gray-700">
+                          <span className="text-sm text-slate-700 dark:text-slate-300">
                             {activity.event_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                           </span>
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
                           {new Date(activity.created_at).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',

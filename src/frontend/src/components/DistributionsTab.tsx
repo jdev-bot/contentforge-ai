@@ -37,7 +37,7 @@ export default function DistributionsTab() {
         </div>
         <div className="space-y-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div key={i} className="bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
               <div className="flex items-center gap-4">
                 <Skeleton className="h-6 w-20 rounded-full" />
                 <Skeleton className="h-4 w-24" />
@@ -60,31 +60,31 @@ export default function DistributionsTab() {
       publishing: 'bg-purple-100 text-purple-700',
       published: 'bg-green-100 text-green-700',
       failed: 'bg-red-100 text-red-700',
-      cancelled: 'bg-gray-100 text-gray-700',
+      cancelled: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
     }
-    return colors[status] || 'bg-gray-100 text-gray-700'
+    return colors[status] || 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Distributions</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Distributions</h2>
         <Button variant="outline" onClick={loadDistributions}>
           Refresh
         </Button>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error}</p>
+        <div className="p-4 bg-red-500/10 dark:bg-red-500/20 border border-red-500/50 dark:border-red-500/50 rounded-lg">
+          <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
         </div>
       )}
 
       {distributions.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">No distributions yet</h3>
-          <p className="mt-2 text-gray-500 max-w-sm mx-auto">
+        <div className="bg-slate-50 dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
+          <Calendar className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-500" />
+          <h3 className="mt-4 text-lg font-medium text-slate-900 dark:text-slate-100">No distributions yet</h3>
+          <p className="mt-2 text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
             Generated assets can be scheduled for publishing here.
           </p>
         </div>
@@ -98,9 +98,9 @@ export default function DistributionsTab() {
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(dist.status)}`}>
                       {dist.status}
                     </span>
-                    <span className="text-sm text-gray-600 capitalize">{dist.platform}</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400 capitalize">{dist.platform}</span>
                     {dist.scheduled_at && (
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-slate-500 dark:text-slate-400">
                         Scheduled: {new Date(dist.scheduled_at).toLocaleString()}
                       </span>
                     )}
@@ -118,7 +118,7 @@ export default function DistributionsTab() {
                       </a>
                     )}
                     {dist.status !== 'published' && (
-                      <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                      <button className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 rounded-lg">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}

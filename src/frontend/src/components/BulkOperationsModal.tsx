@@ -278,12 +278,12 @@ export default function BulkOperationsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-700 dark:border-gray-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Bulk Operations</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 dark:text-white">Bulk Operations</h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
               ✕
             </button>
@@ -302,11 +302,11 @@ export default function BulkOperationsModal({
                 className={`flex-1 p-3 rounded-lg text-left transition-all ${
                   activeTab === tab.id
                     ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500'
-                    : 'bg-gray-50 dark:bg-gray-800 border-2 border-transparent hover:bg-gray-100 dark:hover:bg-gray-700'
+                    : 'bg-slate-50 dark:bg-slate-900 dark:bg-gray-800 border-2 border-transparent hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-gray-700'
                 }`}
               >
-                <div className="font-semibold text-gray-900 dark:text-white">{tab.label}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">{tab.desc}</div>
+                <div className="font-semibold text-slate-900 dark:text-slate-100 dark:text-white">{tab.label}</div>
+                <div className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500">{tab.desc}</div>
               </button>
             ))}
           </div>
@@ -322,28 +322,28 @@ export default function BulkOperationsModal({
                   className={`flex-1 p-4 rounded-lg border-2 transition-all ${
                     importFormat === 'csv'
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                      : 'border-slate-200 dark:border-slate-700 dark:border-gray-700 hover:border-slate-300 dark:border-slate-600'
                   }`}
                 >
                   <div className="text-2xl mb-2">📄</div>
                   <div className="font-semibold">CSV Import</div>
-                  <div className="text-sm text-gray-500">Comma-separated values</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">Comma-separated values</div>
                 </button>
                 <button
                   onClick={() => setImportFormat('json')}
                   className={`flex-1 p-4 rounded-lg border-2 transition-all ${
                     importFormat === 'json'
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                      : 'border-slate-200 dark:border-slate-700 dark:border-gray-700 hover:border-slate-300 dark:border-slate-600'
                   }`}
                 >
                   <div className="text-2xl mb-2">🗂️</div>
                   <div className="font-semibold">JSON Import</div>
-                  <div className="text-sm text-gray-500">JSON array format</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">JSON array format</div>
                 </button>
               </div>
 
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
+              <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 dark:border-gray-600 rounded-lg p-8 text-center">
                 <input
                   type="file"
                   accept={importFormat === 'csv' ? '.csv' : '.json'}
@@ -356,10 +356,10 @@ export default function BulkOperationsModal({
                   className="cursor-pointer block"
                 >
                   <div className="text-4xl mb-4">📁</div>
-                  <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  <div className="text-lg font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-2">
                     Drop your {importFormat.toUpperCase()} file here or click to browse
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-slate-500 dark:text-slate-400">
                     Supports {importFormat === 'csv' ? '.csv' : '.json'} files up to 10MB
                   </div>
                 </label>
@@ -373,11 +373,11 @@ export default function BulkOperationsModal({
                 )}
               </div>
 
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                <div className="font-medium text-gray-900 dark:text-white mb-2">
+              <div className="bg-slate-50 dark:bg-slate-900 dark:bg-gray-800 rounded-lg p-4">
+                <div className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-2">
                   {importFormat === 'csv' ? 'CSV Format Example:' : 'JSON Format Example:'}
                 </div>
-                <pre className="text-sm text-gray-600 dark:text-gray-400 overflow-x-auto bg-gray-100 dark:bg-gray-900 p-3 rounded">
+                <pre className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500 overflow-x-auto bg-slate-100 dark:bg-slate-800 dark:bg-gray-900 p-3 rounded">
                   {importFormat === 'csv' 
                     ? `title,source_type,source_url
 "My Blog Post",url,https://example.com/post
@@ -409,24 +409,24 @@ export default function BulkOperationsModal({
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                       <div className="text-2xl font-bold text-blue-600">{importPreview.total}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">Total Items</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500">Total Items</div>
                     </div>
                     <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                       <div className="text-2xl font-bold text-green-600">{importPreview.valid}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">Valid</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500">Valid</div>
                     </div>
                     <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                       <div className="text-2xl font-bold text-red-600">{importPreview.invalid}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">Invalid</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500">Invalid</div>
                     </div>
                   </div>
                   
-                  <div className="font-medium text-gray-900 dark:text-white mb-2">Preview:</div>
+                  <div className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-2">Preview:</div>
                   <div className="space-y-2">
                     {importPreview.sample.map((item, idx) => (
-                      <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-800 rounded flex justify-between">
+                      <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-900 dark:bg-gray-800 rounded flex justify-between">
                         <span className="font-medium">{item.title}</span>
-                        <span className="text-sm text-gray-500 capitalize">{item.source_type}</span>
+                        <span className="text-sm text-slate-500 dark:text-slate-400 capitalize">{item.source_type}</span>
                       </div>
                     ))}
                   </div>
@@ -439,7 +439,7 @@ export default function BulkOperationsModal({
                     <span>Importing content...</span>
                     <span>{importProgress}%</span>
                   </div>
-                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-2 bg-slate-200 dark:bg-slate-700 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-blue-500 transition-all duration-300"
                       style={{ width: `${importProgress}%` }}
@@ -467,7 +467,7 @@ export default function BulkOperationsModal({
           {activeTab === 'generate' && (
             <div className="space-y-6">
               <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-3">Select Content</h3>
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-3">Select Content</h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {sampleContent.map(content => (
                     <label
@@ -475,7 +475,7 @@ export default function BulkOperationsModal({
                       className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
                         selectedContentIds.includes(content.id)
                           ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                          : 'border-slate-200 dark:border-slate-700 dark:border-gray-700 hover:border-slate-300 dark:border-slate-600'
                       }`}
                     >
                       <input
@@ -491,13 +491,13 @@ export default function BulkOperationsModal({
                     </label>
                   ))}
                 </div>
-                <div className="mt-2 text-sm text-gray-500">
+                <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                   {selectedContentIds.length} items selected
                 </div>
               </div>
 
               <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-3">Select Platforms</h3>
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-3">Select Platforms</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {platforms.map(platform => (
                     <button
@@ -506,18 +506,18 @@ export default function BulkOperationsModal({
                       className={`p-4 rounded-lg border-2 transition-all flex items-center gap-3 ${
                         generatePlatforms.includes(platform.id)
                           ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                          : 'border-slate-200 dark:border-slate-700 dark:border-gray-700 hover:border-slate-300 dark:border-slate-600'
                       }`}
                     >
                       <span className="text-2xl">{platform.icon}</span>
                       <div className="text-left">
                         <div className="font-medium">{platform.name}</div>
-                        <div className="text-xs text-gray-500">AI-generated content</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">AI-generated content</div>
                       </div>
                     </button>
                   ))}
                 </div>
-                <div className="mt-2 text-sm text-gray-500">
+                <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                   {generatePlatforms.length} platforms selected
                 </div>
               </div>
@@ -528,7 +528,7 @@ export default function BulkOperationsModal({
                     <span>Generating assets...</span>
                     <span>{generationProgress}%</span>
                   </div>
-                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-2 bg-slate-200 dark:bg-slate-700 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-purple-500 transition-all duration-300"
                       style={{ width: `${generationProgress}%` }}
@@ -556,7 +556,7 @@ export default function BulkOperationsModal({
           {activeTab === 'schedule' && (
             <div className="space-y-6">
               <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-3">Select Content to Schedule</h3>
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-3">Select Content to Schedule</h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {sampleContent.map(content => (
                     <label
@@ -564,7 +564,7 @@ export default function BulkOperationsModal({
                       className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
                         scheduleContentIds.includes(content.id)
                           ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                          : 'border-slate-200 dark:border-slate-700 dark:border-gray-700 hover:border-slate-300 dark:border-slate-600'
                       }`}
                     >
                       <input
@@ -577,13 +577,13 @@ export default function BulkOperationsModal({
                     </label>
                   ))}
                 </div>
-                <div className="mt-2 text-sm text-gray-500">
+                <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                   {scheduleContentIds.length} items selected
                 </div>
               </div>
 
               <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-3">Platform</h3>
+                <h3 className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-3">Platform</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {platforms.map(platform => (
                     <button
@@ -592,7 +592,7 @@ export default function BulkOperationsModal({
                       className={`p-3 rounded-lg border-2 transition-all flex items-center gap-2 ${
                         schedulePlatform === platform.id
                           ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                          : 'border-slate-200 dark:border-slate-700 dark:border-gray-700 hover:border-slate-300 dark:border-slate-600'
                       }`}
                     >
                       <span className="text-xl">{platform.icon}</span>
@@ -604,7 +604,7 @@ export default function BulkOperationsModal({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                     Start Time
                   </label>
                   <Input
@@ -615,7 +615,7 @@ export default function BulkOperationsModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                     Interval Between Posts (minutes)
                   </label>
                   <Input
@@ -631,15 +631,15 @@ export default function BulkOperationsModal({
 
               {scheduledItems.length > 0 && (
                 <Card className="p-4">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+                  <h4 className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-3">
                     Scheduled Items Preview
                   </h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {scheduledItems.map((item, idx) => (
-                      <div key={item.id} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                        <span className="text-sm font-mono text-gray-500">#{idx + 1}</span>
+                      <div key={item.id} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-900 dark:bg-gray-800 rounded">
+                        <span className="text-sm font-mono text-slate-500 dark:text-slate-400">#{idx + 1}</span>
                         <span className="flex-1 font-medium text-sm truncate">{item.title}</span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
                           {new Date(item.scheduledFor).toLocaleString()}
                         </span>
                       </div>
@@ -654,7 +654,7 @@ export default function BulkOperationsModal({
                     <span>Scheduling posts...</span>
                     <span>{scheduleProgress}%</span>
                   </div>
-                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-2 bg-slate-200 dark:bg-slate-700 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-green-500 transition-all duration-300"
                       style={{ width: `${scheduleProgress}%` }}

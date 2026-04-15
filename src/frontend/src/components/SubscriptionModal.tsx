@@ -152,9 +152,9 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
       default:
         return {
           border: 'border-gray-500',
-          bg: 'bg-gray-500',
-          text: 'text-gray-600',
-          lightBg: 'bg-gray-50',
+          bg: 'bg-slate-50 dark:bg-slate-9000',
+          text: 'text-slate-600 dark:text-slate-400',
+          lightBg: 'bg-slate-50 dark:bg-slate-900',
         }
     }
   }
@@ -172,21 +172,21 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
       {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-white border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
               <Crown className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Upgrade Your Plan</h2>
-              <p className="text-sm text-gray-500">Choose the plan that works for you</p>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Upgrade Your Plan</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Choose the plan that works for you</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100 dark:bg-slate-800 rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-slate-500 dark:text-slate-400" />
           </button>
         </div>
 
@@ -213,7 +213,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
 
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4 mb-8">
-            <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-gray-900' : 'text-gray-500'}`}>
+            <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
               Monthly
             </span>
             <button
@@ -227,7 +227,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
                 }`}
               />
             </button>
-            <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-gray-900' : 'text-gray-500'}`}>
+            <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
               Yearly
             </span>
             {billingCycle === 'yearly' && (
@@ -250,7 +250,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
                   className={`relative overflow-hidden ${
                     plan.popular && !isCurrentPlan
                       ? `${colors.border} border-2 shadow-lg`
-                      : 'border border-gray-200'
+                      : 'border border-slate-200 dark:border-slate-700'
                   } ${isCurrentPlan ? `ring-2 ring-green-500` : ''}`}
                 >
                   {plan.popular && !isCurrentPlan && (
@@ -266,16 +266,16 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
                   
                   <CardContent className="p-6">
                     <div className="mb-4">
-                      <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-                      <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">{plan.name}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{plan.description}</p>
                     </div>
 
                     <div className="mb-6">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold text-gray-900">
+                        <span className="text-3xl font-bold text-slate-900 dark:text-slate-100">
                           ${billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
                         </span>
-                        <span className="text-gray-500">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
+                        <span className="text-slate-500 dark:text-slate-400">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
                       </div>
                       {billingCycle === 'yearly' && (
                         <p className="text-sm text-green-600 mt-1">
@@ -288,7 +288,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
                       {plan.features.map((feature, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <Check className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span className="text-sm text-gray-600">{feature}</span>
+                          <span className="text-sm text-slate-600 dark:text-slate-400">{feature}</span>
                         </li>
                       ))}
                     </ul>
@@ -350,7 +350,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
               <button
                 onClick={handleManageSubscription}
                 disabled={loading === 'manage'}
-                className="text-sm text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 mx-auto"
+                className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 flex items-center justify-center gap-1 mx-auto"
               >
                 {loading === 'manage' ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -377,14 +377,14 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="border-t border-slate-200 dark:border-slate-700 px-6 py-4 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <Zap className="h-4 w-4" />
             <span>Cancel anytime • No setup fees</span>
           </div>
           <button
             onClick={onClose}
-            className="text-sm text-gray-600 hover:text-gray-900"
+            className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100"
           >
             Maybe later
           </button>

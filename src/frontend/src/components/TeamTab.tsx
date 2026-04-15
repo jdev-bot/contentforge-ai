@@ -316,8 +316,8 @@ export default function TeamTab({ user }: TeamTabProps) {
       <div className="mx-auto h-16 w-16 rounded-full bg-blue-50 flex items-center justify-center mb-4">
         <Building2 className="h-8 w-8 text-blue-600" />
       </div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">No Organizations</h3>
-      <p className="text-gray-500 max-w-sm mx-auto mb-6">
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">No Organizations</h3>
+      <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-6">
         You are not part of any organizations yet. Create one to start collaborating with your team.
       </p>
       <Button onClick={() => setViewState('create')}>
@@ -331,8 +331,8 @@ export default function TeamTab({ user }: TeamTabProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Team Management</h2>
-          <p className="text-gray-600 mt-1">Manage your organizations and team members</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Team Management</h2>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Manage your organizations and team members</p>
         </div>
         <Button onClick={() => setViewState('create')}>
           <Plus className="h-4 w-4 mr-2" />
@@ -358,8 +358,8 @@ export default function TeamTab({ user }: TeamTabProps) {
                       {getInitials(org.name)}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-lg">{org.name}</h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-lg">{org.name}</h3>
+                      <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-1">
                         <Users className="h-4 w-4" />
                         <span>{org.member_count || 1} member{org.member_count !== 1 ? 's' : ''}</span>
                         {org.is_owner && (
@@ -389,14 +389,14 @@ export default function TeamTab({ user }: TeamTabProps) {
         <Button variant="outline" onClick={() => setViewState('list')}>
           ← Back
         </Button>
-        <h2 className="text-2xl font-bold text-gray-900">Create Organization</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Create Organization</h2>
       </div>
 
       <Card>
         <CardContent className="p-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Organization Name
               </label>
               <Input
@@ -407,7 +407,7 @@ export default function TeamTab({ user }: TeamTabProps) {
               />
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
               <AlertCircle className="h-4 w-4" />
               <span>You will be the owner of this organization.</span>
             </div>
@@ -458,8 +458,8 @@ export default function TeamTab({ user }: TeamTabProps) {
                 {getInitials(selectedOrg.name)}
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{selectedOrg.name}</h2>
-                <p className="text-sm text-gray-500">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{selectedOrg.name}</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   {selectedOrg.member_count || selectedOrg.members.length} members · You are {currentRole}
                 </p>
               </div>
@@ -471,7 +471,7 @@ export default function TeamTab({ user }: TeamTabProps) {
               <Button
                 variant="outline"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="text-red-600 hover:bg-red-50"
+                className="text-red-500 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
@@ -514,7 +514,7 @@ export default function TeamTab({ user }: TeamTabProps) {
                 <select
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as OrganizationRole)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
@@ -558,7 +558,7 @@ export default function TeamTab({ user }: TeamTabProps) {
                 return (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                    className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
                       <div
@@ -575,10 +575,10 @@ export default function TeamTab({ user }: TeamTabProps) {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">
+                          <span className="font-medium text-slate-900 dark:text-slate-100">
                             {member.user_name || 'Unknown User'}
                             {isCurrentUser && (
-                              <span className="text-gray-400 font-normal ml-1">(You)</span>
+                              <span className="text-slate-400 dark:text-slate-500 font-normal ml-1">(You)</span>
                             )}
                           </span>
                           {isOrgOwner && (
@@ -588,7 +588,7 @@ export default function TeamTab({ user }: TeamTabProps) {
                             </span>
                           )}
                         </div>
-                        <span className="text-sm text-gray-500">{member.user_email || member.user_id}</span>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">{member.user_email || member.user_id}</span>
                       </div>
                     </div>
 
@@ -599,7 +599,7 @@ export default function TeamTab({ user }: TeamTabProps) {
                             value={member.role}
                             onChange={(e) => handleUpdateMemberRole(member.id, e.target.value as OrganizationRole)}
                             disabled={actionLoading === `role-${member.id}`}
-                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           >
                             <option value="member">Member</option>
                             <option value="admin">Admin</option>
@@ -623,7 +623,7 @@ export default function TeamTab({ user }: TeamTabProps) {
                             size="sm"
                             onClick={() => setShowRemoveConfirm(member.id)}
                             disabled={actionLoading === `remove-${member.id}`}
-                            className="text-red-600 hover:bg-red-50"
+                            className="text-red-500 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
                           >
                             <UserMinus className="h-4 w-4" />
                           </Button>
@@ -635,7 +635,7 @@ export default function TeamTab({ user }: TeamTabProps) {
                               ? 'bg-yellow-100 text-yellow-800'
                               : member.role === 'admin'
                               ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-800'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
                           }`}
                         >
                           {isOrgOwner ? (
@@ -662,7 +662,7 @@ export default function TeamTab({ user }: TeamTabProps) {
               })}
 
               {selectedOrg.members.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                   No members found
                 </div>
               )}

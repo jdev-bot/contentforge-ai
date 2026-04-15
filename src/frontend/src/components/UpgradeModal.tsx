@@ -26,7 +26,7 @@ const PRICING_TIERS: PricingTier[] = [
     name: 'Free',
     price: '$0',
     description: 'Perfect for getting started',
-    icon: <AlertCircle className="h-5 w-5 text-gray-500" />,
+    icon: <AlertCircle className="h-5 w-5 text-slate-500 dark:text-slate-400" />,
     features: [
       '10 content generations/month',
       'Basic text extraction',
@@ -87,20 +87,20 @@ export default function UpgradeModal({ isOpen, onClose, currentTier }: UpgradeMo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-white border-b border-slate-200 dark:border-slate-700 p-6 flex items-center justify-between z-10">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Upgrade Your Plan</h2>
-            <p className="text-gray-500 mt-1">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Upgrade Your Plan</h2>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">
               Choose the plan that fits your content creation needs
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-slate-100 dark:bg-slate-800 rounded-full transition-colors"
           >
-            <X className="h-6 w-6 text-gray-500" />
+            <X className="h-6 w-6 text-slate-500 dark:text-slate-400" />
           </button>
         </div>
 
@@ -116,7 +116,7 @@ export default function UpgradeModal({ isOpen, onClose, currentTier }: UpgradeMo
                 className={`flex flex-col ${
                   tier.highlighted
                     ? 'border-blue-500 border-2 shadow-lg'
-                    : 'border-gray-200'
+                    : 'border-slate-200 dark:border-slate-700'
                 } ${isCurrent ? 'opacity-75' : ''}`}
               >
                 <CardHeader className="pb-4">
@@ -126,9 +126,9 @@ export default function UpgradeModal({ isOpen, onClose, currentTier }: UpgradeMo
                   </div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold">{tier.price}</span>
-                    <span className="text-gray-500">/month</span>
+                    <span className="text-slate-500 dark:text-slate-400">/month</span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">{tier.description}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{tier.description}</p>
                 </CardHeader>
 
                 <CardContent className="flex-1 flex flex-col">
@@ -136,7 +136,7 @@ export default function UpgradeModal({ isOpen, onClose, currentTier }: UpgradeMo
                     {tier.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-gray-600">{feature}</span>
+                        <span className="text-sm text-slate-600 dark:text-slate-400">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -165,8 +165,8 @@ export default function UpgradeModal({ isOpen, onClose, currentTier }: UpgradeMo
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 p-6 bg-gray-50 rounded-b-2xl">
-          <p className="text-center text-sm text-gray-500">
+        <div className="border-t border-slate-200 dark:border-slate-700 p-6 bg-slate-50 dark:bg-slate-900 rounded-b-2xl">
+          <p className="text-center text-sm text-slate-500 dark:text-slate-400">
             All plans include SSL security, automatic backups, and 99.9% uptime guarantee.
             <br />
             Questions?{' '}

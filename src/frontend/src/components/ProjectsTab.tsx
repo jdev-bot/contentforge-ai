@@ -6,6 +6,7 @@ import { listProjects, deleteProject, Project } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { NoDataState } from '@/components/ui/EmptyState'
 import { useToast } from '@/hooks/useToast'
 import { 
   Plus, 
@@ -88,7 +89,7 @@ export default function ProjectsTab() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div key={i} className="bg-slate-50 dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
               <div className="flex items-start gap-3">
                 <Skeleton className="h-10 w-10 rounded-lg" />
                 <div className="flex-1">
@@ -108,7 +109,7 @@ export default function ProjectsTab() {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Projects</h2>
           <Button 
             className="flex items-center gap-2"
             onClick={() => router.push('/projects/new')}
@@ -118,26 +119,12 @@ export default function ProjectsTab() {
           </Button>
         </div>
         
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="mx-auto h-12 w-12 text-gray-400">
-            <Folder className="h-12 w-12" />
-          </div>
-          
-          <h3 className="mt-4 text-lg font-medium text-gray-900">No projects yet</h3>
-          <p className="mt-2 text-gray-500 max-w-sm mx-auto">
-            Create your first project to organize your content.
-          </p>
-          
-          <div className="mt-6">
-            <Button 
-              className="flex items-center gap-2 mx-auto"
-              onClick={() => router.push('/projects/new')}
-            >
-              <Plus className="h-4 w-4" />
-              Create Project
-            </Button>
-          </div>
-        </div>
+        <NoDataState
+          title="No projects yet"
+          description="Create your first project to organize your content."
+          onCreate={() => router.push('/projects/new')}
+          createLabel="Create Project"
+        />
       </div>
     )
   }
@@ -145,7 +132,7 @@ export default function ProjectsTab() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Projects</h2>
         <Button 
           className="flex items-center gap-2"
           onClick={() => router.push('/projects/new')}
@@ -170,19 +157,19 @@ export default function ProjectsTab() {
                       <Folder className="h-5 w-5 text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 truncate">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 truncate">
                         {project.name}
                       </h3>
                     </div>
                   </div>
                   
                   {project.description && (
-                    <p className="mt-3 text-sm text-gray-500 line-clamp-2">
+                    <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
                       {project.description}
                     </p>
                   )}
 
-                  <div className="mt-4 flex items-center text-sm text-gray-400">
+                  <div className="mt-4 flex items-center text-sm text-slate-400 dark:text-slate-500">
                     <Calendar className="h-4 w-4 mr-1" />
                     Created {formatDate(project.created_at)}
                   </div>
@@ -190,7 +177,7 @@ export default function ProjectsTab() {
 
                 <div className="relative" onClick={(e) => e.stopPropagation()}>
                   <button
-                    className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 rounded-full hover:bg-slate-100 dark:bg-slate-800 transition-colors"
                     onClick={(e) => {
                       e.preventDefault()
                       setShowMenu(showMenu === project.id ? null : project.id)
@@ -200,9 +187,9 @@ export default function ProjectsTab() {
                   </button>
 
                   {showMenu === project.id && (
-                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-10">
                       <button
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-900"
                         onClick={() => {
                           router.push(`/projects/${project.id}`)
                           setShowMenu(null)
@@ -212,7 +199,7 @@ export default function ProjectsTab() {
                         View Details
                       </button>
                       <button
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
                         onClick={() => handleDelete(project.id, project.name)}
                         disabled={deletingId === project.id}
                       >

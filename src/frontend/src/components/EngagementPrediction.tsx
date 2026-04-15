@@ -99,10 +99,10 @@ export default function EngagementPrediction({
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 dark:text-white">
             🔮 Engagement Prediction
           </h3>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             AI-powered prediction of content performance
           </p>
         </div>
@@ -111,25 +111,25 @@ export default function EngagementPrediction({
       {!prediction ? (
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Content to Analyze
             </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Paste your content here to predict engagement..."
-              className="w-full h-32 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+              className="w-full h-32 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:border-gray-600 bg-white dark:bg-gray-800"
             />
           </div>
 
           <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Platform:
             </label>
             <select
               value={platform}
               onChange={(e) => {}}
-              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+              className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:border-gray-600 bg-white dark:bg-gray-800"
             >
               <option value="twitter">Twitter/X</option>
               <option value="linkedin">LinkedIn</option>
@@ -166,7 +166,7 @@ export default function EngagementPrediction({
                   stroke="currentColor"
                   strokeWidth="12"
                   fill="none"
-                  className="text-gray-200 dark:text-gray-700"
+                  className="text-slate-200 dark:text-slate-300"
                 />
                 <circle
                   cx="64"
@@ -183,20 +183,20 @@ export default function EngagementPrediction({
                 <span className={`text-3xl font-bold ${getScoreColor(prediction.score)}`}>
                   {prediction.score}
                 </span>
-                <span className="text-xs text-gray-500">Score</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Score</span>
               </div>
             </div>
 
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Confidence:
                 </span>
                 <span className="text-sm font-bold text-blue-600">
                   {(prediction.confidence * 100).toFixed(0)}%
                 </span>
               </div>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {prediction.score >= 80
                   ? 'Great! This content is likely to perform well.'
                   : prediction.score >= 60
@@ -208,19 +208,19 @@ export default function EngagementPrediction({
 
           {/* Factor Breakdown */}
           <div>
-            <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+            <h4 className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-3">
               Factor Analysis
             </h4>
             <div className="space-y-3">
               {Object.entries(prediction.factors).map(([factor, score]) => (
                 <div key={factor}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="capitalize text-gray-700 dark:text-gray-300">
+                    <span className="capitalize text-slate-700 dark:text-slate-300">
                       {factor.replace(/([A-Z])/g, ' $1').trim()}
                     </span>
                     <span className="font-medium">{score}%</span>
                   </div>
-                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-2 bg-slate-200 dark:bg-slate-700 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div
                       className={`h-full ${getScoreBg(score)} transition-all duration-500`}
                       style={{ width: `${score}%` }}
@@ -233,19 +233,19 @@ export default function EngagementPrediction({
 
           {/* Predicted Engagement */}
           <div>
-            <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+            <h4 className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-3">
               Predicted Engagement
             </h4>
             <div className="grid grid-cols-4 gap-3">
               {Object.entries(prediction.predictedEngagement).map(([metric, value]) => (
                 <div
                   key={metric}
-                  className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                  className="text-center p-3 bg-slate-50 dark:bg-slate-900 dark:bg-gray-800 rounded-lg"
                 >
                   <div className="text-2xl font-bold text-blue-600">
                     {value >= 1000 ? `${(value / 1000).toFixed(1)}K` : value}
                   </div>
-                  <div className="text-xs text-gray-500 capitalize">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 capitalize">
                     {metric.replace(/([A-Z])/g, ' $1').trim()}
                   </div>
                 </div>
@@ -255,14 +255,14 @@ export default function EngagementPrediction({
 
           {/* Suggestions */}
           <div>
-            <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+            <h4 className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-3">
               💡 Improvement Suggestions
             </h4>
             <ul className="space-y-2">
               {prediction.suggestions.map((suggestion, idx) => (
                 <li
                   key={idx}
-                  className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
+                  className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300"
                 >
                   <span className="text-blue-500 mt-0.5">•</span>
                   {suggestion}
@@ -276,7 +276,7 @@ export default function EngagementPrediction({
             <div className="flex items-center gap-2">
               <span className="text-xl">🕐</span>
               <div>
-                <span className="font-medium text-gray-900 dark:text-white">
+                <span className="font-medium text-slate-900 dark:text-slate-100 dark:text-white">
                   Optimal Posting Time:{' '}
                 </span>
                 <span className="text-blue-600 font-bold">

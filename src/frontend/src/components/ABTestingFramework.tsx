@@ -138,7 +138,7 @@ export default function ABTestingFramework() {
 
   const getStatusBadge = (status: ABTest['status']) => {
     const styles = {
-      draft: 'bg-gray-100 text-gray-700',
+      draft: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
       running: 'bg-green-100 text-green-700',
       paused: 'bg-yellow-100 text-yellow-700',
       completed: 'bg-blue-100 text-blue-700',
@@ -154,10 +154,10 @@ export default function ABTestingFramework() {
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 dark:text-white">
             🧪 A/B Testing Framework
           </h3>
-          <p className="text-sm text-gray-500">Test content variations to optimize performance</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Test content variations to optimize performance</p>
         </div>
         <Button onClick={() => setIsCreating(true)} size="sm">
           + New Test
@@ -170,14 +170,14 @@ export default function ABTestingFramework() {
             <h4 className="font-medium">Create New A/B Test</h4>
             <button
               onClick={() => setIsCreating(false)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300"
             >
               Cancel
             </button>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
               Test Name
             </label>
             <Input
@@ -189,38 +189,38 @@ export default function ABTestingFramework() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                 Variant A
               </label>
               <textarea
                 value={newTest.variantA}
                 onChange={(e) => setNewTest((prev) => ({ ...prev, variantA: e.target.value }))}
                 placeholder="Control version..."
-                className="w-full h-32 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                className="w-full h-32 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                 Variant B
               </label>
               <textarea
                 value={newTest.variantB}
                 onChange={(e) => setNewTest((prev) => ({ ...prev, variantB: e.target.value }))}
                 placeholder="Test version..."
-                className="w-full h-32 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                className="w-full h-32 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
               />
             </div>
           </div>
 
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                 Platform
               </label>
               <select
                 value={newTest.platform}
                 onChange={(e) => setNewTest((prev) => ({ ...prev, platform: e.target.value }))}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:border-gray-600 bg-white dark:bg-gray-800"
               >
                 <option value="twitter">Twitter/X</option>
                 <option value="linkedin">LinkedIn</option>
@@ -229,7 +229,7 @@ export default function ABTestingFramework() {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                 Duration (days)
               </label>
               <Input
@@ -264,7 +264,7 @@ export default function ABTestingFramework() {
 
           <div>
             <h4 className="text-xl font-bold mb-2">{selectedTest.name}</h4>
-            <div className="flex items-center gap-4 text-sm text-gray-500">
+            <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
               <span>{getStatusBadge(selectedTest.status)}</span>
               <span>Platform: {selectedTest.platform}</span>
               <span>Duration: {selectedTest.duration} days</span>
@@ -282,33 +282,33 @@ export default function ABTestingFramework() {
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded">
+              <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500 mb-4 p-3 bg-slate-50 dark:bg-slate-900 dark:bg-gray-800 rounded">
                 {selectedTest.variantA}
               </p>
 
               {selectedTest.results ? (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Impressions</span>
+                    <span className="text-slate-500 dark:text-slate-400">Impressions</span>
                     <span className="font-medium">
                       {selectedTest.results.variantA.impressions.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Engagements</span>
+                    <span className="text-slate-500 dark:text-slate-400">Engagements</span>
                     <span className="font-medium">
                       {selectedTest.results.variantA.engagements.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Engagement Rate</span>
+                    <span className="text-slate-500 dark:text-slate-400">Engagement Rate</span>
                     <span className="font-medium text-blue-600">
                       {selectedTest.results.variantA.engagementRate}%
                     </span>
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 italic">Waiting for results...</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 italic">Waiting for results...</p>
               )}
             </Card>
 
@@ -321,33 +321,33 @@ export default function ABTestingFramework() {
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded">
+              <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500 mb-4 p-3 bg-slate-50 dark:bg-slate-900 dark:bg-gray-800 rounded">
                 {selectedTest.variantB}
               </p>
 
               {selectedTest.results ? (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Impressions</span>
+                    <span className="text-slate-500 dark:text-slate-400">Impressions</span>
                     <span className="font-medium">
                       {selectedTest.results.variantB.impressions.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Engagements</span>
+                    <span className="text-slate-500 dark:text-slate-400">Engagements</span>
                     <span className="font-medium">
                       {selectedTest.results.variantB.engagements.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Engagement Rate</span>
+                    <span className="text-slate-500 dark:text-slate-400">Engagement Rate</span>
                     <span className="font-medium text-blue-600">
                       {selectedTest.results.variantB.engagementRate}%
                     </span>
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 italic">Waiting for results...</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 italic">Waiting for results...</p>
               )}
             </Card>
           </div>
@@ -360,7 +360,7 @@ export default function ABTestingFramework() {
                   Statistical Confidence: {(selectedTest.results.confidence * 100).toFixed(1)}%
                 </span>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500">
                 {selectedTest.results.winner === 'A'
                   ? 'Variant A performed significantly better than Variant B.'
                   : selectedTest.results.winner === 'B'
@@ -397,7 +397,7 @@ export default function ABTestingFramework() {
           {tests.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-4xl mb-2">🧪</div>
-              <p className="text-gray-500">No tests yet. Create your first A/B test to optimize content performance.</p>
+              <p className="text-slate-500 dark:text-slate-400">No tests yet. Create your first A/B test to optimize content performance.</p>
             </div>
           ) : (
             tests.map((test) => (
@@ -412,7 +412,7 @@ export default function ABTestingFramework() {
                       <span className="font-bold">{test.name}</span>
                       {getStatusBadge(test.status)}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-slate-500 dark:text-slate-400">
                       Platform: {test.platform} • Duration: {test.duration} days
                       {test.startDate && ` • Started: ${test.startDate}`}
                     </div>
@@ -420,21 +420,21 @@ export default function ABTestingFramework() {
                   <div className="text-right">
                     {test.results ? (
                       <div className="text-sm">
-                        <span className="text-gray-500">Winner: </span>
+                        <span className="text-slate-500 dark:text-slate-400">Winner: </span>
                         <span
                           className={`font-bold ${
                             test.results.winner === 'A'
                               ? 'text-blue-600'
                               : test.results.winner === 'B'
                               ? 'text-purple-600'
-                              : 'text-gray-600'
+                              : 'text-slate-600 dark:text-slate-400'
                           }`}
                         >
                           Variant {test.results.winner}
                         </span>
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-500">In Progress</div>
+                      <div className="text-sm text-slate-500 dark:text-slate-400">In Progress</div>
                     )}
                   </div>
                 </div>

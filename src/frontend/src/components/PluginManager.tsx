@@ -167,7 +167,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === 'marketplace'
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:bg-slate-700'
             }`}
             onClick={() => setActiveTab('marketplace')}
           >
@@ -177,7 +177,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === 'installed'
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:bg-slate-700'
             }`}
             onClick={() => setActiveTab('installed')}
           >
@@ -206,12 +206,12 @@ export default function PluginManager({ organizationId }: { organizationId: stri
               placeholder="Search plugins..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+              className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white"
             >
               <option value="">All Categories</option>
               <option value="utility">Utility</option>
@@ -224,9 +224,9 @@ export default function PluginManager({ organizationId }: { organizationId: stri
 
           {/* Plugin grid */}
           {loading ? (
-            <div className="text-center py-12 text-gray-500">Loading plugins...</div>
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400">Loading plugins...</div>
           ) : plugins.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400">
               No plugins found. Try adjusting your search.
             </div>
           ) : (
@@ -234,7 +234,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
               {plugins.map((plugin) => (
                 <div
                   key={plugin.id}
-                  className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+                  className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start gap-3">
                     {plugin.icon_url ? (
@@ -250,7 +250,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
                     )}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-sm truncate">{plugin.name}</h3>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         v{plugin.version} · {plugin.category}
                         {plugin.is_official && (
                           <span className="ml-1 text-blue-600">✓ Official</span>
@@ -258,11 +258,11 @@ export default function PluginManager({ organizationId }: { organizationId: stri
                       </p>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-600 mt-2 line-clamp-2">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2">
                     {plugin.description || 'No description available.'}
                   </p>
                   <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                       <span>⬇ {plugin.downloads}</span>
                       <span>⭐ {plugin.rating_avg.toFixed(1)}</span>
                     </div>
@@ -284,13 +284,13 @@ export default function PluginManager({ organizationId }: { organizationId: stri
                       {plugin.permissions.slice(0, 3).map((perm: string) => (
                         <span
                           key={perm}
-                          className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded"
+                          className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] rounded"
                         >
                           {perm.replace(/_/g, ' ')}
                         </span>
                       ))}
                       {plugin.permissions.length > 3 && (
-                        <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[10px] rounded">
+                        <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] rounded">
                           +{plugin.permissions.length - 3} more
                         </span>
                       )}
@@ -307,9 +307,9 @@ export default function PluginManager({ organizationId }: { organizationId: stri
       {activeTab === 'installed' && (
         <div>
           {loading ? (
-            <div className="text-center py-12 text-gray-500">Loading installed plugins...</div>
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400">Loading installed plugins...</div>
           ) : installedPlugins.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400">
               No plugins installed. Browse the marketplace to find plugins.
             </div>
           ) : (
@@ -320,7 +320,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
                   <div
                     key={ip.id}
                     className={`border rounded-xl p-4 transition-opacity ${
-                      ip.is_enabled ? 'border-gray-200' : 'border-gray-100 opacity-60'
+                      ip.is_enabled ? 'border-slate-200 dark:border-slate-700' : 'border-gray-100 opacity-60'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -339,11 +339,11 @@ export default function PluginManager({ organizationId }: { organizationId: stri
                         <div>
                           <h3 className="font-semibold text-sm">
                             {plugin?.name || 'Unknown Plugin'}
-                            <span className="ml-2 text-xs text-gray-400">
+                            <span className="ml-2 text-xs text-slate-400 dark:text-slate-500">
                               v{plugin?.version || '—'}
                             </span>
                           </h3>
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             {plugin?.description?.substring(0, 80) || 'No description'}
                           </p>
                         </div>
@@ -365,7 +365,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
                         {/* Config */}
                         <button
                           onClick={() => handleOpenConfig(ip)}
-                          className="px-2.5 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                          className="px-2.5 py-1.5 text-xs border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:bg-slate-900 transition-colors"
                         >
                           ⚙ Config
                         </button>
@@ -382,7 +382,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
                     {/* Hooks */}
                     {plugin?.hooks && plugin.hooks.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
-                        <span className="text-[10px] text-gray-400">Hooks:</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500">Hooks:</span>
                         {plugin.hooks.map((hook: string) => (
                           <span
                             key={hook}
@@ -404,14 +404,14 @@ export default function PluginManager({ organizationId }: { organizationId: stri
       {/* Configuration Modal */}
       {configuringPlugin && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-auto p-6">
+          <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[80vh] overflow-auto p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
                 Configure: {configuringPlugin.plugin?.name || 'Plugin'}
               </h3>
               <button
                 onClick={() => setConfiguringPlugin(null)}
-                className="text-gray-400 hover:text-gray-600 text-xl"
+                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 text-xl"
               >
                 ✕
               </button>
@@ -420,13 +420,13 @@ export default function PluginManager({ organizationId }: { organizationId: stri
             <div className="space-y-4">
               {/* Config form — dynamic based on plugin config_schema */}
               {Object.entries(pluginConfig).length === 0 ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   This plugin has no configuration options.
                 </p>
               ) : (
                 Object.entries(pluginConfig).map(([key, value]) => (
                   <div key={key}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       {key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                     </label>
                     {typeof value === 'boolean' ? (
@@ -436,7 +436,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
                         onChange={(e) =>
                           setPluginConfig((prev) => ({ ...prev, [key]: e.target.checked }))
                         }
-                        className="h-4 w-4 rounded border-gray-300"
+                        className="h-4 w-4 rounded border-slate-300 dark:border-slate-600"
                       />
                     ) : typeof value === 'number' ? (
                       <input
@@ -448,7 +448,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
                             [key]: Number(e.target.value),
                           }))
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm"
                       />
                     ) : (
                       <input
@@ -457,7 +457,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
                         onChange={(e) =>
                           setPluginConfig((prev) => ({ ...prev, [key]: e.target.value }))
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm"
                       />
                     )}
                   </div>
@@ -468,7 +468,7 @@ export default function PluginManager({ organizationId }: { organizationId: stri
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setConfiguringPlugin(null)}
-                className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:bg-slate-900"
               >
                 Cancel
               </button>

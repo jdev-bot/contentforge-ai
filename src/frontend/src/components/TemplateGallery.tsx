@@ -476,15 +476,15 @@ export default function TemplateGallery({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <Card className="w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-700 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Template Gallery</h2>
-              <p className="text-gray-500 dark:text-gray-400">Choose from pre-built templates or create your own</p>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 dark:text-white">Template Gallery</h2>
+              <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500">Choose from pre-built templates or create your own</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
               ✕
             </button>
@@ -503,7 +503,7 @@ export default function TemplateGallery({
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   activeTab === tab.id
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    : 'bg-slate-100 dark:bg-slate-800 dark:bg-gray-800 text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-gray-700'
                 }`}
               >
                 {tab.icon} {tab.label}
@@ -518,7 +518,7 @@ export default function TemplateGallery({
           {activeTab === 'browse' && (
             <>
               {/* Sidebar */}
-              <div className="w-64 border-r border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
+              <div className="w-64 border-r border-slate-200 dark:border-slate-700 dark:border-gray-700 p-4 bg-slate-50 dark:bg-slate-900 dark:bg-gray-900">
                 <Input
                   placeholder="Search templates..."
                   value={searchQuery}
@@ -534,7 +534,7 @@ export default function TemplateGallery({
                       className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                         selectedCategory === category.id
                           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                          : 'hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-gray-800'
                       }`}
                     >
                       <span>{category.icon}</span>
@@ -558,30 +558,30 @@ export default function TemplateGallery({
                     <Card className="p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div>
-                          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                          <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 dark:text-white">
                             {selectedTemplate.name}
                           </h3>
-                          <p className="text-gray-600 dark:text-gray-400 mt-1">
+                          <p className="text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500 mt-1">
                             {selectedTemplate.description}
                           </p>
                         </div>
                         <div className="flex gap-2">
                           {selectedTemplate.tags.map(tag => (
-                            <span key={tag} className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+                            <span key={tag} className="px-2 py-1 bg-slate-100 dark:bg-slate-800 dark:bg-gray-800 rounded text-xs">
                               #{tag}
                             </span>
                           ))}
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                      <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400 mb-4">
                         <span>👤 {selectedTemplate.author}</span>
                         <span>📊 {selectedTemplate.usageCount.toLocaleString()} uses</span>
                         <span>📅 {selectedTemplate.createdAt}</span>
                       </div>
                       
                       <div className="mb-4">
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Compatible Platforms:</h4>
+                        <h4 className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-2">Compatible Platforms:</h4>
                         <div className="flex gap-2">
                           {selectedTemplate.platforms.map(platform => (
                             <span key={platform} className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-sm">
@@ -591,9 +591,9 @@ export default function TemplateGallery({
                         </div>
                       </div>
                       
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Template Preview:</h4>
-                        <pre className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap font-mono overflow-x-auto max-h-96 overflow-y-auto">
+                      <div className="bg-slate-50 dark:bg-slate-900 dark:bg-gray-800 rounded-lg p-4 mb-4">
+                        <h4 className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-2">Template Preview:</h4>
+                        <pre className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500 whitespace-pre-wrap font-mono overflow-x-auto max-h-96 overflow-y-auto">
                           {selectedTemplate.content}
                         </pre>
                       </div>
@@ -623,15 +623,15 @@ export default function TemplateGallery({
                         className="p-4 cursor-pointer hover:border-blue-500 transition-colors"
                       >
                         <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-bold text-gray-900 dark:text-white">{template.name}</h3>
+                          <h3 className="font-bold text-slate-900 dark:text-slate-100 dark:text-white">{template.name}</h3>
                           <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
                             {template.category}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500 mb-3 line-clamp-2">
                           {template.description}
                         </p>
-                        <div className="flex items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                           <span>👤 {template.author}</span>
                           <span>📊 {template.usageCount.toLocaleString()} uses</span>
                         </div>
@@ -643,8 +643,8 @@ export default function TemplateGallery({
                 {!selectedTemplate && filteredTemplates().length === 0 && (
                   <div className="text-center py-12">
                     <div className="text-4xl mb-4">🔍</div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">No templates found</h3>
-                    <p className="text-gray-500">Try adjusting your search or category filter</p>
+                    <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 dark:text-white">No templates found</h3>
+                    <p className="text-slate-500 dark:text-slate-400">Try adjusting your search or category filter</p>
                   </div>
                 )}
               </div>
@@ -660,14 +660,14 @@ export default function TemplateGallery({
                     <h3 className="text-xl font-bold">Create Custom Template</h3>
                     <button
                       onClick={() => setIsCreatingTemplate(false)}
-                      className="text-gray-500 hover:text-gray-700"
+                      className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300"
                     >
                       Cancel
                     </button>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                       Template Name *
                     </label>
                     <Input
@@ -678,7 +678,7 @@ export default function TemplateGallery({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                       Description
                     </label>
                     <Input
@@ -689,13 +689,13 @@ export default function TemplateGallery({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                       Category
                     </label>
                     <select
                       value={customForm.category}
                       onChange={(e) => setCustomForm(prev => ({ ...prev, category: e.target.value as 'blog' | 'social' | 'newsletter' }))}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                      className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:border-gray-600 bg-white dark:bg-gray-800"
                     >
                       <option value="blog">Blog Post</option>
                       <option value="social">Social Media</option>
@@ -704,7 +704,7 @@ export default function TemplateGallery({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                       Compatible Platforms
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -715,7 +715,7 @@ export default function TemplateGallery({
                           className={`px-3 py-2 rounded-lg border transition-colors ${
                             customForm.platforms.includes(platform.id)
                               ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-500'
-                              : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                              : 'border-slate-300 dark:border-slate-600 dark:border-gray-600 hover:border-gray-400'
                           }`}
                         >
                           {platform.icon} {platform.name}
@@ -725,19 +725,19 @@ export default function TemplateGallery({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                       Template Content *
                     </label>
                     <textarea
                       value={customForm.content}
                       onChange={(e) => setCustomForm(prev => ({ ...prev, content: e.target.value }))}
                       placeholder="Enter your template structure... Use [brackets] for variables"
-                      className="w-full h-64 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 font-mono text-sm"
+                      className="w-full h-64 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:border-gray-600 bg-white dark:bg-gray-800 font-mono text-sm"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                       Tags (comma separated)
                     </label>
                     <Input
@@ -762,8 +762,8 @@ export default function TemplateGallery({
               ) : (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">✨</div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Create Your Own Template</h3>
-                  <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 dark:text-white mb-2">Create Your Own Template</h3>
+                  <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
                     Build a custom template with your brand voice and specific requirements. Reuse it for consistent content creation.
                   </p>
                   <Button onClick={() => setIsCreatingTemplate(true)}>
@@ -779,8 +779,8 @@ export default function TemplateGallery({
             <div className="flex-1 overflow-y-auto p-6">
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🏪</div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Template Marketplace</h3>
-                <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 dark:text-white mb-2">Template Marketplace</h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
                   Coming soon! Browse templates created by the community and share your own.
                 </p>
                 
@@ -788,17 +788,17 @@ export default function TemplateGallery({
                   <Card className="p-4 text-center opacity-50">
                     <div className="text-2xl mb-2">📊</div>
                     <h4 className="font-medium">Analytics Templates</h4>
-                    <p className="text-xs text-gray-500">Coming soon</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Coming soon</p>
                   </Card>
                   <Card className="p-4 text-center opacity-50">
                     <div className="text-2xl mb-2">🎯</div>
                     <h4 className="font-medium">Marketing Templates</h4>
-                    <p className="text-xs text-gray-500">Coming soon</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Coming soon</p>
                   </Card>
                   <Card className="p-4 text-center opacity-50">
                     <div className="text-2xl mb-2">🏢</div>
                     <h4 className="font-medium">Business Templates</h4>
-                    <p className="text-xs text-gray-500">Coming soon</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Coming soon</p>
                   </Card>
                 </div>
               </div>

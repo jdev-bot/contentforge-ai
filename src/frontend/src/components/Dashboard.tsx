@@ -203,8 +203,8 @@ export default function Dashboard({ user }: DashboardProps) {
     const fallback = (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-          <p className="text-slate-500">Loading...</p>
+          <div className="w-12 h-12 border-4 border-blue-200 dark:border-slate-700 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin" />
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Loading...</p>
         </div>
       </div>
     )
