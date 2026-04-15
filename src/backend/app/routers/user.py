@@ -50,7 +50,7 @@ async def export_user_data(user=Depends(get_auth_user)):
     Export all user data as JSON for GDPR data portability.
     Returns comprehensive data including profile, content, projects, assets, and distributions.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     try:
@@ -176,7 +176,7 @@ async def delete_user_account(user=Depends(get_auth_user)):
     The account is marked as deleted but retained for 30 days to allow recovery.
     After the grace period, data is permanently deleted.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     admin_client = get_supabase_admin_client()
     user_id = str(user.id)
 
@@ -246,7 +246,7 @@ async def restore_user_account(user=Depends(get_auth_user)):
     """
     Restore a user account that was scheduled for deletion (within grace period).
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     try:
@@ -298,7 +298,7 @@ async def get_deletion_status(user=Depends(get_auth_user)):
     """
     Check the status of an account deletion request.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     try:

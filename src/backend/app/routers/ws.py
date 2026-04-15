@@ -20,7 +20,7 @@ from fastapi import (
     status,
 )
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.services.collaboration_service import collaboration_service
 from app.services.presence_service import UserStatus, presence_service
 from app.services.websocket_manager import websocket_manager
@@ -38,7 +38,7 @@ def _authenticate_ws_token(token: str) -> Optional[dict]:
     """
     if not token:
         return None
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     try:
         user = supabase.auth.get_user(token)
         if user and user.user:

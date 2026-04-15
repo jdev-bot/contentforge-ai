@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 from uuid import UUID
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 
 class CompetitorService:
@@ -108,7 +108,7 @@ class CompetitorService:
     @property
     def supabase(self):
         if self._supabase is None:
-            self._supabase = get_supabase_client()
+            self._supabase = get_supabase_admin_client()
         return self._supabase
 
     @supabase.setter

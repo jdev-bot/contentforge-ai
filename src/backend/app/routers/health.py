@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 router = APIRouter()
 settings = get_settings()
@@ -114,7 +114,7 @@ async def readiness_check():
     Includes database connectivity check.
     """
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         # Quick query to verify DB connectivity
         result = (
             supabase.table("profiles").select("count", count="exact").limit(0).execute()
@@ -160,7 +160,7 @@ async def detailed_health_check():
     # Check Database (Supabase)
     try:
         start_time = time.time()
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         # Simple query to check connection
         result = (
             supabase.table("profiles").select("count", count="exact").limit(0).execute()
@@ -443,7 +443,7 @@ async def system_metrics():
 
     # Database metrics
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         # Get connection pool stats (if available)
         metrics["database"] = {
             "status": "connected",

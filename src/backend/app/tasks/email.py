@@ -12,7 +12,7 @@ from celery.exceptions import MaxRetriesExceededError
 
 from app.core.celery_app import celery_app
 from app.core.config import get_settings
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.services.email_service import (
     EmailPreferences,
     EmailService,
@@ -33,7 +33,7 @@ class EmailTaskError(Exception):
 def get_user_email_preferences(user_id: str) -> EmailPreferences:
     """Fetch user email preferences from database."""
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         result = (
             supabase.table("profiles")
             .select("email_preferences")
@@ -64,7 +64,7 @@ def update_email_status(
 ):
     """Update email status in tracking table."""
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         update_data = {
             "status": status,
             "sent_at": "now()" if status == "sent" else None,
@@ -234,7 +234,7 @@ def send_welcome_email_task(user_id: str, email: str, user_name: str):
 
         # Update user profile to track welcome email sent
         try:
-            supabase = get_supabase_client()
+            supabase = get_supabase_admin_client()
             supabase.table("profiles").update(
                 {
                     "welcome_email_sent": True,
@@ -255,7 +255,7 @@ def send_usage_alert_task(user_id: str, email: str, user_name: str):
     """Send usage alert when user hits 80% of their limit."""
     try:
         # Get current usage
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         result = (
             supabase.table("profiles")
             .select("monthly_usage_count, monthly_usage_limit, subscription_tier")
@@ -339,7 +339,7 @@ def send_usage_alert_task(user_id: str, email: str, user_name: str):
 def send_weekly_digests():
     """Send weekly usage summary to all subscribed users."""
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
 
         # Get users who want weekly digest
         result = (
@@ -414,7 +414,7 @@ def send_abandoned_cart_reminder(
     """Send abandoned cart reminder for incomplete signups."""
     try:
         # Check if user has completed signup
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         result = (
             supabase.table("profiles")
             .select("email_verified")
@@ -485,7 +485,7 @@ def send_invoice_receipt_task(
 def retry_failed_emails(limit: int = 100):
     """Retry failed emails from the tracking table."""
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         result = (
             supabase.table("email_tracking")
             .select("*")

@@ -64,7 +64,7 @@ def get_or_create_stripe_customer(
     user_id: str, email: str, full_name: Optional[str] = None
 ) -> str:
     """Get existing Stripe customer or create a new one."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     # Check if user already has a Stripe customer ID
     result = (
@@ -227,7 +227,7 @@ async def get_subscription_status(user=Depends(get_auth_user)):
     """Get current user's subscription status from Stripe."""
     if not settings.STRIPE_SECRET_KEY:
         # Return local subscription info if Stripe not configured
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         result = (
             supabase.table("profiles")
             .select(
@@ -257,7 +257,7 @@ async def get_subscription_status(user=Depends(get_auth_user)):
 
     try:
         # Get user's Stripe customer ID
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         result = (
             supabase.table("profiles")
             .select(
@@ -350,7 +350,7 @@ async def get_subscription_status(user=Depends(get_auth_user)):
     except Exception as e:
         logger.error(f"Error fetching subscription: {e}")
         # Fallback to local data
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         result = (
             supabase.table("profiles")
             .select(
@@ -391,7 +391,7 @@ async def create_portal_session(request: Request, user=Depends(get_auth_user)):
 
     try:
         # Get user's Stripe customer ID
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         result = (
             supabase.table("profiles")
             .select("stripe_customer_id")
@@ -461,7 +461,7 @@ async def stripe_webhook(request: Request):
         )
 
     # Handle the event
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     event_type = event["type"]
     data_object = event["data"]["object"]
@@ -780,7 +780,7 @@ async def sync_subscription(user=Depends(get_auth_user)):
         )
 
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         result = (
             supabase.table("profiles")
             .select("stripe_customer_id")

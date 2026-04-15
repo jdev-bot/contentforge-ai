@@ -17,7 +17,7 @@ from app.core.rate_limit import (
     enforce_subscription_limit,
     rate_limit_dependency,
 )
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.extraction_service import content_extraction_service
 from app.services.groq_service import groq_service
@@ -77,7 +77,7 @@ async def create_content(
     _: UsageStats = Depends(enforce_subscription_limit),
 ):
     """Create new content from a source and extract text."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Check and increment usage after validation but before processing
@@ -162,7 +162,7 @@ async def list_content(
     if cached is not None:
         return [ContentResponse(**c) for c in cached]
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         query = supabase.table("content").select("*").eq("user_id", str(user.id))
@@ -197,7 +197,7 @@ async def get_content(content_id: UUID, user=Depends(get_auth_user)):
     if cached is not None:
         return ContentResponse(**cached)
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -239,7 +239,7 @@ async def generate_assets(
     # Check and increment usage before processing
     usage_stats = check_and_increment_usage(str(user.id))
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get the content
@@ -375,7 +375,7 @@ async def list_assets(content_id: UUID, user=Depends(get_auth_user)):
     if cached is not None:
         return [GeneratedAsset(**a) for a in cached]
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -420,7 +420,7 @@ async def delete_content(
         content_id: The content ID to delete
         permanent: If True, permanently delete. Otherwise soft delete to trash.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         if permanent:

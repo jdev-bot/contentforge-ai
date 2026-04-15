@@ -131,10 +131,10 @@ def generate_competitor_insights_task(self):
     try:
         logger.info("Starting competitor insights generation")
 
-        from app.core.supabase import get_supabase_client
+        from app.core.supabase import get_supabase_admin_client, get_supabase_client
         from app.services.competitor_service import competitor_service
 
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
@@ -218,9 +218,9 @@ def notify_high_opportunity_gaps_task(self):
     try:
         logger.info("Starting high-opportunity gap notifications")
 
-        from app.core.supabase import get_supabase_client
+        from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
 
         # Find high-opportunity gaps that haven't been addressed
         result = (
@@ -280,9 +280,9 @@ def cleanup_old_competitor_content_task(self):
     try:
         logger.info("Starting old competitor content cleanup")
 
-        from app.core.supabase import get_supabase_client
+        from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
 
         # Delete content older than 90 days
         cutoff_date = (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
@@ -322,9 +322,9 @@ def competitor_health_check_task():
     Runs daily for monitoring.
     """
     try:
-        from app.core.supabase import get_supabase_client
+        from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
 
         # Get stats
         active_result = (

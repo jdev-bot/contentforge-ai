@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 
 class FreshnessFactors:
@@ -122,7 +122,7 @@ class FreshnessService:
             return 0
 
         try:
-            supabase = get_supabase_client()
+            supabase = get_supabase_admin_client()
             result = (
                 supabase.table("generated_assets")
                 .select("count", count="exact")

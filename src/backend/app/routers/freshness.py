@@ -17,7 +17,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.freshness_service import freshness_service
 
@@ -141,7 +141,7 @@ async def analyze_content_freshness(
 
     Returns freshness score, factors breakdown, and recommendations.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get the content
@@ -255,7 +255,7 @@ async def list_stale_content(
 
     Returns paginated list of stale content with freshness info.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get stale freshness scores
@@ -324,7 +324,7 @@ async def bulk_analyze_content(
 
     Returns summary of analysis results.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get content to analyze
@@ -424,7 +424,7 @@ async def get_freshness_dashboard(user=Depends(get_auth_user)):
 
     Returns comprehensive freshness stats for the user's content.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get all content count
@@ -581,7 +581,7 @@ async def get_freshness_score(content_id: UUID, user=Depends(get_auth_user)):
 
     Returns stored freshness score or 404 if not analyzed yet.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (

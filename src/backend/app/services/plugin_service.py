@@ -105,7 +105,7 @@ class PluginService:
     def supabase(self):
         """Lazy Supabase client init."""
         if self._supabase is None:
-            self._supabase = get_supabase_client()
+            self._supabase = get_supabase_admin_client()
         return self._supabase
 
     @property

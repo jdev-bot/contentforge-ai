@@ -7,7 +7,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 
 router = APIRouter()
@@ -47,7 +47,7 @@ class EmailPreferencesResponse(BaseModel):
 @router.get("/notifications/preferences", response_model=EmailPreferencesResponse)
 async def get_email_preferences(user=Depends(get_auth_user)):
     """Get current user's email notification preferences."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -92,7 +92,7 @@ async def update_email_preferences(
     preferences: EmailPreferencesUpdate, user=Depends(get_auth_user)
 ):
     """Update email notification preferences."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Update profile with new preferences
@@ -123,7 +123,7 @@ async def get_email_history(
     limit: int = 20, offset: int = 0, user=Depends(get_auth_user)
 ):
     """Get email history for current user."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -150,7 +150,7 @@ async def get_email_history(
 @router.post("/notifications/unsubscribe")
 async def unsubscribe_from_all(user=Depends(get_auth_user)):
     """Unsubscribe from all non-essential emails."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Set all marketing preferences to False
@@ -186,7 +186,7 @@ async def unsubscribe_from_all(user=Depends(get_auth_user)):
 @router.post("/notifications/resubscribe")
 async def resubscribe(user=Depends(get_auth_user)):
     """Resubscribe to all emails."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (

@@ -405,7 +405,7 @@ async def content_processed_webhook(
         )
 
     # Process the webhook
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Validate required fields
@@ -612,7 +612,7 @@ async def distribution_completed_webhook(
         )
 
     # Process the webhook
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Validate required fields

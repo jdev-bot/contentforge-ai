@@ -199,7 +199,7 @@ class ReportService:
     @property
     def supabase(self):
         if self._supabase is None:
-            self._supabase = get_supabase_client()
+            self._supabase = get_supabase_admin_client()
         return self._supabase
 
     @supabase.setter

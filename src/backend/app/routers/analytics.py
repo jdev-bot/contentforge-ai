@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 
 from app.core.cache import cache, CACHE_TTL
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 
 router = APIRouter()
@@ -145,7 +145,7 @@ async def get_dashboard_kpis(user=Depends(get_auth_user)):
     if cached is not None:
         return KPIDashboardResponse(**cached)
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Run all three queries in parallel for better performance
@@ -238,7 +238,7 @@ async def get_distribution_metrics(user=Depends(get_auth_user)):
     if cached is not None:
         return DistributionMetricsResponse(**cached)
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get all distributions for user
@@ -335,7 +335,7 @@ async def get_content_metrics(user=Depends(get_auth_user)):
     if cached is not None:
         return ContentMetricsResponse(**cached)
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get all content for user
@@ -401,7 +401,7 @@ async def get_asset_metrics(user=Depends(get_auth_user)):
     if cached is not None:
         return AssetMetricsResponse(**cached)
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get all assets for user
@@ -474,7 +474,7 @@ async def get_usage_metrics(
     if cached is not None:
         return UsageMetricsResponse(**cached)
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Calculate date range
@@ -591,7 +591,7 @@ async def export_user_activity(
     if days < 1 or days > 365:
         days = 30
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Calculate date range
@@ -726,7 +726,7 @@ async def export_user_activity_json(
 
     Returns JSON with user activity data.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Calculate date range

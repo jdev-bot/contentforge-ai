@@ -14,7 +14,7 @@ from app.core.rate_limit import (
     check_and_increment_usage,
     enforce_subscription_limit,
 )
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.groq_service import groq_service
 
@@ -328,7 +328,7 @@ async def get_editor_history(
     limit: int = 50, operation: Optional[str] = None, user=Depends(get_auth_user)
 ):
     """Get history of AI editor operations."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         query = (

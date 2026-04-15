@@ -165,7 +165,7 @@ async def list_integrations(
     - integration_type: Filter by type (zapier, webhook, wordpress)
     - is_active: Filter by active status
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     # Build query
@@ -203,7 +203,7 @@ async def list_integrations(
 @router.get("/integrations/{integration_id}", response_model=IntegrationResponse)
 async def get_integration(integration_id: UUID, user=Depends(get_auth_user)):
     """Get a specific integration by ID."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     result = (
@@ -261,7 +261,7 @@ async def create_integration(
         )
 
     # Create integration
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     new_integration = {
         "id": str(uuid.uuid4()),
@@ -304,7 +304,7 @@ async def update_integration(
 
     Validates the configuration if provided.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     # Check integration exists and belongs to user
@@ -377,7 +377,7 @@ async def update_integration(
 @router.delete("/integrations/{integration_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_integration(integration_id: UUID, user=Depends(get_auth_user)):
     """Delete an integration."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     # Check integration exists and belongs to user
@@ -434,7 +434,7 @@ async def test_integration(integration_id: UUID, user=Depends(get_auth_user)):
 
     Sends a test ping to verify the integration is working correctly.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     # Get integration
@@ -609,7 +609,7 @@ async def list_webhook_deliveries(
     - page: Page number (default: 1)
     - limit: Items per page (default: 50, max: 100)
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     # Check integration exists and belongs to user
@@ -665,7 +665,7 @@ async def retry_webhook_delivery(
 
     Only deliveries with status 'failed' can be retried.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     # Check integration exists and belongs to user
@@ -736,7 +736,7 @@ async def trigger_integration_event(
 
     Useful for testing or manual automation.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     # Get integration

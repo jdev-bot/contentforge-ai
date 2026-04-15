@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
 from app.core.cache import cache, CACHE_TTL
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 
 router = APIRouter()
@@ -48,7 +48,7 @@ class ProjectResponse(ProjectBase):
 )
 async def create_project(project: ProjectCreate, user=Depends(get_auth_user)):
     """Create a new project."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Insert project
@@ -92,7 +92,7 @@ async def list_projects(user=Depends(get_auth_user), is_active: Optional[bool] =
     if cached is not None:
         return [ProjectResponse(**p) for p in cached]
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         query = supabase.table("projects").select("*").eq("user_id", str(user.id))
@@ -125,7 +125,7 @@ async def get_project(project_id: UUID, user=Depends(get_auth_user)):
     if cached is not None:
         return ProjectResponse(**cached)
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -162,7 +162,7 @@ async def update_project(
     project_id: UUID, project: ProjectUpdate, user=Depends(get_auth_user)
 ):
     """Update a project."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Check if project exists and belongs to user
@@ -228,7 +228,7 @@ async def update_project(
 @router.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(project_id: UUID, user=Depends(get_auth_user)):
     """Delete a project (soft delete)."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Soft delete by setting is_active to false

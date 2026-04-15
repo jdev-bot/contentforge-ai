@@ -17,7 +17,7 @@ from app.core.rate_limit import (
 )
 
 logger = logging.getLogger(__name__)
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.groq_service import groq_service
 
@@ -154,7 +154,7 @@ async def get_content_improvements(
     """Get AI suggestions to improve content quality."""
     usage_stats = check_and_increment_usage(str(user.id))
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get the content
@@ -281,7 +281,7 @@ async def get_seo_optimization(
     """Get SEO optimization suggestions for content."""
     usage_stats = check_and_increment_usage(str(user.id))
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get the content
@@ -487,7 +487,7 @@ async def adjust_content_tone(
     """Adjust content tone to match target style."""
     usage_stats = check_and_increment_usage(str(user.id))
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get the content
@@ -617,7 +617,7 @@ async def list_suggestions(
     content_id: UUID, suggestion_type: Optional[str] = None, user=Depends(get_auth_user)
 ):
     """List all AI suggestions for a content item."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         query = (
@@ -647,7 +647,7 @@ async def list_suggestions(
 )
 async def apply_suggestion(suggestion_id: UUID, user=Depends(get_auth_user)):
     """Mark a suggestion as applied and update the content."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get the suggestion
@@ -695,7 +695,7 @@ async def apply_suggestion(suggestion_id: UUID, user=Depends(get_auth_user)):
 @router.get("/ai-suggestions/{content_id}/seo", response_model=List[SEOAnalysisResult])
 async def list_seo_analyses(content_id: UUID, user=Depends(get_auth_user)):
     """List all SEO analyses for a content item."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -721,7 +721,7 @@ async def list_seo_analyses(content_id: UUID, user=Depends(get_auth_user)):
 )
 async def list_tone_adjustments(content_id: UUID, user=Depends(get_auth_user)):
     """List all tone adjustments for a content item."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (

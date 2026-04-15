@@ -106,7 +106,7 @@ def generate_trend_content_suggestions_task(self):
     try:
         logger.info("Starting trend content suggestions generation")
 
-        from app.core.supabase import get_supabase_client
+        from app.core.supabase import get_supabase_admin_client, get_supabase_client
         from app.services.trend_service import trend_service
 
         loop = asyncio.new_event_loop()
@@ -165,7 +165,7 @@ def notify_users_of_relevant_trends_task(self):
     try:
         logger.info("Starting relevant trends notification")
 
-        from app.core.supabase import get_supabase_client
+        from app.core.supabase import get_supabase_admin_client, get_supabase_client
         from app.services.trend_service import trend_service
 
         loop = asyncio.new_event_loop()
@@ -174,7 +174,7 @@ def notify_users_of_relevant_trends_task(self):
         notified_count = 0
 
         try:
-            supabase = get_supabase_client()
+            supabase = get_supabase_admin_client()
 
             # Get all users with tracked topics
             users_result = (

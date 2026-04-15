@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 # Regex to find @mentions in comment text
 MENTION_PATTERN = re.compile(r"@(\w[\w.-]*)")
@@ -29,7 +29,7 @@ class CommentsService:
     def supabase(self):
         """Lazy Supabase client initialization."""
         if self._supabase is None:
-            self._supabase = get_supabase_client()
+            self._supabase = get_supabase_admin_client()
         return self._supabase
 
     # ── Comment CRUD ──────────────────────────────────────────────

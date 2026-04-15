@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.core.cache import cache, CACHE_TTL
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 
 router = APIRouter()
@@ -54,7 +54,7 @@ async def create_distribution(
     distribution: DistributionCreate, user=Depends(get_auth_user)
 ):
     """Schedule a new distribution."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Verify asset belongs to user
@@ -122,7 +122,7 @@ async def list_distributions(
     if cached is not None:
         return [DistributionResponse(**d) for d in cached]
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         query = supabase.table("distributions").select("*").eq("user_id", str(user.id))
@@ -157,7 +157,7 @@ async def get_distribution(distribution_id: UUID, user=Depends(get_auth_user)):
     if cached is not None:
         return DistributionResponse(**cached)
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -192,7 +192,7 @@ async def get_distribution(distribution_id: UUID, user=Depends(get_auth_user)):
 @router.post("/distributions/{distribution_id}/publish")
 async def publish_now(distribution_id: UUID, user=Depends(get_auth_user)):
     """Publish a distribution immediately."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get distribution
@@ -270,7 +270,7 @@ async def update_distribution(
     distribution_id: UUID, update: DistributionUpdate, user=Depends(get_auth_user)
 ):
     """Update a distribution (e.g., reschedule or cancel)."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Check if distribution exists and belongs to user
@@ -335,7 +335,7 @@ async def update_distribution(
 )
 async def cancel_distribution(distribution_id: UUID, user=Depends(get_auth_user)):
     """Cancel/delete a scheduled distribution."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Check if distribution exists and belongs to user

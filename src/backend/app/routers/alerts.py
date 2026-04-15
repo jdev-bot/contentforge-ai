@@ -14,7 +14,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field, field_validator
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.alert_service import (
     AlertOperator,
@@ -285,7 +285,7 @@ async def list_alerts(
         )
 
         # Get total count for pagination
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         query = (
             supabase.table("content_alerts")
             .select("id", count="exact")
@@ -635,7 +635,7 @@ async def mark_all_notifications_read(user=Depends(get_auth_user)):
     Mark all in-app notifications as read for the current user.
     """
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
 
         result = (
             supabase.table("in_app_notifications")

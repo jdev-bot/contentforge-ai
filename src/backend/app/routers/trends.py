@@ -19,7 +19,7 @@ from app.core.rate_limit import (
     check_and_increment_usage,
     enforce_subscription_limit,
 )
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.trend_service import trend_service
 
@@ -304,7 +304,7 @@ async def untrack_topic(topic_id: UUID, user=Depends(get_auth_user)):
     Stop tracking a specific topic.
     """
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         result = (
             supabase.table("user_topic_interests")
             .delete()
@@ -350,7 +350,7 @@ async def generate_content_from_trend(
         # Try to find the topic ID for reference
         topic_id = None
         try:
-            supabase = get_supabase_client()
+            supabase = get_supabase_admin_client()
             topic_result = (
                 supabase.table("trending_topics")
                 .select("id")
@@ -475,7 +475,7 @@ async def refresh_trending_topics(user=Depends(get_auth_user)):
     """
     # Check if user is admin (simplified check)
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         user_result = (
             supabase.table("user_profiles")
             .select("role")
@@ -543,7 +543,7 @@ async def search_trends(
         return cached
 
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
 
         # Search in topic name, category, and related keywords
         result = (
@@ -598,7 +598,7 @@ async def get_trend_details(topic_id: UUID, user=Depends(get_auth_user)):
         return TrendingTopicResponse(**cached)
 
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         result = (
             supabase.table("trending_topics")
             .select("*")

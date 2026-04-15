@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field, HttpUrl
 
 from app.core.rate_limit import rate_limit_dependency
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.rss_service import rss_service
 
@@ -99,7 +99,7 @@ async def create_feed(
     _: None = Depends(rate_limit_dependency),
 ):
     """Add a new RSS feed for monitoring."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Validate the RSS feed URL by attempting to fetch it
@@ -152,7 +152,7 @@ async def list_feeds(
     user=Depends(get_auth_user),
 ):
     """List all RSS feeds for the current user."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get total count
@@ -188,7 +188,7 @@ async def list_feeds(
 @router.get("/rss/feeds/{feed_id}", response_model=RSSFeedResponse)
 async def get_feed(feed_id: UUID, user=Depends(get_auth_user)):
     """Get a specific RSS feed by ID."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -222,7 +222,7 @@ async def update_feed(
     feed_id: UUID, update_data: RSSFeedUpdate, user=Depends(get_auth_user)
 ):
     """Update an RSS feed configuration."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Verify ownership
@@ -285,7 +285,7 @@ async def update_feed(
 @router.delete("/rss/feeds/{feed_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_feed(feed_id: UUID, user=Depends(get_auth_user)):
     """Remove an RSS feed and all its entries."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Verify ownership
@@ -321,7 +321,7 @@ async def delete_feed(feed_id: UUID, user=Depends(get_auth_user)):
 @router.post("/rss/feeds/{feed_id}/fetch", response_model=RSSFetchResponse)
 async def manual_fetch(feed_id: UUID, user=Depends(get_auth_user)):
     """Manually trigger a fetch for a specific RSS feed."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Verify ownership
@@ -374,7 +374,7 @@ async def list_entries(
     user=Depends(get_auth_user),
 ):
     """List RSS entries for the current user's feeds."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get user's feed IDs
@@ -425,7 +425,7 @@ async def list_entries(
 @router.get("/rss/entries/{entry_id}", response_model=RSSEntryResponse)
 async def get_entry(entry_id: UUID, user=Depends(get_auth_user)):
     """Get a specific RSS entry by ID."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get entry with feed ownership check
@@ -479,7 +479,7 @@ async def import_entry(
     user=Depends(get_auth_user),
 ):
     """Import an RSS entry as content."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get entry with feed ownership check
@@ -557,7 +557,7 @@ async def import_all_unprocessed(
     user=Depends(get_auth_user),
 ):
     """Import all unprocessed entries from a feed as content."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Verify ownership

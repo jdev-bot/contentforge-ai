@@ -15,7 +15,7 @@ from app.core.rate_limit import (
     check_and_increment_usage,
     enforce_subscription_limit,
 )
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 
 router = APIRouter()
@@ -174,7 +174,7 @@ async def create_automation_rule(
     """Create a new automation rule."""
     usage_stats = check_and_increment_usage(str(user.id))
 
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Calculate next_run_at if scheduled
@@ -253,7 +253,7 @@ async def list_automation_rules(
     user=Depends(get_auth_user),
 ):
     """List all automation rules for the user."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         query = (
@@ -282,7 +282,7 @@ async def list_automation_rules(
 @router.get("/automation/rules/{rule_id}", response_model=AutomationRuleResponse)
 async def get_automation_rule(rule_id: UUID, user=Depends(get_auth_user)):
     """Get a specific automation rule."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -316,7 +316,7 @@ async def update_automation_rule(
     rule_id: UUID, rule_data: AutomationRuleCreate, user=Depends(get_auth_user)
 ):
     """Update an automation rule."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Check rule exists
@@ -381,7 +381,7 @@ async def update_automation_rule(
 @router.delete("/automation/rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_automation_rule(rule_id: UUID, user=Depends(get_auth_user)):
     """Delete an automation rule."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Check rule exists
@@ -420,7 +420,7 @@ async def delete_automation_rule(rule_id: UUID, user=Depends(get_auth_user)):
 @router.post("/automation/rules/{rule_id}/toggle")
 async def toggle_automation_rule(rule_id: UUID, user=Depends(get_auth_user)):
     """Toggle automation rule status (active/paused)."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -468,7 +468,7 @@ async def run_automation_rule(
     rule_id: UUID, background_tasks: BackgroundTasks, user=Depends(get_auth_user)
 ):
     """Manually trigger an automation rule."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -527,7 +527,7 @@ async def list_automation_logs(
     user=Depends(get_auth_user),
 ):
     """List automation execution logs."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         query = (
@@ -563,7 +563,7 @@ async def create_webhook_endpoint(
     webhook_data: WebhookEndpointCreate, user=Depends(get_auth_user)
 ):
     """Create a new webhook endpoint for receiving external triggers."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Generate unique endpoint path
@@ -606,7 +606,7 @@ async def create_webhook_endpoint(
 @router.get("/automation/webhooks", response_model=List[WebhookEndpointResponse])
 async def list_webhook_endpoints(user=Depends(get_auth_user)):
     """List all webhook endpoints."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -631,7 +631,7 @@ async def list_webhook_endpoints(user=Depends(get_auth_user)):
 )
 async def delete_webhook_endpoint(webhook_id: UUID, user=Depends(get_auth_user)):
     """Delete a webhook endpoint."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         existing = (
@@ -672,7 +672,7 @@ async def get_publishing_queue(
     user=Depends(get_auth_user),
 ):
     """Get the publishing queue for the user."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         query = (
@@ -699,7 +699,7 @@ async def get_publishing_queue(
 @router.post("/automation/queue/{queue_id}/cancel")
 async def cancel_queue_item(queue_id: UUID, user=Depends(get_auth_user)):
     """Cancel a scheduled publish."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -731,7 +731,7 @@ async def cancel_queue_item(queue_id: UUID, user=Depends(get_auth_user)):
 @router.post("/automation/queue/{queue_id}/retry")
 async def retry_queue_item(queue_id: UUID, user=Depends(get_auth_user)):
     """Retry a failed queue item."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         result = (
@@ -773,7 +773,7 @@ async def retry_queue_item(queue_id: UUID, user=Depends(get_auth_user)):
 @router.get("/automation/best-times/{platform}")
 async def get_best_posting_times(platform: str, user=Depends(get_auth_user)):
     """Get AI-suggested best times to post for a platform based on engagement data."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Get user's past distribution data for this platform
@@ -820,7 +820,7 @@ async def bulk_schedule_content(
     user=Depends(get_auth_user),
 ):
     """Bulk schedule content with intervals."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         queue_items = []

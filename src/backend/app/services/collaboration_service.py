@@ -18,7 +18,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.services.websocket_manager import websocket_manager
 
 logger = logging.getLogger(__name__)
@@ -72,7 +72,7 @@ class CollaborationService:
     def supabase(self):
         """Lazy Supabase client initialization."""
         if self._supabase is None:
-            self._supabase = get_supabase_client()
+            self._supabase = get_supabase_admin_client()
         return self._supabase
 
     def __init__(self):

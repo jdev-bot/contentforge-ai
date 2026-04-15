@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 
 class RetentionService:
@@ -25,7 +25,7 @@ class RetentionService:
     def supabase(self):
         """Lazy Supabase client initialization."""
         if self._supabase is None:
-            self._supabase = get_supabase_client()
+            self._supabase = get_supabase_admin_client()
         return self._supabase
 
     # ── Policy CRUD ──────────────────────────────────────────────

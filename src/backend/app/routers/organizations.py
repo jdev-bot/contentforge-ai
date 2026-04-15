@@ -138,7 +138,7 @@ async def create_organization(
     org_data: OrganizationCreate, user=Depends(get_auth_user)
 ):
     """Create a new organization. User becomes the owner."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         # Create organization
@@ -182,7 +182,7 @@ async def list_organizations(
     ),
 ):
     """List all organizations the user owns or is a member of."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         user_id = str(user.id)
@@ -275,7 +275,7 @@ async def list_organizations(
 @router.get("/{org_id}", response_model=OrganizationWithMembers)
 async def get_organization(org_id: UUID, user=Depends(get_auth_user)):
     """Get a specific organization with its members."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         user_id = str(user.id)
@@ -361,7 +361,7 @@ async def update_organization(
     org_id: UUID, org_data: OrganizationUpdate, user=Depends(get_auth_user)
 ):
     """Update an organization. Only admins can update."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         user_id = str(user.id)
@@ -419,7 +419,7 @@ async def update_organization(
 @router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_organization(org_id: UUID, user=Depends(get_auth_user)):
     """Delete an organization. Only the owner can delete."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         user_id = str(user.id)
@@ -465,7 +465,7 @@ async def invite_member(
     org_id: UUID, invitation: OrganizationMemberBase, user=Depends(get_auth_user)
 ):
     """Invite a member to the organization by email."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         user_id = str(user.id)
@@ -562,7 +562,7 @@ async def invite_member(
 @router.get("/{org_id}/members", response_model=List[OrganizationMemberResponse])
 async def list_members(org_id: UUID, user=Depends(get_auth_user)):
     """List all members of an organization."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         user_id = str(user.id)
@@ -628,7 +628,7 @@ async def update_member_role(
     user=Depends(get_auth_user),
 ):
     """Update a member's role. Only admins can change roles."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         user_id = str(user.id)
@@ -698,7 +698,7 @@ async def update_member_role(
 @router.delete("/{org_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_member(org_id: UUID, member_id: UUID, user=Depends(get_auth_user)):
     """Remove a member from the organization. Admins can remove members, users can remove themselves."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         user_id = str(user.id)
@@ -771,7 +771,7 @@ async def transfer_ownership(
     org_id: UUID, transfer_data: OwnershipTransferRequest, user=Depends(get_auth_user)
 ):
     """Transfer organization ownership to another member. Only the current owner can do this."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         user_id = str(user.id)
@@ -843,7 +843,7 @@ async def transfer_ownership(
 @router.post("/{org_id}/leave", status_code=status.HTTP_204_NO_CONTENT)
 async def leave_organization(org_id: UUID, user=Depends(get_auth_user)):
     """Leave an organization. The owner must transfer ownership before leaving."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
 
     try:
         user_id = str(user.id)

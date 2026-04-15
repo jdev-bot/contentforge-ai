@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict
 
 from app.core.celery_app import celery_app
 from app.core.config import get_settings
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ class SchedulerService:
     @property
     def supabase(self):
         if self._supabase is None:
-            self._supabase = get_supabase_client()
+            self._supabase = get_supabase_admin_client()
         return self._supabase
 
     @supabase.setter
@@ -401,7 +401,7 @@ scheduler_service = SchedulerService()
 def publish_scheduled_post(self: Task, post_id: str) -> Dict[str, Any]:
     """Celery task to publish a scheduled post."""
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
 
         # Get post details
         result = (
@@ -465,7 +465,7 @@ def publish_scheduled_post(self: Task, post_id: str) -> Dict[str, Any]:
 
         # Mark as failed with retry
         try:
-            supabase = get_supabase_client()
+            supabase = get_supabase_admin_client()
             current = (
                 supabase.table("scheduled_posts")
                 .select("retry_count")

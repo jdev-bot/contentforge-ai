@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from app.core.cache import cache
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 
 router = APIRouter()
@@ -128,7 +128,7 @@ async def search_content(
 
     Returns ranked search results with relevance scores.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     # Create cache key based on search params
@@ -311,7 +311,7 @@ async def get_search_suggestions(
     Get search suggestions based on user's content.
     Returns title suggestions matching the query.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     user_id = str(user.id)
 
     try:

@@ -201,7 +201,7 @@ async def logout(request: Request):
 @router.get("/auth/me", response_model=UserResponse)
 async def get_current_user(user=Depends(get_auth_user)):
     """Get current authenticated user with subscription details."""
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin_client()
     profile_data = user.user_metadata or {}
 
     # Fetch subscription info from profiles table
@@ -266,7 +266,8 @@ async def update_current_user(
             )
 
         # Also update in profiles table
-        supabase.table("profiles").update(
+        supabase_admin = get_supabase_admin_client()
+        supabase_admin.table("profiles").update(
             {"full_name": update_data.full_name, "updated_at": "now()"}
         ).eq("id", str(user.id)).execute()
 

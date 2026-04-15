@@ -9,7 +9,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 logger = logging.getLogger(__name__)
 from app.core.cache import CACHE_TTL, cache
@@ -25,7 +25,7 @@ class SuggestionService:
     @property
     def supabase(self):
         if self._supabase is None:
-            self._supabase = get_supabase_client()
+            self._supabase = get_supabase_admin_client()
         return self._supabase
 
     @supabase.setter
