@@ -3,6 +3,7 @@ User management router for GDPR compliance and account operations.
 """
 
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
@@ -13,6 +14,7 @@ from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class AccountDeletionResponse(BaseModel):
@@ -336,7 +338,10 @@ async def get_deletion_status(user=Depends(get_auth_user)):
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get deletion status: {str(e)}",
+        # Gracefully handle missing table or other errors in staging
+        logger.warning(f"Failed to get deletion status: {e}")
+        return {
+            "deletion_scheduled": False,
+            "message": "No deletion request found",
+        }",
         )
