@@ -47,10 +47,9 @@ function LoginContent() {
         const { error } = await signUp(email, password, fullName)
         if (error) throw error
       }
-      // Redirect to the page the user was trying to access, or home
+      // Full page reload to ensure middleware reads the new auth cookies
       const destination = redirectTo || '/'
-      router.push(destination)
-      router.refresh()
+      window.location.href = destination
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
