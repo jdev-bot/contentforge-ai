@@ -1,25 +1,8 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-
-/**
- * Next.js middleware for environment-driven behavior.
- * 
- * When NEXT_PUBLIC_APP_ENV=staging:
- * - Redirects unauthenticated users to /login (except auth pages and static assets)
- * - Blocks search engine indexing via X-Robots-Tag header
- * 
- * When NEXT_PUBLIC_APP_ENV=production (or unset):
- * - Allows public access to landing, pricing, and login pages
- * - No auth gate on public routes
- */
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 const APP_ENV = process.env.NEXT_PUBLIC_APP_ENV || 'production'
 const isStaging = APP_ENV === 'staging'
-
-// Supabase project ref for cookie name matching
-const SUPABASE_REF = process.env.NEXT_PUBLIC_SUPABASE_URL
-  ?.replace('https://', '')
-  .replace('.supabase.co', '') || ''
 
 // Routes that are always accessible without authentication
 const PUBLIC_ROUTES = [
@@ -43,83 +26,61 @@ const STATIC_PREFIXES = [
 ]
 
 function isPublicRoute(pathname: string): boolean {
-  // Check exact public routes
-  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
-    return true
-  }
-
-  // Check static assets
-  if (STATIC_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
-    return true
-  }
-
-  // Root path - public in production, gated in staging
-  if (pathname === '/' && !isStaging) {
-    return true
-  }
-
-  // In production, these pages are public
+  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) return true
+  if (STATIC_PREFIXES.some(prefix => pathname.startsWith(prefix))) return true
+  if (pathname === '/' && !isStaging) return true
   if (!isStaging) {
     const productionPublicRoutes = ['/', '/pricing', '/about', '/contact']
-    if (productionPublicRoutes.includes(pathname)) {
-      return true
-    }
+    if (productionPublicRoutes.includes(pathname)) return true
   }
-
   return false
 }
 
-function isAuthenticated(request: NextRequest): boolean {
-  // Check for Supabase auth cookie
-  // Cookie name: sb-{project-ref}-auth-token
-  const authCookie = request.cookies.getAll().find(
-    cookie => cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token')
-  )
-
-  if (!authCookie) return false
-
-  try {
-    // The cookie value is a URL-encoded JSON string with access_token, refresh_token, etc.
-    const decoded = decodeURIComponent(authCookie.value)
-    const parsed = JSON.parse(decoded)
-    return !!(parsed?.access_token)
-  } catch {
-    // If we can't parse it, check if it's a non-empty string (old format)
-    return !!authCookie.value
-  }
-}
-
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  let response = NextResponse.next()
 
-  // Add staging-specific headers
+  // In staging, add noindex headers and check auth
   if (isStaging) {
-    // Prevent search engine indexing
-    const response = NextResponse.next()
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, nosnippet, noarchive')
 
-    // In staging, require authentication for all non-public routes
-    if (!isPublicRoute(pathname) && !isAuthenticated(request)) {
-      // Redirect to login with return URL
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('redirectTo', pathname)
-      return NextResponse.redirect(loginUrl)
-    }
+    if (!isPublicRoute(pathname)) {
+      // Create a Supabase server client that reads cookies from the request
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll()
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                request.cookies.set(name, value)
+                response.cookies.set(name, value, options)
+              })
+            },
+          },
+        }
+      )
 
-    return response
+      // Check if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        // Redirect to login with return URL
+        const loginUrl = new URL('/login', request.url)
+        loginUrl.searchParams.set('redirectTo', pathname)
+        return NextResponse.redirect(loginUrl)
+      }
+    }
   }
 
-  return NextResponse.next()
+  return response
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
