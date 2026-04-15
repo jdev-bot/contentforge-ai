@@ -343,5 +343,4 @@ async def get_deletion_status(user=Depends(get_auth_user)):
         return {
             "deletion_scheduled": False,
             "message": "No deletion request found",
-        }",
-        )
+        }
