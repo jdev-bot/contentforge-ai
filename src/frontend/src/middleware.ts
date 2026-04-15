@@ -16,6 +16,11 @@ import type { NextRequest } from 'next/server'
 const APP_ENV = process.env.NEXT_PUBLIC_APP_ENV || 'production'
 const isStaging = APP_ENV === 'staging'
 
+// Supabase project ref for cookie name matching
+const SUPABASE_REF = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ?.replace('https://', '')
+  .replace('.supabase.co', '') || ''
+
 // Routes that are always accessible without authentication
 const PUBLIC_ROUTES = [
   '/login',
@@ -23,6 +28,8 @@ const PUBLIC_ROUTES = [
   '/api/auth',
   '/api/health',
   '/api/v1',
+  '/legal',
+  '/onboarding',
 ]
 
 // Static asset prefixes that bypass auth
@@ -32,6 +39,7 @@ const STATIC_PREFIXES = [
   '/favicon',
   '/robots',
   '/sitemap',
+  '/opengraph-image',
 ]
 
 function isPublicRoute(pathname: string): boolean {
@@ -61,32 +69,47 @@ function isPublicRoute(pathname: string): boolean {
   return false
 }
 
+function isAuthenticated(request: NextRequest): boolean {
+  // Check for Supabase auth cookie
+  // Cookie name: sb-{project-ref}-auth-token
+  const authCookie = request.cookies.getAll().find(
+    cookie => cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token')
+  )
+
+  if (!authCookie) return false
+
+  try {
+    // The cookie value is a URL-encoded JSON string with access_token, refresh_token, etc.
+    const decoded = decodeURIComponent(authCookie.value)
+    const parsed = JSON.parse(decoded)
+    return !!(parsed?.access_token)
+  } catch {
+    // If we can't parse it, check if it's a non-empty string (old format)
+    return !!authCookie.value
+  }
+}
+
 export function middleware(request: NextRequest) {
-  const response = NextResponse.next()
   const { pathname } = request.nextUrl
 
   // Add staging-specific headers
   if (isStaging) {
     // Prevent search engine indexing
+    const response = NextResponse.next()
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, nosnippet, noarchive')
-  }
 
-  // In staging, require authentication for all non-public routes
-  if (isStaging && !isPublicRoute(pathname)) {
-    // Check for Supabase auth cookie
-    const authCookie = request.cookies.getAll().find(
-      cookie => cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token')
-    )
-
-    if (!authCookie) {
+    // In staging, require authentication for all non-public routes
+    if (!isPublicRoute(pathname) && !isAuthenticated(request)) {
       // Redirect to login with return URL
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirectTo', pathname)
       return NextResponse.redirect(loginUrl)
     }
+
+    return response
   }
 
-  return response
+  return NextResponse.next()
 }
 
 export const config = {

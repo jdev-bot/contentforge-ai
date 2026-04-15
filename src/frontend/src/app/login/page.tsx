@@ -32,7 +32,7 @@ function LoginContent() {
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirectTo') || '/'
+  const redirectTo = searchParams.get('redirectTo') || '/content/new'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
