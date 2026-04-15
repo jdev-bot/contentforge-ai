@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status as http_status
 from pydantic import BaseModel
 
 from app.core.cache import cache, CACHE_TTL
@@ -48,7 +48,7 @@ class DistributionResponse(DistributionBase):
 @router.post(
     "/distributions",
     response_model=DistributionResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def create_distribution(
     distribution: DistributionCreate, user=Depends(get_auth_user)
@@ -69,7 +69,7 @@ async def create_distribution(
 
         if not asset_result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Asset not found",
             )
 
@@ -90,7 +90,7 @@ async def create_distribution(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create distribution",
             )
 
@@ -104,7 +104,7 @@ async def create_distribution(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
@@ -143,7 +143,7 @@ async def list_distributions(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -171,7 +171,7 @@ async def get_distribution(distribution_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Distribution not found",
             )
 
@@ -184,7 +184,7 @@ async def get_distribution(distribution_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -207,7 +207,7 @@ async def publish_now(distribution_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Distribution not found",
             )
 
@@ -260,7 +260,7 @@ async def publish_now(distribution_id: UUID, user=Depends(get_auth_user)):
         ).eq("id", str(distribution_id)).execute()
 
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -285,7 +285,7 @@ async def update_distribution(
 
         if not existing.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Distribution not found",
             )
 
@@ -308,7 +308,7 @@ async def update_distribution(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update distribution",
             )
 
@@ -325,13 +325,13 @@ async def update_distribution(
         cache.delete_pattern("dist_", prefix=f"user:{user.id}")
         cache.delete_pattern("analytics_", prefix=f"user:{user.id}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
 
 @router.delete(
-    "/distributions/{distribution_id}", status_code=status.HTTP_204_NO_CONTENT
+    "/distributions/{distribution_id}", status_code=http_status.HTTP_204_NO_CONTENT
 )
 async def cancel_distribution(distribution_id: UUID, user=Depends(get_auth_user)):
     """Cancel/delete a scheduled distribution."""
@@ -350,14 +350,14 @@ async def cancel_distribution(distribution_id: UUID, user=Depends(get_auth_user)
 
         if not existing.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Distribution not found",
             )
 
         # Only allow deletion if not already published
         if existing.data.get("status") == "published":
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Cannot delete already published distribution",
             )
 
@@ -376,6 +376,6 @@ async def cancel_distribution(distribution_id: UUID, user=Depends(get_auth_user)
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )

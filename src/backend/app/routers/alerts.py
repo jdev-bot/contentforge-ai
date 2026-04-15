@@ -11,7 +11,7 @@ This router provides endpoints for:
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field, field_validator
 
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
@@ -264,14 +264,14 @@ async def list_alerts(
     # Validate status filter
     if status and status not in ["active", "acknowledged", "resolved"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid status filter. Must be one of: active, acknowledged, resolved",
         )
 
     # Validate alert_type filter
     if alert_type and alert_type not in ["viral", "declining", "milestone", "error"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid alert_type filter. Must be one of: viral, declining, milestone, error",
         )
 
@@ -302,7 +302,7 @@ async def list_alerts(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch alerts: {str(e)}",
         )
 
@@ -322,7 +322,7 @@ async def acknowledge_alert(
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Alert not found or you don't have permission",
             )
 
@@ -334,7 +334,7 @@ async def acknowledge_alert(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to acknowledge alert: {str(e)}",
         )
 
@@ -354,7 +354,7 @@ async def resolve_alert(
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Alert not found or you don't have permission",
             )
 
@@ -366,7 +366,7 @@ async def resolve_alert(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to resolve alert: {str(e)}",
         )
 
@@ -384,7 +384,7 @@ async def get_unread_count(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get unread count: {str(e)}",
         )
 
@@ -411,7 +411,7 @@ async def list_alert_rules(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch alert rules: {str(e)}",
         )
 
@@ -419,7 +419,7 @@ async def list_alert_rules(
 @router.post(
     "/alerts/rules",
     response_model=AlertRuleResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def create_alert_rule(
     rule: AlertRuleCreate,
@@ -443,19 +443,19 @@ async def create_alert_rule(
 
         if not created_rule:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create alert rule",
             )
 
         return created_rule
 
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create alert rule: {str(e)}",
         )
 
@@ -476,7 +476,7 @@ async def update_alert_rule(
 
         if not update_data:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update"
+                status_code=http_status.HTTP_400_BAD_REQUEST, detail="No fields to update"
             )
 
         updated_rule = await alert_service.update_alert_rule(
@@ -485,7 +485,7 @@ async def update_alert_rule(
 
         if not updated_rule:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Alert rule not found or you don't have permission",
             )
 
@@ -495,12 +495,12 @@ async def update_alert_rule(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update alert rule: {str(e)}",
         )
 
 
-@router.delete("/alerts/rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/alerts/rules/{rule_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_alert_rule(
     rule_id: UUID,
     user=Depends(get_auth_user),
@@ -515,7 +515,7 @@ async def delete_alert_rule(
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Alert rule not found or you don't have permission",
             )
 
@@ -523,7 +523,7 @@ async def delete_alert_rule(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete alert rule: {str(e)}",
         )
 
@@ -554,7 +554,7 @@ async def check_metrics(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to check metrics: {str(e)}",
         )
 
@@ -589,7 +589,7 @@ async def list_notifications(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch notifications: {str(e)}",
         )
 
@@ -610,7 +610,7 @@ async def mark_notification_read(
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Notification not found or you don't have permission",
             )
 
@@ -622,7 +622,7 @@ async def mark_notification_read(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to mark notification as read: {str(e)}",
         )
 
@@ -657,6 +657,6 @@ async def mark_all_notifications_read(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to mark notifications as read: {str(e)}",
         )

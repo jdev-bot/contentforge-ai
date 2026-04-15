@@ -99,3 +99,4 @@ htmlcov/
 .tox/
 .nox/
 src/backend/.env.staging
+supabase/.temp/

@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status as http_status
 from pydantic import BaseModel, Field
 
 from app.core.rate_limit import (
@@ -164,7 +164,7 @@ class QueueItemResponse(BaseModel):
 @router.post(
     "/automation/rules",
     response_model=AutomationRuleResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def create_automation_rule(
     rule_data: AutomationRuleCreate,
@@ -232,7 +232,7 @@ async def create_automation_rule(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create automation rule",
             )
 
@@ -240,7 +240,7 @@ async def create_automation_rule(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -274,7 +274,7 @@ async def list_automation_rules(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -296,7 +296,7 @@ async def get_automation_rule(rule_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Automation rule not found",
             )
 
@@ -306,7 +306,7 @@ async def get_automation_rule(rule_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -331,7 +331,7 @@ async def update_automation_rule(
 
         if not existing.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Automation rule not found",
             )
 
@@ -373,12 +373,12 @@ async def update_automation_rule(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
 
-@router.delete("/automation/rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/automation/rules/{rule_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_automation_rule(rule_id: UUID, user=Depends(get_auth_user)):
     """Delete an automation rule."""
     supabase = get_supabase_admin_client()
@@ -396,7 +396,7 @@ async def delete_automation_rule(rule_id: UUID, user=Depends(get_auth_user)):
 
         if not existing.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Automation rule not found",
             )
 
@@ -412,7 +412,7 @@ async def delete_automation_rule(rule_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -434,7 +434,7 @@ async def toggle_automation_rule(rule_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Automation rule not found",
             )
 
@@ -458,7 +458,7 @@ async def toggle_automation_rule(rule_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -482,7 +482,7 @@ async def run_automation_rule(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Automation rule not found",
             )
 
@@ -511,7 +511,7 @@ async def run_automation_rule(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -546,7 +546,7 @@ async def list_automation_logs(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -557,7 +557,7 @@ async def list_automation_logs(
 @router.post(
     "/automation/webhooks",
     response_model=WebhookEndpointResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def create_webhook_endpoint(
     webhook_data: WebhookEndpointCreate, user=Depends(get_auth_user)
@@ -590,7 +590,7 @@ async def create_webhook_endpoint(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create webhook endpoint",
             )
 
@@ -598,7 +598,7 @@ async def create_webhook_endpoint(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -621,13 +621,13 @@ async def list_webhook_endpoints(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
 
 @router.delete(
-    "/automation/webhooks/{webhook_id}", status_code=status.HTTP_204_NO_CONTENT
+    "/automation/webhooks/{webhook_id}", status_code=http_status.HTTP_204_NO_CONTENT
 )
 async def delete_webhook_endpoint(webhook_id: UUID, user=Depends(get_auth_user)):
     """Delete a webhook endpoint."""
@@ -645,7 +645,7 @@ async def delete_webhook_endpoint(webhook_id: UUID, user=Depends(get_auth_user))
 
         if not existing.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Webhook endpoint not found",
             )
 
@@ -657,7 +657,7 @@ async def delete_webhook_endpoint(webhook_id: UUID, user=Depends(get_auth_user))
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -691,7 +691,7 @@ async def get_publishing_queue(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -713,7 +713,7 @@ async def cancel_queue_item(queue_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Queue item not found or already processed",
             )
 
@@ -723,7 +723,7 @@ async def cancel_queue_item(queue_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -752,7 +752,7 @@ async def retry_queue_item(queue_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Queue item not found or not in failed status",
             )
 
@@ -762,7 +762,7 @@ async def retry_queue_item(queue_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -806,7 +806,7 @@ async def get_best_posting_times(platform: str, user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -851,7 +851,7 @@ async def bulk_schedule_content(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 

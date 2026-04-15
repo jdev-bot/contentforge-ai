@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field, HttpUrl
 
 from app.core.rate_limit import rate_limit_dependency
@@ -91,7 +91,7 @@ class RSSFetchResponse(BaseModel):
 
 
 @router.post(
-    "/rss/feeds", response_model=RSSFeedResponse, status_code=status.HTTP_201_CREATED
+    "/rss/feeds", response_model=RSSFeedResponse, status_code=http_status.HTTP_201_CREATED
 )
 async def create_feed(
     feed_data: RSSFeedCreate,
@@ -106,7 +106,7 @@ async def create_feed(
         is_valid, error_msg = await rss_service.validate_feed(str(feed_data.url))
         if not is_valid:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid RSS feed URL: {error_msg}",
             )
 
@@ -124,7 +124,7 @@ async def create_feed(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create RSS feed",
             )
 
@@ -139,7 +139,7 @@ async def create_feed(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
@@ -180,7 +180,7 @@ async def list_feeds(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -202,7 +202,7 @@ async def get_feed(feed_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="RSS feed not found",
             )
 
@@ -212,7 +212,7 @@ async def get_feed(feed_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -237,7 +237,7 @@ async def update_feed(
 
         if not existing.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="RSS feed not found",
             )
 
@@ -267,7 +267,7 @@ async def update_feed(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update RSS feed",
             )
 
@@ -277,12 +277,12 @@ async def update_feed(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
 
-@router.delete("/rss/feeds/{feed_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/rss/feeds/{feed_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_feed(feed_id: UUID, user=Depends(get_auth_user)):
     """Remove an RSS feed and all its entries."""
     supabase = get_supabase_admin_client()
@@ -300,7 +300,7 @@ async def delete_feed(feed_id: UUID, user=Depends(get_auth_user)):
 
         if not existing.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="RSS feed not found",
             )
 
@@ -313,7 +313,7 @@ async def delete_feed(feed_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -336,13 +336,13 @@ async def manual_fetch(feed_id: UUID, user=Depends(get_auth_user)):
 
         if not existing.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="RSS feed not found",
             )
 
         if existing.data.get("status") == "paused":
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Cannot fetch a paused feed. Please activate it first.",
             )
 
@@ -360,7 +360,7 @@ async def manual_fetch(feed_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -417,7 +417,7 @@ async def list_entries(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -439,7 +439,7 @@ async def get_entry(entry_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="RSS entry not found",
             )
 
@@ -455,7 +455,7 @@ async def get_entry(entry_id: UUID, user=Depends(get_auth_user)):
 
         if not feed_result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="RSS entry not found",
             )
 
@@ -465,7 +465,7 @@ async def get_entry(entry_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -493,7 +493,7 @@ async def import_entry(
 
         if not entry_result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="RSS entry not found",
             )
 
@@ -511,7 +511,7 @@ async def import_entry(
 
         if not feed_result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="RSS entry not found",
             )
 
@@ -543,7 +543,7 @@ async def import_entry(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -572,7 +572,7 @@ async def import_all_unprocessed(
 
         if not feed_result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="RSS feed not found",
             )
 
@@ -617,6 +617,6 @@ async def import_all_unprocessed(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )

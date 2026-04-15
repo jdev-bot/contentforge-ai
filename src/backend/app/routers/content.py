@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status as http_status
 from pydantic import BaseModel, HttpUrl
 
 from app.core.cache import cache, CACHE_TTL
@@ -69,7 +69,7 @@ class GeneratedAsset(BaseModel):
 
 
 @router.post(
-    "/content", response_model=ContentResponse, status_code=status.HTTP_201_CREATED
+    "/content", response_model=ContentResponse, status_code=http_status.HTTP_201_CREATED
 )
 async def create_content(
     content_data: ContentCreate,
@@ -132,7 +132,7 @@ async def create_content(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create content",
             )
 
@@ -144,7 +144,7 @@ async def create_content(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
@@ -183,7 +183,7 @@ async def list_content(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -211,7 +211,7 @@ async def get_content(content_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Content not found",
             )
 
@@ -224,7 +224,7 @@ async def get_content(content_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -254,7 +254,7 @@ async def generate_assets(
 
         if not content_result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Content not found",
             )
 
@@ -263,7 +263,7 @@ async def generate_assets(
 
         if not original_text:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="No content text available for generation",
             )
 
@@ -361,7 +361,7 @@ async def generate_assets(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -394,7 +394,7 @@ async def list_assets(content_id: UUID, user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -404,12 +404,12 @@ async def upload_file(file: UploadFile = File(...), user=Depends(get_auth_user))
     """Upload a file (audio/video)."""
     # TODO: Implement file upload to R2
     raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        status_code=http_status.HTTP_501_NOT_IMPLEMENTED,
         detail="File upload not yet implemented",
     )
 
 
-@router.delete("/content/{content_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/content/{content_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_content(
     content_id: UUID, user=Depends(get_auth_user), permanent: bool = False
 ):
@@ -436,7 +436,7 @@ async def delete_content(
 
             if not existing.data:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
+                    status_code=http_status.HTTP_404_NOT_FOUND,
                     detail="Content not found",
                 )
 
@@ -452,7 +452,7 @@ async def delete_content(
             success = soft_delete_content(str(content_id), str(user.id))
             if not success:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
+                    status_code=http_status.HTTP_404_NOT_FOUND,
                     detail="Content not found",
                 )
 
@@ -466,6 +466,6 @@ async def delete_content(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
