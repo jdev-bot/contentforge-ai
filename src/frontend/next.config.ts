@@ -19,6 +19,9 @@ const nextConfig: NextConfig = {
   
   // Performance optimizations
   reactStrictMode: true,
+
+  // Prevent Vercel 307 trailing-slash redirects that strip Authorization headers
+  trailingSlash: false,
   
   // Bundle optimization
   experimental: {
