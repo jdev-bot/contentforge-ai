@@ -10,7 +10,7 @@ from functools import wraps
 from typing import Dict, Literal, Optional
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, status as http_status
 from pydantic import BaseModel
 
 from app.core.config import get_settings
@@ -82,7 +82,7 @@ class RateLimitExceededError(HTTPException):
             "remaining": 0,
         }
         super().__init__(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            status_code=http_status.HTTP_429_TOO_MANY_REQUESTS,
             detail=detail,
             headers={
                 "X-Subscription-Tier": tier,
@@ -197,7 +197,7 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="User profile not found",
             )
 
@@ -214,7 +214,7 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
         # Check if under limit (unlimited tiers have float('inf'))
         if usage_count >= usage_limit and usage_limit != float("inf"):
             raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                status_code=http_status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Monthly limit reached. Upgrade to Pro.",
             )
 
@@ -264,7 +264,7 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to check usage: {str(e)}",
         )
 
@@ -304,7 +304,7 @@ def get_user_usage_stats(user_id: str) -> UsageStats:
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="User profile not found",
             )
 
@@ -335,7 +335,7 @@ def get_user_usage_stats(user_id: str) -> UsageStats:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get usage stats: {str(e)}",
         )
 
@@ -358,7 +358,7 @@ def get_usage_history(user_id: str, limit: int = 100):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get usage history: {str(e)}",
         )
 
@@ -421,7 +421,7 @@ def rate_limit_dependency(request: Request):
 
     if not rate_limiter.is_allowed(key):
         raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            status_code=http_status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Rate limit exceeded. Please try again later.",
             headers={"Retry-After": str(settings.RATE_LIMIT_WINDOW)},
         )
@@ -444,7 +444,7 @@ def check_subscription_limit(user_id: str, action: str = "content_creation"):
     if stats.remaining == 0:
         tier = stats.subscription_tier
         raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            status_code=http_status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Monthly limit reached. Upgrade to Pro.",
             headers={
                 "X-Subscription-Tier": tier,
@@ -468,7 +468,7 @@ def enforce_subscription_limit(request: Request):
     auth_header = request.headers.get("authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required",
             headers={"WWW-Authenticate": "Bearer"},
         )
@@ -480,7 +480,7 @@ def enforce_subscription_limit(request: Request):
         user = supabase.auth.get_user(token)
         if not user or not user.user:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=http_status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication",
                 headers={"WWW-Authenticate": "Bearer"},
             )
@@ -492,7 +492,7 @@ def enforce_subscription_limit(request: Request):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to check subscription: {str(e)}",
         )
 
