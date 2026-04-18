@@ -21,7 +21,7 @@ from fastapi import (
     Header,
     HTTPException,
     Request,
-    status,
+    status as http_status,
 )
 from pydantic import BaseModel, Field
 
@@ -244,7 +244,7 @@ def with_retry(max_retries: int = 3, base_delay: float = 1.0, max_delay: float =
 
             # All retries exhausted
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Webhook processing failed after {max_retries} attempts: {str(last_exception)}",
             )
 
@@ -343,11 +343,11 @@ async def content_processed_webhook(
         payload = json.loads(body)
     except json.JSONDecodeError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON payload"
+            status_code=http_status.HTTP_400_BAD_REQUEST, detail="Invalid JSON payload"
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to read request body: {str(e)}",
         )
 
@@ -365,7 +365,7 @@ async def content_processed_webhook(
                 idempotency_key=x_idempotency_key,
             )
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=http_status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid webhook signature",
             )
     elif webhook_secret:
@@ -379,7 +379,7 @@ async def content_processed_webhook(
             idempotency_key=x_idempotency_key,
         )
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing webhook signature"
+            status_code=http_status.HTTP_401_UNAUTHORIZED, detail="Missing webhook signature"
         )
 
     # Generate idempotency key if not provided
@@ -411,7 +411,7 @@ async def content_processed_webhook(
         # Validate required fields
         if "content_id" not in payload:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Missing required field: content_id",
             )
 
@@ -459,7 +459,7 @@ async def content_processed_webhook(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Content not found",
             )
 
@@ -511,7 +511,7 @@ async def content_processed_webhook(
             processing_time_ms=processing_time,
         )
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process webhook: {str(e)}",
         )
 
@@ -552,11 +552,11 @@ async def distribution_completed_webhook(
         payload = json.loads(body)
     except json.JSONDecodeError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON payload"
+            status_code=http_status.HTTP_400_BAD_REQUEST, detail="Invalid JSON payload"
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to read request body: {str(e)}",
         )
 
@@ -573,7 +573,7 @@ async def distribution_completed_webhook(
                 idempotency_key=x_idempotency_key,
             )
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=http_status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid webhook signature",
             )
     elif webhook_secret:
@@ -586,7 +586,7 @@ async def distribution_completed_webhook(
             idempotency_key=x_idempotency_key,
         )
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing webhook signature"
+            status_code=http_status.HTTP_401_UNAUTHORIZED, detail="Missing webhook signature"
         )
 
     # Generate idempotency key if not provided
@@ -618,7 +618,7 @@ async def distribution_completed_webhook(
         # Validate required fields
         if "distribution_id" not in payload:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Missing required field: distribution_id",
             )
 
@@ -668,7 +668,7 @@ async def distribution_completed_webhook(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Distribution not found",
             )
 
@@ -718,7 +718,7 @@ async def distribution_completed_webhook(
             processing_time_ms=processing_time,
         )
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process webhook: {str(e)}",
         )
 
@@ -732,7 +732,7 @@ async def distribution_completed_webhook(
 async def get_webhook_logs(
     webhook_type: Optional[str] = None,
     event_source: Optional[str] = None,
-    status: Optional[str] = None,
+    log_status: Optional[str] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     page: int = 1,
@@ -748,7 +748,7 @@ async def get_webhook_logs(
     from app.routers.admin import is_admin_user
     if not is_admin_user(user):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
+            status_code=http_status.HTTP_403_FORBIDDEN, detail="Admin access required"
         )
 
     supabase = get_supabase_admin_client()
@@ -762,8 +762,8 @@ async def get_webhook_logs(
     if event_source:
         query = query.eq("event_source", event_source)
 
-    if status:
-        query = query.eq("status", status)
+    if log_status:
+        query = query.eq("status", log_status)
 
     if start_date:
         query = query.gte("created_at", start_date.isoformat())
