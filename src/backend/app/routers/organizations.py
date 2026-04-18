@@ -175,6 +175,7 @@ async def create_organization(
 
 
 @router.get("/", response_model=List[OrganizationResponse])
+@router.get("", response_model=List[OrganizationResponse], include_in_schema=False)
 async def list_organizations(
     user=Depends(get_auth_user),
     include_member_count: bool = Query(

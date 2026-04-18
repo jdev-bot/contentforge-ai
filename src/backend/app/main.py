@@ -89,6 +89,7 @@ app = FastAPI(
     description="AI-powered content repurposing and distribution platform",
     version="0.1.0",
     lifespan=lifespan,
+    redirect_slashes=False,
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
 )
