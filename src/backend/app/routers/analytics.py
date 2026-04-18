@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status as http_status
 from pydantic import BaseModel, Field
 
 from app.core.cache import cache, CACHE_TTL
@@ -216,7 +216,7 @@ async def get_dashboard_kpis(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve dashboard KPIs: {str(e)}",
         )
 
@@ -313,7 +313,7 @@ async def get_distribution_metrics(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve distribution metrics: {str(e)}",
         )
 
@@ -380,7 +380,7 @@ async def get_content_metrics(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve content metrics: {str(e)}",
         )
 
@@ -445,7 +445,7 @@ async def get_asset_metrics(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve asset metrics: {str(e)}",
         )
 
@@ -559,7 +559,7 @@ async def get_usage_metrics(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve usage metrics: {str(e)}",
         )
 
@@ -584,7 +584,7 @@ async def export_user_activity(
     # Validate parameters
     if format.lower() != "csv":
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="Only CSV format is currently supported",
         )
 
@@ -708,7 +708,7 @@ async def export_user_activity(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to export user activity: {str(e)}",
         )
 
@@ -796,6 +796,6 @@ async def export_user_activity_json(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to export user activity: {str(e)}",
         )

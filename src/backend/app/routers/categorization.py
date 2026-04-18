@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 from app.core.rate_limit import (
@@ -145,7 +145,7 @@ async def categorize_content(
 
         if "error" in result:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=result["error"]
+                status_code=http_status.HTTP_400_BAD_REQUEST, detail=result["error"]
             )
 
         return result
@@ -153,7 +153,7 @@ async def categorize_content(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to categorize content: {str(e)}",
         )
 
@@ -185,7 +185,7 @@ async def batch_categorize_content(
         return BatchCategorizeResponse(**result)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to batch categorize: {str(e)}",
         )
 
@@ -216,7 +216,7 @@ async def auto_tag_content(
 
         if "error" in result:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=result["error"]
+                status_code=http_status.HTTP_400_BAD_REQUEST, detail=result["error"]
             )
 
         return result
@@ -224,7 +224,7 @@ async def auto_tag_content(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to auto-tag content: {str(e)}",
         )
 
@@ -257,7 +257,7 @@ async def batch_auto_tag_content(
         return result
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to batch auto-tag: {str(e)}",
         )
 
@@ -287,7 +287,7 @@ async def cluster_content(
         return ClusterResponse(**result)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to cluster content: {str(e)}",
         )
 
@@ -308,7 +308,7 @@ async def get_content_categorization(content_id: UUID, user=Depends(get_auth_use
 
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Categorization not found for this content",
             )
 
@@ -317,7 +317,7 @@ async def get_content_categorization(content_id: UUID, user=Depends(get_auth_use
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get categorization: {str(e)}",
         )
 
@@ -338,7 +338,7 @@ async def get_content_tags(content_id: UUID, user=Depends(get_auth_user)):
 
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Tags not found for this content",
             )
 
@@ -347,7 +347,7 @@ async def get_content_tags(content_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get content tags: {str(e)}",
         )
 
@@ -370,7 +370,7 @@ async def update_categorization(
         updates = request.dict(exclude_none=True)
         if not updates:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="No fields provided for update",
             )
 
@@ -382,7 +382,7 @@ async def update_categorization(
 
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Categorization not found or update failed",
             )
 
@@ -391,7 +391,7 @@ async def update_categorization(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update categorization: {str(e)}",
         )
 
@@ -412,7 +412,7 @@ async def delete_categorization(categorization_id: UUID, user=Depends(get_auth_u
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Categorization not found or could not be deleted",
             )
 
@@ -421,7 +421,7 @@ async def delete_categorization(categorization_id: UUID, user=Depends(get_auth_u
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete categorization: {str(e)}",
         )
 
@@ -449,6 +449,6 @@ async def list_categorizations(
         return categorizations
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list categorizations: {str(e)}",
         )

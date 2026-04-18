@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 from app.core.rate_limit import (
@@ -103,7 +103,7 @@ async def get_topic_suggestions(
         return suggestions
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate topic suggestions: {str(e)}",
         )
 
@@ -140,7 +140,7 @@ async def get_posting_time_suggestions(
         return suggestions
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate posting time suggestions: {str(e)}",
         )
 
@@ -175,7 +175,7 @@ async def get_content_improvement_suggestions(
         return suggestions
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate improvement suggestions: {str(e)}",
         )
 
@@ -202,7 +202,7 @@ async def generate_all_suggestions(
         return GenerateAllSuggestionsResponse(**result)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate all suggestions: {str(e)}",
         )
 
@@ -234,7 +234,7 @@ async def save_suggestions(
 
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to save suggestions",
             )
 
@@ -243,7 +243,7 @@ async def save_suggestions(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to save suggestions: {str(e)}",
         )
 
@@ -273,7 +273,7 @@ async def list_saved_suggestions(
         return suggestions
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list saved suggestions: {str(e)}",
         )
 
@@ -294,7 +294,7 @@ async def delete_saved_suggestion(suggestion_id: UUID, user=Depends(get_auth_use
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Suggestion not found or could not be deleted",
             )
 
@@ -303,6 +303,6 @@ async def delete_saved_suggestion(suggestion_id: UUID, user=Depends(get_auth_use
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete suggestion: {str(e)}",
         )

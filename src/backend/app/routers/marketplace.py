@@ -13,7 +13,7 @@ Provides endpoints for:
 
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 from app.routers.auth import get_auth_user
@@ -218,7 +218,7 @@ async def get_marketplace_template(template_id: str):
     template = marketplace_service.get_template(template_id)
     if not template:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Template not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Template not found"
         )
     return template
 
@@ -226,7 +226,7 @@ async def get_marketplace_template(template_id: str):
 @router.post(
     "/marketplace/templates",
     response_model=TemplateResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def create_marketplace_template(
     body: TemplateCreate, user=Depends(get_auth_user)
@@ -268,10 +268,10 @@ async def create_marketplace_template(
             updated_at=template["updated_at"],
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create template: {exc}",
         )
 
@@ -284,7 +284,7 @@ async def update_marketplace_template(
     fields = body.model_dump(exclude_none=True)
     if not fields:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update"
+            status_code=http_status.HTTP_400_BAD_REQUEST, detail="No fields to update"
         )
 
     try:
@@ -293,7 +293,7 @@ async def update_marketplace_template(
         )
         if not updated:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Template not found"
+                status_code=http_status.HTTP_404_NOT_FOUND, detail="Template not found"
             )
         return TemplateResponse(
             id=updated["id"],
@@ -318,11 +318,11 @@ async def update_marketplace_template(
             updated_at=updated["updated_at"],
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail=str(exc))
 
 
 @router.delete(
-    "/marketplace/templates/{template_id}", status_code=status.HTTP_204_NO_CONTENT
+    "/marketplace/templates/{template_id}", status_code=http_status.HTTP_204_NO_CONTENT
 )
 async def delete_marketplace_template(template_id: str, user=Depends(get_auth_user)):
     """Delete a marketplace template (author only, unpublished only)."""
@@ -330,10 +330,10 @@ async def delete_marketplace_template(template_id: str, user=Depends(get_auth_us
         deleted = marketplace_service.delete_template(template_id, str(user.id))
         if not deleted:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Template not found"
+                status_code=http_status.HTTP_404_NOT_FOUND, detail="Template not found"
             )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.post(
@@ -345,11 +345,11 @@ async def publish_template(template_id: str, user=Depends(get_auth_user)):
         result = marketplace_service.publish_template(template_id, str(user.id))
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Template not found"
+                status_code=http_status.HTTP_404_NOT_FOUND, detail="Template not found"
             )
         return result
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail=str(exc))
 
 
 @router.post(
@@ -361,11 +361,11 @@ async def unpublish_template(template_id: str, user=Depends(get_auth_user)):
         result = marketplace_service.unpublish_template(template_id, str(user.id))
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Template not found"
+                status_code=http_status.HTTP_404_NOT_FOUND, detail="Template not found"
             )
         return result
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail=str(exc))
 
 
 # ── Categories & Tags ──────────────────────────────────────────────
@@ -402,7 +402,7 @@ async def rate_template(
         )
         return result
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.get(
@@ -422,14 +422,14 @@ async def get_template_ratings(
 
 
 @router.delete(
-    "/marketplace/ratings/{rating_id}", status_code=status.HTTP_204_NO_CONTENT
+    "/marketplace/ratings/{rating_id}", status_code=http_status.HTTP_204_NO_CONTENT
 )
 async def delete_rating(rating_id: str, user=Depends(get_auth_user)):
     """Delete a rating (only by the user who created it)."""
     deleted = marketplace_service.delete_rating(rating_id, str(user.id))
     if not deleted:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Rating not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Rating not found"
         )
 
 
@@ -445,7 +445,7 @@ async def install_template(template_id: str, user=Depends(get_auth_user)):
         result = marketplace_service.install_template(template_id, str(user.id))
         return InstallResponse(**result)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.get("/marketplace/installs", response_model=List[Dict[str, Any]])
@@ -474,7 +474,7 @@ async def get_template_version(template_id: str, version: str):
     result = marketplace_service.get_template_version(template_id, version)
     if not result:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Template version not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Template version not found"
         )
     return result
 
@@ -488,7 +488,7 @@ async def get_author_profile(author_id: str):
     profile = marketplace_service.get_author_profile(author_id)
     if not profile:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Author not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Author not found"
         )
     return AuthorProfileResponse(**profile)
 

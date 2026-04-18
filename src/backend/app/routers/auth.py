@@ -4,7 +4,7 @@ Authentication router with Supabase integration.
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status as http_status
 from pydantic import BaseModel, EmailStr
 
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
@@ -45,7 +45,7 @@ def get_auth_user(request: Request):
     auth_header = request.headers.get("authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
@@ -57,21 +57,21 @@ def get_auth_user(request: Request):
         user = supabase.auth.get_user(token)
         if not user or not user.user:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=http_status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return user.user
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
             detail="Authentication failed",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
 
 @router.post(
-    "/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED
+    "/auth/register", response_model=TokenResponse, status_code=http_status.HTTP_201_CREATED
 )
 async def register(user_data: UserRegister):
     """Register a new user and trigger welcome email."""
@@ -92,7 +92,7 @@ async def register(user_data: UserRegister):
 
         if not auth_response.user:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Registration failed",
             )
 
@@ -140,7 +140,7 @@ async def register(user_data: UserRegister):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
@@ -160,7 +160,7 @@ async def login(user_data: UserLogin):
 
         if not auth_response.user or not auth_response.session:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=http_status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials",
             )
 
@@ -179,7 +179,7 @@ async def login(user_data: UserLogin):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
         )
 
@@ -261,7 +261,7 @@ async def update_current_user(
 
         if not auth_response.user:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Failed to update profile",
             )
 
@@ -280,6 +280,6 @@ async def update_current_user(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )

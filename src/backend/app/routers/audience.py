@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status as http_status
 from pydantic import BaseModel, Field
 
 from app.core.cache import cache
@@ -151,7 +151,7 @@ async def get_growth_metrics(
         return result
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve growth metrics: {str(e)}",
         )
 
@@ -183,7 +183,7 @@ async def get_platforms_metrics(
         return result_list
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve platform metrics: {str(e)}",
         )
 
@@ -219,7 +219,7 @@ async def get_historical_data(
         return result
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve historical data: {str(e)}",
         )
 
@@ -227,7 +227,7 @@ async def get_historical_data(
 @router.post(
     "/audience/record",
     response_model=AudienceMetricResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
     summary="Record new audience metric",
     description="Record a new audience metric. Can be used manually or via webhook.",
 )
@@ -245,7 +245,7 @@ async def record_metric(metric: AudienceMetricCreate, user=Depends(get_auth_user
 
         if not recorded:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to record metric",
             )
 
@@ -257,7 +257,7 @@ async def record_metric(metric: AudienceMetricCreate, user=Depends(get_auth_user
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to record metric: {str(e)}",
         )
 
@@ -286,7 +286,7 @@ async def receive_webhook(platform: str, payload: WebhookPayload, request: Reque
         ]
         if platform.lower() not in valid_platforms:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid platform. Must be one of: {', '.join(valid_platforms)}",
             )
 
@@ -299,7 +299,7 @@ async def receive_webhook(platform: str, payload: WebhookPayload, request: Reque
 
         if not user_id:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Missing user_id in webhook payload metadata",
             )
 
@@ -324,7 +324,7 @@ async def receive_webhook(platform: str, payload: WebhookPayload, request: Reque
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process webhook: {str(e)}",
         )
 
@@ -354,7 +354,7 @@ async def get_insights(
         return result
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate insights: {str(e)}",
         )
 
@@ -378,14 +378,14 @@ async def generate_snapshot(user=Depends(get_auth_user)):
         }
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate snapshot: {str(e)}",
         )
 
 
 @router.delete(
     "/audience/metrics/{metric_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=http_status.HTTP_204_NO_CONTENT,
     summary="Delete audience metric",
     description="Delete a specific audience metric by ID.",
 )
@@ -403,7 +403,7 @@ async def delete_metric(metric_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Metric not found"
+                status_code=http_status.HTTP_404_NOT_FOUND, detail="Metric not found"
             )
 
         # Invalidate audience caches for this user
@@ -414,6 +414,6 @@ async def delete_metric(metric_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete metric: {str(e)}",
         )

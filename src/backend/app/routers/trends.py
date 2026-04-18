@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -147,7 +147,7 @@ async def list_trending_topics(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch trending topics: {str(e)}",
         )
 
@@ -183,7 +183,7 @@ async def get_relevant_trends(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch relevant trends: {str(e)}",
         )
 
@@ -229,7 +229,7 @@ async def get_trends_by_category(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch trends by category: {str(e)}",
         )
 
@@ -262,14 +262,14 @@ async def track_topic(
             )
         else:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to track topic"
+                status_code=http_status.HTTP_400_BAD_REQUEST, detail="Failed to track topic"
             )
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to track topic: {str(e)}",
         )
 
@@ -293,7 +293,7 @@ async def get_tracked_topics(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch tracked topics: {str(e)}",
         )
 
@@ -320,7 +320,7 @@ async def untrack_topic(topic_id: UUID, user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to remove tracked topic: {str(e)}",
         )
 
@@ -397,7 +397,7 @@ async def generate_content_from_trend(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate content: {str(e)}",
         )
 
@@ -430,7 +430,7 @@ async def get_velocity_leaderboard(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch velocity leaderboard: {str(e)}",
         )
 
@@ -461,7 +461,7 @@ async def get_trending_insights(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch trending insights: {str(e)}",
         )
 
@@ -488,14 +488,14 @@ async def refresh_trending_topics(user=Depends(get_auth_user)):
 
         if not is_admin:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Only admins can manually refresh trending topics",
             )
     except HTTPException:
         raise
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Only admins can manually refresh trending topics",
         )
 
@@ -514,7 +514,7 @@ async def refresh_trending_topics(user=Depends(get_auth_user)):
             )
         else:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to refresh trends: {result.get('error', 'Unknown error')}",
             )
 
@@ -522,7 +522,7 @@ async def refresh_trending_topics(user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to refresh trends: {str(e)}",
         )
 
@@ -581,7 +581,7 @@ async def search_trends(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to search trends: {str(e)}",
         )
 
@@ -609,7 +609,7 @@ async def get_trend_details(topic_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Trend not found"
+                status_code=http_status.HTTP_404_NOT_FOUND, detail="Trend not found"
             )
 
         trend_item = TrendingTopicResponse(**result.data)
@@ -621,6 +621,6 @@ async def get_trend_details(topic_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch trend details: {str(e)}",
         )

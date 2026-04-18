@@ -12,7 +12,7 @@ Provides endpoints for:
 
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status as http_status
 from pydantic import BaseModel, Field
 
 from app.routers.auth import get_auth_user
@@ -204,7 +204,7 @@ async def get_saml_provider(provider_id: str, user=Depends(get_auth_user)):
     provider = saml_service.get_provider(provider_id)
     if not provider:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="SAML provider not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="SAML provider not found"
         )
     return SAMLProviderResponse(
         id=provider["id"],
@@ -225,7 +225,7 @@ async def get_saml_provider(provider_id: str, user=Depends(get_auth_user)):
 @router.post(
     "/saml/providers",
     response_model=SAMLProviderResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def create_saml_provider(body: SAMLProviderCreate, user=Depends(get_auth_user)):
     """Create a new SAML IdP provider configuration."""
@@ -258,10 +258,10 @@ async def create_saml_provider(body: SAMLProviderCreate, user=Depends(get_auth_u
             updated_at=provider["updated_at"],
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create SAML provider: {exc}",
         )
 
@@ -274,13 +274,13 @@ async def update_saml_provider(
     fields = body.model_dump(exclude_none=True)
     if not fields:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update"
+            status_code=http_status.HTTP_400_BAD_REQUEST, detail="No fields to update"
         )
 
     updated = saml_service.update_provider(provider_id, **fields)
     if not updated:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="SAML provider not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="SAML provider not found"
         )
     return SAMLProviderResponse(
         id=updated["id"],
@@ -298,13 +298,13 @@ async def update_saml_provider(
     )
 
 
-@router.delete("/saml/providers/{provider_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/saml/providers/{provider_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_saml_provider(provider_id: str, user=Depends(get_auth_user)):
     """Delete a SAML provider configuration."""
     deleted = saml_service.delete_provider(provider_id)
     if not deleted:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="SAML provider not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="SAML provider not found"
         )
 
 
@@ -328,7 +328,7 @@ async def fetch_saml_metadata(
         )
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to fetch/parse IdP metadata: {exc}",
         )
 
@@ -355,7 +355,7 @@ async def update_attribute_mapping(
     )
     if not updated:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="SAML provider not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="SAML provider not found"
         )
     return SAMLProviderResponse(
         id=updated["id"],
@@ -389,10 +389,10 @@ async def initiate_saml_login(
         )
         return SAMLLoginResponse(**result)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to initiate SAML login: {exc}",
         )
 
@@ -408,10 +408,10 @@ async def initiate_saml_login_public(body: SAMLLoginRequest):
         )
         return SAMLLoginResponse(**result)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to initiate SAML login: {exc}",
         )
 
@@ -429,10 +429,10 @@ async def saml_acs(body: SAMLAcsRequest):
         )
         return SAMLAcsResponse(**result)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"SAML ACS processing failed: {exc}",
         )
 
@@ -452,10 +452,10 @@ async def initiate_saml_logout(body: SAMLLogoutRequest, user=Depends(get_auth_us
         )
         return SAMLLogoutResponse(**result)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to initiate SAML logout: {exc}",
         )
 
@@ -466,7 +466,7 @@ async def saml_logout_response(saml_response: str = ""):
     result = saml_service.handle_slo_response(saml_response=saml_response)
     if not result["success"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="SAML logout failed"
+            status_code=http_status.HTTP_400_BAD_REQUEST, detail="SAML logout failed"
         )
     return {"message": "Logged out successfully", "status": result["status"]}
 
@@ -481,13 +481,13 @@ async def list_user_saml_identities(user=Depends(get_auth_user)):
     return [SAMLIdentityResponse(**i) for i in identities]
 
 
-@router.delete("/saml/identities/{identity_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/saml/identities/{identity_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def unlink_saml_identity(identity_id: str, user=Depends(get_auth_user)):
     """Unlink a SAML identity from the current user."""
     deleted = saml_service.unlink_identity(identity_id, str(user.id))
     if not deleted:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Identity not found or not authorized to unlink",
         )
 

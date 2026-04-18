@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status as http_status
 from pydantic import BaseModel
 
 from app.core.error_tracking import get_error_summary, get_recent_errors
@@ -79,7 +79,7 @@ async def get_admin_errors(limit: int = 100, user=Depends(get_auth_user)):
     # Check if user is admin
     if not is_admin_user(user):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
         )
 
@@ -121,7 +121,7 @@ async def get_admin_errors(limit: int = 100, user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve errors: {str(e)}",
         )
 
@@ -139,7 +139,7 @@ async def get_admin_errors_summary(hours: int = 24, user=Depends(get_auth_user))
     # Check if user is admin
     if not is_admin_user(user):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
         )
 
@@ -157,12 +157,12 @@ async def get_admin_errors_summary(hours: int = 24, user=Depends(get_auth_user))
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve error summary: {str(e)}",
         )
 
 
-@router.delete("/admin/errors/{error_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/admin/errors/{error_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_error(error_id: UUID, user=Depends(get_auth_user)):
     """
     Delete a specific error log entry (admin only).
@@ -173,7 +173,7 @@ async def delete_error(error_id: UUID, user=Depends(get_auth_user)):
     # Check if user is admin
     if not is_admin_user(user):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
         )
 
@@ -185,7 +185,7 @@ async def delete_error(error_id: UUID, user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete error: {str(e)}",
         )
 
@@ -207,7 +207,7 @@ async def get_user_stats(user=Depends(get_auth_user)):
     # Check if user is admin
     if not is_admin_user(user):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
         )
 
@@ -233,6 +233,6 @@ async def get_user_stats(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve user stats: {str(e)}",
         )

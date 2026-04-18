@@ -16,7 +16,7 @@ from fastapi import (
     Header,
     HTTPException,
     Request,
-    status,
+    status as http_status,
 )
 from pydantic import BaseModel, Field
 
@@ -217,7 +217,7 @@ async def get_integration(integration_id: UUID, user=Depends(get_auth_user)):
 
     if not result.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Integration not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Integration not found"
         )
 
     # Mask sensitive config
@@ -234,7 +234,7 @@ async def get_integration(integration_id: UUID, user=Depends(get_auth_user)):
 @router.post(
     "/integrations",
     response_model=IntegrationResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def create_integration(
     integration_data: IntegrationCreate, user=Depends(get_auth_user)
@@ -250,13 +250,13 @@ async def create_integration(
     try:
         service = IntegrationFactory.create_service(integration_data.integration_type)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     # Validate config
     is_valid, error_message = await service.validate_config(integration_data.config)
     if not is_valid:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid configuration: {error_message}",
         )
 
@@ -278,7 +278,7 @@ async def create_integration(
 
     if not result.data:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create integration",
         )
 
@@ -319,7 +319,7 @@ async def update_integration(
 
     if not existing.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Integration not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Integration not found"
         )
 
     # If config is being updated, validate it
@@ -328,12 +328,12 @@ async def update_integration(
         try:
             service = IntegrationFactory.create_service(integration_type)
         except ValueError as e:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+            raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
 
         is_valid, error_message = await service.validate_config(integration_data.config)
         if not is_valid:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid configuration: {error_message}",
             )
 
@@ -359,7 +359,7 @@ async def update_integration(
 
     if not result.data:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update integration",
         )
 
@@ -374,7 +374,7 @@ async def update_integration(
     return data
 
 
-@router.delete("/integrations/{integration_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/integrations/{integration_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_integration(integration_id: UUID, user=Depends(get_auth_user)):
     """Delete an integration."""
     supabase = get_supabase_admin_client()
@@ -391,7 +391,7 @@ async def delete_integration(integration_id: UUID, user=Depends(get_auth_user)):
 
     if not existing.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Integration not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Integration not found"
         )
 
     # Delete integration (cascade will handle webhook_deliveries)
@@ -449,7 +449,7 @@ async def test_integration(integration_id: UUID, user=Depends(get_auth_user)):
 
     if not result.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Integration not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Integration not found"
         )
 
     integration = result.data
@@ -457,7 +457,7 @@ async def test_integration(integration_id: UUID, user=Depends(get_auth_user)):
     # Skip if inactive
     if not integration.get("is_active", True):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="Cannot test inactive integration. Please activate it first.",
         )
 
@@ -469,7 +469,7 @@ async def test_integration(integration_id: UUID, user=Depends(get_auth_user)):
             config=integration["config"],
         )
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     success, message = await service.test_connection()
 
@@ -530,7 +530,7 @@ async def incoming_webhook(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Invalid or inactive webhook token",
             )
 
@@ -547,7 +547,7 @@ async def incoming_webhook(
 
         if not x_signature or not hmac.compare_digest(expected_sig, x_signature):
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid signature"
+                status_code=http_status.HTTP_401_UNAUTHORIZED, detail="Invalid signature"
             )
 
     # Process the incoming webhook based on event type
@@ -623,7 +623,7 @@ async def list_webhook_deliveries(
 
     if not integration.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Integration not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Integration not found"
         )
 
     # Limit page size
@@ -680,7 +680,7 @@ async def retry_webhook_delivery(
 
     if not integration.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Integration not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Integration not found"
         )
 
     # Get the failed delivery
@@ -695,12 +695,12 @@ async def retry_webhook_delivery(
 
     if not delivery.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Delivery not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Delivery not found"
         )
 
     if delivery.data["status"] not in ["failed", "pending"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot retry delivery with status '{delivery.data['status']}'",
         )
 
@@ -751,14 +751,14 @@ async def trigger_integration_event(
 
     if not result.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Integration not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Integration not found"
         )
 
     integration = result.data
 
     if not integration.get("is_active", True):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Integration is not active"
+            status_code=http_status.HTTP_400_BAD_REQUEST, detail="Integration is not active"
         )
 
     # Create service and send event
@@ -769,7 +769,7 @@ async def trigger_integration_event(
             config=integration["config"],
         )
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     success, message = await service.send_event(event_type, payload)
 

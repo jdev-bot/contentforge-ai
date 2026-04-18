@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 from app.routers.auth import get_auth_user
@@ -201,12 +201,12 @@ async def track_performance_event(
         )
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to track event: {str(e)}",
         )
 
@@ -228,7 +228,7 @@ async def get_performance_overview(
         return OverviewResponse(**overview)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve performance overview: {str(e)}",
         )
 
@@ -250,7 +250,7 @@ async def get_content_performance(
         )
         if metrics is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Content not found or does not belong to user",
             )
         return ContentMetricsResponse(**metrics)
@@ -258,7 +258,7 @@ async def get_content_performance(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve content metrics: {str(e)}",
         )
 
@@ -280,7 +280,7 @@ async def get_performance_funnel(
         return FunnelResponse(**funnel)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve funnel data: {str(e)}",
         )
 
@@ -302,7 +302,7 @@ async def get_performance_cohort(
     """
     if cohort_size not in ("day", "week", "month"):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="cohort_size must be one of: day, week, month",
         )
 
@@ -315,7 +315,7 @@ async def get_performance_cohort(
         return CohortResponse(**cohort)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve cohort data: {str(e)}",
         )
 
@@ -340,7 +340,7 @@ async def get_performance_attribution(
         return AttributionResponse(**attribution)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve attribution data: {str(e)}",
         )
 
@@ -362,7 +362,7 @@ async def get_performance_trends(
     """
     if granularity not in ("day", "week", "month"):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="granularity must be one of: day, week, month",
         )
 
@@ -375,6 +375,6 @@ async def get_performance_trends(
         return TrendsResponse(**trends)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve trends: {str(e)}",
         )

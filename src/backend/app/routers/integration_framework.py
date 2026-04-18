@@ -12,7 +12,7 @@ This router provides endpoints for:
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field, field_validator
 
 from app.services.integration_framework_service import (
@@ -170,7 +170,7 @@ from app.routers.auth import get_auth_user
 @router.post(
     "/integration-framework/configs",
     response_model=IntegrationConfigResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def register_integration(
     config: IntegrationConfigCreate,
@@ -188,17 +188,17 @@ async def register_integration(
         )
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to register integration",
             )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to register integration: {str(e)}",
         )
 
@@ -215,7 +215,7 @@ async def list_integrations(user=Depends(get_auth_user)):
         return integrations
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list integrations: {str(e)}",
         )
 
@@ -234,7 +234,7 @@ async def update_integration(
         update_data = updates.model_dump(exclude_unset=True)
         if not update_data:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="No fields to update",
             )
         result = await integration_framework_service.update_integration(
@@ -244,7 +244,7 @@ async def update_integration(
         )
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Integration not found or you don't have permission",
             )
         return result
@@ -252,13 +252,13 @@ async def update_integration(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update integration: {str(e)}",
         )
 
 
 @router.delete(
-    "/integration-framework/configs/{config_id}", status_code=status.HTTP_204_NO_CONTENT
+    "/integration-framework/configs/{config_id}", status_code=http_status.HTTP_204_NO_CONTENT
 )
 async def delete_integration(
     config_id: UUID,
@@ -272,14 +272,14 @@ async def delete_integration(
         )
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Integration not found or you don't have permission",
             )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete integration: {str(e)}",
         )
 
@@ -304,7 +304,7 @@ async def test_integration(
         return result
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to test integration: {str(e)}",
         )
 
@@ -315,7 +315,7 @@ async def test_integration(
 @router.post(
     "/integration-framework/configs/{config_id}/events",
     response_model=IntegrationEventResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def trigger_integration_event(
     config_id: UUID,
@@ -332,7 +332,7 @@ async def trigger_integration_event(
         )
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Integration not found or is disabled",
             )
         return result
@@ -340,7 +340,7 @@ async def trigger_integration_event(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to trigger integration event: {str(e)}",
         )
 
@@ -370,7 +370,7 @@ async def retry_failed_event(
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retry event: {str(e)}",
         )
 
@@ -399,7 +399,7 @@ async def get_integration_logs(
         return IntegrationLogListResponse(logs=logs, total=len(logs))
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get integration logs: {str(e)}",
         )
 
@@ -423,7 +423,7 @@ async def get_integration_status(
         )
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Integration not found or you don't have permission",
             )
         return result
@@ -431,6 +431,6 @@ async def get_integration_status(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get integration status: {str(e)}",
         )

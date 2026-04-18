@@ -10,7 +10,7 @@ Provides endpoints for:
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 from app.routers.auth import get_auth_user
@@ -93,7 +93,7 @@ class TouchpointListResponse(BaseModel):
 @router.post(
     "/attribution/touchpoints",
     response_model=TouchpointResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def record_touchpoint(
     body: RecordTouchpointRequest,
@@ -121,12 +121,12 @@ async def record_touchpoint(
         )
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to record touchpoint: {str(e)}",
         )
 
@@ -161,7 +161,7 @@ async def get_touchpoints(
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve touchpoints: {str(e)}",
         )
 
@@ -180,7 +180,7 @@ async def calculate_attribution(
     valid_models = [m.value for m in AttributionModel]
     if body.model not in valid_models:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid model '{body.model}'. Must be one of: {', '.join(valid_models)}",
         )
 
@@ -201,7 +201,7 @@ async def calculate_attribution(
         ]
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to calculate attribution: {str(e)}",
         )
 
@@ -235,6 +235,6 @@ async def get_channel_performance(
         ]
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve channel performance: {str(e)}",
         )

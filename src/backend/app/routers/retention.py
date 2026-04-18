@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 from app.routers.auth import get_auth_user
@@ -118,7 +118,7 @@ class ComplianceReportResponse(BaseModel):
 @router.post(
     "/retention/policies",
     response_model=RetentionPolicyResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def create_retention_policy(
     body: RetentionPolicyCreate,
@@ -136,10 +136,10 @@ async def create_retention_policy(
         )
         return RetentionPolicyResponse(**policy)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create retention policy: {exc}",
         )
 
@@ -169,7 +169,7 @@ async def list_retention_policies(
         )
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc),
         )
 
@@ -183,7 +183,7 @@ async def get_retention_policy(
     policy = retention_service.get_policy(policy_id, user.id)
     if not policy:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Retention policy not found",
         )
     return RetentionPolicyResponse(**policy)
@@ -199,7 +199,7 @@ async def update_retention_policy(
     updates = body.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="No fields to update",
         )
     try:
@@ -210,23 +210,23 @@ async def update_retention_policy(
         )
         if not updated:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Retention policy not found",
             )
         return RetentionPolicyResponse(**updated)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update retention policy: {exc}",
         )
 
 
 @router.delete(
-    "/retention/policies/{policy_id}", status_code=status.HTTP_204_NO_CONTENT
+    "/retention/policies/{policy_id}", status_code=http_status.HTTP_204_NO_CONTENT
 )
 async def delete_retention_policy(
     policy_id: str,
@@ -236,7 +236,7 @@ async def delete_retention_policy(
     deleted = retention_service.delete_policy(policy_id, user.id)
     if not deleted:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Retention policy not found",
         )
 
@@ -268,7 +268,7 @@ async def apply_retention(
         )
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to apply retention: {exc}",
         )
 
@@ -287,7 +287,7 @@ async def get_compliance_report(
         return ComplianceReportResponse(**report)
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate compliance report: {exc}",
         )
 
@@ -336,6 +336,6 @@ async def get_retention_audit_trail(
         )
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc),
         )

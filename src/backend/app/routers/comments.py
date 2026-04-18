@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 from app.routers.auth import get_auth_user
@@ -113,7 +113,7 @@ class MentionLookupResponse(BaseModel):
 @router.post(
     "/content/{content_id}/comments",
     response_model=CommentResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def create_comment(
     content_id: UUID,
@@ -132,10 +132,10 @@ async def create_comment(
         )
         return CommentResponse(**comment)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create comment: {exc}",
         )
 
@@ -174,7 +174,7 @@ async def list_comments(
         )
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc),
         )
 
@@ -188,7 +188,7 @@ async def get_comment(
     comment = comments_service.get_comment(comment_id, user.id)
     if not comment:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Comment not found",
         )
     comment["mentions"] = comments_service._get_mentions_for_comment(comment_id)
@@ -209,13 +209,13 @@ async def update_comment(
     )
     if not updated:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Comment not found or not authorized",
         )
     return CommentResponse(**updated)
 
 
-@router.delete("/content/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/content/comments/{comment_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_comment(
     comment_id: str,
     user=Depends(get_auth_user),
@@ -224,7 +224,7 @@ async def delete_comment(
     deleted = comments_service.delete_comment(comment_id, user.id)
     if not deleted:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Comment not found or not authorized",
         )
 
@@ -241,7 +241,7 @@ async def get_comment_thread(
     thread = comments_service.get_thread(comment_id, user.id)
     if not thread:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Comment not found",
         )
     return ThreadResponse(
@@ -263,7 +263,7 @@ async def resolve_comment(
     resolved = comments_service.resolve_comment(comment_id, user.id)
     if not resolved:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Comment not found or not authorized to resolve",
         )
     resolved["mentions"] = comments_service._get_mentions_for_comment(comment_id)
@@ -279,7 +279,7 @@ async def unresolve_comment(
     unresolved = comments_service.unresolve_comment(comment_id, user.id)
     if not unresolved:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Comment not found or not authorized to unresolve",
         )
     unresolved["mentions"] = comments_service._get_mentions_for_comment(comment_id)
@@ -318,13 +318,13 @@ async def add_reaction(
         return reaction
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add reaction: {exc}",
         )
 
 
 @router.delete(
-    "/content/comments/{comment_id}/reactions", status_code=status.HTTP_204_NO_CONTENT
+    "/content/comments/{comment_id}/reactions", status_code=http_status.HTTP_204_NO_CONTENT
 )
 async def remove_reaction(
     comment_id: str,

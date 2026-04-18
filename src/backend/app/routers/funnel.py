@@ -10,7 +10,7 @@ Provides endpoints for:
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 from app.routers.auth import get_auth_user
@@ -118,7 +118,7 @@ class TrackEventResponse(BaseModel):
 
 
 @router.post(
-    "/funnels", response_model=FunnelResponse, status_code=status.HTTP_201_CREATED
+    "/funnels", response_model=FunnelResponse, status_code=http_status.HTTP_201_CREATED
 )
 async def create_funnel(
     body: CreateFunnelRequest,
@@ -148,12 +148,12 @@ async def create_funnel(
         )
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create funnel: {str(e)}",
         )
 
@@ -186,7 +186,7 @@ async def list_funnels(
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list funnels: {str(e)}",
         )
 
@@ -203,7 +203,7 @@ async def get_funnel(
         funnel = await funnel_service.get_funnel(funnel_id)
         if not funnel:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail=f"Funnel {funnel_id} not found",
             )
         steps = funnel.get("steps", [])
@@ -219,7 +219,7 @@ async def get_funnel(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve funnel: {str(e)}",
         )
 
@@ -250,12 +250,12 @@ async def track_funnel_event(
         )
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to track event: {str(e)}",
         )
 
@@ -289,17 +289,17 @@ async def get_funnel_analytics(
         )
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve analytics: {str(e)}",
         )
 
 
-@router.delete("/funnels/{funnel_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/funnels/{funnel_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_funnel(
     funnel_id: str,
     user=Depends(get_auth_user),
@@ -311,13 +311,13 @@ async def delete_funnel(
         deleted = await funnel_service.delete_funnel(funnel_id)
         if not deleted:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail=f"Funnel {funnel_id} not found",
             )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete funnel: {str(e)}",
         )

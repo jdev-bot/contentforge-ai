@@ -4,7 +4,7 @@ Notifications router for email preferences and settings.
 
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status as http_status
 from pydantic import BaseModel, Field
 
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
@@ -82,7 +82,7 @@ async def get_email_preferences(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch preferences: {str(e)}",
         )
 
@@ -113,7 +113,7 @@ async def update_email_preferences(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to update preferences: {str(e)}",
         )
 
@@ -142,7 +142,7 @@ async def get_email_history(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch email history: {str(e)}",
         )
 
@@ -178,7 +178,7 @@ async def unsubscribe_from_all(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to unsubscribe: {str(e)}",
         )
 
@@ -213,7 +213,7 @@ async def resubscribe(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to resubscribe: {str(e)}",
         )
 

@@ -10,7 +10,7 @@ Provides endpoints for:
 
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 from app.routers.auth import get_auth_user
@@ -161,7 +161,7 @@ async def get_provider(provider_id: str, user=Depends(get_auth_user)):
     provider = sso_service.get_provider(provider_id)
     if not provider:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Provider not found"
         )
     return ProviderResponse(
         id=provider["id"],
@@ -183,7 +183,7 @@ async def get_provider(provider_id: str, user=Depends(get_auth_user)):
 @router.post(
     "/sso/providers",
     response_model=ProviderResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def create_provider(body: ProviderCreate, user=Depends(get_auth_user)):
     """Create a new SSO provider configuration."""
@@ -217,10 +217,10 @@ async def create_provider(body: ProviderCreate, user=Depends(get_auth_user)):
             updated_at=provider["updated_at"],
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create provider: {exc}",
         )
 
@@ -233,13 +233,13 @@ async def update_provider(
     fields = body.model_dump(exclude_none=True)
     if not fields:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update"
+            status_code=http_status.HTTP_400_BAD_REQUEST, detail="No fields to update"
         )
 
     updated = sso_service.update_provider(provider_id, **fields)
     if not updated:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Provider not found"
         )
     return ProviderResponse(
         id=updated["id"],
@@ -258,13 +258,13 @@ async def update_provider(
     )
 
 
-@router.delete("/sso/providers/{provider_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/sso/providers/{provider_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_provider(provider_id: str, user=Depends(get_auth_user)):
     """Delete an SSO provider configuration."""
     deleted = sso_service.delete_provider(provider_id)
     if not deleted:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Provider not found"
         )
 
 
@@ -294,10 +294,10 @@ async def initiate_sso_login(
         )
         return SSOInitiateResponse(**result)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to initiate SSO login: {exc}",
         )
 
@@ -316,10 +316,10 @@ async def initiate_sso_login_public(body: SSOInitiateRequest):
         )
         return SSOInitiateResponse(**result)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to initiate SSO login: {exc}",
         )
 
@@ -338,10 +338,10 @@ async def sso_callback(body: SSOCallbackRequest):
         )
         return SSOCallbackResponse(**result)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"SSO callback failed: {exc}",
         )
 
@@ -356,13 +356,13 @@ async def list_user_identities(user=Depends(get_auth_user)):
     return [SSOIdentityResponse(**i) for i in identities]
 
 
-@router.delete("/sso/identities/{identity_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/sso/identities/{identity_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def unlink_identity(identity_id: str, user=Depends(get_auth_user)):
     """Unlink an SSO identity from the current user."""
     deleted = sso_service.unlink_identity(identity_id, str(user.id))
     if not deleted:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Identity not found or not authorized to unlink",
         )
 

@@ -5,7 +5,7 @@ Custom dashboards router with widget management and live data.
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status as http_status
 from pydantic import BaseModel, Field
 
 from app.core.supabase import get_supabase_client
@@ -80,12 +80,12 @@ async def list_dashboards(user=Depends(get_auth_user)):
         return dashboards
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list dashboards: {str(e)}",
         )
 
 
-@router.post("/dashboards", status_code=status.HTTP_201_CREATED)
+@router.post("/dashboards", status_code=http_status.HTTP_201_CREATED)
 async def create_dashboard(dashboard: DashboardCreate, user=Depends(get_auth_user)):
     """Create a new custom dashboard."""
     try:
@@ -99,7 +99,7 @@ async def create_dashboard(dashboard: DashboardCreate, user=Depends(get_auth_use
         return result
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create dashboard: {str(e)}",
         )
 
@@ -110,7 +110,7 @@ async def get_dashboard(dashboard_id: str, user=Depends(get_auth_user)):
     dashboard = dashboard_service.get_dashboard(dashboard_id, user.id)
     if not dashboard:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Dashboard not found",
         )
     return dashboard
@@ -132,7 +132,7 @@ async def update_dashboard(
         )
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Dashboard not found",
             )
         return result
@@ -140,18 +140,18 @@ async def update_dashboard(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update dashboard: {str(e)}",
         )
 
 
-@router.delete("/dashboards/{dashboard_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/dashboards/{dashboard_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_dashboard(dashboard_id: str, user=Depends(get_auth_user)):
     """Delete a dashboard and its widgets."""
     deleted = dashboard_service.delete_dashboard(dashboard_id, user.id)
     if not deleted:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Dashboard not found",
         )
 
@@ -159,7 +159,7 @@ async def delete_dashboard(dashboard_id: str, user=Depends(get_auth_user)):
 # ── Widget Endpoints ────────────────────────────────────────────────
 
 
-@router.post("/dashboards/{dashboard_id}/widgets", status_code=status.HTTP_201_CREATED)
+@router.post("/dashboards/{dashboard_id}/widgets", status_code=http_status.HTTP_201_CREATED)
 async def add_widget(
     dashboard_id: str, widget: WidgetConfig, user=Depends(get_auth_user)
 ):
@@ -167,17 +167,17 @@ async def add_widget(
     try:
         if widget.widget_type not in VALID_WIDGET_TYPES:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid widget type. Valid types: {', '.join(VALID_WIDGET_TYPES)}",
             )
         if widget.data_source not in VALID_DATA_SOURCES:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid data source. Valid sources: {', '.join(VALID_DATA_SOURCES)}",
             )
         if widget.refresh_interval not in VALID_REFRESH_INTERVALS:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid refresh interval. Valid values: {', '.join(str(v) for v in VALID_REFRESH_INTERVALS)}",
             )
 
@@ -194,17 +194,17 @@ async def add_widget(
         )
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Dashboard not found",
             )
         return result
     except HTTPException:
         raise
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add widget: {str(e)}",
         )
 
@@ -220,12 +220,12 @@ async def update_widget(
     try:
         if widget.widget_type and widget.widget_type not in VALID_WIDGET_TYPES:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid widget type. Valid types: {', '.join(VALID_WIDGET_TYPES)}",
             )
         if widget.data_source and widget.data_source not in VALID_DATA_SOURCES:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid data source. Valid sources: {', '.join(VALID_DATA_SOURCES)}",
             )
         if (
@@ -233,7 +233,7 @@ async def update_widget(
             and widget.refresh_interval not in VALID_REFRESH_INTERVALS
         ):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid refresh interval. Valid values: {', '.join(str(v) for v in VALID_REFRESH_INTERVALS)}",
             )
 
@@ -251,31 +251,31 @@ async def update_widget(
         )
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Dashboard or widget not found",
             )
         return result
     except HTTPException:
         raise
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update widget: {str(e)}",
         )
 
 
 @router.delete(
     "/dashboards/{dashboard_id}/widgets/{widget_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=http_status.HTTP_204_NO_CONTENT,
 )
 async def delete_widget(dashboard_id: str, widget_id: str, user=Depends(get_auth_user)):
     """Remove a widget from a dashboard."""
     deleted = dashboard_service.delete_widget(dashboard_id, widget_id, user.id)
     if not deleted:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Dashboard or widget not found",
         )
 
@@ -289,7 +289,7 @@ async def get_dashboard_data(dashboard_id: str, user=Depends(get_auth_user)):
     data = dashboard_service.get_dashboard_data(dashboard_id, user.id)
     if not data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Dashboard not found",
         )
     return data

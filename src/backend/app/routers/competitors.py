@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 from app.core.cache import cache
@@ -166,7 +166,7 @@ class ContentGapAnalysisResponse(BaseModel):
 @router.post(
     "/competitors",
     response_model=CompetitorResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def add_competitor(
     request: AddCompetitorRequest,
@@ -194,7 +194,7 @@ async def add_competitor(
     ]
     if request.platform not in valid_platforms:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid platform. Must be one of: {', '.join(valid_platforms)}",
         )
 
@@ -210,7 +210,7 @@ async def add_competitor(
 
         if not competitor:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create competitor",
             )
 
@@ -227,11 +227,11 @@ async def add_competitor(
             or "duplicate" in str(e).lower()
         ):
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
+                status_code=http_status.HTTP_409_CONFLICT,
                 detail=f"You are already tracking this competitor ({request.platform}/{request.handle})",
             )
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add competitor: {str(e)}",
         )
 
@@ -263,7 +263,7 @@ async def list_competitors(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch competitors: {str(e)}",
         )
 
@@ -282,7 +282,7 @@ async def remove_competitor(competitor_id: UUID, user=Depends(get_auth_user)):
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Competitor not found"
+                status_code=http_status.HTTP_404_NOT_FOUND, detail="Competitor not found"
             )
 
         # Invalidate competitor caches for this user
@@ -297,7 +297,7 @@ async def remove_competitor(competitor_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to remove competitor: {str(e)}",
         )
 
@@ -338,7 +338,7 @@ async def get_competitor_content(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch competitor content: {str(e)}",
         )
 
@@ -379,7 +379,7 @@ async def get_performance_analysis(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch performance analysis: {str(e)}",
         )
 
@@ -413,7 +413,7 @@ async def get_content_gaps(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch content gaps: {str(e)}",
         )
 
@@ -438,7 +438,7 @@ async def analyze_content_gaps(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to analyze content gaps: {str(e)}",
         )
 
@@ -469,7 +469,7 @@ async def get_topic_overlap(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to analyze topic overlap: {str(e)}",
         )
 
@@ -500,7 +500,7 @@ async def get_benchmark_comparison(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch benchmark: {str(e)}",
         )
 
@@ -527,7 +527,7 @@ async def refresh_competitor_data(
 
         if not result["success"]:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail=result.get("error", "Competitor not found"),
             )
 
@@ -541,7 +541,7 @@ async def refresh_competitor_data(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to refresh competitor data: {str(e)}",
         )
 
@@ -564,7 +564,7 @@ async def get_competitor_details(competitor_id: UUID, user=Depends(get_auth_user
 
         if not competitor:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Competitor not found"
+                status_code=http_status.HTTP_404_NOT_FOUND, detail="Competitor not found"
             )
 
         competitor_item = CompetitorResponse(**competitor)
@@ -576,7 +576,7 @@ async def get_competitor_details(competitor_id: UUID, user=Depends(get_auth_user
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch competitor details: {str(e)}",
         )
 

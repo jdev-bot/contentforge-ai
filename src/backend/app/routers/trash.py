@@ -5,7 +5,7 @@ Provides endpoints for soft-deleted content management.
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status as http_status
 from pydantic import BaseModel
 
 from app.core.trash import (
@@ -86,7 +86,7 @@ async def get_trash(item_type: Optional[str] = None, user=Depends(get_auth_user)
         ]
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch trash: {str(e)}",
         )
 
@@ -101,7 +101,7 @@ async def get_trash_statistics(user=Depends(get_auth_user)):
         return TrashStatsResponse(**stats)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch trash stats: {str(e)}",
         )
 
@@ -116,7 +116,7 @@ async def restore_item(item_id: str, user=Depends(get_auth_user)):
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Item not found in trash"
+                status_code=http_status.HTTP_404_NOT_FOUND, detail="Item not found in trash"
             )
 
         return RestoreResponse(
@@ -126,7 +126,7 @@ async def restore_item(item_id: str, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to restore item: {str(e)}",
         )
 
@@ -142,7 +142,7 @@ async def permanently_delete_item(item_id: str, user=Depends(get_auth_user)):
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Item not found in trash"
+                status_code=http_status.HTTP_404_NOT_FOUND, detail="Item not found in trash"
             )
 
         return DeleteResponse(
@@ -152,7 +152,7 @@ async def permanently_delete_item(item_id: str, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete item: {str(e)}",
         )
 
@@ -172,6 +172,6 @@ async def empty_user_trash(user=Depends(get_auth_user)):
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to empty trash: {str(e)}",
         )

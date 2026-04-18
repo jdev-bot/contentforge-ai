@@ -8,7 +8,7 @@ from enum import Enum
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, EmailStr
 
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
@@ -132,7 +132,7 @@ def check_is_owner(supabase, org_id: str, user_id: str) -> bool:
 
 
 @router.post(
-    "/", response_model=OrganizationResponse, status_code=status.HTTP_201_CREATED
+    "/", response_model=OrganizationResponse, status_code=http_status.HTTP_201_CREATED
 )
 async def create_organization(
     org_data: OrganizationCreate, user=Depends(get_auth_user)
@@ -151,7 +151,7 @@ async def create_organization(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create organization",
             )
 
@@ -169,7 +169,7 @@ async def create_organization(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
@@ -268,7 +268,7 @@ async def list_organizations(
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -285,7 +285,7 @@ async def get_organization(org_id: UUID, user=Depends(get_auth_user)):
         has_access, role = check_org_access(supabase, str(org_id), user_id)
         if not has_access:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="You don't have access to this organization",
             )
 
@@ -300,7 +300,7 @@ async def get_organization(org_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Organization not found",
             )
 
@@ -352,7 +352,7 @@ async def get_organization(org_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -370,7 +370,7 @@ async def update_organization(
         # Check admin access
         if not check_is_admin(supabase, str(org_id), user_id):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to update this organization",
             )
 
@@ -399,7 +399,7 @@ async def update_organization(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Organization not found",
             )
 
@@ -412,12 +412,12 @@ async def update_organization(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
 
-@router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{org_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_organization(org_id: UUID, user=Depends(get_auth_user)):
     """Delete an organization. Only the owner can delete."""
     supabase = get_supabase_admin_client()
@@ -428,7 +428,7 @@ async def delete_organization(org_id: UUID, user=Depends(get_auth_user)):
         # Check ownership
         if not check_is_owner(supabase, str(org_id), user_id):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Only the owner can delete this organization",
             )
 
@@ -443,7 +443,7 @@ async def delete_organization(org_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Organization not found",
             )
 
@@ -453,7 +453,7 @@ async def delete_organization(org_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -474,7 +474,7 @@ async def invite_member(
         # Check admin access
         if not check_is_admin(supabase, str(org_id), user_id):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to invite members",
             )
 
@@ -506,7 +506,7 @@ async def invite_member(
 
                 if existing_member.data:
                     raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
+                        status_code=http_status.HTTP_400_BAD_REQUEST,
                         detail="User is already a member of this organization",
                     )
             else:
@@ -531,7 +531,7 @@ async def invite_member(
 
             if not result.data:
                 raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to add member",
                 )
 
@@ -555,7 +555,7 @@ async def invite_member(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
@@ -572,7 +572,7 @@ async def list_members(org_id: UUID, user=Depends(get_auth_user)):
         has_access, _ = check_org_access(supabase, str(org_id), user_id)
         if not has_access:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="You don't have access to this organization",
             )
 
@@ -614,7 +614,7 @@ async def list_members(org_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -637,14 +637,14 @@ async def update_member_role(
         # Check admin access
         if not check_is_admin(supabase, str(org_id), user_id):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to update member roles",
             )
 
         # Prevent changing own role (owners should transfer ownership instead)
         if str(member_id) == user_id:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="You cannot change your own role. Use ownership transfer instead.",
             )
 
@@ -659,7 +659,7 @@ async def update_member_role(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Member not found",
             )
 
@@ -691,12 +691,12 @@ async def update_member_role(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
 
-@router.delete("/{org_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{org_id}/members/{member_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def remove_member(org_id: UUID, member_id: UUID, user=Depends(get_auth_user)):
     """Remove a member from the organization. Admins can remove members, users can remove themselves."""
     supabase = get_supabase_admin_client()
@@ -716,7 +716,7 @@ async def remove_member(org_id: UUID, member_id: UUID, user=Depends(get_auth_use
 
         if not member_result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Member not found",
             )
 
@@ -728,7 +728,7 @@ async def remove_member(org_id: UUID, member_id: UUID, user=Depends(get_auth_use
 
         if not is_admin and not is_self:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to remove this member",
             )
 
@@ -744,7 +744,7 @@ async def remove_member(org_id: UUID, member_id: UUID, user=Depends(get_auth_use
             member["user_id"]
         ):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Cannot remove the organization owner. Transfer ownership first.",
             )
 
@@ -759,7 +759,7 @@ async def remove_member(org_id: UUID, member_id: UUID, user=Depends(get_auth_use
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -780,14 +780,14 @@ async def transfer_ownership(
         # Check ownership
         if not check_is_owner(supabase, str(org_id), user_id):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Only the owner can transfer ownership",
             )
 
         # Cannot transfer to self
         if str(transfer_data.new_owner_id) == user_id:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="You are already the owner",
             )
 
@@ -803,7 +803,7 @@ async def transfer_ownership(
 
         if not new_owner_member.data:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="New owner must be a member of the organization",
             )
 
@@ -817,7 +817,7 @@ async def transfer_ownership(
 
         if not org_result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Organization not found",
             )
 
@@ -836,12 +836,12 @@ async def transfer_ownership(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
 
-@router.post("/{org_id}/leave", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/{org_id}/leave", status_code=http_status.HTTP_204_NO_CONTENT)
 async def leave_organization(org_id: UUID, user=Depends(get_auth_user)):
     """Leave an organization. The owner must transfer ownership before leaving."""
     supabase = get_supabase_admin_client()
@@ -852,7 +852,7 @@ async def leave_organization(org_id: UUID, user=Depends(get_auth_user)):
         # Check if user is owner
         if check_is_owner(supabase, str(org_id), user_id):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Owner cannot leave the organization. Transfer ownership or delete the organization.",
             )
 
@@ -868,7 +868,7 @@ async def leave_organization(org_id: UUID, user=Depends(get_auth_user)):
 
         if not member_result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="You are not a member of this organization",
             )
 
@@ -882,6 +882,6 @@ async def leave_organization(org_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )

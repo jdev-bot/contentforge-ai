@@ -6,7 +6,7 @@ import logging
 from typing import Literal, Optional
 
 import stripe
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status as http_status
 from pydantic import BaseModel
 
 from app.core.config import get_settings
@@ -129,7 +129,7 @@ async def create_checkout_session(
     """Create a Stripe Checkout session for subscription."""
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Stripe is not configured",
         )
 
@@ -213,11 +213,11 @@ async def create_checkout_session(
 
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error creating checkout: {e}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         logger.error(f"Error creating checkout session: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create checkout session: {str(e)}",
         )
 
@@ -385,7 +385,7 @@ async def create_portal_session(request: Request, user=Depends(get_auth_user)):
     """Create a Stripe Customer Portal session for managing subscription."""
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Stripe is not configured",
         )
 
@@ -404,7 +404,7 @@ async def create_portal_session(request: Request, user=Depends(get_auth_user)):
 
         if not customer_id:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="No subscription found"
+                status_code=http_status.HTTP_404_NOT_FOUND, detail="No subscription found"
             )
 
         # Create portal session
@@ -417,7 +417,7 @@ async def create_portal_session(request: Request, user=Depends(get_auth_user)):
 
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error creating portal: {e}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/stripe/webhook")
@@ -426,7 +426,7 @@ async def stripe_webhook(request: Request):
     if not settings.STRIPE_WEBHOOK_SECRET:
         logger.error("Webhook secret not configured")
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Webhook secret not configured",
         )
 
@@ -436,7 +436,7 @@ async def stripe_webhook(request: Request):
     if not sig_header:
         logger.error("Missing stripe-signature header")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing signature header"
+            status_code=http_status.HTTP_400_BAD_REQUEST, detail="Missing signature header"
         )
 
     try:
@@ -447,17 +447,17 @@ async def stripe_webhook(request: Request):
     except ValueError as e:
         logger.error(f"Invalid webhook payload: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payload"
+            status_code=http_status.HTTP_400_BAD_REQUEST, detail="Invalid payload"
         )
     except stripe.error.SignatureVerificationError as e:
         logger.error(f"Invalid webhook signature: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature"
+            status_code=http_status.HTTP_400_BAD_REQUEST, detail="Invalid signature"
         )
     except Exception as e:
         logger.error(f"Webhook error: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Webhook error"
+            status_code=http_status.HTTP_400_BAD_REQUEST, detail="Webhook error"
         )
 
     # Handle the event
@@ -775,7 +775,7 @@ async def sync_subscription(user=Depends(get_auth_user)):
     """Force sync subscription status from Stripe to local database."""
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Stripe is not configured",
         )
 
@@ -844,6 +844,6 @@ async def sync_subscription(user=Depends(get_auth_user)):
     except Exception as e:
         logger.error(f"Error syncing subscription: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to sync subscription: {str(e)}",
         )

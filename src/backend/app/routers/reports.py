@@ -5,7 +5,7 @@ Report scheduling router with generation and download endpoints.
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status as http_status
 from pydantic import BaseModel, EmailStr, Field
 
 from app.core.supabase import get_supabase_client
@@ -57,23 +57,23 @@ async def list_reports(user=Depends(get_auth_user)):
         return reports
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list reports: {str(e)}",
         )
 
 
-@router.post("/reports", status_code=status.HTTP_201_CREATED)
+@router.post("/reports", status_code=http_status.HTTP_201_CREATED)
 async def create_report(report: ReportCreate, user=Depends(get_auth_user)):
     """Create a new scheduled report."""
     try:
         if report.report_type not in VALID_REPORT_TYPES:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid report type. Valid types: {', '.join(VALID_REPORT_TYPES)}",
             )
         if report.format not in VALID_FORMATS:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid format. Valid formats: {', '.join(VALID_FORMATS)}",
             )
 
@@ -91,10 +91,10 @@ async def create_report(report: ReportCreate, user=Depends(get_auth_user)):
     except HTTPException:
         raise
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create report: {str(e)}",
         )
 
@@ -105,7 +105,7 @@ async def get_report(report_id: str, user=Depends(get_auth_user)):
     report = report_service.get_report(report_id, user.id)
     if not report:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Report not found",
         )
     return report
@@ -119,12 +119,12 @@ async def update_report(
     try:
         if report.report_type and report.report_type not in VALID_REPORT_TYPES:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid report type. Valid types: {', '.join(VALID_REPORT_TYPES)}",
             )
         if report.format and report.format not in VALID_FORMATS:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid format. Valid formats: {', '.join(VALID_FORMATS)}",
             )
 
@@ -141,28 +141,28 @@ async def update_report(
         )
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Report not found",
             )
         return result
     except HTTPException:
         raise
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update report: {str(e)}",
         )
 
 
-@router.delete("/reports/{report_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/reports/{report_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_report(report_id: str, user=Depends(get_auth_user)):
     """Delete a scheduled report."""
     deleted = report_service.delete_report(report_id, user.id)
     if not deleted:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Report not found",
         )
 
@@ -174,7 +174,7 @@ async def generate_report(report_id: str, user=Depends(get_auth_user)):
         result = report_service.generate_report(report_id, user.id)
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Report not found",
             )
         return result
@@ -182,7 +182,7 @@ async def generate_report(report_id: str, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate report: {str(e)}",
         )
 
@@ -200,7 +200,7 @@ async def download_report(report_id: str, run_id: str, user=Depends(get_auth_use
     result = report_service.download_report(report_id, run_id, user.id)
     if not result:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Report run not found",
         )
     return result

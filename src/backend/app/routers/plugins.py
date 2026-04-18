@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 from app.core.supabase import get_supabase_client
@@ -239,14 +239,14 @@ async def get_plugin(
     plugin = await service.get_plugin(str(plugin_id))
     if not plugin:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Plugin not found",
         )
     return plugin
 
 
 @router.post(
-    "/plugins", response_model=PluginResponse, status_code=status.HTTP_201_CREATED
+    "/plugins", response_model=PluginResponse, status_code=http_status.HTTP_201_CREATED
 )
 async def create_plugin(
     plugin_data: PluginCreate,
@@ -265,7 +265,7 @@ async def create_plugin(
     errors = service.validate_permissions(data_dict, plugin_data.hooks)
     if errors:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Permission validation failed: {'; '.join(errors)}",
         )
 
@@ -273,7 +273,7 @@ async def create_plugin(
         plugin = await service.create_plugin(data_dict, user_id)
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc),
         )
     return plugin
@@ -293,18 +293,18 @@ async def update_plugin(
     try:
         plugin = await service.update_plugin(str(plugin_id), user_id, data_dict)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail=str(exc))
     except PermissionError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
         )
 
     return plugin
 
 
-@router.delete("/plugins/{plugin_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/plugins/{plugin_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_plugin(
     plugin_id: UUID,
     user=Depends(get_auth_user),
@@ -316,9 +316,9 @@ async def delete_plugin(
     try:
         await service.delete_plugin(str(plugin_id), user_id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail=str(exc))
     except PermissionError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail=str(exc))
 
     return None
 
@@ -354,7 +354,7 @@ async def list_installed_plugins(
 @router.post(
     "/organizations/{organization_id}/plugins/install",
     response_model=InstalledPluginResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def install_plugin(
     organization_id: UUID,
@@ -378,10 +378,10 @@ async def install_plugin(
             custom_config=install_data.custom_config,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
         )
 
     return installed
@@ -403,7 +403,7 @@ async def get_installed_plugin(
     )
     if not installed:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Installed plugin not found",
         )
     return installed
@@ -411,7 +411,7 @@ async def get_installed_plugin(
 
 @router.delete(
     "/organizations/{organization_id}/plugins/{install_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=http_status.HTTP_204_NO_CONTENT,
 )
 async def uninstall_plugin(
     organization_id: UUID,
@@ -425,7 +425,7 @@ async def uninstall_plugin(
     try:
         await service.uninstall_plugin(str(install_id), str(organization_id), user_id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail=str(exc))
 
     return None
 
@@ -446,7 +446,7 @@ async def get_plugin_config(
     try:
         config = await service.get_plugin_config(str(install_id), str(organization_id))
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail=str(exc))
     return {"config": config}
 
 
@@ -464,10 +464,10 @@ async def update_plugin_config(
             str(install_id), str(organization_id), config_data.config
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
         )
     return result
 
@@ -491,10 +491,10 @@ async def toggle_plugin(
             str(install_id), str(organization_id), toggle_data.is_enabled
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
         )
     return result
 

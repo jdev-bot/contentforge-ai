@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status as http_status
 from pydantic import BaseModel
 
 from app.core.cache import cache, CACHE_TTL
@@ -44,7 +44,7 @@ class ProjectResponse(ProjectBase):
 
 
 @router.post(
-    "/projects", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED
+    "/projects", response_model=ProjectResponse, status_code=http_status.HTTP_201_CREATED
 )
 async def create_project(project: ProjectCreate, user=Depends(get_auth_user)):
     """Create a new project."""
@@ -64,7 +64,7 @@ async def create_project(project: ProjectCreate, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create project",
             )
 
@@ -78,7 +78,7 @@ async def create_project(project: ProjectCreate, user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
@@ -111,7 +111,7 @@ async def list_projects(user=Depends(get_auth_user), is_active: Optional[bool] =
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -139,7 +139,7 @@ async def get_project(project_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Project not found",
             )
 
@@ -152,7 +152,7 @@ async def get_project(project_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -177,7 +177,7 @@ async def update_project(
 
         if not existing.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Project not found",
             )
 
@@ -206,7 +206,7 @@ async def update_project(
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update project",
             )
 
@@ -220,12 +220,12 @@ async def update_project(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
 
-@router.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/projects/{project_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_project(project_id: UUID, user=Depends(get_auth_user)):
     """Delete a project (soft delete)."""
     supabase = get_supabase_admin_client()
@@ -242,7 +242,7 @@ async def delete_project(project_id: UUID, user=Depends(get_auth_user)):
 
         if not result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Project not found",
             )
 
@@ -256,6 +256,6 @@ async def delete_project(project_id: UUID, user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )

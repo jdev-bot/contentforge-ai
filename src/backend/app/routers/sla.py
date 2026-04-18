@@ -13,7 +13,7 @@ This router provides endpoints for:
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field, field_validator
 
 from app.services.sla_service import SLAMetricType, SLASeverity, sla_service
@@ -224,7 +224,7 @@ from app.routers.auth import get_auth_user
 @router.post(
     "/sla/policies",
     response_model=SLAPolicyResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def create_sla_policy(
     policy: SLAPolicyCreate,
@@ -242,17 +242,17 @@ async def create_sla_policy(
         )
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create SLA policy",
             )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create SLA policy: {str(e)}",
         )
 
@@ -265,7 +265,7 @@ async def list_sla_policies(user=Depends(get_auth_user)):
         return policies
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list SLA policies: {str(e)}",
         )
 
@@ -281,7 +281,7 @@ async def update_sla_policy(
         update_data = updates.model_dump(exclude_unset=True)
         if not update_data:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="No fields to update",
             )
         result = await sla_service.update_policy(
@@ -291,7 +291,7 @@ async def update_sla_policy(
         )
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="SLA policy not found or you don't have permission",
             )
         return result
@@ -299,12 +299,12 @@ async def update_sla_policy(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update SLA policy: {str(e)}",
         )
 
 
-@router.delete("/sla/policies/{policy_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/sla/policies/{policy_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_sla_policy(
     policy_id: UUID,
     user=Depends(get_auth_user),
@@ -314,14 +314,14 @@ async def delete_sla_policy(
         success = await sla_service.delete_policy(policy_id=policy_id, user_id=user.id)
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="SLA policy not found or you don't have permission",
             )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete SLA policy: {str(e)}",
         )
 
@@ -332,7 +332,7 @@ async def delete_sla_policy(
 @router.post(
     "/sla/metrics",
     response_model=SLAMetricResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
 )
 async def record_sla_metric(
     metric: SLAMetricRecord,
@@ -348,7 +348,7 @@ async def record_sla_metric(
         )
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to record SLA metric",
             )
         return result
@@ -356,7 +356,7 @@ async def record_sla_metric(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to record SLA metric: {str(e)}",
         )
 
@@ -372,7 +372,7 @@ async def get_sla_dashboard(user=Depends(get_auth_user)):
         return dashboard
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get SLA dashboard: {str(e)}",
         )
 
@@ -400,7 +400,7 @@ async def list_sla_alerts(
         return SLAAlertListResponse(alerts=alerts, total=len(alerts))
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list SLA alerts: {str(e)}",
         )
 
@@ -419,7 +419,7 @@ async def acknowledge_sla_alert(
         )
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="SLA alert not found or you don't have permission",
             )
         return AcknowledgeAlertResponse(
@@ -429,7 +429,7 @@ async def acknowledge_sla_alert(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to acknowledge SLA alert: {str(e)}",
         )
 
@@ -451,7 +451,7 @@ async def check_sla_compliance(
         )
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="SLA policy not found or you don't have permission",
             )
         return result
@@ -459,7 +459,7 @@ async def check_sla_compliance(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to check SLA compliance: {str(e)}",
         )
 
@@ -478,7 +478,7 @@ async def get_sla_uptime(
         return result
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get uptime SLA: {str(e)}",
         )
 
@@ -494,7 +494,7 @@ async def get_sla_response_time(
         return result
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get response time SLA: {str(e)}",
         )
 
@@ -510,6 +510,6 @@ async def get_sla_error_rate(
         return result
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get error rate SLA: {str(e)}",
         )

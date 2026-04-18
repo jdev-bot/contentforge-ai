@@ -5,7 +5,7 @@ Usage tracking router for monitoring API consumption.
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status as http_status
 from pydantic import UUID4, BaseModel
 
 from app.core.rate_limit import UsageStats, get_usage_history, get_user_usage_stats
@@ -80,7 +80,7 @@ async def get_current_usage(user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve usage statistics: {str(e)}",
         )
 
@@ -113,7 +113,7 @@ async def get_usage_history_endpoint(limit: int = 100, user=Depends(get_auth_use
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve usage history: {str(e)}",
         )
 
@@ -166,6 +166,6 @@ async def get_usage_summary(user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve usage summary: {str(e)}",
         )

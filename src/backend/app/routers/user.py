@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status as http_status
 from pydantic import BaseModel
 
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
@@ -165,7 +165,7 @@ async def export_user_data(user=Depends(get_auth_user)):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to export user data: {str(e)}",
         )
 
@@ -238,7 +238,7 @@ async def delete_user_account(user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to schedule account deletion: {str(e)}",
         )
 
@@ -263,7 +263,7 @@ async def restore_user_account(user=Depends(get_auth_user)):
 
         if not deletion_result.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="No pending deletion request found for this account",
             )
 
@@ -290,7 +290,7 @@ async def restore_user_account(user=Depends(get_auth_user)):
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to restore account: {str(e)}",
         )
 

@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import httpx
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status as http_status
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
@@ -91,7 +91,7 @@ def check_disk_space() -> Dict[str, Any]:
         return {"status": "unknown", "error": str(e)}
 
 
-@router.get("/health", response_model=HealthResponse, status_code=status.HTTP_200_OK)
+@router.get("/health", response_model=HealthResponse, status_code=http_status.HTTP_200_OK)
 async def health_check():
     """
     Basic health check endpoint.
@@ -127,7 +127,7 @@ async def readiness_check():
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={
                 "status": "not_ready",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -405,7 +405,7 @@ async def detailed_health_check():
 
     if critical_unhealthy or overall_status == "unhealthy":
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=DetailedHealthResponse(
                 status="unhealthy",
                 timestamp=datetime.now(timezone.utc).isoformat(),
