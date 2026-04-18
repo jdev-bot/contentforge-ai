@@ -745,7 +745,8 @@ async def get_webhook_logs(
     Requires admin privileges.
     """
     # Check if user is admin
-    if not user.get("is_admin", False):
+    from app.routers.admin import is_admin_user
+    if not is_admin_user(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
         )
