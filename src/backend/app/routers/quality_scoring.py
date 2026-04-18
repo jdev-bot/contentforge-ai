@@ -271,5 +271,6 @@ async def get_quality_history_by_id(
     """Get quality score history by content ID (frontend-friendly alias).
 
     Alias for GET /quality-scoring/history/{content_id}.
+    Converts days parameter to limit.
     """
-    return await get_quality_history(content_id=content_id, days=days, user=user)
+    return await get_quality_history(content_id=content_id, limit=days, user=user)
