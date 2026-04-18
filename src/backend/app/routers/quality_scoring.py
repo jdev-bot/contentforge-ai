@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status as http_status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, Field
 
 from app.core.rate_limit import (
@@ -21,7 +21,7 @@ from app.core.rate_limit import (
     check_and_increment_usage,
     enforce_subscription_limit,
 )
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_client, get_supabase_admin_client
 from app.routers.auth import get_auth_user
 from app.services.quality_service import quality_service
 
@@ -205,3 +205,71 @@ async def get_quality_suggestions(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
+
+
+@router.get("/quality-scoring/{content_id}", response_model=QualityScoreResponse)
+async def get_quality_score_by_id(
+    content_id: UUID,
+    user=Depends(get_auth_user),
+):
+    """Get quality score for content by ID (frontend-friendly alias).
+
+    Alias for GET /quality-scoring/content/{content_id}.
+    """
+    return await get_content_quality(content_id=content_id, user=user)
+
+
+@router.post("/quality-scoring/{content_id}/analyze", response_model=QualityScoreResponse)
+async def analyze_quality_by_id(
+    content_id: UUID,
+    user=Depends(get_auth_user),
+    _: UsageStats = Depends(enforce_subscription_limit),
+):
+    """Analyze quality score by content ID (frontend-friendly alias).
+
+    Fetches the content text from the database, then analyzes it.
+    """
+    check_and_increment_usage(str(user.id))
+    supabase = get_supabase_admin_client()
+    try:
+        result = (
+            supabase.table("content")
+            .select("body, title")
+            .eq("id", str(content_id))
+            .eq("user_id", str(user.id))
+            .single()
+            .execute()
+        )
+        if not result.data:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Content not found",
+            )
+        text = result.data.get("body", "") or result.data.get("title", "")
+        if not text:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="Content has no text to analyze",
+            )
+        request = QualityAnalyzeRequest(text=text)
+        return await analyze_quality(request=request, user=user, _=_)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+@router.get("/quality-scoring/{content_id}/history", response_model=QualityHistoryResponse)
+async def get_quality_history_by_id(
+    content_id: UUID,
+    days: int = Query(default=30, ge=1, le=365),
+    user=Depends(get_auth_user),
+):
+    """Get quality score history by content ID (frontend-friendly alias).
+
+    Alias for GET /quality-scoring/history/{content_id}.
+    """
+    return await get_quality_history(content_id=content_id, days=days, user=user)
