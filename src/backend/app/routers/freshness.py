@@ -572,6 +572,39 @@ async def get_freshness_dashboard(user=Depends(get_auth_user)):
         )
 
 
+@router.post("/freshness/{content_id}/analyze", response_model=FreshnessAnalyzeResponse)
+async def analyze_freshness_by_id(
+    content_id: UUID,
+    request: FreshnessAnalyzeRequest = FreshnessAnalyzeRequest(),
+    user=Depends(get_auth_user),
+):
+    """Analyze content freshness by content ID (frontend-friendly alias).
+
+    Routes to the same logic as POST /freshness/analyze/{content_id}.
+    """
+    return await analyze_content_freshness(
+        content_id=content_id, request=request, user=user
+    )
+
+
+@router.post("/freshness/bulk-refresh", response_model=BulkAnalyzeResponse)
+async def bulk_refresh_freshness(
+    content_ids: Optional[List[UUID]] = None,
+    user=Depends(get_auth_user),
+):
+    """Bulk refresh freshness scores (frontend-friendly alias).
+
+    Routes to the same logic as POST /freshness/bulk-analyze.
+    """
+    return await bulk_analyze_content(content_ids=content_ids, user=user)
+
+
+@router.get("/freshness/metrics", response_model=FreshnessDashboardResponse)
+async def get_freshness_metrics(user=Depends(get_auth_user)):
+    """Get freshness metrics overview (frontend-friendly alias)."""
+    return await get_freshness_dashboard(user=user)
+
+
 @router.get("/freshness/{content_id}", response_model=FreshnessScoreResponse)
 async def get_freshness_score(content_id: UUID, user=Depends(get_auth_user)):
     """

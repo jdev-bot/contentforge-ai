@@ -799,3 +799,19 @@ async def export_user_activity_json(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to export user activity: {str(e)}",
         )
+
+
+@router.get("/analytics/export")
+async def export_analytics(
+    format: str = Query(default="csv", description="Export format: csv or json"),
+    days: int = Query(default=30, ge=1, le=365, description="Number of days to export"),
+    user=Depends(get_auth_user),
+):
+    """Export analytics data in CSV or JSON format.
+
+    Frontend-friendly alias that supports the ?format= query parameter.
+    """
+    if format.lower() == "json":
+        return await export_user_activity_json(days=days, user=user)
+    else:
+        return await export_user_activity(format="csv", days=days, user=user)

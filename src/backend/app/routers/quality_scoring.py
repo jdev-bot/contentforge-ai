@@ -2,11 +2,11 @@
 Content Quality Scoring API Router.
 
 Endpoints:
-- POST   /api/v1/quality/analyze              — Analyze content quality
-- GET    /api/v1/quality/content/{content_id}  — Get quality score for existing content
-- GET    /api/v1/quality/history/{content_id}  — Get quality score history
-- POST   /api/v1/quality/batch                 — Batch analyze multiple items
-- GET    /api/v1/quality/suggestions/{content_id} — Get improvement suggestions
+- POST   /api/v1/quality-scoring/analyze              — Analyze content quality
+- GET    /api/v1/quality-scoring/content/{content_id}  — Get quality score for existing content
+- GET    /api/v1/quality-scoring/history/{content_id}  — Get quality score history
+- POST   /api/v1/quality-scoring/batch                 — Batch analyze multiple items
+- GET    /api/v1/quality-scoring/suggestions/{content_id} — Get improvement suggestions
 """
 
 from datetime import datetime
@@ -86,7 +86,7 @@ class QualitySuggestionsResponse(BaseModel):
 # ---------- Endpoints ---------- #
 
 
-@router.post("/quality/analyze", response_model=QualityScoreResponse)
+@router.post("/quality-scoring/analyze", response_model=QualityScoreResponse)
 async def analyze_quality(
     request: QualityAnalyzeRequest,
     user=Depends(get_auth_user),
@@ -116,7 +116,7 @@ async def analyze_quality(
         )
 
 
-@router.get("/quality/content/{content_id}", response_model=QualityScoreResponse)
+@router.get("/quality-scoring/content/{content_id}", response_model=QualityScoreResponse)
 async def get_content_quality(
     content_id: UUID,
     user=Depends(get_auth_user),
@@ -139,7 +139,7 @@ async def get_content_quality(
         )
 
 
-@router.get("/quality/history/{content_id}", response_model=QualityHistoryResponse)
+@router.get("/quality-scoring/history/{content_id}", response_model=QualityHistoryResponse)
 async def get_quality_history(
     content_id: UUID,
     limit: int = 50,
@@ -163,7 +163,7 @@ async def get_quality_history(
         )
 
 
-@router.post("/quality/batch", response_model=List[QualityScoreResponse])
+@router.post("/quality-scoring/batch", response_model=List[QualityScoreResponse])
 async def batch_analyze_quality(
     request: QualityBatchRequest,
     user=Depends(get_auth_user),
@@ -184,7 +184,7 @@ async def batch_analyze_quality(
 
 
 @router.get(
-    "/quality/suggestions/{content_id}", response_model=QualitySuggestionsResponse
+    "/quality-scoring/suggestions/{content_id}", response_model=QualitySuggestionsResponse
 )
 async def get_quality_suggestions(
     content_id: UUID,

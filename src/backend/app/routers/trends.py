@@ -624,3 +624,19 @@ async def get_trend_details(topic_id: UUID, user=Depends(get_auth_user)):
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch trend details: {str(e)}",
         )
+
+
+@router.post("/trends/{topic_id}/generate", response_model=GeneratedContentResponse)
+async def generate_content_from_trend_by_id(
+    topic_id: str,
+    request: GenerateContentRequest,
+    user=Depends(get_auth_user),
+    _: UsageStats = Depends(enforce_subscription_limit),
+):
+    """Generate content based on a trending topic by ID (frontend-friendly alias).
+
+    Uses the topic_id as the topic string for content generation.
+    """
+    # Override the request topic with the topic_id from the path
+    request.topic = topic_id
+    return await generate_content_from_trend(request=request, user=user, _=_)

@@ -2,11 +2,14 @@
 Sentiment Analysis API Router.
 
 Endpoints:
-- POST   /api/v1/sentiment/analyze              — Analyze sentiment of text
-- GET    /api/v1/sentiment/content/{content_id}  — Get sentiment for existing content
-- POST   /api/v1/sentiment/batch                — Batch analyze sentiment
-- GET    /api/v1/sentiment/trends/{content_id}   — Get sentiment trends over time
-- GET    /api/v1/sentiment/distribution          — Get sentiment distribution across all content
+- POST   /api/v1/sentiment/analyze                    — Analyze sentiment of text
+- POST   /api/v1/sentiment/{content_id}/analyze        — Analyze sentiment for existing content
+- GET    /api/v1/sentiment/content/{content_id}         — Get sentiment for existing content
+- GET    /api/v1/sentiment/{content_id}                 — Get sentiment for existing content (alias)
+- POST   /api/v1/sentiment/batch                       — Batch analyze sentiment
+- GET    /api/v1/sentiment/trends/{content_id}          — Get sentiment trends over time
+- GET    /api/v1/sentiment/{content_id}/trend           — Get sentiment trends over time (alias)
+- GET    /api/v1/sentiment/distribution                 — Get sentiment distribution across all content
 """
 
 from datetime import datetime
@@ -233,6 +236,59 @@ async def get_sentiment_trends(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
+
+
+@router.get("/sentiment/{content_id}", response_model=SentimentResponse)
+async def get_sentiment_by_content_id(
+    content_id: UUID,
+    user=Depends(get_auth_user),
+):
+    """Get sentiment analysis for existing content (frontend-friendly alias)."""
+    return await get_content_sentiment(content_id=content_id, user=user)
+
+
+@router.post("/sentiment/{content_id}/analyze", response_model=SentimentResponse)
+async def analyze_sentiment_by_content_id(
+    content_id: UUID,
+    user=Depends(get_auth_user),
+    _: UsageStats = Depends(enforce_subscription_limit),
+):
+    """Analyze sentiment for existing content by ID (frontend-friendly alias)."""
+    check_and_increment_usage(str(user.id))
+    try:
+        analysis = await sentiment_service.get_analysis(
+            content_id=content_id,
+            user_id=user.id,
+        )
+        if analysis is None:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Content not found",
+            )
+        emotions = EmotionScores(**analysis["emotions"])
+        aspects = [AspectSentiment(**a) for a in analysis.get("aspects", [])]
+        return SentimentResponse(
+            **{k: v for k, v in analysis.items() if k != "emotions" and k != "aspects"},
+            emotions=emotions,
+            aspects=aspects,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+@router.get("/sentiment/{content_id}/trend", response_model=SentimentTrendsResponse)
+async def get_sentiment_trend_alias(
+    content_id: UUID,
+    days: int = 30,
+    user=Depends(get_auth_user),
+):
+    """Get sentiment trends over time (frontend-friendly alias)."""
+    return await get_sentiment_trends(content_id=content_id, limit=days, user=user)
 
 
 @router.get("/sentiment/distribution", response_model=SentimentDistributionResponse)

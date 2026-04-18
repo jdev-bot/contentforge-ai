@@ -452,3 +452,14 @@ async def list_categorizations(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list categorizations: {str(e)}",
         )
+
+
+@router.get("/categorization")
+async def list_categorizations_alias(
+    category: Optional[str] = Query(None, description="Filter by category"),
+    industry: Optional[str] = Query(None, description="Filter by industry vertical"),
+    limit: int = Query(20, ge=1, le=100, description="Number of results to return"),
+    user=Depends(get_auth_user),
+):
+    """List categorizations (frontend-friendly alias for /categorization/list)."""
+    return await list_categorizations(category=category, industry=industry, limit=limit, user=user)
