@@ -215,10 +215,10 @@ All three providers have **authenticated CLIs installed on this machine (srv1503
 
 ## Git Status
 
-- **Local HEAD:** `ba11c3e` (feat(ui): comprehensive UX overhaul)
+- **Local HEAD:** `2335fde` (feat(ui): apply PageHeader to all tab components)
 - **Remote HEAD:** `ba11c3e` (in sync)
 - **Render live:** `dcd0610` (route ordering fixes — no backend changes in UI commit)
-- **Vercel deploy:** `frontend-32bnupbh9` (deployed 2026-04-20 12:33 UTC ✅)
+- **Vercel deploy:** `frontend-qny3rx0zl` (deployed 2026-04-20 14:25 UTC ✅)
 
 ---
 
