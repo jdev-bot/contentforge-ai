@@ -140,7 +140,7 @@ All three providers have **authenticated CLIs installed on this machine (srv1503
 |---|-----|--------|-----|
 | M1 | **3 POST-only endpoints (405 on GET)** | `categorization/categories`, `sla/metrics`, `attribution/touchpoints` | Add GET handlers or update frontend to use existing routes |
 | M2 | **`/webhooks/logs` returns 403** | Non-admin users blocked | ✅ Correct — requires admin role |
-| M3 | **`status` import shadow in health.py, stripe.py** | Potential status code comparison bugs | Rename `status` → `http_status` |
+| M3 | **`status` import shadow in health.py, stripe.py** | Potential status code comparison bugs | ✅ Already fixed — both import `status as http_status` |
 
 ### 🔵 LOW / FUTURE
 

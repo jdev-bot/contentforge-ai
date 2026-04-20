@@ -534,6 +534,40 @@ async def list_available_saml_providers(org_id: Optional[str] = None):
     ]
 
 
+# ── SAML Login/Logout Path-Param Aliases (frontend compatibility) ────
+
+
+@router.post("/saml/login/{provider_id}", response_model=SAMLLoginResponse)
+async def initiate_saml_login_by_provider(
+    provider_id: str,
+    body: Optional[SAMLLoginRequest] = None,
+    user=Depends(get_auth_user) if False else None,
+):
+    """Initiate SP-initiated SAML SSO login with provider_id in path (frontend-friendly alias)."""
+    request = SAMLLoginRequest(
+        provider_id=provider_id,
+        redirect_uri=body.redirect_uri if body else None,
+        relay_state=body.relay_state if body else None,
+    )
+    return await initiate_saml_login(body=request, user=user)
+
+
+@router.post("/saml/logout/{provider_id}", response_model=SAMLLogoutResponse)
+async def initiate_saml_logout_by_provider(
+    provider_id: str,
+    body: Optional[SAMLLogoutRequest] = None,
+    user=Depends(get_auth_user),
+):
+    """Initiate SAML Single Logout with provider_id in path (frontend-friendly alias)."""
+    request = SAMLLogoutRequest(
+        provider_id=provider_id,
+        name_id=body.name_id if body else None,
+        session_index=body.session_index if body else None,
+        redirect_uri=body.redirect_uri if body else None,
+    )
+    return await initiate_saml_logout(body=request, user=user)
+
+
 # ── Helper ─────────────────────────────────────────────────────────
 
 
