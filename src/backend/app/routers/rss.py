@@ -255,10 +255,14 @@ async def update_rss_settings(
         )
 
 
+class BulkImportRequest(BaseModel):
+    entry_ids: List[UUID] = Field(..., description="List of RSS entry IDs to import")
+    project_id: Optional[UUID] = None
+
+
 @router.post("/rss/entries/bulk-import")
 async def bulk_import_entries(
-    entry_ids: List[UUID] = Field(..., description="List of RSS entry IDs to import"),
-    project_id: Optional[UUID] = None,
+    request: BulkImportRequest,
     user=Depends(get_auth_user),
 ):
     """Bulk import RSS entries as content."""
@@ -305,7 +309,7 @@ async def bulk_import_entries(
                 result = await rss_service.import_entry(
                     entry_id=entry["id"],
                     user_id=str(user.id),
-                    project_id=str(project_id) if project_id else None,
+                    project_id=str(request.project_id) if request.project_id else None,
                     title=entry.get("title"),
                     content=entry.get("content"),
                     link=entry.get("link"),
