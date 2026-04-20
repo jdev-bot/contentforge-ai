@@ -66,17 +66,112 @@ export interface GeneratedAsset {
   created_at: string
 }
 
-async function getAuthHeader(): Promise<Record<string, string>> {
+/**
+ * Wait for the Supabase session to be available in the browser.
+ * On initial page load, the @supabase/ssr browser client may not have
+ * hydrated the session from cookies yet. This function subscribes to
+ * auth state changes and waits until a session is available, or until
+ * we determine there truly is no session (e.g. user not logged in).
+ *
+ * Returns the access token, or throws if no session after timeout.
+ */
+async function waitForSession(timeoutMs = 5000): Promise<string> {
+  // First try: maybe session is already available
   const { data: { session } } = await supabase.auth.getSession()
-  
-  if (!session?.access_token) {
-    return {}
+  if (session?.access_token) {
+    return session.access_token
   }
-  
-  return {
-    'Authorization': `Bearer ${session.access_token}`,
-    'Content-Type': 'application/json',
+
+  // Session not immediately available.
+  // This can happen on initial page load when @supabase/ssr's browser client
+  // hasn't hydrated the session from cookies yet.
+  // Wait for the INITIAL_SESSION event from onAuthStateChange.
+  console.warn('[api] Session not immediately available, waiting for auth state change...')
+
+  return new Promise<string>((resolve, reject) => {
+    let authSubscription: { data: { subscription: { unsubscribe: () => void } } } | null = null
+
+    const timeout = setTimeout(() => {
+      if (authSubscription) authSubscription.data.subscription.unsubscribe()
+      console.error('[api] Session wait timed out after', timeoutMs, 'ms')
+      reject(new Error('AUTH_TIMEOUT'))
+    }, timeoutMs)
+
+    authSubscription = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log('[api] Auth state changed:', event, !!newSession?.access_token)
+      if (newSession?.access_token) {
+        clearTimeout(timeout)
+        authSubscription!.data.subscription.unsubscribe()
+        resolve(newSession.access_token)
+      }
+    })
+  })
+}
+
+async function getAuthHeader(): Promise<Record<string, string>> {
+  try {
+    const token = await waitForSession()
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    }
+  } catch {
+    // Session truly not available after waiting — redirect to login
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname + window.location.search
+      window.location.href = `/login?redirectTo=${encodeURIComponent(currentPath)}`
+    }
+    throw new Error('Authentication required')
   }
+}
+
+/**
+ * Authenticated fetch wrapper that:
+ * 1. Waits for session before making requests
+ * 2. Handles 401 by refreshing session and retrying once
+ * 3. Redirects to login if truly unauthenticated
+ */
+async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const headers = await getAuthHeader()
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...headers,
+      ...options.headers,
+    },
+  })
+
+  // Handle 401 — session might have expired, try refresh
+  if (response.status === 401) {
+    if (typeof window !== 'undefined') {
+      // Force refresh the session
+      const { data: { session } } = await supabase.auth.refreshSession()
+      if (session?.access_token) {
+        // Retry with fresh token
+        const retryHeaders = {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        }
+        const retryResponse = await fetch(url, {
+          ...options,
+          headers: {
+            ...retryHeaders,
+            ...options.headers,
+          },
+        })
+        if (retryResponse.status !== 401) {
+          return retryResponse
+        }
+      }
+      // Still 401 after refresh — redirect to login
+      const currentPath = window.location.pathname + window.location.search
+      window.location.href = `/login?redirectTo=${encodeURIComponent(currentPath)}`
+    }
+    throw new Error('Session expired. Please sign in again.')
+  }
+
+  return response
 }
 
 export async function createContent(data: ContentCreate): Promise<Content> {
