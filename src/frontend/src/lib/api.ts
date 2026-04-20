@@ -75,64 +75,91 @@ export interface GeneratedAsset {
  *
  * Returns the access token, or throws if no session after timeout.
  */
-async function waitForSession(timeoutMs = 5000): Promise<string> {
-  // Debug: log cookie state
-  if (typeof window !== 'undefined') {
-    const cookies = document.cookie.split(';').map(c => c.trim().split('=')[0])
-    console.log('[api] waitForSession called. Cookies:', cookies)
-    const authCookie = document.cookie
-      .split(';')
-      .find(c => c.trim().startsWith('sb-'))
-    console.log('[api] Auth cookie present:', !!authCookie, authCookie ? authCookie.substring(0, 30) + '...' : 'none')
+// Cache the access token after first successful resolution to avoid
+// re-waiting on every API call within the same page session
+let cachedToken: string | null = null
+
+async function waitForSession(timeoutMs = 8000): Promise<string> {
+  // Return cached token if available and still valid
+  if (cachedToken) {
+    return cachedToken
   }
+
+  // Strategy: Try getSession() first. If it returns a session, use it immediately.
+  // If not, subscribe to onAuthStateChange for up to `timeoutMs`.
+  // The @supabase/ssr browser client initializes asynchronously from document.cookie,
+  // so INITIAL_SESSION may fire shortly after the client is created.
+  // We also retry getSession() as a fallback in case onAuthStateChange misses the event.
 
   // First try: maybe session is already available
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-  console.log('[api] getSession result:', {
-    hasSession: !!session,
-    hasToken: !!session?.access_token,
-    tokenPrefix: session?.access_token?.substring(0, 20),
-    error: sessionError?.message
-  })
-  
-  if (session?.access_token) {
-    console.log('[api] Session available immediately, token prefix:', session.access_token.substring(0, 20))
-    return session.access_token
+  const { data: { session: firstSession } } = await supabase.auth.getSession()
+  if (firstSession?.access_token) {
+    cachedToken = firstSession.access_token
+    return firstSession.access_token
   }
 
-  // Session not immediately available.
-  console.warn('[api] Session not immediately available, waiting for auth state change...')
-
+  // Session not immediately available — race between onAuthStateChange and getSession retry
   return new Promise<string>((resolve, reject) => {
-    let authSubscription: { data: { subscription: { unsubscribe: () => void } } } | null = null
+    let resolved = false
+    const cleanup = () => { resolved = true }
 
     const timeout = setTimeout(() => {
-      if (authSubscription) authSubscription.data.subscription.unsubscribe()
-      console.error('[api] Session wait timed out after', timeoutMs, 'ms')
-      reject(new Error('AUTH_TIMEOUT'))
+      if (!resolved) {
+        resolved = true
+        subscription?.unsubscribe()
+        clearInterval(retryInterval)
+        // Final attempt before giving up
+        supabase.auth.getSession().then(({ data: { session: finalSession } }) => {
+          if (finalSession?.access_token) {
+            cachedToken = finalSession.access_token
+            resolve(finalSession.access_token)
+          } else {
+            reject(new Error('AUTH_TIMEOUT'))
+          }
+        })
+      }
     }, timeoutMs)
 
-    authSubscription = supabase.auth.onAuthStateChange((event, newSession) => {
-      console.log('[api] Auth state changed:', event, 'hasToken:', !!newSession?.access_token, 'tokenPrefix:', newSession?.access_token?.substring(0, 20))
+    // Retry getSession every 500ms as fallback (onAuthStateChange may miss INITIAL_SESSION)
+    const retryInterval = setInterval(() => {
+      if (resolved) return
+      supabase.auth.getSession().then(({ data: { session: retrySession } }) => {
+        if (retrySession?.access_token && !resolved) {
+          resolved = true
+          clearTimeout(timeout)
+          clearInterval(retryInterval)
+          subscription?.unsubscribe()
+          cachedToken = retrySession.access_token
+          resolve(retrySession.access_token)
+        }
+      })
+    }, 500)
+
+    // Also listen for auth state changes
+    let subscription: { unsubscribe: () => void } | null = null
+    const { data: { subscription: sub } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (resolved) return
       if (newSession?.access_token) {
+        resolved = true
         clearTimeout(timeout)
-        authSubscription!.data.subscription.unsubscribe()
+        clearInterval(retryInterval)
+        subscription?.unsubscribe()
+        cachedToken = newSession.access_token
         resolve(newSession.access_token)
       }
     })
+    subscription = sub
   })
 }
 
 async function getAuthHeader(): Promise<Record<string, string>> {
   try {
     const token = await waitForSession()
-    console.log('[api] getAuthHeader: got token, prefix:', token.substring(0, 20))
     return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     }
-  } catch (err) {
-    console.error('[api] getAuthHeader failed:', err)
+  } catch {
     // Session truly not available after waiting — redirect to login
     if (typeof window !== 'undefined') {
       const currentPath = window.location.pathname + window.location.search
@@ -165,6 +192,8 @@ async function apiFetch(url: string, options: RequestInit = {}): Promise<Respons
       // Force refresh the session
       const { data: { session } } = await supabase.auth.refreshSession()
       if (session?.access_token) {
+        // Update cached token with fresh one
+        cachedToken = session.access_token
         // Retry with fresh token
         const retryHeaders = {
           'Authorization': `Bearer ${session.access_token}`,
@@ -181,7 +210,8 @@ async function apiFetch(url: string, options: RequestInit = {}): Promise<Respons
           return retryResponse
         }
       }
-      // Still 401 after refresh — redirect to login
+      // Still 401 after refresh — clear cache and redirect to login
+      cachedToken = null
       const currentPath = window.location.pathname + window.location.search
       window.location.href = `/login?redirectTo=${encodeURIComponent(currentPath)}`
     }
@@ -216,19 +246,14 @@ export async function listContent(projectId?: string): Promise<Content[]> {
     url += `?project_id=${projectId}`
   }
   
-  console.log('[api] listContent: fetching', url, 'with auth header:', headers.Authorization?.substring(0, 30))
   const response = await fetch(url, { headers })
-  console.log('[api] listContent: response status', response.status, response.statusText)
   
   if (!response.ok) {
     const error = await response.json()
-    console.error('[api] listContent: error', error)
     throw new Error(error.detail || 'Failed to fetch content')
   }
   
-  const data = await response.json()
-  console.log('[api] listContent: got', Array.isArray(data) ? `${data.length} items` : typeof data, data)
-  return data
+  return response.json()
 }
 
 export async function getContent(contentId: string): Promise<Content> {
