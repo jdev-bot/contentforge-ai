@@ -192,6 +192,129 @@ async def list_scheduled_posts(
         )
 
 
+# NOTE: Static routes MUST come before /schedule/{post_id} to avoid
+# FastAPI path-param matching (e.g. /schedule/stats matched as {post_id}="stats")
+
+@router.get("/schedule/stats", response_model=SchedulerStatsResponse)
+async def get_scheduler_stats(user=Depends(get_auth_user)):
+    """
+    Get scheduler statistics for the authenticated user.
+
+    Returns counts by status and upcoming posts in the next 24 hours.
+    """
+    try:
+        stats = scheduler_service.get_scheduler_stats(user_id=str(user.id))
+
+        return SchedulerStatsResponse(
+            pending=stats.get("pending", 0),
+            processing=stats.get("processing", 0),
+            published=stats.get("published", 0),
+            failed=stats.get("failed", 0),
+            cancelled=stats.get("cancelled", 0),
+            upcoming_24h=stats.get("upcoming_24h", 0),
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get scheduler stats: {str(e)}",
+        )
+
+
+
+@router.get("/schedule/upcoming", response_model=ScheduleListResponse)
+async def get_upcoming_scheduled_posts(
+    hours: int = Query(
+        24, ge=1, le=168, description="Hours ahead to look (max 7 days)"
+    ),
+    limit: int = Query(20, ge=1, le=100),
+    user=Depends(get_auth_user),
+):
+    """
+    Get upcoming scheduled posts for the next N hours.
+
+    Default is next 24 hours. Maximum is 7 days (168 hours).
+    """
+    try:
+        from datetime import timedelta
+
+        now = datetime.now(timezone.utc)
+        future = now + timedelta(hours=hours)
+
+        # Get all pending posts
+        all_posts = scheduler_service.get_scheduled_posts(
+            user_id=str(user.id), status="pending", limit=100  # Get more to filter
+        )
+
+        # Filter to only those within the time window
+        upcoming = [post for post in all_posts if post.scheduled_at <= future][:limit]
+
+        return ScheduleListResponse(
+            items=upcoming, total=len(upcoming), page=1, limit=limit
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get upcoming posts: {str(e)}",
+        )
+
+
+
+@router.get("/schedule/conflicts")
+async def check_scheduling_conflicts(
+    scheduled_at: datetime = Query(..., description="Proposed scheduled time (ISO 8601)"),
+    platform: str = Query(..., description="Platform to publish to"),
+    exclude_id: Optional[str] = Query(None, description="Post ID to exclude from conflict check"),
+    user=Depends(get_auth_user),
+):
+    """
+    Check for scheduling conflicts.
+
+    Returns any scheduled posts that overlap with the proposed time
+    for the same platform (within a 30-minute window).
+    """
+    try:
+        from datetime import timedelta
+        from app.core.supabase import get_supabase_admin_client
+
+        supabase = get_supabase_admin_client()
+
+        # Check for posts within 30 minutes of the proposed time on the same platform
+        window_start = (scheduled_at - timedelta(minutes=30)).isoformat()
+        window_end = (scheduled_at + timedelta(minutes=30)).isoformat()
+
+        query = (
+            supabase.table("scheduled_posts")
+            .select("*")
+            .eq("user_id", str(user.id))
+            .eq("platform", platform)
+            .in_("status", ["pending", "scheduled", "processing"])
+            .gte("scheduled_at", window_start)
+            .lte("scheduled_at", window_end)
+        )
+
+        if exclude_id:
+            query = query.neq("id", exclude_id)
+
+        result = query.execute()
+
+        conflicts = result.data or []
+
+        return {
+            "has_conflicts": len(conflicts) > 0,
+            "conflict_count": len(conflicts),
+            "conflicts": conflicts,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to check scheduling conflicts: {str(e)}",
+        )
+
+
+
 @router.get("/schedule/{post_id}", response_model=ScheduledPostItem)
 async def get_scheduled_post(post_id: str, user=Depends(get_auth_user)):
     """
@@ -326,70 +449,6 @@ async def publish_scheduled_post_now(post_id: str, user=Depends(get_auth_user)):
         )
 
 
-@router.get("/schedule/stats", response_model=SchedulerStatsResponse)
-async def get_scheduler_stats(user=Depends(get_auth_user)):
-    """
-    Get scheduler statistics for the authenticated user.
-
-    Returns counts by status and upcoming posts in the next 24 hours.
-    """
-    try:
-        stats = scheduler_service.get_scheduler_stats(user_id=str(user.id))
-
-        return SchedulerStatsResponse(
-            pending=stats.get("pending", 0),
-            processing=stats.get("processing", 0),
-            published=stats.get("published", 0),
-            failed=stats.get("failed", 0),
-            cancelled=stats.get("cancelled", 0),
-            upcoming_24h=stats.get("upcoming_24h", 0),
-        )
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get scheduler stats: {str(e)}",
-        )
-
-
-@router.get("/schedule/upcoming", response_model=ScheduleListResponse)
-async def get_upcoming_scheduled_posts(
-    hours: int = Query(
-        24, ge=1, le=168, description="Hours ahead to look (max 7 days)"
-    ),
-    limit: int = Query(20, ge=1, le=100),
-    user=Depends(get_auth_user),
-):
-    """
-    Get upcoming scheduled posts for the next N hours.
-
-    Default is next 24 hours. Maximum is 7 days (168 hours).
-    """
-    try:
-        from datetime import timedelta
-
-        now = datetime.now(timezone.utc)
-        future = now + timedelta(hours=hours)
-
-        # Get all pending posts
-        all_posts = scheduler_service.get_scheduled_posts(
-            user_id=str(user.id), status="pending", limit=100  # Get more to filter
-        )
-
-        # Filter to only those within the time window
-        upcoming = [post for post in all_posts if post.scheduled_at <= future][:limit]
-
-        return ScheduleListResponse(
-            items=upcoming, total=len(upcoming), page=1, limit=limit
-        )
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get upcoming posts: {str(e)}",
-        )
-
-
 @router.post("/schedule/{post_id}/cancel", response_model=ScheduledPostItem)
 async def cancel_scheduled_post_alias(post_id: str, user=Depends(get_auth_user)):
     """
@@ -505,59 +564,6 @@ async def duplicate_scheduled_post(post_id: str, user=Depends(get_auth_user)):
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to duplicate scheduled post: {str(e)}",
-        )
-
-
-@router.get("/schedule/conflicts")
-async def check_scheduling_conflicts(
-    scheduled_at: datetime = Query(..., description="Proposed scheduled time (ISO 8601)"),
-    platform: str = Query(..., description="Platform to publish to"),
-    exclude_id: Optional[str] = Query(None, description="Post ID to exclude from conflict check"),
-    user=Depends(get_auth_user),
-):
-    """
-    Check for scheduling conflicts.
-
-    Returns any scheduled posts that overlap with the proposed time
-    for the same platform (within a 30-minute window).
-    """
-    try:
-        from datetime import timedelta
-        from app.core.supabase import get_supabase_admin_client
-
-        supabase = get_supabase_admin_client()
-
-        # Check for posts within 30 minutes of the proposed time on the same platform
-        window_start = (scheduled_at - timedelta(minutes=30)).isoformat()
-        window_end = (scheduled_at + timedelta(minutes=30)).isoformat()
-
-        query = (
-            supabase.table("scheduled_posts")
-            .select("*")
-            .eq("user_id", str(user.id))
-            .eq("platform", platform)
-            .in_("status", ["pending", "scheduled", "processing"])
-            .gte("scheduled_at", window_start)
-            .lte("scheduled_at", window_end)
-        )
-
-        if exclude_id:
-            query = query.neq("id", exclude_id)
-
-        result = query.execute()
-
-        conflicts = result.data or []
-
-        return {
-            "has_conflicts": len(conflicts) > 0,
-            "conflict_count": len(conflicts),
-            "conflicts": conflicts,
-        }
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to check scheduling conflicts: {str(e)}",
         )
 
 

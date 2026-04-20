@@ -238,6 +238,25 @@ async def get_sentiment_trends(
         )
 
 
+# NOTE: Static route /sentiment/distribution MUST come before /sentiment/{content_id}
+# to avoid FastAPI path-param matching ("distribution" matched as {content_id})
+
+
+@router.get("/sentiment/distribution", response_model=SentimentDistributionResponse)
+async def get_sentiment_distribution(
+    user=Depends(get_auth_user),
+):
+    """Get sentiment distribution across all user content."""
+    try:
+        result = await sentiment_service.get_distribution(user_id=user.id)
+        return SentimentDistributionResponse(**result)
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
 @router.get("/sentiment/{content_id}", response_model=SentimentResponse)
 async def get_sentiment_by_content_id(
     content_id: UUID,
@@ -276,7 +295,7 @@ async def analyze_sentiment_by_content_id(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_SERVER_ERROR,
             detail=str(e),
         )
 
@@ -289,18 +308,3 @@ async def get_sentiment_trend_alias(
 ):
     """Get sentiment trends over time (frontend-friendly alias)."""
     return await get_sentiment_trends(content_id=content_id, limit=days, user=user)
-
-
-@router.get("/sentiment/distribution", response_model=SentimentDistributionResponse)
-async def get_sentiment_distribution(
-    user=Depends(get_auth_user),
-):
-    """Get sentiment distribution across all user content."""
-    try:
-        result = await sentiment_service.get_distribution(user_id=user.id)
-        return SentimentDistributionResponse(**result)
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
-        )
