@@ -79,10 +79,31 @@ export interface GeneratedAsset {
 // re-waiting on every API call within the same page session
 let cachedToken: string | null = null
 
+/**
+ * Decode a JWT's exp claim without a library.
+ * Returns the expiry timestamp in seconds, or null if not decodable.
+ */
+function getTokenExpiry(token: string): number | null {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return null
+    const padded = payload + '='.repeat((4 - payload.length % 4) % 4)
+    const decoded = JSON.parse(atob(padded))
+    return decoded.exp ?? null
+  } catch {
+    return null
+  }
+}
+
 async function waitForSession(timeoutMs = 8000): Promise<string> {
-  // Return cached token if available and still valid
+  // Return cached token if available and not expired (with 60s buffer)
   if (cachedToken) {
-    return cachedToken
+    const exp = getTokenExpiry(cachedToken)
+    if (exp && exp * 1000 > Date.now() + 60000) {
+      return cachedToken
+    }
+    // Token expired or about to expire — clear cache and refresh
+    cachedToken = null
   }
 
   // Strategy: Try getSession() first. If it returns a session, use it immediately.
@@ -152,6 +173,13 @@ async function waitForSession(timeoutMs = 8000): Promise<string> {
   })
 }
 
+/**
+ * Get auth headers, with automatic 401 retry via apiFetch.
+ * 
+ * IMPORTANT: API functions should use apiFetch() instead of raw fetch().
+ * getAuthHeader() is kept for backward compatibility but does NOT handle 401 retries.
+ * apiFetch() handles 401 by refreshing the token and retrying.
+ */
 async function getAuthHeader(): Promise<Record<string, string>> {
   try {
     const token = await waitForSession()
@@ -170,14 +198,15 @@ async function getAuthHeader(): Promise<Record<string, string>> {
 }
 
 /**
- * Authenticated fetch wrapper that:
- * 1. Waits for session before making requests
- * 2. Handles 401 by refreshing session and retrying once
- * 3. Redirects to login if truly unauthenticated
+ * Authenticated fetch that automatically:
+ * 1. Waits for the session to be available
+ * 2. Retries once on 401 (refreshes token first)
+ * 3. Redirects to login on persistent 401
+ * 
+ * ALL API functions should use this instead of raw fetch().
  */
 async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const headers = await getAuthHeader()
-
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -186,32 +215,34 @@ async function apiFetch(url: string, options: RequestInit = {}): Promise<Respons
     },
   })
 
-  // Handle 401 — session might have expired, try refresh
+  // Handle 401 — token may have expired, try refresh
   if (response.status === 401) {
-    if (typeof window !== 'undefined') {
-      // Force refresh the session
-      const { data: { session } } = await supabase.auth.refreshSession()
-      if (session?.access_token) {
-        // Update cached token with fresh one
-        cachedToken = session.access_token
-        // Retry with fresh token
-        const retryHeaders = {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        }
-        const retryResponse = await fetch(url, {
-          ...options,
-          headers: {
-            ...retryHeaders,
-            ...options.headers,
-          },
-        })
-        if (retryResponse.status !== 401) {
-          return retryResponse
-        }
+    // Clear cached token — it's stale
+    cachedToken = null
+
+    // Force refresh the session
+    const { data: { session } } = await supabase.auth.refreshSession()
+    if (session?.access_token) {
+      // Update cache with fresh token
+      cachedToken = session.access_token
+      // Retry with fresh token
+      const retryHeaders = {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
       }
-      // Still 401 after refresh — clear cache and redirect to login
-      cachedToken = null
+      const retryResponse = await fetch(url, {
+        ...options,
+        headers: {
+          ...retryHeaders,
+          ...options.headers,
+        },
+      })
+      if (retryResponse.status !== 401) {
+        return retryResponse
+      }
+    }
+    // Still 401 after refresh — redirect to login
+    if (typeof window !== 'undefined') {
       const currentPath = window.location.pathname + window.location.search
       window.location.href = `/login?redirectTo=${encodeURIComponent(currentPath)}`
     }
@@ -222,11 +253,8 @@ async function apiFetch(url: string, options: RequestInit = {}): Promise<Respons
 }
 
 export async function createContent(data: ContentCreate): Promise<Content> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/content`, {
+    const response = await apiFetch(`${API_URL}/content`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   
@@ -239,14 +267,11 @@ export async function createContent(data: ContentCreate): Promise<Content> {
 }
 
 export async function listContent(projectId?: string): Promise<Content[]> {
-  const headers = await getAuthHeader()
-  
   let url = `${API_URL}/content`
   if (projectId) {
     url += `?project_id=${projectId}`
   }
-  
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   
   if (!response.ok) {
     const error = await response.json()
@@ -257,9 +282,7 @@ export async function listContent(projectId?: string): Promise<Content[]> {
 }
 
 export async function getContent(contentId: string): Promise<Content> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/content/${contentId}`, { headers })
+    const response = await apiFetch(`${API_URL}/content/${contentId}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -270,12 +293,7 @@ export async function getContent(contentId: string): Promise<Content> {
 }
 
 export async function generateAssets(contentId: string): Promise<GeneratedAsset[]> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/content/${contentId}/generate`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/content/${contentId}/generate`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -286,9 +304,7 @@ export async function generateAssets(contentId: string): Promise<GeneratedAsset[
 }
 
 export async function listAssets(contentId: string): Promise<GeneratedAsset[]> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/content/${contentId}/assets`, { headers })
+    const response = await apiFetch(`${API_URL}/content/${contentId}/assets`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -299,12 +315,7 @@ export async function listAssets(contentId: string): Promise<GeneratedAsset[]> {
 }
 
 export async function deleteContent(contentId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/content/${contentId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/content/${contentId}`, { method: 'DELETE' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -325,9 +336,7 @@ export interface Project {
 }
 
 export async function listProjects(): Promise<Project[]> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/projects`, { headers })
+    const response = await apiFetch(`${API_URL}/projects`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -338,11 +347,8 @@ export async function listProjects(): Promise<Project[]> {
 }
 
 export async function createProject(data: { name: string; description?: string }): Promise<Project> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/projects`, {
+    const response = await apiFetch(`${API_URL}/projects`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   
@@ -355,9 +361,7 @@ export async function createProject(data: { name: string; description?: string }
 }
 
 export async function getProject(projectId: string): Promise<Project> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/projects/${projectId}`, { headers })
+    const response = await apiFetch(`${API_URL}/projects/${projectId}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -368,12 +372,7 @@ export async function getProject(projectId: string): Promise<Project> {
 }
 
 export async function deleteProject(projectId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/projects/${projectId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/projects/${projectId}`, { method: 'DELETE' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -397,11 +396,8 @@ export interface Distribution {
 }
 
 export async function createDistribution(data: { asset_id: string; platform: string; scheduled_at?: string }): Promise<Distribution> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/distributions`, {
+    const response = await apiFetch(`${API_URL}/distributions`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   
@@ -414,14 +410,11 @@ export async function createDistribution(data: { asset_id: string; platform: str
 }
 
 export async function listDistributions(status?: string): Promise<Distribution[]> {
-  const headers = await getAuthHeader()
-  
   let url = `${API_URL}/distributions`
   if (status) {
     url += `?status=${status}`
   }
-  
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   
   if (!response.ok) {
     const error = await response.json()
@@ -432,12 +425,7 @@ export async function listDistributions(status?: string): Promise<Distribution[]
 }
 
 export async function publishNow(distributionId: string): Promise<Distribution> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/distributions/${distributionId}/publish-now`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/distributions/${distributionId}/publish-now`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -470,9 +458,7 @@ export interface UsageSummary {
 }
 
 export async function getUsageSummary(): Promise<UsageSummary> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/usage/summary`, { headers })
+    const response = await apiFetch(`${API_URL}/usage/summary`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -563,9 +549,7 @@ export interface KPIDashboardResponse {
 }
 
 export async function getContentMetrics(): Promise<ContentMetricsResponse> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/analytics/content`, { headers })
+    const response = await apiFetch(`${API_URL}/analytics/content`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -576,9 +560,7 @@ export async function getContentMetrics(): Promise<ContentMetricsResponse> {
 }
 
 export async function getAssetMetrics(): Promise<AssetMetricsResponse> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/analytics/assets`, { headers })
+    const response = await apiFetch(`${API_URL}/analytics/assets`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -589,9 +571,7 @@ export async function getAssetMetrics(): Promise<AssetMetricsResponse> {
 }
 
 export async function getUsageMetrics(days: number = 30): Promise<UsageMetricsResponse> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/analytics/usage?days=${days}`, { headers })
+    const response = await apiFetch(`${API_URL}/analytics/usage?days=${days}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -602,9 +582,7 @@ export async function getUsageMetrics(days: number = 30): Promise<UsageMetricsRe
 }
 
 export async function getDistributionMetrics(): Promise<DistributionMetricsResponse> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/analytics/distributions`, { headers })
+    const response = await apiFetch(`${API_URL}/analytics/distributions`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -615,9 +593,7 @@ export async function getDistributionMetrics(): Promise<DistributionMetricsRespo
 }
 
 export async function getDashboardKPIs(): Promise<KPIDashboardResponse> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/analytics/dashboard`, { headers })
+    const response = await apiFetch(`${API_URL}/analytics/dashboard`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -628,9 +604,7 @@ export async function getDashboardKPIs(): Promise<KPIDashboardResponse> {
 }
 
 export async function exportAnalyticsCSV(days: number = 30): Promise<Blob> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/analytics/export?format=csv&days=${days}`, { headers })
+    const response = await apiFetch(`${API_URL}/analytics/export?format=csv&days=${days}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -641,9 +615,7 @@ export async function exportAnalyticsCSV(days: number = 30): Promise<Blob> {
 }
 
 export async function exportAnalyticsJSON(days: number = 30): Promise<Blob> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/analytics/export/json?days=${days}`, { headers })
+    const response = await apiFetch(`${API_URL}/analytics/export/json?days=${days}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -697,12 +669,7 @@ export async function getContentImprovements(
   contentId: string,
   suggestionType: 'readability' | 'engagement' | 'clarity' | 'grammar'
 ): Promise<AIImprovementSuggestion> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/ai-suggestions/improve`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ content_id: contentId, suggestion_type: suggestionType }),
+    const response = await apiFetch(`${API_URL}/ai-suggestions/improve`, { method: 'POST', body: JSON.stringify({ content_id: contentId, suggestion_type: suggestionType  }),
   })
   
   if (!response.ok) {
@@ -718,12 +685,7 @@ export async function getSEOOtimization(
   keywords?: string[],
   targetAudience?: string
 ): Promise<SEOAnalysisResult> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/ai-suggestions/seo`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ content_id: contentId, keywords, target_audience: targetAudience }),
+    const response = await apiFetch(`${API_URL}/ai-suggestions/seo`, { method: 'POST', body: JSON.stringify({ content_id: contentId, keywords, target_audience: targetAudience  }),
   })
   
   if (!response.ok) {
@@ -738,12 +700,7 @@ export async function adjustContentTone(
   contentId: string,
   tone: 'professional' | 'casual' | 'humorous' | 'formal' | 'friendly' | 'authoritative'
 ): Promise<ToneAdjustmentResult> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/ai-suggestions/tone`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ content_id: contentId, tone }),
+    const response = await apiFetch(`${API_URL}/ai-suggestions/tone`, { method: 'POST', body: JSON.stringify({ content_id: contentId, tone  }),
   })
   
   if (!response.ok) {
@@ -758,14 +715,11 @@ export async function listAISuggestions(
   contentId: string,
   suggestionType?: string
 ): Promise<AIImprovementSuggestion[]> {
-  const headers = await getAuthHeader()
-  
   let url = `${API_URL}/ai-suggestions/${contentId}`
   if (suggestionType) {
     url += `?suggestion_type=${suggestionType}`
   }
-  
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   
   if (!response.ok) {
     const error = await response.json()
@@ -776,12 +730,7 @@ export async function listAISuggestions(
 }
 
 export async function applySuggestion(suggestionId: string): Promise<AIImprovementSuggestion> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/ai-suggestions/${suggestionId}/apply`, {
-    method: 'PATCH',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/ai-suggestions/${suggestionId}/apply`, { method: 'PATCH' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -868,11 +817,8 @@ export async function createAutomationRule(rule: {
   action_config: Record<string, unknown>
   enabled?: boolean
 }): Promise<AutomationRule> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/automation/rules`, {
+    const response = await apiFetch(`${API_URL}/automation/rules`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(rule),
   })
   
@@ -888,15 +834,12 @@ export async function listAutomationRules(
   projectId?: string,
   status?: string
 ): Promise<AutomationRule[]> {
-  const headers = await getAuthHeader()
-  
   let url = `${API_URL}/automation/rules`
   const params = new URLSearchParams()
   if (projectId) params.append('project_id', projectId)
   if (status) params.append('status', status)
   if (params.toString()) url += `?${params.toString()}`
-  
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   
   if (!response.ok) {
     const error = await response.json()
@@ -907,9 +850,7 @@ export async function listAutomationRules(
 }
 
 export async function getAutomationRule(ruleId: string): Promise<AutomationRule> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/automation/rules/${ruleId}`, { headers })
+    const response = await apiFetch(`${API_URL}/automation/rules/${ruleId}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -920,12 +861,7 @@ export async function getAutomationRule(ruleId: string): Promise<AutomationRule>
 }
 
 export async function toggleAutomationRule(ruleId: string): Promise<{ status: string }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/automation/rules/${ruleId}/toggle`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/automation/rules/${ruleId}/toggle`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -936,12 +872,7 @@ export async function toggleAutomationRule(ruleId: string): Promise<{ status: st
 }
 
 export async function runAutomationRule(ruleId: string): Promise<{ message: string; log_id: string }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/automation/rules/${ruleId}/run`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/automation/rules/${ruleId}/run`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -952,12 +883,9 @@ export async function runAutomationRule(ruleId: string): Promise<{ message: stri
 }
 
 export async function listAutomationLogs(ruleId?: string): Promise<AutomationLog[]> {
-  const headers = await getAuthHeader()
-  
   let url = `${API_URL}/automation/logs`
   if (ruleId) url += `?rule_id=${ruleId}`
-  
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   
   if (!response.ok) {
     const error = await response.json()
@@ -973,9 +901,7 @@ export async function getBestPostingTime(platform: string): Promise<{
   timezone_recommendation: string
   frequency_recommendation: string
 }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/automation/best-times/${platform}`, { headers })
+    const response = await apiFetch(`${API_URL}/automation/best-times/${platform}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -996,11 +922,8 @@ export async function bulkScheduleContent(
   end_time: string
   queue_items: string[]
 }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/automation/schedule/bulk`, {
+  const response = await apiFetch(`${API_URL}/automation/schedule/bulk`, {
     method: 'POST',
-    headers,
     body: JSON.stringify({
       content_ids: contentIds,
       platform,
@@ -1018,12 +941,9 @@ export async function bulkScheduleContent(
 }
 
 export async function getPublishingQueue(status?: string): Promise<QueueItem[]> {
-  const headers = await getAuthHeader()
-  
   let url = `${API_URL}/automation/queue`
   if (status) url += `?status=${status}`
-  
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1034,12 +954,7 @@ export async function getPublishingQueue(status?: string): Promise<QueueItem[]> 
 }
 
 export async function cancelQueueItem(queueId: string): Promise<{ message: string }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/automation/queue/${queueId}/cancel`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/automation/queue/${queueId}/cancel`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -1088,11 +1003,8 @@ export interface ScheduleConflict {
 }
 
 export async function schedulePost(request: ScheduleRequest): Promise<ScheduledPost> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/schedule`, {
+    const response = await apiFetch(`${API_URL}/schedule`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(request),
   })
   
@@ -1109,16 +1021,13 @@ export async function getScheduledPosts(
   startDate?: string,
   endDate?: string
 ): Promise<ScheduledPost[]> {
-  const headers = await getAuthHeader()
-  
   let url = `${API_URL}/schedule`
   const params = new URLSearchParams()
   if (status) params.append('status', status)
   if (startDate) params.append('start_date', startDate)
   if (endDate) params.append('end_date', endDate)
   if (params.toString()) url += `?${params.toString()}`
-  
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1129,9 +1038,7 @@ export async function getScheduledPosts(
 }
 
 export async function getScheduledPost(scheduleId: string): Promise<ScheduledPost> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/schedule/${scheduleId}`, { headers })
+    const response = await apiFetch(`${API_URL}/schedule/${scheduleId}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1145,11 +1052,8 @@ export async function updateScheduledPost(
   scheduleId: string, 
   updates: Partial<ScheduleRequest>
 ): Promise<ScheduledPost> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/schedule/${scheduleId}`, {
+    const response = await apiFetch(`${API_URL}/schedule/${scheduleId}`, {
     method: 'PATCH',
-    headers,
     body: JSON.stringify(updates),
   })
   
@@ -1162,12 +1066,7 @@ export async function updateScheduledPost(
 }
 
 export async function cancelScheduledPost(scheduleId: string): Promise<{ message: string }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/schedule/${scheduleId}/cancel`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/schedule/${scheduleId}/cancel`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -1178,12 +1077,7 @@ export async function cancelScheduledPost(scheduleId: string): Promise<{ message
 }
 
 export async function publishScheduledPost(scheduleId: string): Promise<ScheduledPost> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/schedule/${scheduleId}/publish-now`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/schedule/${scheduleId}/publish-now`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -1198,14 +1092,11 @@ export async function checkScheduleConflicts(
   platforms: string[],
   excludeId?: string
 ): Promise<ScheduleConflict[]> {
-  const headers = await getAuthHeader()
-  
   const params = new URLSearchParams()
   params.append('scheduled_at', scheduledAt)
   platforms.forEach(p => params.append('platforms', p))
   if (excludeId) params.append('exclude_id', excludeId)
-  
-  const response = await fetch(`${API_URL}/schedule/conflicts?${params.toString()}`, { headers })
+  const response = await apiFetch(`${API_URL}/schedule/conflicts?${params.toString()}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1216,9 +1107,7 @@ export async function checkScheduleConflicts(
 }
 
 export async function getUpcomingPosts(limit: number = 5): Promise<ScheduledPost[]> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/schedule/upcoming?limit=${limit}`, { headers })
+    const response = await apiFetch(`${API_URL}/schedule/upcoming?limit=${limit}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1232,16 +1121,10 @@ export async function duplicateSchedule(
   scheduleId: string, 
   newScheduledAt?: string
 ): Promise<ScheduledPost> {
-  const headers = await getAuthHeader()
-  
-  const body: Record<string, string | undefined> = {}
+    const body: Record<string, string | undefined> = {}
   if (newScheduledAt) body.scheduled_at = newScheduledAt
   
-  const response = await fetch(`${API_URL}/schedule/${scheduleId}/duplicate`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  })
+  const response = await apiFetch(`${API_URL}/schedule/${scheduleId}/duplicate`, { method: 'POST', body: JSON.stringify(body) })
   
   if (!response.ok) {
     const error = await response.json()
@@ -1325,9 +1208,7 @@ export interface UserProfile {
 }
 
 export async function getUserProfile(): Promise<UserProfile> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/auth/me`, { headers })
+    const response = await apiFetch(`${API_URL}/auth/me`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1338,11 +1219,8 @@ export async function getUserProfile(): Promise<UserProfile> {
 }
 
 export async function updateUserProfile(data: { full_name: string }): Promise<UserProfile> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/auth/me`, {
+    const response = await apiFetch(`${API_URL}/auth/me`, {
     method: 'PATCH',
-    headers,
     body: JSON.stringify(data),
   })
   
@@ -1418,9 +1296,7 @@ export interface OrganizationInvitationResponse {
 // Organization API Functions
 
 export async function listOrganizations(): Promise<Organization[]> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/organizations`, { headers })
+    const response = await apiFetch(`${API_URL}/organizations`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1431,11 +1307,8 @@ export async function listOrganizations(): Promise<Organization[]> {
 }
 
 export async function createOrganization(data: OrganizationCreate): Promise<Organization> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/organizations`, {
+    const response = await apiFetch(`${API_URL}/organizations`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   
@@ -1448,9 +1321,7 @@ export async function createOrganization(data: OrganizationCreate): Promise<Orga
 }
 
 export async function getOrganization(orgId: string): Promise<OrganizationWithMembers> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/organizations/${orgId}`, { headers })
+    const response = await apiFetch(`${API_URL}/organizations/${orgId}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1461,11 +1332,8 @@ export async function getOrganization(orgId: string): Promise<OrganizationWithMe
 }
 
 export async function updateOrganization(orgId: string, data: OrganizationUpdate): Promise<Organization> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/organizations/${orgId}`, {
+    const response = await apiFetch(`${API_URL}/organizations/${orgId}`, {
     method: 'PATCH',
-    headers,
     body: JSON.stringify(data),
   })
   
@@ -1478,12 +1346,7 @@ export async function updateOrganization(orgId: string, data: OrganizationUpdate
 }
 
 export async function deleteOrganization(orgId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/organizations/${orgId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/organizations/${orgId}`, { method: 'DELETE' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -1492,11 +1355,8 @@ export async function deleteOrganization(orgId: string): Promise<void> {
 }
 
 export async function inviteMember(orgId: string, data: OrganizationInvite): Promise<OrganizationInvitationResponse> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/organizations/${orgId}/invite`, {
+    const response = await apiFetch(`${API_URL}/organizations/${orgId}/invite`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   
@@ -1509,9 +1369,7 @@ export async function inviteMember(orgId: string, data: OrganizationInvite): Pro
 }
 
 export async function listMembers(orgId: string): Promise<OrganizationMember[]> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/organizations/${orgId}/members`, { headers })
+    const response = await apiFetch(`${API_URL}/organizations/${orgId}/members`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1522,12 +1380,7 @@ export async function listMembers(orgId: string): Promise<OrganizationMember[]> 
 }
 
 export async function updateMemberRole(orgId: string, memberId: string, role: OrganizationRole): Promise<OrganizationMember> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/organizations/${orgId}/members/${memberId}`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify({ role }),
+    const response = await apiFetch(`${API_URL}/organizations/${orgId}/members/${memberId}`, { method: 'PATCH', body: JSON.stringify({ role  }),
   })
   
   if (!response.ok) {
@@ -1539,12 +1392,7 @@ export async function updateMemberRole(orgId: string, memberId: string, role: Or
 }
 
 export async function removeMember(orgId: string, memberId: string): Promise<void> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/organizations/${orgId}/members/${memberId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/organizations/${orgId}/members/${memberId}`, { method: 'DELETE' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -1553,12 +1401,7 @@ export async function removeMember(orgId: string, memberId: string): Promise<voi
 }
 
 export async function transferOwnership(orgId: string, newOwnerId: string): Promise<{ message: string; organization_id: string; new_owner_id: string }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/organizations/${orgId}/transfer-ownership`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ new_owner_id: newOwnerId }),
+    const response = await apiFetch(`${API_URL}/organizations/${orgId}/transfer-ownership`, { method: 'POST', body: JSON.stringify({ new_owner_id: newOwnerId  }),
   })
   
   if (!response.ok) {
@@ -1570,12 +1413,7 @@ export async function transferOwnership(orgId: string, newOwnerId: string): Prom
 }
 
 export async function leaveOrganization(orgId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/organizations/${orgId}/leave`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/organizations/${orgId}/leave`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -1626,9 +1464,7 @@ export interface DeletionStatusResponse {
  * Returns JSON with all user data including content, projects, assets, and distributions.
  */
 export async function exportUserData(): Promise<UserDataExport> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/user/export-data`, { headers })
+    const response = await apiFetch(`${API_URL}/user/export-data`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1642,12 +1478,7 @@ export async function exportUserData(): Promise<UserDataExport> {
  * Request account deletion with 30-day grace period (GDPR-compliant soft delete).
  */
 export async function deleteUserAccount(): Promise<AccountDeletionResponse> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/user/account`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/user/account`, { method: 'DELETE' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -1661,12 +1492,7 @@ export async function deleteUserAccount(): Promise<AccountDeletionResponse> {
  * Restore a user account that was scheduled for deletion (within grace period).
  */
 export async function restoreUserAccount(): Promise<{ message: string }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/user/account/restore`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/user/account/restore`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -1680,9 +1506,7 @@ export async function restoreUserAccount(): Promise<{ message: string }> {
  * Check the status of an account deletion request.
  */
 export async function getDeletionStatus(): Promise<DeletionStatusResponse> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/user/deletion-status`, { headers })
+    const response = await apiFetch(`${API_URL}/user/deletion-status`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1745,16 +1569,13 @@ export async function searchContent(
     limit?: number
   }
 ): Promise<SearchResponse> {
-  const headers = await getAuthHeader()
-  
   const params = new URLSearchParams()
   params.append('q', query)
   if (options?.type) params.append('type', options.type)
   if (options?.projectId) params.append('project_id', options.projectId)
   if (options?.status) params.append('status', options.status)
   if (options?.limit) params.append('limit', options.limit.toString())
-  
-  const response = await fetch(`${API_URL}/search?${params.toString()}`, { headers })
+  const response = await apiFetch(`${API_URL}/search?${params.toString()}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1768,9 +1589,7 @@ export async function getSearchSuggestions(query: string): Promise<{
   query: string
   suggestions: SearchSuggestion[]
 }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/search/suggestions?q=${encodeURIComponent(query)}`, { headers })
+    const response = await apiFetch(`${API_URL}/search/suggestions?q=${encodeURIComponent(query)}`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1781,12 +1600,9 @@ export async function getSearchSuggestions(query: string): Promise<{
 }
 
 export async function getTrashItems(type?: 'content' | 'project' | 'asset'): Promise<TrashItem[]> {
-  const headers = await getAuthHeader()
-  
-  let url = `${API_URL}/trash`
+    let url = `${API_URL}/trash`
   if (type) url += `?item_type=${type}`
-  
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1797,9 +1613,7 @@ export async function getTrashItems(type?: 'content' | 'project' | 'asset'): Pro
 }
 
 export async function getTrashStats(): Promise<TrashStats> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/trash/stats`, { headers })
+    const response = await apiFetch(`${API_URL}/trash/stats`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -1814,12 +1628,7 @@ export async function restoreFromTrash(itemId: string): Promise<{
   item_id: string
   restored: boolean
 }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/trash/${itemId}/restore`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/trash/${itemId}/restore`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -1834,12 +1643,7 @@ export async function permanentlyDeleteFromTrash(itemId: string): Promise<{
   item_id: string
   deleted: boolean
 }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/trash/${itemId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/trash/${itemId}`, { method: 'DELETE' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -1853,12 +1657,7 @@ export async function emptyTrash(): Promise<{
   message: string
   items_deleted: number
 }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/trash/empty`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/trash/empty`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -1905,12 +1704,7 @@ export async function rewriteContent(
   tone: string,
   style: string
 ): Promise<string> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/ai-suggestions/rewrite`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ content, tone, style }),
+    const response = await apiFetch(`${API_URL}/ai-suggestions/rewrite`, { method: 'POST', body: JSON.stringify({ content, tone, style  }),
   })
 
   if (!response.ok) {
@@ -1929,12 +1723,7 @@ export async function expandContent(
   content: string,
   targetLength: number
 ): Promise<string> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/ai-suggestions/expand`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ content, target_length: targetLength }),
+    const response = await apiFetch(`${API_URL}/ai-suggestions/expand`, { method: 'POST', body: JSON.stringify({ content, target_length: targetLength  }),
   })
 
   if (!response.ok) {
@@ -1953,12 +1742,7 @@ export async function condenseContent(
   content: string,
   percentage: number
 ): Promise<string> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/ai-suggestions/condense`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ content, percentage }),
+    const response = await apiFetch(`${API_URL}/ai-suggestions/condense`, { method: 'POST', body: JSON.stringify({ content, percentage  }),
   })
 
   if (!response.ok) {
@@ -1977,12 +1761,7 @@ export async function optimizeContent(
   content: string,
   platform: string
 ): Promise<string> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/ai-suggestions/optimize`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ content, platform }),
+    const response = await apiFetch(`${API_URL}/ai-suggestions/optimize`, { method: 'POST', body: JSON.stringify({ content, platform  }),
   })
 
   if (!response.ok) {
@@ -1998,11 +1777,8 @@ export async function optimizeContent(
  * Update content text
  */
 export async function updateContent(contentId: string, data: { original_text: string }): Promise<Content> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/content/${contentId}`, {
+    const response = await apiFetch(`${API_URL}/content/${contentId}`, {
     method: 'PATCH',
-    headers,
     body: JSON.stringify(data),
   })
 
@@ -2037,12 +1813,7 @@ export interface FreshnessMetrics {
 }
 
 export async function analyzeFreshness(contentId: string): Promise<FreshnessAnalysis> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/freshness/${contentId}/analyze`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/freshness/${contentId}/analyze`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -2053,9 +1824,7 @@ export async function analyzeFreshness(contentId: string): Promise<FreshnessAnal
 }
 
 export async function getStaleContent(): Promise<Content[]> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/freshness/stale`, { headers })
+    const response = await apiFetch(`${API_URL}/freshness/stale`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -2066,9 +1835,7 @@ export async function getStaleContent(): Promise<Content[]> {
 }
 
 export async function getFreshnessMetrics(): Promise<FreshnessMetrics> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/freshness/metrics`, { headers })
+    const response = await apiFetch(`${API_URL}/freshness/metrics`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -2079,12 +1846,7 @@ export async function getFreshnessMetrics(): Promise<FreshnessMetrics> {
 }
 
 export async function bulkRefreshContent(contentIds?: string[]): Promise<{ refreshed: number }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/freshness/bulk-refresh`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ content_ids: contentIds }),
+    const response = await apiFetch(`${API_URL}/freshness/bulk-refresh`, { method: 'POST', body: JSON.stringify({ content_ids: contentIds  }),
   })
   
   if (!response.ok) {
@@ -2113,14 +1875,11 @@ export interface Trend {
 }
 
 export async function getTrendingTopics(category?: string): Promise<Trend[]> {
-  const headers = await getAuthHeader()
-  
   let url = `${API_URL}/trends`
   if (category) {
     url += `?category=${category}`
   }
-  
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   
   if (!response.ok) {
     const error = await response.json()
@@ -2131,12 +1890,7 @@ export async function getTrendingTopics(category?: string): Promise<Trend[]> {
 }
 
 export async function generateFromTrend(topicId: string): Promise<Content> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/trends/${topicId}/generate`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/trends/${topicId}/generate`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -2194,11 +1948,8 @@ export interface RSSStats {
 }
 
 export async function addRSSFeed(feed: RSSFeedRequest): Promise<RSSFeed> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/rss/feeds`, {
+    const response = await apiFetch(`${API_URL}/rss/feeds`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(feed),
   })
   
@@ -2211,9 +1962,7 @@ export async function addRSSFeed(feed: RSSFeedRequest): Promise<RSSFeed> {
 }
 
 export async function getRSSFeeds(): Promise<RSSFeed[]> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/rss/feeds`, { headers })
+    const response = await apiFetch(`${API_URL}/rss/feeds`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -2224,11 +1973,8 @@ export async function getRSSFeeds(): Promise<RSSFeed[]> {
 }
 
 export async function updateRSSFeed(id: string, updates: Partial<RSSFeedRequest>): Promise<RSSFeed> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/rss/feeds/${id}`, {
+    const response = await apiFetch(`${API_URL}/rss/feeds/${id}`, {
     method: 'PATCH',
-    headers,
     body: JSON.stringify(updates),
   })
   
@@ -2241,12 +1987,7 @@ export async function updateRSSFeed(id: string, updates: Partial<RSSFeedRequest>
 }
 
 export async function deleteRSSFeed(id: string): Promise<void> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/rss/feeds/${id}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/rss/feeds/${id}`, { method: 'DELETE' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -2255,12 +1996,7 @@ export async function deleteRSSFeed(id: string): Promise<void> {
 }
 
 export async function fetchRSSFeed(id: string): Promise<{ message: string; entries_fetched: number }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/rss/feeds/${id}/fetch`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/rss/feeds/${id}/fetch`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -2280,8 +2016,6 @@ export async function getRSSEntries(
     endDate?: string
   }
 ): Promise<RSSEntry[]> {
-  const headers = await getAuthHeader()
-  
   const params = new URLSearchParams()
   if (options?.feedId) params.append('feed_id', options.feedId)
   if (options?.processed !== undefined) params.append('processed', String(options.processed))
@@ -2291,7 +2025,7 @@ export async function getRSSEntries(
   if (options?.endDate) params.append('end_date', options.endDate)
   
   const url = `${API_URL}/rss/entries${params.toString() ? `?${params.toString()}` : ''}`
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   
   if (!response.ok) {
     const error = await response.json()
@@ -2302,16 +2036,10 @@ export async function getRSSEntries(
 }
 
 export async function importRSSEntry(id: string, projectId?: string): Promise<Content> {
-  const headers = await getAuthHeader()
-  
-  const body: { entry_id: string; project_id?: string } = { entry_id: id }
+    const body: { entry_id: string; project_id?: string } = { entry_id: id }
   if (projectId) body.project_id = projectId
   
-  const response = await fetch(`${API_URL}/rss/entries/import`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  })
+  const response = await apiFetch(`${API_URL}/rss/entries/import`, { method: 'POST', body: JSON.stringify(body) })
   
   if (!response.ok) {
     const error = await response.json()
@@ -2322,12 +2050,7 @@ export async function importRSSEntry(id: string, projectId?: string): Promise<Co
 }
 
 export async function bulkImportRSSEntries(entryIds: string[], projectId?: string): Promise<{ imported: number; failed: number; content_ids: string[] }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/rss/entries/bulk-import`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ entry_ids: entryIds, project_id: projectId }),
+    const response = await apiFetch(`${API_URL}/rss/entries/bulk-import`, { method: 'POST', body: JSON.stringify({ entry_ids: entryIds, project_id: projectId  }),
   })
   
   if (!response.ok) {
@@ -2339,9 +2062,7 @@ export async function bulkImportRSSEntries(entryIds: string[], projectId?: strin
 }
 
 export async function getRSSStats(): Promise<RSSStats> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/rss/stats`, { headers })
+    const response = await apiFetch(`${API_URL}/rss/stats`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -2357,9 +2078,7 @@ export async function getRSSSettings(): Promise<{
   notification_email?: boolean
   notification_in_app: boolean
 }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/rss/settings`, { headers })
+    const response = await apiFetch(`${API_URL}/rss/settings`)
   
   if (!response.ok) {
     const error = await response.json()
@@ -2380,11 +2099,8 @@ export async function updateRSSSettings(settings: {
   notification_email?: boolean
   notification_in_app: boolean
 }> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/rss/settings`, {
+    const response = await apiFetch(`${API_URL}/rss/settings`, {
     method: 'PATCH',
-    headers,
     body: JSON.stringify(settings),
   })
   
@@ -2397,12 +2113,7 @@ export async function updateRSSSettings(settings: {
 }
 
 export async function markRSSEntryAsRead(id: string): Promise<void> {
-  const headers = await getAuthHeader()
-  
-  const response = await fetch(`${API_URL}/rss/entries/${id}/read`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/rss/entries/${id}/read`, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -2448,9 +2159,7 @@ export interface VersionHistoryResponse {
 }
 
 export async function getContentVersions(contentId: string): Promise<VersionHistoryResponse> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/content/${contentId}/versions`, { headers })
+    const response = await apiFetch(`${API_URL}/content/${contentId}/versions`)
 
   if (!response.ok) {
     const error = await response.json()
@@ -2464,12 +2173,7 @@ export async function getContentVersion(
   contentId: string,
   versionId: string
 ): Promise<ContentVersion> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(
-    `${API_URL}/content/${contentId}/versions/${versionId}`,
-    { headers }
-  )
+    const response = await apiFetch(`${API_URL}/content/${contentId}/versions/${versionId}`)
 
   if (!response.ok) {
     const error = await response.json()
@@ -2484,12 +2188,7 @@ export async function compareVersions(
   oldVersionId: string,
   newVersionId: string
 ): Promise<VersionComparison> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(
-    `${API_URL}/content/${contentId}/versions/compare?old=${oldVersionId}&new=${newVersionId}`,
-    { headers }
-  )
+    const response = await apiFetch(`${API_URL}/content/${contentId}/versions/compare?old=${oldVersionId}&new=${newVersionId}`)
 
   if (!response.ok) {
     const error = await response.json()
@@ -2503,15 +2202,7 @@ export async function restoreContentVersion(
   contentId: string,
   versionId: string
 ): Promise<Content> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(
-    `${API_URL}/content/${contentId}/versions/${versionId}/restore`,
-    {
-      method: 'POST',
-      headers,
-    }
-  )
+    const response = await apiFetch(`${API_URL}/content/${contentId}/versions/${versionId}/restore`, { method: 'POST' })
 
   if (!response.ok) {
     const error = await response.json()
@@ -2595,8 +2286,6 @@ export interface AuditLogStats {
 export async function getAuditLogs(
   filters?: AuditLogsFilters
 ): Promise<AuditLogsResponse> {
-  const headers = await getAuthHeader()
-
   const params = new URLSearchParams()
   if (filters?.start_date) params.append('start_date', filters.start_date)
   if (filters?.end_date) params.append('end_date', filters.end_date)
@@ -2607,7 +2296,7 @@ export async function getAuditLogs(
   if (filters?.per_page) params.append('per_page', filters.per_page.toString())
 
   const url = `${API_URL}/audit-logs${params.toString() ? `?${params.toString()}` : ''}`
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
 
   if (!response.ok) {
     const error = await response.json()
@@ -2618,9 +2307,7 @@ export async function getAuditLogs(
 }
 
 export async function getAuditLogStats(): Promise<AuditLogStats> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/audit-logs/stats`, { headers })
+    const response = await apiFetch(`${API_URL}/audit-logs/stats`)
 
   if (!response.ok) {
     const error = await response.json()
@@ -2633,16 +2320,14 @@ export async function getAuditLogStats(): Promise<AuditLogStats> {
 export async function exportAuditLogsCSV(
   filters?: AuditLogsFilters
 ): Promise<Blob> {
-  const headers = await getAuthHeader()
-
-  const params = new URLSearchParams()
+    const params = new URLSearchParams()
   if (filters?.start_date) params.append('start_date', filters.start_date)
   if (filters?.end_date) params.append('end_date', filters.end_date)
   if (filters?.action) params.append('action', filters.action)
   if (filters?.resource_type) params.append('resource_type', filters.resource_type)
 
   const url = `${API_URL}/audit-logs/export${params.toString() ? `?${params.toString()}` : ''}`
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
 
   if (!response.ok) {
     const error = await response.json()
@@ -2707,12 +2392,7 @@ export interface BatchAnalysisResponse {
 export async function analyzeContentQuality(
   contentId: string
 ): Promise<QualityScoreResult> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/quality-scoring/${contentId}/analyze`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/quality-scoring/${contentId}/analyze`, { method: 'POST' })
 
   if (!response.ok) {
     const error = await response.json()
@@ -2725,9 +2405,7 @@ export async function analyzeContentQuality(
 export async function getQualityScore(
   contentId: string
 ): Promise<QualityScoreResult> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/quality-scoring/${contentId}`, { headers })
+    const response = await apiFetch(`${API_URL}/quality-scoring/${contentId}`)
 
   if (!response.ok) {
     const error = await response.json()
@@ -2741,12 +2419,7 @@ export async function getQualityScoreHistory(
   contentId: string,
   days: number = 30
 ): Promise<QualityScoreHistory[]> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(
-    `${API_URL}/quality-scoring/${contentId}/history?days=${days}`,
-    { headers }
-  )
+    const response = await apiFetch(`${API_URL}/quality-scoring/${contentId}/history?days=${days}`)
 
   if (!response.ok) {
     const error = await response.json()
@@ -2759,12 +2432,7 @@ export async function getQualityScoreHistory(
 export async function batchAnalyzeQuality(
   contentIds: string[]
 ): Promise<BatchAnalysisResponse> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/quality-scoring/batch`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ content_ids: contentIds }),
+    const response = await apiFetch(`${API_URL}/quality-scoring/batch`, { method: 'POST', body: JSON.stringify({ content_ids: contentIds  }),
   })
 
   if (!response.ok) {
@@ -2778,9 +2446,7 @@ export async function batchAnalyzeQuality(
 export async function getBatchAnalysisStatus(
   batchId: string
 ): Promise<BatchAnalysisResponse> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/quality-scoring/batch/${batchId}`, { headers })
+    const response = await apiFetch(`${API_URL}/quality-scoring/batch/${batchId}`)
 
   if (!response.ok) {
     const error = await response.json()
@@ -2839,12 +2505,7 @@ export interface SentimentTrendPoint {
 export async function analyzeSentiment(
   contentId: string
 ): Promise<SentimentResult> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/sentiment/${contentId}/analyze`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/sentiment/${contentId}/analyze`, { method: 'POST' })
 
   if (!response.ok) {
     const error = await response.json()
@@ -2857,9 +2518,7 @@ export async function analyzeSentiment(
 export async function getSentiment(
   contentId: string
 ): Promise<SentimentResult> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(`${API_URL}/sentiment/${contentId}`, { headers })
+    const response = await apiFetch(`${API_URL}/sentiment/${contentId}`)
 
   if (!response.ok) {
     const error = await response.json()
@@ -2873,12 +2532,7 @@ export async function getSentimentTrend(
   contentId: string,
   days: number = 30
 ): Promise<SentimentTrendPoint[]> {
-  const headers = await getAuthHeader()
-
-  const response = await fetch(
-    `${API_URL}/sentiment/${contentId}/trend?days=${days}`,
-    { headers }
-  )
+    const response = await apiFetch(`${API_URL}/sentiment/${contentId}/trend?days=${days}`)
 
   if (!response.ok) {
     const error = await response.json()
@@ -2928,8 +2582,7 @@ export interface WidgetLiveData {
 }
 
 export async function listDashboards(): Promise<Dashboard[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/dashboards`, { headers })
+    const response = await apiFetch(`${API_URL}/dashboards`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch dashboards')
@@ -2938,10 +2591,8 @@ export async function listDashboards(): Promise<Dashboard[]> {
 }
 
 export async function createDashboard(data: { name: string; description?: string; is_default?: boolean }): Promise<Dashboard> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/dashboards`, {
+    const response = await apiFetch(`${API_URL}/dashboards`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -2952,8 +2603,7 @@ export async function createDashboard(data: { name: string; description?: string
 }
 
 export async function getDashboard(dashboardId: string): Promise<Dashboard> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/dashboards/${dashboardId}`, { headers })
+    const response = await apiFetch(`${API_URL}/dashboards/${dashboardId}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch dashboard')
@@ -2962,10 +2612,8 @@ export async function getDashboard(dashboardId: string): Promise<Dashboard> {
 }
 
 export async function updateDashboard(dashboardId: string, data: { name?: string; description?: string; layout_config?: Record<string, unknown>; is_default?: boolean }): Promise<Dashboard> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/dashboards/${dashboardId}`, {
+    const response = await apiFetch(`${API_URL}/dashboards/${dashboardId}`, {
     method: 'PUT',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -2976,11 +2624,7 @@ export async function updateDashboard(dashboardId: string, data: { name?: string
 }
 
 export async function deleteDashboard(dashboardId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/dashboards/${dashboardId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/dashboards/${dashboardId}`, { method: 'DELETE' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to delete dashboard')
@@ -2988,10 +2632,8 @@ export async function deleteDashboard(dashboardId: string): Promise<void> {
 }
 
 export async function addWidget(dashboardId: string, data: { widget_type: string; title: string; data_source: string; refresh_interval: number; size?: Record<string, number>; position?: number; config?: Record<string, unknown> }): Promise<DashboardWidget> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/dashboards/${dashboardId}/widgets`, {
+    const response = await apiFetch(`${API_URL}/dashboards/${dashboardId}/widgets`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -3002,10 +2644,8 @@ export async function addWidget(dashboardId: string, data: { widget_type: string
 }
 
 export async function updateWidget(dashboardId: string, widgetId: string, data: Record<string, unknown>): Promise<DashboardWidget> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/dashboards/${dashboardId}/widgets/${widgetId}`, {
+    const response = await apiFetch(`${API_URL}/dashboards/${dashboardId}/widgets/${widgetId}`, {
     method: 'PUT',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -3016,11 +2656,7 @@ export async function updateWidget(dashboardId: string, widgetId: string, data: 
 }
 
 export async function deleteWidget(dashboardId: string, widgetId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/dashboards/${dashboardId}/widgets/${widgetId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/dashboards/${dashboardId}/widgets/${widgetId}`, { method: 'DELETE' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to delete widget')
@@ -3028,8 +2664,7 @@ export async function deleteWidget(dashboardId: string, widgetId: string): Promi
 }
 
 export async function getDashboardData(dashboardId: string): Promise<{ dashboard_id: string; widgets: WidgetLiveData[]; fetched_at: string }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/dashboards/${dashboardId}/data`, { headers })
+    const response = await apiFetch(`${API_URL}/dashboards/${dashboardId}/data`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch dashboard data')
@@ -3068,8 +2703,7 @@ export interface ReportRun {
 }
 
 export async function listReports(): Promise<ScheduledReport[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/reports`, { headers })
+    const response = await apiFetch(`${API_URL}/reports`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch reports')
@@ -3078,10 +2712,8 @@ export async function listReports(): Promise<ScheduledReport[]> {
 }
 
 export async function createReport(data: { name: string; report_type: string; schedule: string; format?: string; description?: string; recipients?: string[]; filters?: Record<string, unknown> }): Promise<ScheduledReport> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/reports`, {
+    const response = await apiFetch(`${API_URL}/reports`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -3092,8 +2724,7 @@ export async function createReport(data: { name: string; report_type: string; sc
 }
 
 export async function getReport(reportId: string): Promise<ScheduledReport> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/reports/${reportId}`, { headers })
+    const response = await apiFetch(`${API_URL}/reports/${reportId}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch report')
@@ -3102,10 +2733,8 @@ export async function getReport(reportId: string): Promise<ScheduledReport> {
 }
 
 export async function updateReport(reportId: string, data: Record<string, unknown>): Promise<ScheduledReport> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/reports/${reportId}`, {
+    const response = await apiFetch(`${API_URL}/reports/${reportId}`, {
     method: 'PUT',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -3116,11 +2745,7 @@ export async function updateReport(reportId: string, data: Record<string, unknow
 }
 
 export async function deleteReport(reportId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/reports/${reportId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/reports/${reportId}`, { method: 'DELETE' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to delete report')
@@ -3128,11 +2753,7 @@ export async function deleteReport(reportId: string): Promise<void> {
 }
 
 export async function generateReport(reportId: string): Promise<ReportRun> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/reports/${reportId}/generate`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/reports/${reportId}/generate`, { method: 'POST' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to generate report')
@@ -3141,8 +2762,7 @@ export async function generateReport(reportId: string): Promise<ReportRun> {
 }
 
 export async function getReportHistory(reportId: string): Promise<ReportRun[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/reports/${reportId}/history`, { headers })
+    const response = await apiFetch(`${API_URL}/reports/${reportId}/history`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch report history')
@@ -3151,8 +2771,7 @@ export async function getReportHistory(reportId: string): Promise<ReportRun[]> {
 }
 
 export async function downloadReport(reportId: string, runId: string): Promise<ReportRun> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/reports/${reportId}/download/${runId}`, { headers })
+    const response = await apiFetch(`${API_URL}/reports/${reportId}/download/${runId}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to download report')
@@ -3181,11 +2800,10 @@ export interface Suggestion {
 }
 
 export async function getSuggestions(type?: SuggestionType): Promise<Suggestion[]> {
-  const headers = await getAuthHeader()
   const params = new URLSearchParams()
   if (type) params.append('type', type)
   const url = `${API_URL}/suggestions${params.toString() ? `?${params.toString()}` : ''}`
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch suggestions')
@@ -3194,11 +2812,7 @@ export async function getSuggestions(type?: SuggestionType): Promise<Suggestion[
 }
 
 export async function acceptSuggestion(suggestionId: string): Promise<{ message: string; suggestion: Suggestion }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/suggestions/${suggestionId}/accept`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/suggestions/${suggestionId}/accept`, { method: 'POST' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to accept suggestion')
@@ -3207,11 +2821,7 @@ export async function acceptSuggestion(suggestionId: string): Promise<{ message:
 }
 
 export async function dismissSuggestion(suggestionId: string): Promise<{ message: string }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/suggestions/${suggestionId}/dismiss`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/suggestions/${suggestionId}/dismiss`, { method: 'POST' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to dismiss suggestion')
@@ -3238,8 +2848,7 @@ export interface CategorizationResult {
 }
 
 export async function getCategorization(): Promise<CategorizationResult[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/categorization`, { headers })
+    const response = await apiFetch(`${API_URL}/categorization`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch categorizations')
@@ -3251,10 +2860,8 @@ export async function updateCategories(
   contentId: string,
   data: { categories: string[] }
 ): Promise<CategorizationResult> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/categorization/${contentId}`, {
+    const response = await apiFetch(`${API_URL}/categorization/${contentId}`, {
     method: 'PATCH',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -3300,8 +2907,7 @@ export interface TrendDataPoint {
 }
 
 export async function getPerformanceOverview(): Promise<PerformanceOverview> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/performance/overview`, { headers })
+    const response = await apiFetch(`${API_URL}/performance/overview`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch performance overview')
@@ -3310,8 +2916,7 @@ export async function getPerformanceOverview(): Promise<PerformanceOverview> {
 }
 
 export async function getPerformanceFunnel(): Promise<FunnelStage[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/performance/funnel`, { headers })
+    const response = await apiFetch(`${API_URL}/performance/funnel`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch performance funnel')
@@ -3320,8 +2925,7 @@ export async function getPerformanceFunnel(): Promise<FunnelStage[]> {
 }
 
 export async function getPerformanceCohorts(): Promise<CohortData[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/performance/cohort`, { headers })
+    const response = await apiFetch(`${API_URL}/performance/cohort`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch performance cohorts')
@@ -3330,8 +2934,7 @@ export async function getPerformanceCohorts(): Promise<CohortData[]> {
 }
 
 export async function getPerformanceAttribution(): Promise<AttributionData[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/performance/attribution`, { headers })
+    const response = await apiFetch(`${API_URL}/performance/attribution`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch performance attribution')
@@ -3340,8 +2943,7 @@ export async function getPerformanceAttribution(): Promise<AttributionData[]> {
 }
 
 export async function getPerformanceTrend(days: number = 30): Promise<TrendDataPoint[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/performance/trends?days=${days}`, { headers })
+    const response = await apiFetch(`${API_URL}/performance/trends?days=${days}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch performance trend')
@@ -3404,8 +3006,7 @@ export interface RetentionAuditEntry {
 }
 
 export async function getRetentionPolicies(): Promise<RetentionPolicy[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/retention/policies`, { headers })
+    const response = await apiFetch(`${API_URL}/retention/policies`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch retention policies')
@@ -3421,10 +3022,8 @@ export async function createRetentionPolicy(data: {
   description?: string
   is_active?: boolean
 }): Promise<RetentionPolicy> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/retention/policies`, {
+    const response = await apiFetch(`${API_URL}/retention/policies`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -3438,10 +3037,8 @@ export async function updateRetentionPolicy(
   policyId: string,
   data: Partial<Omit<RetentionPolicy, 'id' | 'created_at' | 'updated_at' | 'user_id'>>
 ): Promise<RetentionPolicy> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/retention/policies/${policyId}`, {
+    const response = await apiFetch(`${API_URL}/retention/policies/${policyId}`, {
     method: 'PUT',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -3452,11 +3049,7 @@ export async function updateRetentionPolicy(
 }
 
 export async function deleteRetentionPolicy(policyId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/retention/policies/${policyId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/retention/policies/${policyId}`, { method: 'DELETE' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to delete retention policy')
@@ -3464,8 +3057,7 @@ export async function deleteRetentionPolicy(policyId: string): Promise<void> {
 }
 
 export async function getRetentionCompliance(): Promise<ComplianceReport> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/retention/compliance`, { headers })
+    const response = await apiFetch(`${API_URL}/retention/compliance`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch compliance report')
@@ -3474,8 +3066,7 @@ export async function getRetentionCompliance(): Promise<ComplianceReport> {
 }
 
 export async function getRetentionAuditTrail(): Promise<RetentionAuditEntry[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/retention/audit`, { headers })
+    const response = await apiFetch(`${API_URL}/retention/audit`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch audit trail')
@@ -3532,7 +3123,7 @@ export interface SSOIdentity {
 }
 
 export async function getAvailableSSOProviders(): Promise<AvailableSSOProvider[]> {
-  const response = await fetch(`${API_URL}/sso/available`)
+  const response = await apiFetch(`${API_URL}/sso/available`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch SSO providers')
@@ -3541,8 +3132,7 @@ export async function getAvailableSSOProviders(): Promise<AvailableSSOProvider[]
 }
 
 export async function getSSOProviders(): Promise<SSOProvider[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sso/providers`, { headers })
+    const response = await apiFetch(`${API_URL}/sso/providers`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch SSO providers')
@@ -3551,8 +3141,7 @@ export async function getSSOProviders(): Promise<SSOProvider[]> {
 }
 
 export async function getSSOProvider(providerId: string): Promise<SSOProvider> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sso/providers/${providerId}`, { headers })
+    const response = await apiFetch(`${API_URL}/sso/providers/${providerId}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch SSO provider')
@@ -3573,10 +3162,8 @@ export async function createSSOProvider(data: {
   domain?: string
   is_active?: boolean
 }): Promise<SSOProvider> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sso/providers`, {
+    const response = await apiFetch(`${API_URL}/sso/providers`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -3590,10 +3177,8 @@ export async function updateSSOProvider(
   providerId: string,
   data: Partial<Omit<SSOProvider, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<SSOProvider> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sso/providers/${providerId}`, {
+    const response = await apiFetch(`${API_URL}/sso/providers/${providerId}`, {
     method: 'PATCH',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -3604,11 +3189,7 @@ export async function updateSSOProvider(
 }
 
 export async function deleteSSOProvider(providerId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sso/providers/${providerId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/sso/providers/${providerId}`, { method: 'DELETE' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to delete SSO provider')
@@ -3620,13 +3201,7 @@ export async function initiateSSOLogin(data: {
   redirect_uri: string
   link_user?: boolean
 }): Promise<SSOInitiateResponse> {
-  const headers = await getAuthHeader()
-  // Use public endpoint if no session (will still work with auth headers)
-  const response = await fetch(`${API_URL}/sso/login/public`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(data),
-  })
+      const response = await apiFetch(`${API_URL}/sso/login/public`, { method: 'POST', body: JSON.stringify(data) })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to initiate SSO login')
@@ -3638,10 +3213,8 @@ export async function handleSSOCallback(data: {
   state: string
   code: string
 }): Promise<SSOCallbackResponse> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sso/callback`, {
+    const response = await apiFetch(`${API_URL}/sso/callback`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -3652,8 +3225,7 @@ export async function handleSSOCallback(data: {
 }
 
 export async function getUserSSOIdentities(): Promise<SSOIdentity[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sso/identities`, { headers })
+    const response = await apiFetch(`${API_URL}/sso/identities`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch SSO identities')
@@ -3662,11 +3234,7 @@ export async function getUserSSOIdentities(): Promise<SSOIdentity[]> {
 }
 
 export async function unlinkSSOIdentity(identityId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sso/identities/${identityId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/sso/identities/${identityId}`, { method: 'DELETE' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to unlink SSO identity')
@@ -3727,14 +3295,13 @@ export async function getComments(
     pageSize?: number
   }
 ): Promise<CommentListResponse> {
-  const headers = await getAuthHeader()
   const params = new URLSearchParams()
   if (options?.parentId) params.set('parent_id', options.parentId)
   if (options?.isResolved !== undefined) params.set('is_resolved', String(options.isResolved))
   if (options?.page) params.set('page', String(options.page))
   if (options?.pageSize) params.set('page_size', String(options.pageSize))
   const qs = params.toString() ? `?${params.toString()}` : ''
-  const response = await fetch(`${API_URL}/content/${contentId}/comments${qs}`, { headers })
+  const response = await apiFetch(`${API_URL}/content/${contentId}/comments${qs}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch comments')
@@ -3751,10 +3318,8 @@ export async function createComment(
     parent_id?: string
   }
 ): Promise<ContentComment> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/content/${contentId}/comments`, {
+    const response = await apiFetch(`${API_URL}/content/${contentId}/comments`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -3768,10 +3333,8 @@ export async function updateComment(
   commentId: string,
   data: { text: string }
 ): Promise<ContentComment> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/content/comments/${commentId}`, {
+    const response = await apiFetch(`${API_URL}/content/comments/${commentId}`, {
     method: 'PUT',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -3782,11 +3345,7 @@ export async function updateComment(
 }
 
 export async function deleteComment(commentId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/content/comments/${commentId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/content/comments/${commentId}`, { method: 'DELETE' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to delete comment')
@@ -3794,8 +3353,7 @@ export async function deleteComment(commentId: string): Promise<void> {
 }
 
 export async function getCommentThread(commentId: string): Promise<CommentThread> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/content/comments/${commentId}/thread`, { headers })
+    const response = await apiFetch(`${API_URL}/content/comments/${commentId}/thread`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch comment thread')
@@ -3804,11 +3362,7 @@ export async function getCommentThread(commentId: string): Promise<CommentThread
 }
 
 export async function resolveComment(commentId: string): Promise<ContentComment> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/content/comments/${commentId}/resolve`, {
-    method: 'PUT',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/content/comments/${commentId}/resolve`, { method: 'PUT' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to resolve comment')
@@ -3817,11 +3371,7 @@ export async function resolveComment(commentId: string): Promise<ContentComment>
 }
 
 export async function unresolveComment(commentId: string): Promise<ContentComment> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/content/comments/${commentId}/unresolve`, {
-    method: 'PUT',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/content/comments/${commentId}/unresolve`, { method: 'PUT' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to unresolve comment')
@@ -3830,8 +3380,7 @@ export async function unresolveComment(commentId: string): Promise<ContentCommen
 }
 
 export async function lookupMentions(query: string): Promise<MentionUser[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/comments/mentions/lookup?q=${encodeURIComponent(query)}`, { headers })
+    const response = await apiFetch(`${API_URL}/comments/mentions/lookup?q=${encodeURIComponent(query)}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to lookup mentions')
@@ -3843,11 +3392,7 @@ export async function addCommentReaction(
   commentId: string,
   emoji: string
 ): Promise<Record<string, unknown>> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/content/comments/${commentId}/reactions`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ emoji }),
+    const response = await apiFetch(`${API_URL}/content/comments/${commentId}/reactions`, { method: 'POST', body: JSON.stringify({ emoji  }),
   })
   if (!response.ok) {
     const error = await response.json()
@@ -3860,11 +3405,7 @@ export async function removeCommentReaction(
   commentId: string,
   emoji: string
 ): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/content/comments/${commentId}/reactions?emoji=${encodeURIComponent(emoji)}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/content/comments/${commentId}/reactions?emoji=${encodeURIComponent(emoji)}`, { method: 'DELETE' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to remove reaction')
@@ -3872,8 +3413,7 @@ export async function removeCommentReaction(
 }
 
 export async function getCommentReactions(commentId: string): Promise<CommentReaction[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/content/comments/${commentId}/reactions`, { headers })
+    const response = await apiFetch(`${API_URL}/content/comments/${commentId}/reactions`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch reactions')
@@ -3943,7 +3483,6 @@ export async function listPlugins(options?: {
   limit?: number
   offset?: number
 }): Promise<PluginListResponse> {
-  const headers = await getAuthHeader()
   const params = new URLSearchParams()
   if (options?.category) params.append('category', options.category)
   if (options?.search) params.append('search', options.search)
@@ -3951,7 +3490,7 @@ export async function listPlugins(options?: {
   if (options?.limit) params.append('limit', options.limit.toString())
   if (options?.offset) params.append('offset', options.offset.toString())
   const url = `${API_URL}/plugins${params.toString() ? `?${params.toString()}` : ''}`
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch plugins')
@@ -3960,8 +3499,7 @@ export async function listPlugins(options?: {
 }
 
 export async function getPlugin(pluginId: string): Promise<PluginRegistryItem> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/plugins/${pluginId}`, { headers })
+    const response = await apiFetch(`${API_URL}/plugins/${pluginId}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch plugin')
@@ -3970,8 +3508,7 @@ export async function getPlugin(pluginId: string): Promise<PluginRegistryItem> {
 }
 
 export async function getPluginMeta(): Promise<PluginMeta> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/plugins/meta`, { headers })
+    const response = await apiFetch(`${API_URL}/plugins/meta`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch plugin metadata')
@@ -3983,11 +3520,10 @@ export async function listInstalledPlugins(
   organizationId: string,
   isEnabled?: boolean
 ): Promise<InstalledPluginListResponse> {
-  const headers = await getAuthHeader()
-  const params = new URLSearchParams()
+    const params = new URLSearchParams()
   if (isEnabled !== undefined) params.append('is_enabled', String(isEnabled))
   const url = `${API_URL}/organizations/${organizationId}/plugins${params.toString() ? `?${params.toString()}` : ''}`
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch installed plugins')
@@ -4000,10 +3536,8 @@ export async function installPlugin(
   organizationId: string,
   customConfig?: Record<string, unknown>
 ): Promise<InstalledPlugin> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/organizations/${organizationId}/plugins/install`, {
+  const response = await apiFetch(`${API_URL}/organizations/${organizationId}/plugins/install`, {
     method: 'POST',
-    headers,
     body: JSON.stringify({
       plugin_id: pluginId,
       organization_id: organizationId,
@@ -4021,11 +3555,7 @@ export async function uninstallPlugin(
   installId: string,
   organizationId: string
 ): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/organizations/${organizationId}/plugins/${installId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/organizations/${organizationId}/plugins/${installId}`, { method: 'DELETE' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to uninstall plugin')
@@ -4036,8 +3566,7 @@ export async function getPluginConfig(
   installId: string,
   organizationId: string
 ): Promise<{ config: Record<string, unknown> }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/organizations/${organizationId}/plugins/${installId}/config`, { headers })
+    const response = await apiFetch(`${API_URL}/organizations/${organizationId}/plugins/${installId}/config`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch plugin config')
@@ -4050,11 +3579,7 @@ export async function updatePluginConfig(
   organizationId: string,
   config: Record<string, unknown>
 ): Promise<InstalledPlugin> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/organizations/${organizationId}/plugins/${installId}/config`, {
-    method: 'PUT',
-    headers,
-    body: JSON.stringify({ config }),
+    const response = await apiFetch(`${API_URL}/organizations/${organizationId}/plugins/${installId}/config`, { method: 'PUT', body: JSON.stringify({ config  }),
   })
   if (!response.ok) {
     const error = await response.json()
@@ -4068,11 +3593,7 @@ export async function togglePlugin(
   organizationId: string,
   isEnabled: boolean
 ): Promise<InstalledPlugin> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/organizations/${organizationId}/plugins/${installId}/toggle`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify({ is_enabled: isEnabled }),
+    const response = await apiFetch(`${API_URL}/organizations/${organizationId}/plugins/${installId}/toggle`, { method: 'PATCH', body: JSON.stringify({ is_enabled: isEnabled  }),
   })
   if (!response.ok) {
     const error = await response.json()
@@ -4086,10 +3607,8 @@ export async function validatePluginPermissions(data: {
   permissions: string[]
   hooks: string[]
 }): Promise<{ valid: boolean; errors: string[] }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/plugins/validate-permissions`, {
+    const response = await apiFetch(`${API_URL}/plugins/validate-permissions`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -4181,10 +3700,8 @@ export interface SAMLIdentity {
 }
 
 export async function createSAMLProvider(data: SAMLProviderCreate): Promise<SAMLProvider> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/saml/providers`, {
+    const response = await apiFetch(`${API_URL}/saml/providers`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -4195,8 +3712,7 @@ export async function createSAMLProvider(data: SAMLProviderCreate): Promise<SAML
 }
 
 export async function listSAMLProviders(): Promise<SAMLProvider[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/saml/providers`, { headers })
+    const response = await apiFetch(`${API_URL}/saml/providers`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to list SAML providers')
@@ -4205,8 +3721,7 @@ export async function listSAMLProviders(): Promise<SAMLProvider[]> {
 }
 
 export async function getSAMLProvider(providerId: string): Promise<SAMLProvider> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/saml/providers/${providerId}`, { headers })
+    const response = await apiFetch(`${API_URL}/saml/providers/${providerId}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to get SAML provider')
@@ -4215,10 +3730,8 @@ export async function getSAMLProvider(providerId: string): Promise<SAMLProvider>
 }
 
 export async function updateSAMLProvider(providerId: string, data: SAMLProviderUpdate): Promise<SAMLProvider> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/saml/providers/${providerId}`, {
+    const response = await apiFetch(`${API_URL}/saml/providers/${providerId}`, {
     method: 'PATCH',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -4229,11 +3742,7 @@ export async function updateSAMLProvider(providerId: string, data: SAMLProviderU
 }
 
 export async function deleteSAMLProvider(providerId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/saml/providers/${providerId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/saml/providers/${providerId}`, { method: 'DELETE' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to delete SAML provider')
@@ -4242,11 +3751,7 @@ export async function deleteSAMLProvider(providerId: string): Promise<void> {
 
 export async function fetchSAMLMetadata(data: { metadata_url: string } | string): Promise<SAMLMetadata> {
   const metadataUrl = typeof data === 'string' ? data : data.metadata_url
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/saml/providers/metadata/fetch`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ metadata_url: metadataUrl }),
+    const response = await apiFetch(`${API_URL}/saml/providers/metadata/fetch`, { method: 'POST', body: JSON.stringify({ metadata_url: metadataUrl  }),
   })
   if (!response.ok) {
     const error = await response.json()
@@ -4259,11 +3764,7 @@ export async function updateSAMLAttributeMapping(
   providerId: string,
   attributeMapping: Record<string, string>
 ): Promise<SAMLProvider> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/saml/providers/${providerId}/attribute-mapping`, {
-    method: 'PUT',
-    headers,
-    body: JSON.stringify({ attribute_mapping: attributeMapping }),
+    const response = await apiFetch(`${API_URL}/saml/providers/${providerId}/attribute-mapping`, { method: 'PUT', body: JSON.stringify({ attribute_mapping: attributeMapping  }),
   })
   if (!response.ok) {
     const error = await response.json()
@@ -4276,11 +3777,7 @@ export async function initiateSAMLLogin(data: { provider_id: string; relay_state
   const providerId = typeof data === 'string' ? data : data.provider_id
   const body = typeof data === 'string' ? JSON.stringify({}) : JSON.stringify(data)
   const endpoint = typeof data === 'string' ? `${API_URL}/saml/login/${providerId}` : `${API_URL}/saml/login/public`
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  })
+  const response = await apiFetch(endpoint, { method: 'POST', body, headers: { 'Content-Type': 'application/json' } })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to initiate SAML login')
@@ -4289,11 +3786,7 @@ export async function initiateSAMLLogin(data: { provider_id: string; relay_state
 }
 
 export async function initiateSAMLLogout(providerId: string): Promise<SAMLSLOResponse> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/saml/logout/${providerId}`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/saml/logout/${providerId}`, { method: 'POST' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to initiate SAML logout')
@@ -4302,8 +3795,7 @@ export async function initiateSAMLLogout(providerId: string): Promise<SAMLSLORes
 }
 
 export async function listSAMLIdentities(): Promise<SAMLIdentity[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/saml/identities`, { headers })
+    const response = await apiFetch(`${API_URL}/saml/identities`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to list SAML identities')
@@ -4312,11 +3804,7 @@ export async function listSAMLIdentities(): Promise<SAMLIdentity[]> {
 }
 
 export async function unlinkSAMLIdentity(identityId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/saml/identities/${identityId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/saml/identities/${identityId}`, { method: 'DELETE' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to unlink SAML identity')
@@ -4324,7 +3812,7 @@ export async function unlinkSAMLIdentity(identityId: string): Promise<void> {
 }
 
 export async function listAvailableSAMLProviders(): Promise<Array<{ id: string; name: string }>> {
-  const response = await fetch(`${API_URL}/saml/providers/available`)
+  const response = await apiFetch(`${API_URL}/saml/providers/available`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to list available SAML providers')
@@ -4451,7 +3939,6 @@ export async function listMarketplaceTemplates(options?: {
   limit?: number
   offset?: number
 }): Promise<MarketplaceTemplateListResponse> {
-  const headers = await getAuthHeader()
   const params = new URLSearchParams()
   if (options?.category) params.append('category', options.category)
   if (options?.search) params.append('search', options.search)
@@ -4460,7 +3947,7 @@ export async function listMarketplaceTemplates(options?: {
   if (options?.limit) params.append('limit', options.limit.toString())
   if (options?.offset) params.append('offset', options.offset.toString())
   const url = `${API_URL}/marketplace/templates${params.toString() ? `?${params.toString()}` : ''}`
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to list marketplace templates')
@@ -4469,8 +3956,7 @@ export async function listMarketplaceTemplates(options?: {
 }
 
 export async function getMarketplaceTemplate(templateId: string): Promise<MarketplaceTemplate> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}`, { headers })
+    const response = await apiFetch(`${API_URL}/marketplace/templates/${templateId}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to get template')
@@ -4479,10 +3965,8 @@ export async function getMarketplaceTemplate(templateId: string): Promise<Market
 }
 
 export async function createMarketplaceTemplate(data: MarketplaceTemplateCreate): Promise<MarketplaceTemplate> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/marketplace/templates`, {
+    const response = await apiFetch(`${API_URL}/marketplace/templates`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -4493,10 +3977,8 @@ export async function createMarketplaceTemplate(data: MarketplaceTemplateCreate)
 }
 
 export async function updateMarketplaceTemplate(templateId: string, data: MarketplaceTemplateUpdate): Promise<MarketplaceTemplate> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}`, {
+    const response = await apiFetch(`${API_URL}/marketplace/templates/${templateId}`, {
     method: 'PATCH',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -4507,11 +3989,7 @@ export async function updateMarketplaceTemplate(templateId: string, data: Market
 }
 
 export async function deleteMarketplaceTemplate(templateId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/marketplace/templates/${templateId}`, { method: 'DELETE' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to delete template')
@@ -4519,11 +3997,7 @@ export async function deleteMarketplaceTemplate(templateId: string): Promise<voi
 }
 
 export async function publishMarketplaceTemplate(templateId: string): Promise<MarketplaceTemplate> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}/publish`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/marketplace/templates/${templateId}/publish`, { method: 'POST' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to publish template')
@@ -4532,11 +4006,7 @@ export async function publishMarketplaceTemplate(templateId: string): Promise<Ma
 }
 
 export async function unpublishMarketplaceTemplate(templateId: string): Promise<MarketplaceTemplate> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}/unpublish`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/marketplace/templates/${templateId}/unpublish`, { method: 'POST' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to unpublish template')
@@ -4545,8 +4015,7 @@ export async function unpublishMarketplaceTemplate(templateId: string): Promise<
 }
 
 export async function getMarketplaceCategories(): Promise<MarketplaceCategory[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/marketplace/categories`, { headers })
+    const response = await apiFetch(`${API_URL}/marketplace/categories`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch categories')
@@ -4555,9 +4024,8 @@ export async function getMarketplaceCategories(): Promise<MarketplaceCategory[]>
 }
 
 export async function getMarketplaceTags(limit?: number): Promise<MarketplaceTag[]> {
-  const headers = await getAuthHeader()
   const params = limit ? `?limit=${limit}` : ''
-  const response = await fetch(`${API_URL}/marketplace/tags${params}`, { headers })
+  const response = await apiFetch(`${API_URL}/marketplace/tags${params}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch tags')
@@ -4566,11 +4034,7 @@ export async function getMarketplaceTags(limit?: number): Promise<MarketplaceTag
 }
 
 export async function installMarketplaceTemplate(templateId: string): Promise<MarketplaceInstallResult> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}/install`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/marketplace/templates/${templateId}/install`, { method: 'POST' })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to install template')
@@ -4579,10 +4043,8 @@ export async function installMarketplaceTemplate(templateId: string): Promise<Ma
 }
 
 export async function rateMarketplaceTemplate(templateId: string, data: MarketplaceRatingSubmit): Promise<MarketplaceRating> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}/ratings`, {
+    const response = await apiFetch(`${API_URL}/marketplace/templates/${templateId}/ratings`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -4593,12 +4055,11 @@ export async function rateMarketplaceTemplate(templateId: string, data: Marketpl
 }
 
 export async function getTemplateRatings(templateId: string, limit?: number, offset?: number): Promise<MarketplaceRatingsResponse> {
-  const headers = await getAuthHeader()
   const params = new URLSearchParams()
   if (limit) params.append('limit', limit.toString())
   if (offset) params.append('offset', offset.toString())
   const url = `${API_URL}/marketplace/templates/${templateId}/ratings${params.toString() ? `?${params.toString()}` : ''}`
-  const response = await fetch(url, { headers })
+  const response = await apiFetch(url)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch template ratings')
@@ -4607,9 +4068,8 @@ export async function getTemplateRatings(templateId: string, limit?: number, off
 }
 
 export async function getFeaturedTemplates(limit?: number): Promise<MarketplaceTemplate[]> {
-  const headers = await getAuthHeader()
-  const params = limit ? `?limit=${limit}` : ''
-  const response = await fetch(`${API_URL}/marketplace/featured${params}`, { headers })
+    const params = limit ? `?limit=${limit}` : ''
+  const response = await apiFetch(`${API_URL}/marketplace/featured${params}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch featured templates')
@@ -4618,9 +4078,8 @@ export async function getFeaturedTemplates(limit?: number): Promise<MarketplaceT
 }
 
 export async function getTrendingTemplates(limit?: number): Promise<MarketplaceTemplate[]> {
-  const headers = await getAuthHeader()
-  const params = limit ? `?limit=${limit}` : ''
-  const response = await fetch(`${API_URL}/marketplace/trending${params}`, { headers })
+    const params = limit ? `?limit=${limit}` : ''
+  const response = await apiFetch(`${API_URL}/marketplace/trending${params}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch trending templates')
@@ -4629,8 +4088,7 @@ export async function getTrendingTemplates(limit?: number): Promise<MarketplaceT
 }
 
 export async function getTemplateVersions(templateId: string): Promise<MarketplaceVersion[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/marketplace/templates/${templateId}/versions`, { headers })
+    const response = await apiFetch(`${API_URL}/marketplace/templates/${templateId}/versions`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch template versions')
@@ -4648,8 +4106,7 @@ export async function getMarketplaceAuthorProfile(authorId: string): Promise<{
   avg_rating: number
   templates: MarketplaceTemplate[]
 }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/marketplace/authors/${authorId}`, { headers })
+    const response = await apiFetch(`${API_URL}/marketplace/authors/${authorId}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch author profile')
@@ -4704,10 +4161,8 @@ export async function createFunnel(data: {
   description?: string
   steps: Array<{ step_id: string; name: string; order: number; description?: string }>
 }): Promise<FunnelResponse> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/funnels`, {
+    const response = await apiFetch(`${API_URL}/funnels`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) throw new Error('Failed to create funnel')
@@ -4715,44 +4170,33 @@ export async function createFunnel(data: {
 }
 
 export async function getFunnel(funnelId: string): Promise<FunnelResponse> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/funnels/${funnelId}`, { headers })
+    const response = await apiFetch(`${API_URL}/funnels/${funnelId}`)
   if (!response.ok) throw new Error('Failed to get funnel')
   return response.json()
 }
 
 export async function listFunnels(): Promise<FunnelListResponse> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/funnels`, { headers })
+    const response = await apiFetch(`${API_URL}/funnels`)
   if (!response.ok) throw new Error('Failed to list funnels')
   return response.json()
 }
 
 export async function trackFunnelEvent(funnelId: string, stepId: string, eventData?: Record<string, unknown>): Promise<{ success: boolean }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/funnels/${funnelId}/events`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ step_id: stepId, event_data: eventData }),
+    const response = await apiFetch(`${API_URL}/funnels/${funnelId}/events`, { method: 'POST', body: JSON.stringify({ step_id: stepId, event_data: eventData  }),
   })
   if (!response.ok) throw new Error('Failed to track funnel event')
   return response.json()
 }
 
 export async function getFunnelAnalytics(funnelId: string, dateRange?: { start: string; end: string }): Promise<FunnelAnalyticsData> {
-  const headers = await getAuthHeader()
-  const params = dateRange ? `?start=${dateRange.start}&end=${dateRange.end}` : ''
-  const response = await fetch(`${API_URL}/funnels/${funnelId}/analytics${params}`, { headers })
+    const params = dateRange ? `?start=${dateRange.start}&end=${dateRange.end}` : ''
+  const response = await apiFetch(`${API_URL}/funnels/${funnelId}/analytics${params}`)
   if (!response.ok) throw new Error('Failed to get funnel analytics')
   return response.json()
 }
 
 export async function deleteFunnel(funnelId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/funnels/${funnelId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/funnels/${funnelId}`, { method: 'DELETE' })
   if (!response.ok) throw new Error('Failed to delete funnel')
 }
 
@@ -4792,10 +4236,8 @@ export interface TouchpointListResponse {
 export type AttributionModel = 'first_touch' | 'last_touch' | 'linear' | 'time_decay' | 'position_based'
 
 export async function recordTouchpoint(data: { content_id: string; channel: string; source: string; campaign?: string }): Promise<TouchpointData> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/attribution/touchpoints`, {
+    const response = await apiFetch(`${API_URL}/attribution/touchpoints`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) throw new Error('Failed to record touchpoint')
@@ -4803,27 +4245,21 @@ export async function recordTouchpoint(data: { content_id: string; channel: stri
 }
 
 export async function getTouchpoints(contentId: string): Promise<AttributionTouchpoint[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/attribution/touchpoints/${contentId}`, { headers })
+    const response = await apiFetch(`${API_URL}/attribution/touchpoints/${contentId}`)
   if (!response.ok) throw new Error('Failed to get touchpoints')
   return response.json()
 }
 
 export async function calculateAttribution(contentId: string, model: AttributionModel): Promise<AttributionResult[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/attribution/calculate`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ content_id: contentId, model }),
+    const response = await apiFetch(`${API_URL}/attribution/calculate`, { method: 'POST', body: JSON.stringify({ content_id: contentId, model  }),
   })
   if (!response.ok) throw new Error('Failed to calculate attribution')
   return response.json()
 }
 
 export async function getChannelPerformance(dateRange?: { start: string; end: string }): Promise<AttributionResult[]> {
-  const headers = await getAuthHeader()
   const params = dateRange ? `?start=${dateRange.start}&end=${dateRange.end}` : ''
-  const response = await fetch(`${API_URL}/attribution/channels${params}`, { headers })
+  const response = await apiFetch(`${API_URL}/attribution/channels${params}`)
   if (!response.ok) throw new Error('Failed to get channel performance')
   return response.json()
 }
@@ -4866,10 +4302,8 @@ export interface SLADashboardData {
 }
 
 export async function createSLAPolicy(data: { name: string; metric: string; threshold: number; window_minutes: number; severity: string }): Promise<SLAPolicy> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sla/policies`, {
+    const response = await apiFetch(`${API_URL}/sla/policies`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) throw new Error('Failed to create SLA policy')
@@ -4877,41 +4311,32 @@ export async function createSLAPolicy(data: { name: string; metric: string; thre
 }
 
 export async function listSLAPolicies(): Promise<SLAPolicy[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sla/policies`, { headers })
+    const response = await apiFetch(`${API_URL}/sla/policies`)
   if (!response.ok) throw new Error('Failed to list SLA policies')
   return response.json()
 }
 
 export async function getSLADashboard(): Promise<SLADashboardData> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sla/dashboard`, { headers })
+    const response = await apiFetch(`${API_URL}/sla/dashboard`)
   if (!response.ok) throw new Error('Failed to get SLA dashboard')
   return response.json()
 }
 
 export async function getSLAAlerts(acknowledged?: boolean): Promise<SLAAlert[]> {
-  const headers = await getAuthHeader()
-  const params = acknowledged !== undefined ? `?acknowledged=${acknowledged}` : ''
-  const response = await fetch(`${API_URL}/sla/alerts${params}`, { headers })
+    const params = acknowledged !== undefined ? `?acknowledged=${acknowledged}` : ''
+  const response = await apiFetch(`${API_URL}/sla/alerts${params}`)
   if (!response.ok) throw new Error('Failed to get SLA alerts')
   return response.json()
 }
 
 export async function acknowledgeSLAAlert(alertId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sla/alerts/${alertId}/acknowledge`, {
-    method: 'PUT',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/sla/alerts/${alertId}/acknowledge`, { method: 'PUT' })
   if (!response.ok) throw new Error('Failed to acknowledge SLA alert')
 }
 
 export async function updateSLAPolicy(policyId: string, data: Partial<SLAPolicy>): Promise<SLAPolicy> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sla/policies/${policyId}`, {
+    const response = await apiFetch(`${API_URL}/sla/policies/${policyId}`, {
     method: 'PUT',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) throw new Error('Failed to update SLA policy')
@@ -4919,11 +4344,7 @@ export async function updateSLAPolicy(policyId: string, data: Partial<SLAPolicy>
 }
 
 export async function deleteSLAPolicy(policyId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sla/policies/${policyId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/sla/policies/${policyId}`, { method: 'DELETE' })
   if (!response.ok) throw new Error('Failed to delete SLA policy')
 }
 
@@ -4935,10 +4356,8 @@ export interface SLAMetricData {
 }
 
 export async function recordSLAMetric(data: SLAMetricData): Promise<{ success: boolean }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sla/metrics`, {
+    const response = await apiFetch(`${API_URL}/sla/metrics`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) throw new Error('Failed to record SLA metric')
@@ -4946,22 +4365,19 @@ export async function recordSLAMetric(data: SLAMetricData): Promise<{ success: b
 }
 
 export async function getSLAUptime(days: number = 30): Promise<{ uptime_percentage: number; period_days: number }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sla/uptime?days=${days}`, { headers })
+    const response = await apiFetch(`${API_URL}/sla/uptime?days=${days}`)
   if (!response.ok) throw new Error('Failed to get SLA uptime')
   return response.json()
 }
 
 export async function getSLAResponseTime(days: number = 30): Promise<{ avg_ms: number; p50: number; p95: number; p99: number }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sla/response-time?days=${days}`, { headers })
+    const response = await apiFetch(`${API_URL}/sla/response-time?days=${days}`)
   if (!response.ok) throw new Error('Failed to get SLA response time')
   return response.json()
 }
 
 export async function getSLAErrorRate(days: number = 30): Promise<{ error_rate: number; period_days: number }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/sla/error-rate?days=${days}`, { headers })
+    const response = await apiFetch(`${API_URL}/sla/error-rate?days=${days}`)
   if (!response.ok) throw new Error('Failed to get SLA error rate')
   return response.json()
 }
@@ -4975,9 +4391,8 @@ export interface SLAAlertListResponse {
 
 // Override getSLAAlerts to return list response
 export async function getSLAAlertsWithResponse(acknowledged?: boolean): Promise<SLAAlertListResponse> {
-  const headers = await getAuthHeader()
   const params = acknowledged !== undefined ? `?acknowledged=${acknowledged}` : ''
-  const response = await fetch(`${API_URL}/sla/alerts${params}`, { headers })
+  const response = await apiFetch(`${API_URL}/sla/alerts${params}`)
   if (!response.ok) throw new Error('Failed to get SLA alerts')
   return response.json()
 }
@@ -5040,10 +4455,8 @@ export interface IntegrationEventData {
 }
 
 export async function registerIntegration(data: { name: string; type: string; provider: string; credentials: Record<string, unknown>; settings?: Record<string, unknown> }): Promise<IntegrationConfigData> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/integration-framework/configs`, {
+    const response = await apiFetch(`${API_URL}/integration-framework/configs`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) throw new Error('Failed to register integration')
@@ -5051,17 +4464,14 @@ export async function registerIntegration(data: { name: string; type: string; pr
 }
 
 export async function listIntegrations(): Promise<IntegrationConfigData[]> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/integration-framework/configs`, { headers })
+    const response = await apiFetch(`${API_URL}/integration-framework/configs`)
   if (!response.ok) throw new Error('Failed to list integrations')
   return response.json()
 }
 
 export async function updateIntegration(configId: string, data: Record<string, unknown>): Promise<IntegrationConfigData> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}`, {
+    const response = await apiFetch(`${API_URL}/integration-framework/configs/${configId}`, {
     method: 'PUT',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) throw new Error('Failed to update integration')
@@ -5069,29 +4479,19 @@ export async function updateIntegration(configId: string, data: Record<string, u
 }
 
 export async function deleteIntegration(configId: string): Promise<void> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}`, {
-    method: 'DELETE',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/integration-framework/configs/${configId}`, { method: 'DELETE' })
   if (!response.ok) throw new Error('Failed to delete integration')
 }
 
 export async function testIntegration(configId: string): Promise<{ success: boolean; message: string; latency_ms: number }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}/test`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/integration-framework/configs/${configId}/test`, { method: 'POST' })
   if (!response.ok) throw new Error('Failed to test integration')
   return response.json()
 }
 
 export async function triggerIntegrationEvent(configId: string, data: { event_type: string; payload: Record<string, unknown> }): Promise<IntegrationEventData> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}/events`, {
+    const response = await apiFetch(`${API_URL}/integration-framework/configs/${configId}/events`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(data),
   })
   if (!response.ok) throw new Error('Failed to trigger integration event')
@@ -5099,25 +4499,19 @@ export async function triggerIntegrationEvent(configId: string, data: { event_ty
 }
 
 export async function retryFailedEvent(eventId: string): Promise<{ success: boolean; message: string }> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/integration-framework/events/${eventId}/retry`, {
-    method: 'POST',
-    headers,
-  })
+    const response = await apiFetch(`${API_URL}/integration-framework/events/${eventId}/retry`, { method: 'POST' })
   if (!response.ok) throw new Error('Failed to retry event')
   return response.json()
 }
 
 export async function getIntegrationLogs(configId: string, limit: number = 100): Promise<IntegrationLogListResponse> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}/logs?limit=${limit}`, { headers })
+    const response = await apiFetch(`${API_URL}/integration-framework/configs/${configId}/logs?limit=${limit}`)
   if (!response.ok) throw new Error('Failed to get integration logs')
   return response.json()
 }
 
 export async function getIntegrationStatus(configId: string): Promise<IntegrationStatusData> {
-  const headers = await getAuthHeader()
-  const response = await fetch(`${API_URL}/integration-framework/configs/${configId}/status`, { headers })
+    const response = await apiFetch(`${API_URL}/integration-framework/configs/${configId}/status`)
   if (!response.ok) throw new Error('Failed to get integration status')
   return response.json()
 }
