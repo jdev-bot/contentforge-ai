@@ -32,7 +32,9 @@ import {
   Download,
   RefreshCw,
   AlertCircle,
+  BarChart3,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 type DateRange = '7d' | '30d' | '90d'
 
@@ -169,13 +171,16 @@ export default function AnalyticsDashboard() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Analytics Dashboard</h2>
-          <Button onClick={loadData} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
-          </Button>
-        </div>
+        <PageHeader
+          title="Analytics"
+          description="Track your content performance and usage metrics across all channels"
+          icon={<BarChart3 className="w-5 h-5 text-blue-500" />}
+          actions={
+            <Button onClick={loadData} variant="outline" size="sm" leftIcon={<RefreshCw className="h-4 w-4" />}>
+              Retry
+            </Button>
+          }
+        />
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3 text-red-600">
@@ -191,15 +196,12 @@ export default function AnalyticsDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Analytics Dashboard</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Track your content performance and usage metrics
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Analytics"
+        description="Track your content performance and usage metrics across all channels"
+        icon={<BarChart3 className="w-5 h-5 text-blue-500" />}
+        actions={
+          <div className="flex items-center gap-2">
           {/* Date Range Selector */}
           <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
             {(['7d', '30d', '90d'] as DateRange[]).map((range) => (
@@ -238,8 +240,10 @@ export default function AnalyticsDashboard() {
             <Download className="h-4 w-4 mr-2" />
             {exporting === 'json' ? 'Exporting...' : 'JSON'}
           </Button>
-        </div>
-      </div>
+          </div>
+        }
+
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

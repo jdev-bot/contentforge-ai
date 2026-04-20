@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
   
   // Turbopack configuration
   turbopack: {
-    root: process.cwd(),
+    root: __dirname,
   },
   
   // Performance optimizations

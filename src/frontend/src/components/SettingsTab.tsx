@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
+import { PageHeader } from '@/components/ui/PageHeader'
 import SubscriptionModal from './SubscriptionModal'
 import { 
   User, 
@@ -287,9 +288,11 @@ export default function SettingsTab({ user }: SettingsTabProps) {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Settings</h2>
-        </div>
+        <PageHeader
+          title="Settings"
+          description="Manage your profile, subscription, and account preferences"
+          icon={<Shield className="w-5 h-5 text-blue-500" />}
+        />
         
         <Card>
           <CardContent className="p-6">
@@ -315,9 +318,11 @@ export default function SettingsTab({ user }: SettingsTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Settings</h2>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Manage your profile, subscription, and account preferences"
+        icon={<Shield className="w-5 h-5 text-blue-500" />}
+      />
 
       {/* Profile Settings */}
       <Card>

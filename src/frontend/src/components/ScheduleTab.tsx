@@ -6,8 +6,10 @@ import UpcomingPostsWidget from './UpcomingPostsWidget'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { useToast } from '@/hooks/useToast'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { ScheduledPost } from '@/lib/api'
 import ScheduleModal from './ScheduleModal'
+import { cn } from '@/lib/utils'
 import { 
   Calendar, 
   Plus, 
@@ -65,6 +67,21 @@ export default function ScheduleTab() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="Schedule"
+        description="Manage and schedule your content publishing across platforms"
+        icon={<Calendar className="w-5 h-5 text-violet-500" />}
+        actions={
+          <Button
+            variant="primary"
+            onClick={handleNewSchedule}
+            leftIcon={<Plus className="h-4 w-4" />}
+          >
+            New Schedule
+          </Button>
+        }
+      />
+
       {/* Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map(stat => (
@@ -93,25 +110,10 @@ export default function ScheduleTab() {
         <div className="lg:col-span-3">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-violet-600" />
-                    Publishing Calendar
-                  </h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Manage and schedule your content publishing
-                  </p>
-                </div>
-                
-                <Button
-                  variant="primary"
-                  onClick={handleNewSchedule}
-                  leftIcon={<Plus className="h-4 w-4" />}
-                >
-                  New Schedule
-                </Button>
-              </div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-violet-600" />
+                Publishing Calendar
+              </h2>
             </div>
             
             <ScheduleCalendar 
@@ -203,7 +205,3 @@ export default function ScheduleTab() {
   )
 }
 
-// Helper function
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(' ')
-}

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp, Bell, Users2, Target, Zap, Award, Activity, Lightbulb, Tag, Shield, MessageSquare, GitBranch, ScrollText, LayoutDashboard, Puzzle, Store, Filter, PieChart, Heart, Network, ChevronDown, ChevronRight } from 'lucide-react'
+import { FileText, Share2, BarChart3, Settings, Folder, Menu, X, Users, Plus, Sparkles, Search, Trash2, Calendar, Rss, Leaf, TrendingUp, Bell, Users2, Target, Zap, Award, Activity, Lightbulb, Tag, Shield, MessageSquare, GitBranch, ScrollText, LayoutDashboard, Puzzle, Store, Filter, PieChart, Heart, Network, ChevronDown, ChevronRight, Pin, Home, MoreHorizontal } from 'lucide-react'
 import { ErrorBoundary } from './ErrorBoundary'
 import UsageCounter from './UsageCounter'
 import UpgradeModal from './UpgradeModal'
@@ -16,7 +16,7 @@ import Footer from './Footer'
 import SearchModal from './SearchModal'
 import { TrendingTopicsWidget } from './TrendingTopics'
 import { AlertsBell } from './AlertsCenter'
-import { cn } from '@/lib/utils'
+import { cn, trackTabUsage, getPinnedTabs, savePinnedTabs, getMostUsedTabs } from '@/lib/utils'
 
 // Dynamic imports for code splitting
 const ContentTab = lazy(() => import('./ContentTab'))
@@ -50,13 +50,14 @@ const FunnelAnalytics = lazy(() => import('./FunnelAnalytics'))
 const AttributionDashboard = lazy(() => import('./AttributionDashboard'))
 const SLAMonitoring = lazy(() => import('./SLAMonitoring'))
 const IntegrationHub = lazy(() => import('./IntegrationHub'))
+const HomeTab = lazy(() => import('./HomeTab'))
 
 interface DashboardProps {
   user: AuthUser
 }
 
 export default function Dashboard({ user }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState('content')
+  const [activeTab, setActiveTab] = useState('home')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showSearchModal, setShowSearchModal] = useState(false)
@@ -66,7 +67,23 @@ export default function Dashboard({ user }: DashboardProps) {
     system: true,
     extensions: true,
   })
+  const [pinnedTabIds, setPinnedTabIds] = useState<string[]>([])
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false)
   const router = useRouter()
+
+  // Initialize pinned tabs from localStorage
+  useEffect(() => {
+    const stored = getPinnedTabs()
+    if (stored.length > 0) {
+      setPinnedTabIds(stored)
+    } else {
+      // Auto-populate from most-used tabs
+      const mostUsed = getMostUsedTabs(5)
+      const defaults = mostUsed.length > 0 ? mostUsed : ['content', 'analytics', 'schedule']
+      setPinnedTabIds(defaults)
+      savePinnedTabs(defaults)
+    }
+  }, [])
 
   // Handle scroll for glass effect
   useEffect(() => {
@@ -146,7 +163,7 @@ export default function Dashboard({ user }: DashboardProps) {
     },
     {
       id: 'account',
-      label: null, // No section header — always visible
+      label: null,
       tabs: [
         { id: 'settings', name: 'Settings', icon: Settings, badge: null },
         { id: 'trash', name: 'Trash', icon: Trash2, badge: null },
@@ -156,6 +173,32 @@ export default function Dashboard({ user }: DashboardProps) {
 
   // Flat tabs array for keyboard shortcuts (backward compat)
   const tabs = useMemo(() => sidebarSections.flatMap(s => s.tabs), [sidebarSections])
+
+  // Pinned tabs (resolved to full tab objects)
+  const pinnedTabs = useMemo(() => {
+    return pinnedTabIds
+      .map(id => tabs.find(t => t.id === id))
+      .filter((t): t is NonNullable<typeof t> => t != null)
+  }, [pinnedTabIds, tabs])
+
+  // Toggle pin on a tab
+  const togglePin = (tabId: string) => {
+    setPinnedTabIds(prev => {
+      const next = prev.includes(tabId)
+        ? prev.filter(id => id !== tabId)
+        : [...prev, tabId].slice(0, 7) // Max 7 pinned tabs
+      savePinnedTabs(next)
+      return next
+    })
+  }
+
+  // Enhanced setActiveTab that tracks usage
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId)
+    trackTabUsage(tabId)
+    setMobileMenuOpen(false)
+    setMobileMoreOpen(false)
+  }
 
   // Toggle section collapse
   const toggleSection = (sectionId: string) => {
@@ -180,17 +223,23 @@ export default function Dashboard({ user }: DashboardProps) {
         e.preventDefault()
         router.push('/projects/new')
       }
-      // Number keys for tab switching
+      // Number keys for tab switching (1-9)
       if (e.altKey && e.key >= '1' && e.key <= '9') {
         e.preventDefault()
         const tabIndex = parseInt(e.key) - 1
         if (tabs[tabIndex]) {
-          setActiveTab(tabs[tabIndex].id)
+          handleTabChange(tabs[tabIndex].id)
         }
+      }
+      // Alt+0 for home
+      if (e.altKey && e.key === '0') {
+        e.preventDefault()
+        handleTabChange('home')
       }
       // Escape to close mobile menu
       if (e.key === 'Escape') {
         setMobileMenuOpen(false)
+        setMobileMoreOpen(false)
       }
     }
 
@@ -210,6 +259,14 @@ export default function Dashboard({ user }: DashboardProps) {
     )
 
     switch (activeTab) {
+      case 'home':
+        return (
+          <ErrorBoundary onReset={() => setActiveTab('home')}>
+            <Suspense fallback={fallback}>
+              <HomeTab onTabChange={handleTabChange} />
+            </Suspense>
+          </ErrorBoundary>
+        )
       case 'content':
         return (
           <ErrorBoundary onReset={() => setActiveTab('content')}>
@@ -460,9 +517,9 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       default:
         return (
-          <ErrorBoundary onReset={() => setActiveTab('content')}>
+          <ErrorBoundary onReset={() => setActiveTab('home')}>
             <Suspense fallback={fallback}>
-              <ContentTab />
+              <HomeTab onTabChange={handleTabChange} />
             </Suspense>
           </ErrorBoundary>
         )
@@ -535,11 +592,11 @@ export default function Dashboard({ user }: DashboardProps) {
               
               <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
               
-              <AlertsBell onClick={() => setActiveTab('alerts')} />
+              <AlertsBell onClick={() => handleTabChange('alerts')} />
               
               <Tooltip content="View profile" position="bottom">
                 <button
-                  onClick={() => setActiveTab('settings')}
+                  onClick={() => handleTabChange('settings')}
                   className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
                   <Avatar
@@ -558,6 +615,24 @@ export default function Dashboard({ user }: DashboardProps) {
                 </button>
               </Tooltip>
             </div>
+
+            {/* Mobile: minimal header actions */}
+            <div className="flex md:hidden items-center gap-2">
+              <button
+                onClick={() => setShowSearchModal(true)}
+                className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                aria-label="Search"
+              >
+                <Search className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => router.push('/content/new')}
+                className="p-2 bg-gradient-to-r from-blue-600 to-violet-600 text-white rounded-xl"
+                aria-label="New content"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -565,13 +640,49 @@ export default function Dashboard({ user }: DashboardProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Sidebar - Desktop */}
-          <aside className="hidden md:block w-64 flex-shrink-0">
-            <nav className="sticky top-24 space-y-2">
+          <aside className="hidden md:block w-56 flex-shrink-0">
+            <nav className="sticky top-24 space-y-1 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-thin">
+              {/* Pinned Section */}
+              {pinnedTabs.length > 0 && (
+                <div className="mb-2">
+                  <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    <Pin className="w-3 h-3" />
+                    Pinned
+                  </div>
+                  {pinnedTabs.map((tab) => {
+                    const Icon = tab.icon
+                    const isActive = activeTab === tab.id
+                    return (
+                      <SidebarTab
+                        key={tab.id}
+                        tab={tab}
+                        isActive={isActive}
+                        isPinned={true}
+                        onTogglePin={() => togglePin(tab.id)}
+                        onClick={() => handleTabChange(tab.id)}
+                        shortcutIndex={undefined}
+                      />
+                    )
+                  })}
+                  <div className="my-2 border-t border-slate-200 dark:border-slate-700/50" />
+                </div>
+              )}
+
+              {/* Home tab at top */}
+              <SidebarTab
+                tab={{ id: 'home', name: 'Home', icon: Home, badge: null }}
+                isActive={activeTab === 'home'}
+                isPinned={false}
+                onClick={() => handleTabChange('home')}
+                shortcutHint="Alt+0"
+              />
+
+              {/* Sections */}
               {sidebarSections.map((section) => {
                 const isCollapsed = collapsedSections[section.id] ?? false
                 const hasActiveTab = section.tabs.some(t => t.id === activeTab)
-                // Auto-expand if active tab is in this section
                 const shouldShow = !isCollapsed || hasActiveTab
+                const tabCount = section.tabs.length
                 
                 return (
                   <div key={section.id}>
@@ -579,9 +690,17 @@ export default function Dashboard({ user }: DashboardProps) {
                     {section.label ? (
                       <button
                         onClick={() => toggleSection(section.id)}
-                        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                        className={cn(
+                          'w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors rounded-lg',
+                          'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        )}
                       >
-                        <span>{section.label}</span>
+                        <span className="flex items-center gap-1.5">
+                          <span>{section.label}</span>
+                          <span className="text-slate-300 dark:text-slate-600 font-normal normal-case tracking-normal">
+                            {tabCount}
+                          </span>
+                        </span>
                         {isCollapsed && !hasActiveTab ? (
                           <ChevronRight className="w-3 h-3" />
                         ) : (
@@ -589,53 +708,26 @@ export default function Dashboard({ user }: DashboardProps) {
                         )}
                       </button>
                     ) : (
-                      <div className="mt-3 border-t border-slate-200 dark:border-slate-700/50 pt-2" />
+                      <div className="mt-3 border-t border-slate-200 dark:border-slate-700/50 pt-1" />
                     )}
                     
                     {/* Section Tabs */}
                     {shouldShow && section.tabs.map((tab) => {
                       const Icon = tab.icon
                       const isActive = activeTab === tab.id
+                      const isPinned = pinnedTabIds.includes(tab.id)
+                      const tabIndex = tabs.indexOf(tab)
                       
                       return (
-                        <Tooltip key={tab.id} content={`Alt+${tabs.indexOf(tab) + 1}`} position="right" delay={1000}>
-                          <button
-                            onClick={() => setActiveTab(tab.id)}
-                            className={cn(
-                              'w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200',
-                              'group relative overflow-hidden',
-                              isActive
-                                ? 'bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-lg shadow-blue-500/25'
-                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
-                            )}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Icon className={cn(
-                                'h-4 w-4 transition-colors',
-                                isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
-                              )} />
-                              <span>{tab.name}</span>
-                            </div>
-                            
-                            {tab.badge && (
-                              <Badge 
-                                variant={isActive ? 'default' : 'primary'} 
-                                size="sm"
-                                className={cn(
-                                  'ml-2',
-                                  isActive && 'bg-white/20 text-white border-white/30'
-                                )}
-                              >
-                                {tab.badge}
-                              </Badge>
-                            )}
-                            
-                            {/* Active indicator */}
-                            {isActive && (
-                              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-violet-600/20 animate-pulse" />
-                            )}
-                          </button>
-                        </Tooltip>
+                        <SidebarTab
+                          key={tab.id}
+                          tab={tab}
+                          isActive={isActive}
+                          isPinned={isPinned}
+                          onTogglePin={() => togglePin(tab.id)}
+                          onClick={() => handleTabChange(tab.id)}
+                          shortcutIndex={tabIndex >= 0 && tabIndex < 9 ? tabIndex + 1 : undefined}
+                        />
                       )
                     })}
                   </div>
@@ -643,48 +735,29 @@ export default function Dashboard({ user }: DashboardProps) {
               })}
             </nav>
             
-            {/* Glass Card - Usage Stats */}
-            <div className="mt-6 p-4 rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
+            {/* Usage Stats (condensed) */}
+            <div className="mt-4 p-3 rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
               <UsageCounter onUpgrade={() => setShowUpgradeModal(true)} />
             </div>
             
-            {/* Trending Topics Widget */}
-            <div className="mt-6 p-4 rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-blue-500" />
-                  Trending Now
-                </h3>
-                <button
-                  onClick={() => setActiveTab('trends')}
-                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  View all
-                </button>
-              </div>
-              <TrendingTopicsWidget />
-            </div>
-            
             {/* Quick Tip */}
-            <div className="mt-6 p-3 rounded-2xl bg-slate-100/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50">
+            <div className="mt-4 p-3 rounded-2xl bg-slate-100/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50">
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Press <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">Ctrl+K</kbd> to search
+                Press <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">Ctrl+K</kbd> to search · <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-700 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">Alt+N</kbd> switch tabs
               </p>
             </div>
           </aside>
 
-          {/* Mobile Menu */}
+          {/* Mobile Menu - Full overlay */}
           {mobileMenuOpen && (
             <>
-              {/* Backdrop */}
               <div 
                 className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 md:hidden"
                 onClick={() => setMobileMenuOpen(false)}
                 aria-hidden="true"
               />
               
-              {/* Mobile Sidebar */}
-              <aside className="fixed inset-y-0 left-0 w-72 bg-white dark:bg-slate-900 z-50 md:hidden shadow-2xl">
+              <aside className="fixed inset-y-0 left-0 w-72 bg-white dark:bg-slate-900 z-50 md:hidden shadow-2xl overflow-y-auto">
                 <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
@@ -722,9 +795,16 @@ export default function Dashboard({ user }: DashboardProps) {
                   </div>
                 </div>
                 
-                <nav className="p-4 space-y-2">
+                <nav className="p-4 space-y-1">
+                  {/* Home in mobile */}
+                  <MobileTabButton
+                    tab={{ id: 'home', name: 'Home', icon: Home, badge: null }}
+                    isActive={activeTab === 'home'}
+                    onClick={() => handleTabChange('home')}
+                  />
+
                   {sidebarSections.map((section) => {
-                    const isCollapsed = collapsedSections[section.id] ?? false
+                    const isCollapsed = collapsedSections[section.id] ?? true // Collapsed by default on mobile
                     const hasActiveTab = section.tabs.some(t => t.id === activeTab)
                     const shouldShow = !isCollapsed || hasActiveTab
                     
@@ -746,58 +826,26 @@ export default function Dashboard({ user }: DashboardProps) {
                           <div className="mt-2 border-t border-slate-200 dark:border-slate-700/50 pt-2" />
                         )}
                         
-                        {shouldShow && section.tabs.map((tab) => {
-                          const Icon = tab.icon
-                          const isActive = activeTab === tab.id
-                          
-                          return (
-                            <button
-                              key={tab.id}
-                              onClick={() => {
-                                setActiveTab(tab.id)
-                                setMobileMenuOpen(false)
-                              }}
-                              className={cn(
-                                'w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200',
-                                isActive
-                                  ? 'bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-lg shadow-blue-500/25'
-                                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                              )}
-                            >
-                              <div className="flex items-center gap-3">
-                                <Icon className={cn(
-                                  'h-4 w-4',
-                                  isActive ? 'text-white' : 'text-slate-400'
-                                )} />
-                                <span>{tab.name}</span>
-                              </div>
-                              {tab.badge && (
-                                <Badge 
-                                  variant={isActive ? 'default' : 'primary'} 
-                                  size="sm"
-                                  className={cn(
-                                    isActive && 'bg-white/20 text-white border-white/30'
-                                  )}
-                                >
-                                  {tab.badge}
-                                </Badge>
-                              )}
-                            </button>
-                          )
-                        })}
+                        {shouldShow && section.tabs.map((tab) => (
+                          <MobileTabButton
+                            key={tab.id}
+                            tab={tab}
+                            isActive={activeTab === tab.id}
+                            onClick={() => handleTabChange(tab.id)}
+                          />
+                        ))}
                       </div>
                     )
                   })}
                 </nav>
                 
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                   <div className="mb-4">
                     <UsageCounter onUpgrade={() => {
                       setShowUpgradeModal(true)
                       setMobileMenuOpen(false)
                     }} />
                   </div>
-                  
                   <Button variant="outline" className="w-full">
                     Sign Out
                   </Button>
@@ -806,57 +854,79 @@ export default function Dashboard({ user }: DashboardProps) {
             </>
           )}
 
-          {/* Main Content */}
-          <main className="flex-1 min-w-0">
-            {/* Tab Header */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                    {tabs.find(t => t.id === activeTab)?.name}
-                  </h1>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Manage your {activeTab.toLowerCase()} and settings
-                  </p>
-                </div>
-                
-                {/* Contextual Actions */}
-                {activeTab === 'content' && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    leftIcon={<Plus className="h-4 w-4" />}
-                    onClick={() => router.push('/content/new')}
-                  >
-                    New Content
-                  </Button>
-                )}
-                {activeTab === 'projects' && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    leftIcon={<Plus className="h-4 w-4" />}
-                    onClick={() => router.push('/projects/new')}
-                  >
-                    New Project
-                  </Button>
-                )}
-                {activeTab === 'schedule' && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    leftIcon={<Plus className="h-4 w-4" />}
-                    onClick={() => {
-                      // Trigger new schedule via the ScheduleTab component
-                      window.dispatchEvent(new CustomEvent('triggerNewSchedule'))
-                    }}
-                  >
-                    New Schedule
-                  </Button>
-                )}
-              </div>
+          {/* Mobile Bottom Navigation */}
+          <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200 dark:border-slate-700 safe-area-bottom">
+            <div className="flex items-center justify-around h-16 px-2">
+              <MobileBottomTab
+                icon={<Home className="h-5 w-5" />}
+                label="Home"
+                isActive={activeTab === 'home'}
+                onClick={() => handleTabChange('home')}
+              />
+              <MobileBottomTab
+                icon={<FileText className="h-5 w-5" />}
+                label="Content"
+                isActive={activeTab === 'content'}
+                onClick={() => handleTabChange('content')}
+              />
+              <MobileBottomTab
+                icon={<BarChart3 className="h-5 w-5" />}
+                label="Analytics"
+                isActive={activeTab === 'analytics'}
+                onClick={() => handleTabChange('analytics')}
+              />
+              <MobileBottomTab
+                icon={<Calendar className="h-5 w-5" />}
+                label="Schedule"
+                isActive={activeTab === 'schedule'}
+                onClick={() => handleTabChange('schedule')}
+              />
+              <MobileBottomTab
+                icon={<MoreHorizontal className="h-5 w-5" />}
+                label="More"
+                isActive={mobileMoreOpen}
+                onClick={() => setMobileMoreOpen(!mobileMoreOpen)}
+              />
             </div>
-            
+          </div>
+
+          {/* Mobile "More" Drawer */}
+          {mobileMoreOpen && (
+            <>
+              <div
+                className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
+                onClick={() => setMobileMoreOpen(false)}
+              />
+              <div className="fixed bottom-16 left-0 right-0 z-50 md:hidden bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 rounded-t-2xl shadow-2xl max-h-[60vh] overflow-y-auto">
+                <div className="p-4 space-y-1">
+                  <p className="px-3 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">More tabs</p>
+                  {sidebarSections.flatMap(s => s.tabs)
+                    .filter(t => !['content', 'analytics', 'schedule'].includes(t.id))
+                    .map((tab) => (
+                      <MobileTabButton
+                        key={tab.id}
+                        tab={tab}
+                        isActive={activeTab === tab.id}
+                        onClick={() => handleTabChange(tab.id)}
+                      />
+                    ))}
+                  <MobileTabButton
+                    tab={{ id: 'settings', name: 'Settings', icon: Settings, badge: null }}
+                    isActive={activeTab === 'settings'}
+                    onClick={() => handleTabChange('settings')}
+                  />
+                  <MobileTabButton
+                    tab={{ id: 'trash', name: 'Trash', icon: Trash2, badge: null }}
+                    isActive={activeTab === 'trash'}
+                    onClick={() => handleTabChange('trash')}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Main Content */}
+          <main className="flex-1 min-w-0 pb-20 md:pb-0">
             {/* Tab Content */}
             <div className="animate-fadeIn">
               {renderTabContent()}
@@ -881,5 +951,168 @@ export default function Dashboard({ user }: DashboardProps) {
         currentTier="free"
       />
     </div>
+  )
+}
+
+/* ──────────────────────────────────────────
+   Sub-components for the sidebar
+   ────────────────────────────────────────── */
+
+interface SidebarTabItem {
+  id: string
+  name: string
+  icon: React.ComponentType<{ className?: string }>
+  badge: string | null
+}
+
+function SidebarTab({
+  tab,
+  isActive,
+  isPinned,
+  onTogglePin,
+  onClick,
+  shortcutIndex,
+  shortcutHint,
+}: {
+  tab: SidebarTabItem
+  isActive: boolean
+  isPinned: boolean
+  onTogglePin?: () => void
+  onClick: () => void
+  shortcutIndex?: number
+  shortcutHint?: string
+}) {
+  const Icon = tab.icon
+  const shortcut = shortcutHint || (shortcutIndex ? `Alt+${shortcutIndex}` : undefined)
+
+  return (
+    <div className="group/sidebar relative">
+      <button
+        onClick={onClick}
+        className={cn(
+          'w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150',
+          isActive
+            ? 'bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-lg shadow-blue-500/25'
+            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
+        )}
+      >
+        <Icon className={cn(
+          'h-4 w-4 flex-shrink-0 transition-colors',
+          isActive ? 'text-white' : 'text-slate-400 group-hover/sidebar:text-slate-600 dark:group-hover/sidebar:text-slate-300'
+        )} />
+        <span className="truncate">{tab.name}</span>
+        {tab.badge && (
+          <Badge 
+            variant={isActive ? 'default' : 'primary'} 
+            size="sm"
+            className={cn(
+              'ml-auto',
+              isActive && 'bg-white/20 text-white border-white/30'
+            )}
+          >
+            {tab.badge}
+          </Badge>
+        )}
+        {isPinned && !tab.badge && (
+          <Pin className="w-3 h-3 ml-auto text-slate-300 dark:text-slate-600 opacity-0 group-hover/sidebar:opacity-100 transition-opacity" />
+        )}
+        {shortcut && !tab.badge && (
+          <span className={cn(
+            'ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded transition-opacity',
+            isActive
+              ? 'text-white/50'
+              : 'text-slate-400 dark:text-slate-600 opacity-0 group-hover/sidebar:opacity-100'
+          )}>
+            {shortcut}
+          </span>
+        )}
+      </button>
+
+      {/* Pin/unpin on right-click area (hover overlay) */}
+      {onTogglePin && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onTogglePin() }}
+          className={cn(
+            'absolute right-1 top-1/2 -translate-y-1/2',
+            'p-1 rounded opacity-0 group-hover/sidebar:opacity-100 transition-opacity',
+            'hover:bg-slate-200 dark:hover:bg-slate-700',
+            isActive && 'hover:bg-white/20'
+          )}
+          aria-label={isPinned ? 'Unpin tab' : 'Pin tab'}
+        >
+          <Pin className={cn(
+            'w-3 h-3',
+            isPinned ? 'text-blue-500' : 'text-slate-400 dark:text-slate-500'
+          )} />
+        </button>
+      )}
+    </div>
+  )
+}
+
+function MobileTabButton({
+  tab,
+  isActive,
+  onClick,
+}: {
+  tab: SidebarTabItem
+  isActive: boolean
+  onClick: () => void
+}) {
+  const Icon = tab.icon
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200',
+        isActive
+          ? 'bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-lg shadow-blue-500/25'
+          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <Icon className={cn(
+          'h-4 w-4',
+          isActive ? 'text-white' : 'text-slate-400'
+        )} />
+        <span>{tab.name}</span>
+      </div>
+      {tab.badge && (
+        <Badge 
+          variant={isActive ? 'default' : 'primary'} 
+          size="sm"
+          className={cn(isActive && 'bg-white/20 text-white border-white/30')}
+        >
+          {tab.badge}
+        </Badge>
+      )}
+    </button>
+  )
+}
+
+function MobileBottomTab({
+  icon,
+  label,
+  isActive,
+  onClick,
+}: {
+  icon: React.ReactNode
+  label: string
+  isActive: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'flex flex-col items-center justify-center gap-0.5 flex-1 py-1 transition-colors',
+        isActive
+          ? 'text-blue-600 dark:text-blue-400'
+          : 'text-slate-400 dark:text-slate-500'
+      )}
+    >
+      {icon}
+      <span className="text-[10px] font-medium">{label}</span>
+    </button>
   )
 }
