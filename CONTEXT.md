@@ -11,7 +11,7 @@
 - **Name:** ContentForge AI
 - **Type:** AI-powered content creation & management platform
 - **GitHub:** https://github.com/jdev-bot/contentforge-ai (SSH: `git@github.com:jdev-bot/contentforge-ai.git`)
-- **Current Phase:** Staging — bug hunting & full functionality verification
+- **Current Phase:** Staging — UI overhaul deployed, functionality verification
 - **Started:** 2026-04-11
 - **Tech Stack:** FastAPI (Python) backend + Next.js (TypeScript) frontend + Supabase (PostgreSQL + Auth)
 
@@ -215,10 +215,10 @@ All three providers have **authenticated CLIs installed on this machine (srv1503
 
 ## Git Status
 
-- **Local HEAD:** `48dc458` (fix: Pydantic model for rss bulk-import request body)
-- **Remote HEAD:** `48dc458` (in sync)
-- **Render live:** `48dc458` (current ✅)
-- **Vercel deploy:** latest (deployed 2026-04-20 08:09 UTC ✅)
+- **Local HEAD:** `ba11c3e` (feat(ui): comprehensive UX overhaul)
+- **Remote HEAD:** `ba11c3e` (in sync)
+- **Render live:** `dcd0610` (route ordering fixes — no backend changes in UI commit)
+- **Vercel deploy:** `frontend-32bnupbh9` (deployed 2026-04-20 12:33 UTC ✅)
 
 ---
 
@@ -245,4 +245,4 @@ All three providers have **authenticated CLIs installed on this machine (srv1503
 
 ---
 
-*Last updated: 2026-04-20 08:10 UTC | Route mismatch fixes deployed — 7 aliases + 9 missing routes added*
+*Last updated: 2026-04-20 12:34 UTC | UI overhaul deployed — sidebar, home tab, search, content filters*
