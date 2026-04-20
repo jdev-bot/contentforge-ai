@@ -504,6 +504,20 @@ class AvailableSAMLProvider(BaseModel):
     is_active: bool
 
 
+@router.get("/saml/providers/available", response_model=List[AvailableSAMLProvider])
+async def list_available_saml_providers_alias(org_id: Optional[str] = None):
+    """List available SAML providers (frontend-friendly alias for /saml/available)."""
+    return await list_available_saml_providers(org_id=org_id)
+
+
+@router.post("/saml/providers/metadata/fetch", response_model=SAMLMetadataResponse)
+async def fetch_saml_metadata_alias(
+    body: SAMLMetadataURLRequest, user=Depends(get_auth_user)
+):
+    """Fetch and parse IdP metadata from a URL (frontend-friendly alias for /saml/metadata/fetch)."""
+    return await fetch_saml_metadata(body=body, user=user)
+
+
 @router.get("/saml/available", response_model=List[AvailableSAMLProvider])
 async def list_available_saml_providers(org_id: Optional[str] = None):
     """List available SAML providers (public endpoint, no auth required)."""

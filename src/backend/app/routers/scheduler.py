@@ -390,6 +390,177 @@ async def get_upcoming_scheduled_posts(
         )
 
 
+@router.post("/schedule/{post_id}/cancel", response_model=ScheduledPostItem)
+async def cancel_scheduled_post_alias(post_id: str, user=Depends(get_auth_user)):
+    """
+    Cancel a scheduled post by setting status to 'cancelled'.
+
+    Cannot cancel posts that are already published.
+    """
+    try:
+        # Verify the post exists and belongs to the user
+        post = scheduler_service.get_scheduled_post(
+            user_id=str(user.id), post_id=post_id
+        )
+
+        if not post:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Scheduled post not found",
+            )
+
+        if post.status == "published":
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="Cannot cancel already published post",
+            )
+
+        if post.status == "cancelled":
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="Post is already cancelled",
+            )
+
+        # Update status to cancelled
+        from app.core.supabase import get_supabase_admin_client
+
+        supabase = get_supabase_admin_client()
+        result = (
+            supabase.table("scheduled_posts")
+            .update({"status": "cancelled"})
+            .eq("id", post_id)
+            .eq("user_id", str(user.id))
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Scheduled post not found",
+            )
+
+        return result.data[0]
+
+    except ValueError as e:
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to cancel scheduled post: {str(e)}",
+        )
+
+
+@router.post("/schedule/{post_id}/duplicate", response_model=ScheduledPostItem,
+             status_code=http_status.HTTP_201_CREATED)
+async def duplicate_scheduled_post(post_id: str, user=Depends(get_auth_user)):
+    """
+    Duplicate a scheduled post.
+
+    Creates a new scheduled post with the same settings as the original,
+    but with status reset to 'pending'.
+    """
+    try:
+        post = scheduler_service.get_scheduled_post(
+            user_id=str(user.id), post_id=post_id
+        )
+
+        if not post:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Scheduled post not found",
+            )
+
+        # Create a duplicate with status reset to pending
+        from app.core.supabase import get_supabase_admin_client
+
+        supabase = get_supabase_admin_client()
+        new_post = {
+            "user_id": str(user.id),
+            "content_id": post.content_id,
+            "asset_id": post.asset_id,
+            "platform": post.platform,
+            "scheduled_at": post.scheduled_at.isoformat() if post.scheduled_at else None,
+            "status": "pending",
+            "asset_type": post.asset_type,
+            "settings": post.settings,
+            "content": post.content,
+            "timezone": post.timezone,
+        }
+
+        result = supabase.table("scheduled_posts").insert(new_post).execute()
+
+        if not result.data:
+            raise HTTPException(
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to duplicate scheduled post",
+            )
+
+        return result.data[0]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to duplicate scheduled post: {str(e)}",
+        )
+
+
+@router.get("/schedule/conflicts")
+async def check_scheduling_conflicts(
+    scheduled_at: datetime = Query(..., description="Proposed scheduled time (ISO 8601)"),
+    platform: str = Query(..., description="Platform to publish to"),
+    exclude_id: Optional[str] = Query(None, description="Post ID to exclude from conflict check"),
+    user=Depends(get_auth_user),
+):
+    """
+    Check for scheduling conflicts.
+
+    Returns any scheduled posts that overlap with the proposed time
+    for the same platform (within a 30-minute window).
+    """
+    try:
+        from datetime import timedelta
+        from app.core.supabase import get_supabase_admin_client
+
+        supabase = get_supabase_admin_client()
+
+        # Check for posts within 30 minutes of the proposed time on the same platform
+        window_start = (scheduled_at - timedelta(minutes=30)).isoformat()
+        window_end = (scheduled_at + timedelta(minutes=30)).isoformat()
+
+        query = (
+            supabase.table("scheduled_posts")
+            .select("*")
+            .eq("user_id", str(user.id))
+            .eq("platform", platform)
+            .in_("status", ["pending", "scheduled", "processing"])
+            .gte("scheduled_at", window_start)
+            .lte("scheduled_at", window_end)
+        )
+
+        if exclude_id:
+            query = query.neq("id", exclude_id)
+
+        result = query.execute()
+
+        conflicts = result.data or []
+
+        return {
+            "has_conflicts": len(conflicts) > 0,
+            "conflict_count": len(conflicts),
+            "conflicts": conflicts,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to check scheduling conflicts: {str(e)}",
+        )
+
+
 @router.post(
     "/schedule/bulk",
     response_model=List[ScheduledPostItem],

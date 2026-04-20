@@ -72,14 +72,12 @@ All three providers have **authenticated CLIs installed on this machine (srv1503
 
 ### Self-Hosted Services (srv1503460)
 
-| Service | Type | Port/URL | Uptime | Status |
-|---------|------|----------|--------|--------|
-| `contentforge-backend.service` | systemd user service | `localhost:8000` | 20h+ | ✅ Active (enabled) |
-| `cloudflared-tunnel.service` | Cloudflare Quick Tunnel | Random URL | 20h+ | ✅ Active (enabled) |
+| Service | Type | Purpose | Status |
+|---------|------|---------|--------|
+| `actions-runner.service` | GitHub Actions Self-Hosted Runner | CI pipeline | ✅ Active |
 
-- **Backend config:** `.env.staging` (not in git — in `.gitignore`)
-- **Memory:** ~150MB
-- **⚠️ Known issue:** Cloudflare Quick Tunnel URL changes on every restart — need Named Tunnel for stability
+- **Local dev environment REMOVED** (2026-04-20): Local backend, Cloudflare tunnel, venv, node_modules all deleted
+- All testing/deployment now against staging (Render + Vercel + Supabase) only
 
 ---
 
@@ -143,7 +141,6 @@ All three providers have **authenticated CLIs installed on this machine (srv1503
 | M1 | **3 POST-only endpoints (405 on GET)** | `categorization/categories`, `sla/metrics`, `attribution/touchpoints` | Add GET handlers or update frontend to use existing routes |
 | M2 | **`/webhooks/logs` returns 403** | Non-admin users blocked | ✅ Correct — requires admin role |
 | M3 | **`status` import shadow in health.py, stripe.py** | Potential status code comparison bugs | Rename `status` → `http_status` |
-| M4 | **Cloudflare Quick Tunnel URL changes on restart** | Staging URL instability | Set up Named Tunnel |
 
 ### 🔵 LOW / FUTURE
 

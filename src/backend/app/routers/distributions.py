@@ -265,6 +265,12 @@ async def publish_now(distribution_id: UUID, user=Depends(get_auth_user)):
         )
 
 
+@router.post("/distributions/{distribution_id}/publish-now")
+async def publish_now_alias(distribution_id: UUID, user=Depends(get_auth_user)):
+    """Publish a distribution immediately (frontend-friendly alias for /publish)."""
+    return await publish_now(distribution_id=distribution_id, user=user)
+
+
 @router.patch("/distributions/{distribution_id}", response_model=DistributionResponse)
 async def update_distribution(
     distribution_id: UUID, update: DistributionUpdate, user=Depends(get_auth_user)

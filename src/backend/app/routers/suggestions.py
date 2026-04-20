@@ -248,6 +248,132 @@ async def save_suggestions(
         )
 
 
+# ============ Accept / Dismiss Suggestions ============
+
+
+@router.post("/suggestions/{suggestion_id}/accept")
+async def accept_suggestion(suggestion_id: UUID, user=Depends(get_auth_user)):
+    """
+    Accept a suggestion — mark it as accepted and apply it.
+
+    Sets the suggestion status to 'accepted' and flips the `applied` flag
+    so it is reflected in downstream queries.
+    """
+    supabase = get_supabase_client()
+
+    try:
+        # First check the suggestion exists and belongs to the user
+        existing = (
+            supabase.table("auto_suggestions")
+            .select("id, user_id, status")
+            .eq("id", str(suggestion_id))
+            .eq("user_id", str(user.id))
+            .execute()
+        )
+
+        if not existing.data:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Suggestion not found",
+            )
+
+        current_status = existing.data[0].get("status")
+        if current_status == "accepted":
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="Suggestion is already accepted",
+            )
+
+        result = (
+            supabase.table("auto_suggestions")
+            .update({"status": "accepted", "applied": True})
+            .eq("id", str(suggestion_id))
+            .eq("user_id", str(user.id))
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Suggestion not found or could not be updated",
+            )
+
+        return {
+            "success": True,
+            "suggestion_id": str(suggestion_id),
+            "status": "accepted",
+            "message": "Suggestion accepted and applied",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to accept suggestion: {str(e)}",
+        )
+
+
+@router.post("/suggestions/{suggestion_id}/dismiss")
+async def dismiss_suggestion(suggestion_id: UUID, user=Depends(get_auth_user)):
+    """
+    Dismiss a suggestion — mark it as dismissed so it won't appear again.
+    """
+    supabase = get_supabase_client()
+
+    try:
+        # First check the suggestion exists and belongs to the user
+        existing = (
+            supabase.table("auto_suggestions")
+            .select("id, user_id, status")
+            .eq("id", str(suggestion_id))
+            .eq("user_id", str(user.id))
+            .execute()
+        )
+
+        if not existing.data:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Suggestion not found",
+            )
+
+        current_status = existing.data[0].get("status")
+        if current_status == "dismissed":
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="Suggestion is already dismissed",
+            )
+
+        result = (
+            supabase.table("auto_suggestions")
+            .update({"status": "dismissed"})
+            .eq("id", str(suggestion_id))
+            .eq("user_id", str(user.id))
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Suggestion not found or could not be updated",
+            )
+
+        return {
+            "success": True,
+            "suggestion_id": str(suggestion_id),
+            "status": "dismissed",
+            "message": "Suggestion dismissed",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to dismiss suggestion: {str(e)}",
+        )
+
+
 # ============ List Saved Suggestions ============
 
 

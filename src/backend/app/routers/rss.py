@@ -90,6 +90,249 @@ class RSSFetchResponse(BaseModel):
     message: str
 
 
+@router.get("/rss/stats")
+async def get_rss_stats(user=Depends(get_auth_user)):
+    """Return RSS feed statistics for the current user."""
+    supabase = get_supabase_admin_client()
+
+    try:
+        # Get user's feeds
+        feeds_result = (
+            supabase.table("rss_feeds")
+            .select("id, status")
+            .eq("user_id", str(user.id))
+            .execute()
+        )
+        feeds = feeds_result.data or []
+        total_feeds = len(feeds)
+        active_feeds = sum(1 for f in feeds if f.get("status") == "active")
+
+        feed_ids = [f["id"] for f in feeds]
+
+        if not feed_ids:
+            return {
+                "total_feeds": 0,
+                "active_feeds": 0,
+                "total_entries": 0,
+                "unimported_entries": 0,
+                "recent_entries_count": 0,
+            }
+
+        # Total entries
+        entries_count_result = (
+            supabase.table("rss_entries")
+            .select("*", count="exact")
+            .in_("feed_id", feed_ids)
+            .execute()
+        )
+        total_entries = entries_count_result.count or 0
+
+        # Unimported entries
+        unimported_result = (
+            supabase.table("rss_entries")
+            .select("*", count="exact")
+            .in_("feed_id", feed_ids)
+            .eq("processed", False)
+            .execute()
+        )
+        unimported_entries = unimported_result.count or 0
+
+        # Recent entries (last 7 days)
+        from datetime import timedelta
+        seven_days_ago = (datetime.now() - timedelta(days=7)).isoformat()
+        recent_result = (
+            supabase.table("rss_entries")
+            .select("*", count="exact")
+            .in_("feed_id", feed_ids)
+            .gte("published_at", seven_days_ago)
+            .execute()
+        )
+        recent_entries_count = recent_result.count or 0
+
+        return {
+            "total_feeds": total_feeds,
+            "active_feeds": active_feeds,
+            "total_entries": total_entries,
+            "unimported_entries": unimported_entries,
+            "recent_entries_count": recent_entries_count,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+@router.get("/rss/settings")
+async def get_rss_settings(user=Depends(get_auth_user)):
+    """Return the user's RSS settings."""
+    supabase = get_supabase_admin_client()
+
+    try:
+        result = (
+            supabase.table("rss_settings")
+            .select("*")
+            .eq("user_id", str(user.id))
+            .single()
+            .execute()
+        )
+
+        if not result.data:
+            # Return defaults if no settings exist yet
+            return {
+                "auto_import": False,
+                "default_project_id": None,
+                "notification_enabled": True,
+                "notification_new_entries": True,
+                "notification_import_errors": True,
+            }
+
+        return result.data
+
+    except Exception as e:
+        # If table doesn't exist yet, return defaults
+        return {
+            "auto_import": False,
+            "default_project_id": None,
+            "notification_enabled": True,
+            "notification_new_entries": True,
+            "notification_import_errors": True,
+        }
+
+
+@router.patch("/rss/settings")
+async def update_rss_settings(
+    auto_import: Optional[bool] = None,
+    default_project_id: Optional[UUID] = None,
+    notification_enabled: Optional[bool] = None,
+    notification_new_entries: Optional[bool] = None,
+    notification_import_errors: Optional[bool] = None,
+    user=Depends(get_auth_user),
+):
+    """Update the user's RSS settings."""
+    supabase = get_supabase_admin_client()
+
+    try:
+        update_data = {}
+        if auto_import is not None:
+            update_data["auto_import"] = auto_import
+        if default_project_id is not None:
+            update_data["default_project_id"] = str(default_project_id)
+        if notification_enabled is not None:
+            update_data["notification_enabled"] = notification_enabled
+        if notification_new_entries is not None:
+            update_data["notification_new_entries"] = notification_new_entries
+        if notification_import_errors is not None:
+            update_data["notification_import_errors"] = notification_import_errors
+
+        if not update_data:
+            return await get_rss_settings(user=user)
+
+        update_data["user_id"] = str(user.id)
+
+        # Upsert settings
+        result = (
+            supabase.table("rss_settings")
+            .upsert(update_data, on_conflict="user_id")
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update RSS settings",
+            )
+
+        return result.data[0]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+@router.post("/rss/entries/bulk-import")
+async def bulk_import_entries(
+    entry_ids: List[UUID] = Field(..., description="List of RSS entry IDs to import"),
+    project_id: Optional[UUID] = None,
+    user=Depends(get_auth_user),
+):
+    """Bulk import RSS entries as content."""
+    supabase = get_supabase_admin_client()
+
+    try:
+        # Verify ownership of entries through feeds
+        feeds_result = (
+            supabase.table("rss_feeds")
+            .select("id")
+            .eq("user_id", str(user.id))
+            .execute()
+        )
+        user_feed_ids = [f["id"] for f in feeds_result.data]
+
+        if not user_feed_ids:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="No RSS feeds found for user",
+            )
+
+        # Get specified entries that belong to user's feeds
+        entries_result = (
+            supabase.table("rss_entries")
+            .select("*")
+            .in_("id", [str(eid) for eid in entry_ids])
+            .in_("feed_id", user_feed_ids)
+            .execute()
+        )
+
+        entries = entries_result.data or []
+        if not entries:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="No matching RSS entries found",
+            )
+
+        imported_count = 0
+        failed_count = 0
+        imported_content_ids = []
+
+        for entry in entries:
+            try:
+                result = await rss_service.import_entry(
+                    entry_id=entry["id"],
+                    user_id=str(user.id),
+                    project_id=str(project_id) if project_id else None,
+                    title=entry.get("title"),
+                    content=entry.get("content"),
+                    link=entry.get("link"),
+                )
+                imported_count += 1
+                if result.get("content_id"):
+                    imported_content_ids.append(result["content_id"])
+            except Exception:
+                failed_count += 1
+
+        return {
+            "success": failed_count == 0,
+            "imported_count": imported_count,
+            "failed_count": failed_count,
+            "content_ids": imported_content_ids,
+            "message": f"Imported {imported_count} entries, {failed_count} failed",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
 @router.post(
     "/rss/feeds", response_model=RSSFeedResponse, status_code=http_status.HTTP_201_CREATED
 )

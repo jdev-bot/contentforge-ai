@@ -212,6 +212,18 @@ async def get_trending_templates(limit: int = Query(10, ge=1, le=50)):
     return marketplace_service.get_trending_templates(limit=limit)
 
 
+@router.get("/marketplace/featured", response_model=List[Dict[str, Any]])
+async def get_featured_templates_alias(limit: int = Query(6, ge=1, le=20)):
+    """Get featured templates (frontend-friendly alias)."""
+    return await get_featured_templates(limit=limit)
+
+
+@router.get("/marketplace/trending", response_model=List[Dict[str, Any]])
+async def get_trending_templates_alias(limit: int = Query(10, ge=1, le=50)):
+    """Get trending templates (frontend-friendly alias)."""
+    return await get_trending_templates(limit=limit)
+
+
 @router.get("/marketplace/templates/{template_id}", response_model=Dict[str, Any])
 async def get_marketplace_template(template_id: str):
     """Get a single marketplace template."""
