@@ -155,67 +155,50 @@ All three providers have **authenticated CLIs installed on this machine (srv1503
 
 ---
 
-## Frontend→Backend Route Mismatches (64 total, categorized)
+## Frontend→Backend Route Mismatches — Resolved & Remaining
 
-### Category 1: Query string normalization (13 — cosmetic, likely work at runtime)
+### ✅ RESOLVED (deployed 2026-04-20, commit `48dc458`)
 
-Frontend appends query params that differ from normalized comparison:
-- `/analytics/export/json?days={ID}` → backend has `/analytics/export/json`
-- `/analytics/export?format=csv&days={ID}` → no CSV export backend route
-- `/analytics/usage?days={ID}` → backend has `/analytics/usage`
-- `/comments/mentions/lookup?q={ID}` → backend has `/comments/mentions/lookup`
-- `/content/comments/{ID}/reactions?emoji={ID}` → backend has `/content/comments/{ID}/reactions`
-- etc.
-
-### Category 2: Template literal parsing artifacts (8 — not real bugs)
-
-- Routes like `/audit-logs${params.toString()` — JS template concatenation, works at runtime
-
-### Category 3: Path naming differences (15 — REAL bugs, will 404)
-
-| Frontend calls | Backend has |
+| Frontend calls | Fix applied |
 |---------------|-------------|
-| `/quality-scoring/{ID}` | `/quality/content/{ID}` |
-| `/quality-scoring/batch` | `/quality/batch` |
-| `/quality-scoring/{ID}/analyze` | `/quality/analyze` |
-| `/quality-scoring/{ID}/history` | `/quality/history/{ID}` |
-| `/freshness/metrics` | `/freshness/dashboard` |
-| `/freshness/bulk-refresh` | `/freshness/bulk-analyze` |
-| `/freshness/{ID}/analyze` | `/freshness/analyze/{ID}` |
-| `/sentiment/{ID}` | `/sentiment/content/{ID}` |
-| `/sentiment/{ID}/analyze` | `/sentiment/analyze` |
-| `/sentiment/{ID}/trend` | `/sentiment/trends/{ID}` |
-| `/suggestions/{ID}/accept` | `/suggestions/saved/{ID}` |
-| `/suggestions/{ID}/dismiss` | No matching route |
-| `/distributions/{ID}/publish-now` | `/distributions/{ID}/publish` |
-| `/marketplace/featured` | `/marketplace/templates/featured` |
-| `/marketplace/trending` | `/marketplace/templates/trending` |
+| `/marketplace/featured` | ✅ Alias added → `/marketplace/templates/featured` |
+| `/marketplace/trending` | ✅ Alias added → `/marketplace/templates/trending` |
+| `/distributions/{ID}/publish-now` | ✅ Alias added → `/distributions/{ID}/publish` |
+| `/saml/providers/available` | ✅ Alias added → `/saml/available` |
+| `/saml/providers/metadata/fetch` | ✅ Alias added → `/saml/metadata/fetch` |
+| `/freshness/metrics` | ✅ Alias added → `/freshness/dashboard` |
+| `/freshness/bulk-refresh` | ✅ Alias added → `/freshness/bulk-analyze` |
+| `/schedule/{ID}/cancel` | ✅ New route implemented |
+| `/schedule/{ID}/duplicate` | ✅ New route implemented |
+| `/schedule/conflicts` | ✅ New route implemented |
+| `/rss/stats` | ✅ New route implemented |
+| `/rss/settings` (GET+PATCH) | ✅ New routes implemented |
+| `/rss/entries/bulk-import` | ✅ New route implemented |
+| `/quality-scoring/{ID}` | ✅ Alias added (earlier commit) |
+| `/quality-scoring/{ID}/analyze` | ✅ Alias added (earlier commit) |
+| `/quality-scoring/{ID}/history` | ✅ Alias added (earlier commit) |
+| `/sentiment/{ID}` | ✅ Alias added (earlier commit) |
+| `/sentiment/{ID}/analyze` | ✅ Alias added (earlier commit) |
+| `/sentiment/{ID}/trend` | ✅ Alias added (earlier commit) |
+| `/freshness/{ID}/analyze` | ✅ Alias added (earlier commit) |
 
-### Category 4: Missing backend routes (12 — backend needs implementation)
+### Already existed (false alarms from UUID test data)
 
-| Frontend calls | No backend route |
-|---------------|------------------|
-| `/organizations` (list) | Only has `/{org_id}` sub-routes (missing root GET) |
-| `/organizations/{ID}/invite` | Not implemented |
-| `/organizations/{ID}/leave` | Not implemented |
-| `/organizations/{ID}/members` | Not implemented |
-| `/organizations/{ID}/members/{ID}` | Not implemented |
-| `/organizations/{ID}/transfer-ownership` | Not implemented |
-| `/schedule/{ID}/cancel` | Not implemented |
-| `/schedule/{ID}/duplicate` | Not implemented |
-| `/schedule/conflicts` | Not implemented |
-| `/rss/entries/bulk-import` | Not implemented |
-| `/rss/settings` | Not implemented |
-| `/rss/stats` | Not implemented |
+| Frontend calls | Backend route | Status |
+|---------------|-------------|--------|
+| `/suggestions/{ID}/accept` | Already existed | ✅ |
+| `/suggestions/{ID}/dismiss` | Already existed | ✅ |
 
-### Category 5: SAML route differences (4 — frontend has extra routes)
+### Remaining (low priority)
 
-| Frontend calls | Backend has |
-|---------------|-------------|
-| `/saml/login/{ID}` | `/saml/login` |
-| `/saml/logout/{ID}` | `/saml/logout` |
-| `/saml/providers/available` | `/saml/available` |
-| `/saml/providers/metadata/fetch` | `/saml/metadata/fetch` |
+| Issue | Status | Notes |
+|-------|--------|-------|
+| `/saml/login/{ID}` vs `/saml/login` | Open | SAML login with provider in URL path |
+| `/saml/logout/{ID}` vs `/saml/logout` | Open | SAML logout with provider in URL path |
+| Query string normalization (13) | Cosmetic | Works at runtime, different query param formats |
+| Template literal artifacts (8) | Not bugs | JS concatenation works at runtime |
+| `/organizations` list root | ✅ Already exists | Both `/` and `""` GET routes present |
+| Organization member routes | ✅ Already exist | `/invite`, `/leave`, `/members`, `/members/{id}`, `/transfer-ownership` all implemented |
 
 ---
 
