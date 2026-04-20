@@ -76,16 +76,31 @@ export interface GeneratedAsset {
  * Returns the access token, or throws if no session after timeout.
  */
 async function waitForSession(timeoutMs = 5000): Promise<string> {
+  // Debug: log cookie state
+  if (typeof window !== 'undefined') {
+    const cookies = document.cookie.split(';').map(c => c.trim().split('=')[0])
+    console.log('[api] waitForSession called. Cookies:', cookies)
+    const authCookie = document.cookie
+      .split(';')
+      .find(c => c.trim().startsWith('sb-'))
+    console.log('[api] Auth cookie present:', !!authCookie, authCookie ? authCookie.substring(0, 30) + '...' : 'none')
+  }
+
   // First try: maybe session is already available
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  console.log('[api] getSession result:', {
+    hasSession: !!session,
+    hasToken: !!session?.access_token,
+    tokenPrefix: session?.access_token?.substring(0, 20),
+    error: sessionError?.message
+  })
+  
   if (session?.access_token) {
+    console.log('[api] Session available immediately, token prefix:', session.access_token.substring(0, 20))
     return session.access_token
   }
 
   // Session not immediately available.
-  // This can happen on initial page load when @supabase/ssr's browser client
-  // hasn't hydrated the session from cookies yet.
-  // Wait for the INITIAL_SESSION event from onAuthStateChange.
   console.warn('[api] Session not immediately available, waiting for auth state change...')
 
   return new Promise<string>((resolve, reject) => {
@@ -98,7 +113,7 @@ async function waitForSession(timeoutMs = 5000): Promise<string> {
     }, timeoutMs)
 
     authSubscription = supabase.auth.onAuthStateChange((event, newSession) => {
-      console.log('[api] Auth state changed:', event, !!newSession?.access_token)
+      console.log('[api] Auth state changed:', event, 'hasToken:', !!newSession?.access_token, 'tokenPrefix:', newSession?.access_token?.substring(0, 20))
       if (newSession?.access_token) {
         clearTimeout(timeout)
         authSubscription!.data.subscription.unsubscribe()
@@ -111,11 +126,13 @@ async function waitForSession(timeoutMs = 5000): Promise<string> {
 async function getAuthHeader(): Promise<Record<string, string>> {
   try {
     const token = await waitForSession()
+    console.log('[api] getAuthHeader: got token, prefix:', token.substring(0, 20))
     return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     }
-  } catch {
+  } catch (err) {
+    console.error('[api] getAuthHeader failed:', err)
     // Session truly not available after waiting — redirect to login
     if (typeof window !== 'undefined') {
       const currentPath = window.location.pathname + window.location.search
@@ -199,14 +216,19 @@ export async function listContent(projectId?: string): Promise<Content[]> {
     url += `?project_id=${projectId}`
   }
   
+  console.log('[api] listContent: fetching', url, 'with auth header:', headers.Authorization?.substring(0, 30))
   const response = await fetch(url, { headers })
+  console.log('[api] listContent: response status', response.status, response.statusText)
   
   if (!response.ok) {
     const error = await response.json()
+    console.error('[api] listContent: error', error)
     throw new Error(error.detail || 'Failed to fetch content')
   }
   
-  return response.json()
+  const data = await response.json()
+  console.log('[api] listContent: got', Array.isArray(data) ? `${data.length} items` : typeof data, data)
+  return data
 }
 
 export async function getContent(contentId: string): Promise<Content> {

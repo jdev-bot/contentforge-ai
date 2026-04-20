@@ -59,10 +59,12 @@ export default function HomeTab({ onCreateContent, onCreateProject, onViewSchedu
   const loadContent = useCallback(async () => {
     try {
       setLoading(true)
+      console.log('[HomeTab] loadContent called, fetching...')
       const data = await listContent()
+      console.log('[HomeTab] loadContent got data:', data?.length, 'items', data)
       setContent(data)
     } catch (error) {
-      console.error('Failed to load content for home:', error)
+      console.error('[HomeTab] Failed to load content for home:', error)
     } finally {
       setLoading(false)
     }
