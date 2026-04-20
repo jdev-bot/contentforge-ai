@@ -23,8 +23,10 @@ import {
   Clock,
   Check,
   X,
-  ArrowRight
+  ArrowRight,
+  Puzzle
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/Card'
@@ -227,16 +229,11 @@ export default function IntegrationsPanel() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Integrations
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Connect ContentForge with your favorite tools and services
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Integrations"
+        description="Connect ContentForge with your favorite tools and services"
+        icon={<Puzzle className="w-5 h-5 text-blue-600" />}
+      />
 
       {/* Tabs */}
       <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1 w-fit">

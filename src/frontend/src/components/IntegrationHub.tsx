@@ -22,7 +22,9 @@ import {
   RotateCw,
   ChevronDown,
   ChevronRight,
+  Puzzle
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -300,32 +302,31 @@ export default function IntegrationHub() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Integration Hub</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Manage custom integrations and monitor their health
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw className={cn('h-4 w-4 mr-2', refreshing && 'animate-spin')} />
-            Refresh
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => { setShowCreateForm(true); setEditingIntegration(null); resetForm() }}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Integration
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Integration Hub"
+        description="Manage custom integrations and monitor their health"
+        icon={<Puzzle className="w-5 h-5 text-blue-600" />}
+        actions={
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={cn('h-4 w-4 mr-2', refreshing && 'animate-spin')} />
+              Refresh
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => { setShowCreateForm(true); setEditingIntegration(null); resetForm() }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Integration
+            </Button>
+          </div>
+        }
+      />
 
       {/* Tab Navigation */}
       <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 w-fit">

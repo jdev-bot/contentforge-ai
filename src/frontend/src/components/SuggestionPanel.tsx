@@ -16,6 +16,7 @@ import {
   Calendar,
   Target,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -128,81 +129,77 @@ export default function SuggestionPanel() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Lightbulb className="w-6 h-6 text-amber-500" />
-            AI Suggestions
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {suggestions.length} suggestions available
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Filter Dropdown */}
-          <div className="relative">
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon={<Filter className="h-4 w-4" />}
-              rightIcon={<ChevronDown className="h-3 w-3" />}
-              onClick={() => setFilterOpen(!filterOpen)}
-            >
-              {filter === 'all' ? 'All Types' : SUGGESTION_TYPE_CONFIG[filter].label}
-            </Button>
-            <AnimatePresence>
-              {filterOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  className="absolute right-0 mt-2 w-48 py-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20"
-                >
-                  <button
-                    onClick={() => { setFilter('all'); setFilterOpen(false) }}
-                    className={cn(
-                      'w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-between',
-                      filter === 'all' && 'text-blue-600 dark:text-blue-400 font-medium'
-                    )}
+      <PageHeader
+        title="AI Suggestions"
+        description="Smart recommendations to improve your content"
+        icon={<Lightbulb className="w-5 h-5 text-amber-500" />}
+        actions={
+          <div className="flex items-center gap-3">
+            {/* Filter Dropdown */}
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<Filter className="h-4 w-4" />}
+                rightIcon={<ChevronDown className="h-3 w-3" />}
+                onClick={() => setFilterOpen(!filterOpen)}
+              >
+                {filter === 'all' ? 'All Types' : SUGGESTION_TYPE_CONFIG[filter].label}
+              </Button>
+              <AnimatePresence>
+                {filterOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="absolute right-0 mt-2 w-48 py-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20"
                   >
-                    All Types
-                    <Badge size="sm" variant="default">{suggestions.length}</Badge>
-                  </button>
-                  {(['topic', 'timing', 'improvement'] as SuggestionType[]).map(type => {
-                    const config = SUGGESTION_TYPE_CONFIG[type]
-                    const Icon = config.icon
-                    return (
-                      <button
-                        key={type}
-                        onClick={() => { setFilter(type); setFilterOpen(false) }}
-                        className={cn(
-                          'w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-between',
-                          filter === type && 'text-blue-600 dark:text-blue-400 font-medium'
-                        )}
-                      >
-                        <span className="flex items-center gap-2">
-                          <Icon className={cn('h-4 w-4', config.color)} />
-                          {config.label}
-                        </span>
-                        <Badge size="sm" variant="default">{typeCounts[type]}</Badge>
-                      </button>
-                    )
-                  })}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <button
+                      onClick={() => { setFilter('all'); setFilterOpen(false) }}
+                      className={cn(
+                        'w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-between',
+                        filter === 'all' && 'text-blue-600 dark:text-blue-400 font-medium'
+                      )}
+                    >
+                      All Types
+                      <Badge size="sm" variant="default">{suggestions.length}</Badge>
+                    </button>
+                    {(['topic', 'timing', 'improvement'] as SuggestionType[]).map(type => {
+                      const config = SUGGESTION_TYPE_CONFIG[type]
+                      const Icon = config.icon
+                      return (
+                        <button
+                          key={type}
+                          onClick={() => { setFilter(type); setFilterOpen(false) }}
+                          className={cn(
+                            'w-full px-4 py-2 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-between',
+                            filter === type && 'text-blue-600 dark:text-blue-400 font-medium'
+                          )}
+                        >
+                          <span className="flex items-center gap-2">
+                            <Icon className={cn('h-4 w-4', config.color)} />
+                            {config.label}
+                          </span>
+                          <Badge size="sm" variant="default">{typeCounts[type]}</Badge>
+                        </button>
+                      )
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />}
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              Refresh
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />}
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            Refresh
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Type Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

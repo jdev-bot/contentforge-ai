@@ -39,7 +39,9 @@ import {
   MoreHorizontal,
   LogOut,
   Building2,
+  Users2
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 interface TeamTabProps {
   user?: {
@@ -329,16 +331,17 @@ export default function TeamTab({ user }: TeamTabProps) {
 
   const renderOrganizationList = () => (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Team Management</h2>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">Manage your organizations and team members</p>
-        </div>
-        <Button onClick={() => setViewState('create')}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Organization
-        </Button>
-      </div>
+      <PageHeader
+        title="Team Management"
+        description="Manage your organizations and team members"
+        icon={<Users2 className="w-5 h-5 text-blue-600" />}
+        actions={
+          <Button onClick={() => setViewState('create')}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Organization
+          </Button>
+        }
+      />
 
       {organizations.length === 0 ? (
         renderEmptyState()

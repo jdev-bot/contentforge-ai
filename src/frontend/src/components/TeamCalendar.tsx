@@ -16,8 +16,10 @@ import {
   Trash2,
   CheckCircle2,
   X,
-  GripVertical
+  GripVertical,
+  Calendar
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card'
@@ -251,51 +253,45 @@ export default function TeamCalendar() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Team Calendar
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Schedule and manage content across your team
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={navigateToday}
-          >
-            Today
-          </Button>
-          
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
-            {(['month', 'week', 'day'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={cn(
-                  'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
-                  viewMode === mode
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                )}
-              >
-                {mode.charAt(0).toUpperCase() + mode.slice(1)}
-              </button>
-            ))}
+      <PageHeader
+        title="Team Calendar"
+        description="Schedule and manage content across your team"
+        icon={<Calendar className="w-5 h-5 text-blue-600" />}
+        actions={
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={navigateToday}
+            >
+              Today
+            </Button>
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+              {(['month', 'week', 'day'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={cn(
+                    'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                    viewMode === mode
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  )}
+                >
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<Plus className="h-4 w-4" />}
+            >
+              New Schedule
+            </Button>
           </div>
-          
-          <Button 
-            variant="primary" 
-            size="sm"
-            leftIcon={<Plus className="h-4 w-4" />}
-          >
-            New Schedule
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Calendar Navigation & Filter */}
       <Card>

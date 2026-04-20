@@ -28,6 +28,7 @@ import {
   Beaker,
   type LucideIcon,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -511,41 +512,36 @@ export default function TrendingTopics() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-              Trending Topics
-            </h2>
+      <PageHeader
+        title="Trending Topics"
+        description="Discover what's trending in your industry and generate content ideas"
+        icon={<TrendingUp className="w-5 h-5 text-blue-600" />}
+        actions={
+          <div className="flex items-center gap-3">
             {newTrendsCount > 0 && (
               <Badge variant="primary" size="sm">
                 {newTrendsCount} new
               </Badge>
             )}
-          </div>
-          <p className="text-slate-500 dark:text-slate-400">
-Discover what&apos;s trending in your industry and generate content ideas
-          </p>
-        </div>
-
-        {/* Stats */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/20">
-            <Flame className="w-5 h-5 text-rose-500" />
-            <div>
-              <p className="text-lg font-bold text-rose-600 dark:text-rose-400">{hotTrendsCount}</p>
-              <p className="text-xs text-rose-600/70 dark:text-rose-400/70">Hot trends</p>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/20">
+                <Flame className="w-5 h-5 text-rose-500" />
+                <div>
+                  <p className="text-lg font-bold text-rose-600 dark:text-rose-400">{hotTrendsCount}</p>
+                  <p className="text-xs text-rose-600/70 dark:text-rose-400/70">Hot trends</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/20">
+                <Zap className="w-5 h-5 text-blue-500" />
+                <div>
+                  <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{trends.length}</p>
+                  <p className="text-xs text-blue-600/70 dark:text-blue-400/70">Total tracked</p>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/20">
-            <Zap className="w-5 h-5 text-blue-500" />
-            <div>
-              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{trends.length}</p>
-              <p className="text-xs text-blue-600/70 dark:text-blue-400/70">Total tracked</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Category Filter */}
       <div className="flex flex-wrap gap-2">

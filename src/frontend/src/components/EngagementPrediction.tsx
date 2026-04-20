@@ -5,6 +5,8 @@ import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 import { Input } from './ui/Input'
 import { useToast } from '../hooks/useToast'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Activity } from 'lucide-react'
 
 interface EngagementPredictionProps {
   contentId?: string
@@ -97,16 +99,11 @@ export default function EngagementPrediction({
 
   return (
     <Card className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 dark:text-white">
-            🔮 Engagement Prediction
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            AI-powered prediction of content performance
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Engagement Prediction"
+        description="AI-powered prediction of content performance"
+        icon={<Activity className="w-5 h-5 text-blue-600" />}
+      />
 
       {!prediction ? (
         <div className="space-y-4">

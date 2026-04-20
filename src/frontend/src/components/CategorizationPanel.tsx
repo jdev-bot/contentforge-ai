@@ -15,7 +15,9 @@ import {
   Plus,
   Sparkles,
   AlertCircle,
+  Filter
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -120,26 +122,22 @@ export default function CategorizationPanel() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Tag className="w-6 h-6 text-violet-500" />
-            Smart Categorization
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            AI-powered content classification with manual override
-          </p>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          leftIcon={<RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />}
-          onClick={handleRefresh}
-          disabled={refreshing}
-        >
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        title="Smart Categorization"
+        description="AI-powered content classification with manual override"
+        icon={<Filter className="w-5 h-5 text-violet-600" />}
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon={<RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />}
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            Refresh
+          </Button>
+        }
+      />
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

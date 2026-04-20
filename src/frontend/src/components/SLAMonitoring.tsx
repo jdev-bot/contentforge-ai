@@ -19,6 +19,7 @@ import {
   BarChart3,
   X,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -224,49 +225,48 @@ export default function SLAMonitoring() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">SLA Monitoring</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Monitor service level agreements and compliance
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Time Range Selector */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
-            {(['24h', '7d', '30d'] as TimeRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={cn(
-                  'px-3 py-1.5 text-sm font-medium rounded-md transition-all',
-                  timeRange === range
-                    ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                )}
-              >
-                {range}
-              </button>
-            ))}
+      <PageHeader
+        title="SLA Monitoring"
+        description="Monitor service level agreements and compliance"
+        icon={<Shield className="w-5 h-5 text-blue-600" />}
+        actions={
+          <div className="flex items-center gap-3">
+            {/* Time Range Selector */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+              {(['24h', '7d', '30d'] as TimeRange[]).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  className={cn(
+                    'px-3 py-1.5 text-sm font-medium rounded-md transition-all',
+                    timeRange === range
+                      ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  )}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={cn('h-4 w-4 mr-2', refreshing && 'animate-spin')} />
+              Refresh
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => { setShowCreateForm(true); setEditingPolicy(null); resetForm() }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Policy
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw className={cn('h-4 w-4 mr-2', refreshing && 'animate-spin')} />
-            Refresh
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => { setShowCreateForm(true); setEditingPolicy(null); resetForm() }}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Policy
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Dashboard Cards */}
       {dashboard && (

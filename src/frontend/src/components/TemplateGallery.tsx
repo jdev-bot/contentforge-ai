@@ -5,6 +5,8 @@ import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 import { Input } from './ui/Input'
 import { useToast } from '../hooks/useToast'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { LayoutDashboard } from 'lucide-react'
 
 interface TemplateGalleryProps {
   isOpen: boolean
@@ -477,18 +479,19 @@ export default function TemplateGallery({
       <Card className="w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-700 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 dark:text-white">Template Gallery</h2>
-              <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500">Choose from pre-built templates or create your own</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              ✕
-            </button>
-          </div>
+          <PageHeader
+            title="Template Gallery"
+            description="Choose from pre-built templates or create your own"
+            icon={<LayoutDashboard className="w-5 h-5 text-blue-600" />}
+            actions={
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                ✕
+              </button>
+            }
+          />
           
           {/* Tabs */}
           <div className="flex gap-2 mt-6">

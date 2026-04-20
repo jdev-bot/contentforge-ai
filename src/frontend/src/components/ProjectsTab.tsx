@@ -17,6 +17,7 @@ import {
   MoreVertical,
   Loader2
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 export default function ProjectsTab() {
   const router = useRouter()
@@ -131,16 +132,20 @@ export default function ProjectsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Projects</h2>
-        <Button 
-          className="flex items-center gap-2"
-          onClick={() => router.push('/projects/new')}
-        >
-          <Plus className="h-4 w-4" />
-          New Project
-        </Button>
-      </div>
+      <PageHeader
+        title="Projects"
+        description="Organize and manage your content creation projects"
+        icon={<Folder className="w-5 h-5 text-blue-600" />}
+        actions={
+          <Button
+            className="flex items-center gap-2"
+            onClick={() => router.push('/projects/new')}
+          >
+            <Plus className="h-4 w-4" />
+            New Project
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (

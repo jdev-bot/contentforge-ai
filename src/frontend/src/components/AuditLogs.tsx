@@ -18,6 +18,7 @@ import {
   Users,
   FileText,
   Calendar,
+  ScrollText
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card'
@@ -25,6 +26,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { StatsCard } from '@/components/ui/Card'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { useToast } from '@/hooks/useToast'
 import {
   getAuditLogs,
@@ -190,44 +192,40 @@ export default function AuditLogs() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Audit Logs
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Track all actions across your workspace
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className={cn(
-              'w-2 h-2 rounded-full',
-              isStreaming ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
-            )} />
-            <span className="text-sm text-slate-500 dark:text-slate-400">
-              {isStreaming ? 'Live' : 'Paused'}
-            </span>
+      <PageHeader
+        title="Audit Logs"
+        description="Track all actions across your workspace"
+        icon={<ScrollText className="w-5 h-5 text-blue-600" />}
+        actions={<div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                'w-2 h-2 rounded-full',
+                isStreaming ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+              )} />
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {isStreaming ? 'Live' : 'Paused'}
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={handleExportCSV}
+              loading={isExporting}
+            >
+              Export CSV
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<RefreshCw className="w-4 h-4" />}
+              onClick={() => { fetchLogs(); fetchStats() }}
+            >
+              Refresh
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Download className="w-4 h-4" />}
-            onClick={handleExportCSV}
-            loading={isExporting}
-          >
-            Export CSV
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<RefreshCw className="w-4 h-4" />}
-            onClick={() => { fetchLogs(); fetchStats() }}
-          >
-            Refresh
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

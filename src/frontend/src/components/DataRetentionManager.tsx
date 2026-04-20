@@ -20,6 +20,7 @@ import {
   Calendar,
   Eye,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import {
   BarChart,
   Bar,
@@ -205,35 +206,31 @@ export default function DataRetentionManager() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Shield className="w-6 h-6 text-violet-500" />
-            Data Retention Manager
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Manage retention policies and compliance
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => { setShowCreateForm(true); resetForm() }}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            New Policy
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Data Retention Manager"
+        description="Manage retention policies and compliance"
+        icon={<Shield className="w-5 h-5 text-violet-600" />}
+        actions={
+          <div className="flex items-center gap-3">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => { setShowCreateForm(true); resetForm() }}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              New Policy
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+            </Button>
+          </div>
+        }
+      />
 
       {/* View Tabs */}
       <div className="flex items-center gap-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-xl border border-slate-200 dark:border-slate-700 p-1">

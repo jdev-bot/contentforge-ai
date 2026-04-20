@@ -39,6 +39,7 @@ import {
   ChevronDown,
   AlertCircle,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { formatApiError } from '@/lib/api'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
@@ -594,24 +595,25 @@ export default function CustomDashboards() {
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <LayoutDashboard className="h-6 w-6 text-blue-400" />
-          <h2 className="text-2xl font-bold text-white">Custom Dashboards</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            size="sm"
-            disabled={refreshing}
-            className="border-slate-700 text-slate-300 hover:text-white"
-          >
-            <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Custom Dashboards"
+        description="Build and manage custom analytics dashboards"
+        icon={<LayoutDashboard className="w-5 h-5 text-blue-400" />}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              disabled={refreshing}
+              className="border-slate-700 text-slate-300 hover:text-white"
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+        }
+      />
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 text-red-400 text-sm flex items-center gap-2">

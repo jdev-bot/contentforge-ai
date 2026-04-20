@@ -15,6 +15,8 @@ import {
   type InstalledPluginListResponse,
 } from '../lib/api'
 import { formatApiError } from '../lib/api'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Puzzle } from 'lucide-react'
 
 // ============================================================================
 // Types
@@ -160,31 +162,35 @@ export default function PluginManager({ organizationId }: { organizationId: stri
   return (
     <div className="plugin-manager">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Plugin Manager</h2>
-        <div className="flex gap-2">
-          <button
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'marketplace'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:bg-slate-700'
-            }`}
-            onClick={() => setActiveTab('marketplace')}
-          >
-            Marketplace
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'installed'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:bg-slate-700'
-            }`}
-            onClick={() => setActiveTab('installed')}
-          >
-            Installed ({installedPlugins.length})
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Plugin Manager"
+        description="Browse, install, and manage plugins for ContentForge"
+        icon={<Puzzle className="w-5 h-5 text-blue-600" />}
+        actions={
+          <div className="flex gap-2">
+            <button
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'marketplace'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:bg-slate-700'
+              }`}
+              onClick={() => setActiveTab('marketplace')}
+            >
+              Marketplace
+            </button>
+            <button
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'installed'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:bg-slate-700'
+              }`}
+              onClick={() => setActiveTab('installed')}
+            >
+              Installed ({installedPlugins.length})
+            </button>
+          </div>
+        }
+      />
 
       {/* Error banner */}
       {error && (

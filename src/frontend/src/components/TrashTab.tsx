@@ -17,6 +17,7 @@ import {
   AlertCircle,
   RefreshCw
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 interface TrashTabProps {
   onItemRestored?: () => void
@@ -135,24 +136,22 @@ export default function TrashTab({ onItemRestored }: TrashTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Trash</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Items are kept for {stats?.retention_days || 30} days before permanent deletion
-          </p>
-        </div>
-        {items.length > 0 && (
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={() => setShowEmptyConfirm(true)}
-          >
-            Empty Trash
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Trash"
+        description={`Items are kept for ${stats?.retention_days || 30} days before permanent deletion`}
+        icon={<Trash2 className="w-5 h-5 text-blue-600" />}
+        actions={
+          items.length > 0 ? (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setShowEmptyConfirm(true)}
+            >
+              Empty Trash
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Stats Cards */}
       {stats && (

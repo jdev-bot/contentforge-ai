@@ -5,6 +5,7 @@ import RSSFeedManager from './RSSFeedManager'
 import RSSEntriesPanel from './RSSEntriesPanel'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Rss } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 interface RSSTabProps {
   user?: {
@@ -28,19 +29,11 @@ export default function RSSTab(props: RSSTabProps) {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
-              <Rss className="w-5 h-5 text-white" />
-            </div>
-            RSS Feeds
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 ml-13">
-            Subscribe to RSS feeds and automatically import content from your favorite sources
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="RSS Feeds"
+        description="Subscribe to RSS feeds and automatically import content from your favorite sources"
+        icon={<Rss className="w-5 h-5 text-white" />}
+      />
 
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

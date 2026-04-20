@@ -23,6 +23,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { Input } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // Types
 export type AlertType = 'viral' | 'declining' | 'milestone' | 'system' | 'team'
@@ -737,17 +738,12 @@ export default function AlertsCenter() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Alerts Center
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Monitor your content performance and team activity
-          </p>
-        </div>
-        <AlertsBell onClick={() => setIsPanelOpen(true)} />
-      </div>
+      <PageHeader
+        title="Alerts Center"
+        description="Monitor your content performance and team activity"
+        icon={<Bell className="w-5 h-5 text-blue-600" />}
+        actions={<AlertsBell onClick={() => setIsPanelOpen(true)} />}
+      />
 
       <AlertsPanel 
         isOpen={isPanelOpen} 

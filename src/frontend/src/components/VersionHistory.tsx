@@ -16,7 +16,9 @@ import {
   Minus,
   ArrowLeft,
   Check,
+  GitBranch
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -170,54 +172,51 @@ export default function VersionHistory({ contentId }: VersionHistoryProps) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Version History
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            {history.total_versions} version{history.total_versions !== 1 ? 's' : ''} recorded
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {compareMode ? (
-            <>
-              <Button
-                variant="primary"
-                size="sm"
-                leftIcon={<GitCompare className="w-4 h-4" />}
-                onClick={handleCompare}
-                disabled={!compareOld || !compareNew || isComparing}
-                loading={isComparing}
-              >
-                Compare
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={<ArrowLeft className="w-4 h-4" />}
-                onClick={exitCompareMode}
-              >
-                Exit Compare
-              </Button>
-            </>
-          ) : (
-            <>
-              <Badge variant="success" size="sm" dot>
-                Auto-versioning on
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                leftIcon={<GitCompare className="w-4 h-4" />}
-                onClick={() => setCompareMode(true)}
-              >
-                Compare Versions
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Version History"
+        description={`${history.total_versions} version${history.total_versions !== 1 ? 's' : ''} recorded`}
+        icon={<GitBranch className="w-5 h-5 text-blue-600" />}
+        actions={
+          <div className="flex items-center gap-3">
+            {compareMode ? (
+              <>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<GitCompare className="w-4 h-4" />}
+                  onClick={handleCompare}
+                  disabled={!compareOld || !compareNew || isComparing}
+                  loading={isComparing}
+                >
+                  Compare
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<ArrowLeft className="w-4 h-4" />}
+                  onClick={exitCompareMode}
+                >
+                  Exit Compare
+                </Button>
+              </>
+            ) : (
+              <>
+                <Badge variant="success" size="sm" dot>
+                  Auto-versioning on
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<GitCompare className="w-4 h-4" />}
+                  onClick={() => setCompareMode(true)}
+                >
+                  Compare Versions
+                </Button>
+              </>
+            )}
+          </div>
+        }
+      />
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -24,7 +24,9 @@ import {
   Sparkles,
   Package,
   ExternalLink,
+  Store
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -290,36 +292,28 @@ export default function TemplateMarketplace({ isOpen, onClose, onUseTemplate }: 
           <Card variant="glass" padding="none" className="overflow-hidden max-h-[90vh] flex flex-col">
             {/* Header */}
             <div className="p-6 border-b border-white/10 dark:border-white/5 shrink-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500/20 to-emerald-500/20">
-                    <Package className="w-5 h-5 text-blue-500" />
+              <PageHeader
+                title="Template Marketplace"
+                description={`${totalTemplates} templates available`}
+                icon={<Store className="w-5 h-5 text-blue-600" />}
+                actions={
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setViewMode('publish')}
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1.5" /> Publish
+                    </Button>
+                    <button
+                      onClick={onClose}
+                      className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-500"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                      Template Marketplace
-                    </h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {totalTemplates} templates available
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setViewMode('publish')}
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1.5" /> Publish
-                  </Button>
-                  <button
-                    onClick={onClose}
-                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-500"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
+                }
+              />
             </div>
 
             {/* Content */}

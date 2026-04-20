@@ -6,7 +6,8 @@ import { formatApiError } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { Calendar, ExternalLink, Trash2 } from 'lucide-react'
+import { Calendar, ExternalLink, Trash2, Share2 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 export default function DistributionsTab() {
   const [distributions, setDistributions] = useState<Distribution[]>([])
@@ -67,12 +68,16 @@ export default function DistributionsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Distributions</h2>
-        <Button variant="outline" onClick={loadDistributions}>
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        title="Distributions"
+        description="Publish and distribute content across platforms"
+        icon={<Share2 className="w-5 h-5 text-blue-600" />}
+        actions={
+          <Button variant="outline" onClick={loadDistributions}>
+            Refresh
+          </Button>
+        }
+      />
 
       {error && (
         <div className="p-4 bg-red-500/10 dark:bg-red-500/20 border border-red-500/50 dark:border-red-500/50 rounded-lg">

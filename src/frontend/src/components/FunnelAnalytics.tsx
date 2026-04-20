@@ -16,6 +16,7 @@ import {
   GripVertical,
   Loader2,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -253,22 +254,16 @@ export default function FunnelAnalytics() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-blue-600" />
-            Funnel Analytics
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Track conversion funnels and identify drop-off points
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
+      <PageHeader
+        title="Funnel Analytics"
+        description="Track conversion funnels and identify drop-off points"
+        icon={<BarChart3 className="w-5 h-5 text-blue-600" />}
+        actions={
           <Button onClick={() => setShowCreateForm(true)} leftIcon={<Plus className="w-4 h-4" />}>
             Create Funnel
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Create Funnel Modal */}
       <AnimatePresence>

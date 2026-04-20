@@ -23,6 +23,7 @@ import {
   AlertCircle,
   ExternalLink
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/Card'
@@ -230,37 +231,32 @@ export default function CompetitorAnalysis() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Competitor Analysis
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Track and analyze your competitors&apos; content performance
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />}
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-          >
-            Refresh
-          </Button>
-          
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<Plus className="h-4 w-4" />}
-            onClick={() => setShowAddForm(true)}
-          >
-            Add Competitor
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Competitor Analysis"
+        description="Track and analyze your competitors' content performance"
+        icon={<Target className="w-5 h-5 text-blue-600" />}
+        actions={
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />}
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<Plus className="h-4 w-4" />}
+              onClick={() => setShowAddForm(true)}
+            >
+              Add Competitor
+            </Button>
+          </div>
+        }
+      />
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

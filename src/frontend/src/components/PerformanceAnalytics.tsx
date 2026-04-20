@@ -16,6 +16,7 @@ import {
   Share2,
   DollarSign,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import {
   LineChart,
   Line,
@@ -116,45 +117,41 @@ export default function PerformanceAnalytics() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-blue-500" />
-            Performance Analytics
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Content performance overview and insights
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Date Range Selector */}
-          <div className="flex items-center bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-xl border border-slate-200 dark:border-slate-700 p-1">
-            {(['7d', '30d', '90d'] as const).map(range => (
-              <button
-                key={range}
-                onClick={() => setDateRange(range)}
-                className={cn(
-                  'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
-                  dateRange === range
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                )}
-              >
-                {range}
-              </button>
-            ))}
+      <PageHeader
+        title="Performance Analytics"
+        description="Content performance overview and insights"
+        icon={<BarChart3 className="w-5 h-5 text-blue-500" />}
+        actions={
+          <div className="flex items-center gap-3">
+            {/* Date Range Selector */}
+            <div className="flex items-center bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-xl border border-slate-200 dark:border-slate-700 p-1">
+              {(['7d', '30d', '90d'] as const).map(range => (
+                <button
+                  key={range}
+                  onClick={() => setDateRange(range)}
+                  className={cn(
+                    'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
+                    dateRange === range
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  )}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />}
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              Refresh
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />}
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            Refresh
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Overview Stats */}
       {overview && (
