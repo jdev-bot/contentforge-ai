@@ -287,20 +287,19 @@ class TestUsageTrackingMiddleware:
     """Tests for usage tracking middleware."""
 
     @pytest.mark.unit
-    def test_middleware_tracks_content_endpoints(self):
-        """Test middleware tracks content creation endpoints."""
+    def test_middleware_is_passthrough(self):
+        """Test middleware is now a pass-through (deprecated).
+        
+        The middleware was deactivated because it counted ALL /api/v1/content
+        requests (including GET/view), not just creation. Usage tracking is now
+        handled by enforce_subscription_limit dependency on creation endpoints.
+        """
         from app.core.rate_limit import UsageTrackingMiddleware
 
         middleware = UsageTrackingMiddleware(None)
-
-        # Should track content endpoints
-        assert middleware._should_track("/api/v1/content") is True
-        assert middleware._should_track("/api/v1/content/123/generate") is True
-
-        # Should not track other endpoints
-        assert middleware._should_track("/api/v1/projects") is False
-        assert middleware._should_track("/api/v1/auth/me") is False
-        assert middleware._should_track("/health") is False
+        # Middleware no longer has _should_track or _send_error methods
+        assert not hasattr(middleware, '_should_track')
+        assert not hasattr(middleware, '_send_error')
 
 
 class TestLogUsageEvent:
@@ -455,3 +454,13 @@ class TestRateLimitConfig:
         # Should have default values from settings
         assert settings.RATE_LIMIT_REQUESTS == 1000  # From test env
         assert settings.RATE_LIMIT_WINDOW == 3600  # From test env
+
+
+class TestIncrementUsage:
+    """Tests for increment_usage function."""
+
+    @pytest.mark.unit
+    def test_increment_usage_exists(self):
+        """Test that increment_usage function is importable."""
+        from app.core.rate_limit import increment_usage
+        assert callable(increment_usage)

@@ -269,6 +269,40 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
         )
 
 
+def increment_usage(user_id: str) -> None:
+    """
+    Increment the user's monthly usage count without checking limits.
+    Use after enforce_subscription_limit has already validated the user is under quota.
+    """
+    supabase = get_supabase_admin_client()
+
+    try:
+        # Get current count
+        result = (
+            supabase.table("profiles")
+            .select("monthly_usage_count")
+            .eq("id", user_id)
+            .single()
+            .execute()
+        )
+
+        current_count = result.data.get("monthly_usage_count", 0) if result.data else 0
+        new_count = current_count + 1
+
+        supabase.table("profiles").update(
+            {
+                "monthly_usage_count": new_count,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ).eq("id", user_id).execute()
+
+        log_usage_event(user_id, "content_generation", 1)
+
+    except Exception as e:
+        logger.error(f"Failed to increment usage: {e}")
+        # Don't fail the request if increment fails
+
+
 def log_usage_event(user_id: str, event_type: str, tokens_used: Optional[int] = None):
     """Log a usage event to the usage_logs table."""
     supabase = get_supabase_admin_client()
@@ -499,67 +533,20 @@ def enforce_subscription_limit(request: Request):
 
 class UsageTrackingMiddleware:
     """
-    Middleware to track API usage per user.
-    Checks monthly limits before processing requests.
+    DEPRECATED: This middleware is no longer active.
+
+    Usage tracking is now handled exclusively via the `enforce_subscription_limit`
+    dependency on content-creation and asset-generation endpoints, which correctly
+    only increments on POST (creation), not on GET (viewing).
+
+    The middleware was removed because it counted ALL requests to /api/v1/content
+    (including GET/list/view), causing users to hit their monthly limit just by
+    browsing their own content.
     """
 
     def __init__(self, app):
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        """ASGI middleware interface."""
-        if scope["type"] != "http":
-            await self.app(scope, receive, send)
-            return
-
-        # Only track certain paths
-        path = scope.get("path", "")
-        if not self._should_track(path):
-            await self.app(scope, receive, send)
-            return
-
-        # Get user from authorization header
-        headers = dict(scope.get("headers", []))
-        auth_header = headers.get(b"authorization", b"").decode()
-
-        if auth_header.startswith("Bearer "):
-            token = auth_header.replace("Bearer ", "")
-            try:
-                from app.core.supabase import get_supabase_admin_client
-
-                supabase = get_supabase_admin_client()
-                user = supabase.auth.get_user(token)
-
-                if user and user.user:
-                    user_id = str(user.user.id)
-
-                    # Check usage before proceeding
-                    try:
-                        check_and_increment_usage(user_id)
-                    except HTTPException as e:
-                        if e.status_code == 429:
-                            # Return 429 response
-                            await self._send_error(scope, receive, send, e)
-                            return
-            except Exception:
-                pass  # Continue if auth fails
-
+        """Pass-through — no usage tracking at middleware level."""
         await self.app(scope, receive, send)
-
-    def _should_track(self, path: str) -> bool:
-        """Determine if a path should be tracked for usage."""
-        # Track content generation endpoints
-        tracked_paths = [
-            "/api/v1/content",
-            "/api/v1/content/",
-        ]
-        return any(path.startswith(tp) for tp in tracked_paths)
-
-    async def _send_error(self, scope, receive, send, error: HTTPException):
-        """Send HTTP error response."""
-        from starlette.responses import JSONResponse
-
-        response = JSONResponse(
-            content={"detail": error.detail}, status_code=error.status_code
-        )
-        await response(scope, receive, send)

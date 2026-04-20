@@ -14,6 +14,7 @@ from app.core.cache import cache, CACHE_TTL
 from app.core.rate_limit import (
     UsageStats,
     check_and_increment_usage,
+    increment_usage,
     enforce_subscription_limit,
     rate_limit_dependency,
 )
@@ -74,14 +75,15 @@ class GeneratedAsset(BaseModel):
 async def create_content(
     content_data: ContentCreate,
     user=Depends(get_auth_user),
-    _: UsageStats = Depends(enforce_subscription_limit),
+    usage_stats: UsageStats = Depends(enforce_subscription_limit),
 ):
     """Create new content from a source and extract text."""
     supabase = get_supabase_admin_client()
 
     try:
-        # Check and increment usage after validation but before processing
-        usage_stats = check_and_increment_usage(str(user.id))
+        # Usage limit already checked by enforce_subscription_limit dependency.
+        # Increment usage count once per creation.
+        increment_usage(str(user.id))
 
         # Extract text based on source type
         original_text = None
@@ -236,8 +238,9 @@ async def generate_assets(
     _: UsageStats = Depends(enforce_subscription_limit),
 ):
     """Generate repurposed assets from content using Groq AI."""
-    # Check and increment usage before processing
-    usage_stats = check_and_increment_usage(str(user.id))
+    # Usage limit already checked by enforce_subscription_limit dependency.
+    # Increment usage count once per generation.
+    increment_usage(str(user.id))
 
     supabase = get_supabase_admin_client()
 
