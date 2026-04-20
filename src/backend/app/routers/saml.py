@@ -170,6 +170,32 @@ class SAMLIdentityResponse(BaseModel):
     created_at: str
 
 
+# ── SAML Providers (static routes MUST come before {provider_id} param routes) ──
+
+
+class AvailableSAMLProvider(BaseModel):
+    """Public SAML provider info (no secrets)."""
+
+    id: str
+    name: str
+    display_name: str
+    is_active: bool
+
+
+@router.get("/saml/providers/available", response_model=List[AvailableSAMLProvider])
+async def list_available_saml_providers_alias(org_id: Optional[str] = None):
+    """List available SAML providers (frontend-friendly alias for /saml/available)."""
+    return await list_available_saml_providers(org_id=org_id)
+
+
+@router.post("/saml/providers/metadata/fetch", response_model=SAMLMetadataResponse)
+async def fetch_saml_metadata_alias(
+    body: SAMLMetadataURLRequest, user=Depends(get_auth_user)
+):
+    """Fetch and parse IdP metadata from a URL (frontend-friendly alias for /saml/metadata/fetch)."""
+    return await fetch_saml_metadata(body=body, user=user)
+
+
 # ── Provider Configuration CRUD ────────────────────────────────────
 
 
@@ -493,29 +519,7 @@ async def unlink_saml_identity(identity_id: str, user=Depends(get_auth_user)):
 
 
 # ── Available SAML Providers (public) ─────────────────────────────
-
-
-class AvailableSAMLProvider(BaseModel):
-    """Public SAML provider info (no secrets)."""
-
-    id: str
-    name: str
-    display_name: str
-    is_active: bool
-
-
-@router.get("/saml/providers/available", response_model=List[AvailableSAMLProvider])
-async def list_available_saml_providers_alias(org_id: Optional[str] = None):
-    """List available SAML providers (frontend-friendly alias for /saml/available)."""
-    return await list_available_saml_providers(org_id=org_id)
-
-
-@router.post("/saml/providers/metadata/fetch", response_model=SAMLMetadataResponse)
-async def fetch_saml_metadata_alias(
-    body: SAMLMetadataURLRequest, user=Depends(get_auth_user)
-):
-    """Fetch and parse IdP metadata from a URL (frontend-friendly alias for /saml/metadata/fetch)."""
-    return await fetch_saml_metadata(body=body, user=user)
+# (Routes moved above Provider Configuration CRUD to avoid {provider_id} path-param conflicts)
 
 
 @router.get("/saml/available", response_model=List[AvailableSAMLProvider])
