@@ -1,302 +1,92 @@
-# CONTEXT.md — ContentForge AI Project Context
+# CONTEXT.md — ContentForge AI
 
-> **This file is the single source of truth for project context.**
-> Update it whenever infrastructure, credentials, status, or key decisions change.
-> Commit and push after every update. This file must never be stale.
-
----
+> **Single source of truth.** Update after every material change. Commit + push immediately.
+> If >8KB → compact. Archive resolved items to daily notes.
 
 ## Project Overview
 
-- **Name:** ContentForge AI
-- **Type:** AI-powered content creation & management platform
-- **GitHub:** https://github.com/jdev-bot/contentforge-ai (SSH: `git@github.com:jdev-bot/contentforge-ai.git`)
-- **Current Phase:** Staging — UI overhaul deployed, functionality verification
-- **Started:** 2026-04-11
-- **Tech Stack:** FastAPI (Python) backend + Next.js (TypeScript) frontend + Supabase (PostgreSQL + Auth)
-
----
+- **Name:** ContentForge AI — AI content creation & management platform
+- **GitHub:** `jdev-bot/contentforge-ai` (SSH)
+- **Phase:** Staging — performance + bug fixes deployed, E2E v2 passing 99.4%
+- **Tech:** FastAPI (Python) + Next.js 16 (TypeScript) + Supabase (PostgreSQL + Auth)
 
 ## Infrastructure
 
-### Hosting Providers
+| Provider | Purpose | Key Info |
+|----------|---------|---------|
+| **Render** | Backend API | `srv-d7fhaif7f7vs73a168a0`, **Free tier**, cold starts ~30s, auto-deploy from main |
+| **Vercel** | Frontend + proxy | `prj_LG8wzPFJVaSDwueFnorflBBwHAOc`, Next.js 16.2.3, deploy from `src/frontend/` |
+| **Supabase** | DB + Auth | `zwbbmcbhrhlnoharfzdt`, 93 tables, all RLS enabled |
 
-All three providers have **authenticated CLIs installed on this machine (srv1503460)**.
-
-| Provider | Purpose | CLI | Version |
-|----------|---------|-----|---------|
-| **Render** | Backend API hosting | `render` | v2.15.1 |
-| **Vercel** | Frontend hosting + API proxy | `vercel` | 51.2.1 |
-| **Supabase** | Database + Auth | `npx supabase` | linked project |
-
-### Render
-
-- **Service ID:** `srv-d7fhaif7f7vs73a168a0`
-- **Service Name:** `contentforge-ai-api`
-- **Type:** Web Service (Python)
-- **Plan:** Free
 - **Backend URL:** `https://contentforge-ai-api.onrender.com`
-- **Health Check:** `/api/v1/health`
-- **Auto-deploy:** Yes (on push to `main`)
-- **Branch:** `main`
-- **Live Deploy:** `191f7ce` — **current with HEAD**
-- **Deploy History:** Latest deploy triggered 2026-04-20T04:39Z, build succeeded
-- **Note:** Free tier → cold starts (~30s after 15min idle). Rapid sequential requests hit 429 rate limiting after ~40 endpoints
-
-### Vercel
-
-- **Project ID:** `prj_LG8wzPFJVaSDwueFnorflBBwHAOc`
-- **Deployment ID:** `dpl_a1fd2e07u` (latest)
 - **Frontend URL:** `https://frontend-theta-seven-65.vercel.app`
-- **Aliases:** `frontend-jdevs-projects-ce69c014.vercel.app`, `frontend-jdev-bot-7023-jdevs-projects-ce69c014.vercel.app`
-- **Region:** `iad1`
-- **Framework:** Next.js 16.2.3 (Turbopack)
-- **Status:** ● Ready
-- **Deployed:** Sun Apr 20 04:41 UTC (latest deploy)
-- **API Proxy:** `/api/v1/*` → `https://contentforge-ai-api.onrender.com/api/v1/*` (via `vercel.json` rewrites)
-- **GitHub Integration:** Enabled (auto-deploy on push)
-- **Security Headers:** ✅ HSTS, X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy, X-Robots-Tag: noindex
-- **✅ FIXED:** `trailingSlash: false` in `next.config.ts` + FastAPI `redirect_slashes=False` — no more 307 redirects
+- **API Proxy:** `/api/v1/*` → Render (via Vercel rewrites)
+- **Deploy command:** `cd src/frontend && vercel --prod`
 
-### Supabase
-
-- **Project Name:** `contentforge-ai-staging`
-- **Reference ID:** `zwbbmcbhrhlnoharfzdt`
-- **Organization ID:** `nccabfbceqppywibuvpj`
-- **Region:** West EU (Ireland)
-- **URL:** `https://zwbbmcbhrhlnoharfzdt.supabase.co`
-- **Tables existing (with row counts):** profiles(2), projects(2), content(1), error_logs(249), marketplace_templates(0), organizations(0), integrations(0), plugins(0), audit_logs(0), sso_providers(0), rss_feeds(0), dashboards(0), automation_rules(0)
-- **Tables now:** 93 tables total (all migration 025 tables created successfully)
-- **RLS:** All tables have RLS enabled. Service role key bypasses RLS. Anon key gets 401 on most tables (correct).
-- **✅ FIXED:** RLS infinite recursion on `organizations` table (was 42P17 error)
-
-### Self-Hosted Services (srv1503460)
-
-| Service | Type | Purpose | Status |
-|---------|------|---------|--------|
-| `actions-runner.service` | GitHub Actions Self-Hosted Runner | CI pipeline | ✅ Active |
-
-- **Local dev environment REMOVED** (2026-04-20): Local backend, Cloudflare tunnel, venv, node_modules all deleted
-- All testing/deployment now against staging (Render + Vercel + Supabase) only
-
----
-
-## Test Accounts & Credentials
+## Test Account
 
 | Field | Value |
 |-------|-------|
-| **Frontend URL** | `https://frontend-theta-seven-65.vercel.app` |
-| **Email** | `test@neo.dev` |
-| **Password** | `Test1234!` |
-| **User ID** | `9b2538b0-99e2-4e1e-8864-36ae7e6289a1` |
+| Email | `test@neo.dev` |
+| Password | `Test1234!` |
+| User ID | `9b2538b0-99e2-4e1e-8864-36ae7e6289a1` |
+
+## Performance Fixes (commit `8b269cf`, deployed 2026-04-21)
+
+| Fix | Impact |
+|-----|--------|
+| Removed duplicate `get_user()` in ErrorTrackingMiddleware | ~400ms/request saved |
+| Per-request auth caching (`request_context.py`) | Eliminates redundant Supabase calls |
+| Batch `/api/v1/init` endpoint | 5-call waterfall → 1 call (60% faster) |
+| Client-side stale-while-revalidate cache | Instant tab switches |
+| ETag on `/init` | Conditional 304 responses |
+
+## E2E Test Suite v2 (commit `024089a`, 163/164 pass = 99.4%)
+
+- **16 spec files**, ~164 tests, Playwright 1.59.1
+- **1 skip:** Content creation (monthly usage limit 10/10)
+- Local Chromium libs: `/home/claw/.local/lib/playwright-libs/usr/lib/x86_64-linux-gnu/`
+
+## Bug Fixes Deployed (commit `0e44d2e`, 2026-04-21)
+
+| Bug | Fix |
+|-----|-----|
+| Dashboard ignores `?tab=` URL params | Added `useSearchParams` + `router.replace` on tab change |
+| Project delete uses browser `confirm()` | Replaced with modal dialog (Cancel / Yes Delete) |
+| E2E quality-scoring test wrong endpoint | Fixed to `POST /quality-scoring/batch` |
+
+## Mock → Real API Wiring (commit `e82d9a9`, deployed 2026-04-21)
+
+| Component | Status |
+|-----------|--------|
+| AlertsCenter | ✅ API: getAlerts, getUnreadAlertCount, acknowledge, resolve |
+| AuditLogs | ✅ Already wired (getAuditLogs, getAuditLogStats) |
+| SentimentDashboard | ✅ Already wired (analyzeSentiment, getSentiment, getSentimentTrend) |
+| QualityDashboard | ✅ Already wired (batchAnalyzeQuality, getQualityScore) |
+| IntegrationsPanel | ✅ API: listIntegrations |
+| CompetitorAnalysis | ✅ API: getCompetitors (mock fallback) |
+| TrendingTopics | ✅ API: getTrendingTopics, generateFromTrend |
+| TeamCalendar | 🔶 Demo Data badge (no backend) |
+| EngagementPrediction | 🔶 Demo Data badge (no backend) |
+
+Added: PageHeader `badge` prop, alerts + competitors API functions in api.ts
+
+## Pending Issues
+
+| Issue | Priority | Status |
+|-------|----------|--------|
+| `POST /admin/reset-usage/{user_id}` — deployed to git, waiting for Render | P3 | Pending Render deploy |
+| Test user at 10/10 monthly usage | P3 | Reset endpoint pending deploy |
+| GROQ_API_KEY placeholder | Low | User to provide |
+| Render Free tier cold starts | Low | Needs paid plan ($7/mo) |
+| Custom Vercel domain | Low | Future |
+
+## Git HEAD
+
+- **Local/Remote:** `e82d9a9` (synced)
+- **Render live:** Pending (auto-deploy from main)
+- **Vercel:** Deployed 2026-04-21 ~18:20 UTC
 
 ---
 
-## Full Platform Scan Results (2026-04-15 19:00 UTC)
-
-### Full Platform Scan (2026-04-20 04:43 UTC)
-
-| Category | Count | Details |
-|----------|-------|---------|
-| ✅ 200 | 40 | All core endpoints responding |
-| 🔀 Redirect | 0 | No 307s (fixed) |
-| 🚫 403 Admin-only | 2 | `/webhooks/logs`, `/admin/errors` (correct — requires admin) |
-| ⚠️ 429 Rate-limited | 3 | `/content`, `/suggestions/topics`, `/content/{id}/comments` (Render free tier) |
-| ⚠️ 422 Validation | 3 | UUID validation on test paths (expected) |
-| ❌ 404 | 0 | All previously-missing routes now served via aliases |
-
-### Supabase Database Status
-
-- **Tables:** 93 total (all migration 025 tables present)
-- **RLS:** Enabled on all tables
-- **All previously-missing tables created:** webhook_logs, quality_scores, user_profiles, seo_analyses, tone_adjustments, marketplace_installs, marketplace_ratings, marketplace_template_versions, saml_providers, saml_identities, saml_states, auto_suggestions, ai_editor_history, collaboration_edits, presence, comment_mentions, comment_reactions, publishing_queue, automation_logs, webhook_endpoints, assets, analytics, funnels, funnel_events, attribution_touchpoints, sla_policies, sla_metrics, sla_alerts, integration_configs, integration_events, integration_logs, trash, content_freshness_scores, trending_topics, user_topic_interests, trend_content_suggestions, content_topics, in_app_notifications, integrations, webhook_deliveries
-
-### Error Logs Analysis (historical — 249 entries from before fixes)
-
----
-
-## Bug Inventory (Prioritized)
-
-### 🔴 CRITICAL
-
-| # | Bug | Impact | Status |
-|---|-----|--------|--------|
-| C1 | **RLS infinite recursion on `organizations`** | Organizations feature broken (42P17) | ✅ Fixed |
-| C2 | **Vercel 307 trailing-slash redirect strips Auth headers** | Frontend API calls lose auth → 401 | ✅ Fixed |
-| C3 | **Render behind HEAD** | API fixes not deployed | ✅ Fixed (deploy `191f7ce` live) |
-
-### 🟠 HIGH
-
-| # | Bug | Impact | Fix |
-|---|-----|--------|-----|
-| H1 | **9 missing Supabase tables** | Notifications, comments, SLA, webhooks features all 500/404 | ✅ Fixed — migration 025 created all 35 missing tables |
-| H2 | **Marketplace DB schema bugs** | `/marketplace/tags` 500 (no `tags` column), `/marketplace/templates/trending` 500 (`install_count` vs `download_count`) | ✅ `/marketplace/tags` and `/marketplace/templates/trending` now return 200 |
-| H3 | **Frontend→Backend route mismatches** | 15 path naming differences + 12 missing routes cause 404s | ✅ Fixed — 7 aliases + 9 missing routes added, deployed |
-| H4 | **`/freshness/stale` returns 500** | Freshness monitoring broken | ✅ Fixed — now returns 200 |
-
-### 🟡 MEDIUM
-
-| # | Bug | Impact | Fix |
-|---|-----|--------|-----|
-| M1 | **3 POST-only endpoints (405 on GET)** | `categorization/categories`, `sla/metrics`, `attribution/touchpoints` | Add GET handlers or update frontend to use existing routes |
-| M2 | **`/webhooks/logs` returns 403** | Non-admin users blocked | ✅ Correct — requires admin role |
-| M3 | **`status` import shadow in health.py, stripe.py** | Potential status code comparison bugs | ✅ Already fixed — both import `status as http_status` |
-
-### 🔵 LOW / FUTURE
-
-| # | Issue | Notes |
-|---|-------|-------|
-| L1 | GROQ_API_KEY placeholder | AI content generation not testable yet |
-| L2 | Stripe/R2/Resend keys not set | Payments, storage, email non-functional |
-| L3 | Render free tier cold starts | ~30s after 15min idle |
-| L4 | Redis unavailable on Render | In-memory cache fallback |
-| L5 | No custom Vercel domain | Using auto-generated URL |
-| L6 | No Supabase management API access token | Can't query DB via CLI |
-
----
-
-## Frontend→Backend Route Mismatches — Resolved & Remaining
-
-### ✅ RESOLVED (deployed 2026-04-20, commit `48dc458`)
-
-| Frontend calls | Fix applied |
-|---------------|-------------|
-| `/marketplace/featured` | ✅ Alias added → `/marketplace/templates/featured` |
-| `/marketplace/trending` | ✅ Alias added → `/marketplace/templates/trending` |
-| `/distributions/{ID}/publish-now` | ✅ Alias added → `/distributions/{ID}/publish` |
-| `/saml/providers/available` | ✅ Alias added → `/saml/available` |
-| `/saml/providers/metadata/fetch` | ✅ Alias added → `/saml/metadata/fetch` |
-| `/freshness/metrics` | ✅ Alias added → `/freshness/dashboard` |
-| `/freshness/bulk-refresh` | ✅ Alias added → `/freshness/bulk-analyze` |
-| `/schedule/{ID}/cancel` | ✅ New route implemented |
-| `/schedule/{ID}/duplicate` | ✅ New route implemented |
-| `/schedule/conflicts` | ✅ New route implemented |
-| `/rss/stats` | ✅ New route implemented |
-| `/rss/settings` (GET+PATCH) | ✅ New routes implemented |
-| `/rss/entries/bulk-import` | ✅ New route implemented |
-| `/quality-scoring/{ID}` | ✅ Alias added (earlier commit) |
-| `/quality-scoring/{ID}/analyze` | ✅ Alias added (earlier commit) |
-| `/quality-scoring/{ID}/history` | ✅ Alias added (earlier commit) |
-| `/sentiment/{ID}` | ✅ Alias added (earlier commit) |
-| `/sentiment/{ID}/analyze` | ✅ Alias added (earlier commit) |
-| `/sentiment/{ID}/trend` | ✅ Alias added (earlier commit) |
-| `/freshness/{ID}/analyze` | ✅ Alias added (earlier commit) |
-
-### Already existed (false alarms from UUID test data)
-
-| Frontend calls | Backend route | Status |
-|---------------|-------------|--------|
-| `/suggestions/{ID}/accept` | Already existed | ✅ |
-| `/suggestions/{ID}/dismiss` | Already existed | ✅ |
-
-### Remaining (low priority)
-
-| Issue | Status | Notes |
-|-------|--------|-------|
-| `/saml/login/{ID}` vs `/saml/login` | Open | SAML login with provider in URL path |
-| `/saml/logout/{ID}` vs `/saml/logout` | Open | SAML logout with provider in URL path |
-| Query string normalization (13) | Cosmetic | Works at runtime, different query param formats |
-| Template literal artifacts (8) | Not bugs | JS concatenation works at runtime |
-| `/organizations` list root | ✅ Already exists | Both `/` and `""` GET routes present |
-| Organization member routes | ✅ Already exist | `/invite`, `/leave`, `/members`, `/members/{id}`, `/transfer-ownership` all implemented |
-
----
-
-## Codebase Stats
-
-- **Backend routes:** 304 total (255 GET + 49 POST/PUT/DELETE)
-- **Frontend API calls:** 187 unique endpoints in `api.ts`
-- **49 routers**, **34 services**
-- **530 backend tests** (pytest)
-- **73 React components**, **16 pages**
-- **8 middleware** (Performance, RequestID, ETag, CORS, etc.)
-
----
-
-## Git Status
-
-- **Local HEAD:** `1ef3b8e` (E2E test suite)
-- **Remote HEAD:** `1ef3b8e` (in sync)
-- **Render live:** `dcd0610` (route ordering fixes — no backend changes in UI commit)
-- **Vercel deploy:** `frontend-qny3rx0zl` (deployed 2026-04-20 14:25 UTC ✅)
-
----
-
-## Environment Variables (Non-Secret)
-
-| Variable | Staging Value | Notes |
-|----------|--------------|-------|
-| `APP_ENV` | `staging` | Controls staging banner, auth gate, robots |
-| `NEXT_PUBLIC_APP_ENV` | `staging` | Frontend staging mode |
-| `NEXT_PUBLIC_SIGNUP_ENABLED` | `false` | Invite-only |
-| `NEXT_PUBLIC_API_URL` | `/api/v1` | Relative URL → Vercel proxy (avoids CORS) |
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://zwbbmcbhrhlnoharfzdt.supabase.co` | Staging DB |
-| `GROQ_API_KEY` | Placeholder | User will provide later |
-| `STRIPE_*` | Not set | User will provide later |
-
----
-
-## How to Update This File
-
-1. After any infrastructure change, credential update, or status shift → update relevant section
-2. Commit: `git add CONTEXT.md && git commit -m "docs: update CONTEXT.md — <reason>"`
-3. Push: `git push origin main`
-4. This file is our memory — if it's not here, it's not known.
-
-## Performance Optimization (2026-04-21)
-
-### Root Cause Analysis
-| Issue | Impact | Status |
-|-------|--------|--------|
-| 3x Supabase `auth.get_user()` per request (2 in middleware, 1 in handler) | ~400ms overhead per request | ✅ Fixed — JWT decode in middleware, per-request caching |
-| No batch endpoint — 5+ sequential API calls on page load | 5-7s total page load | ✅ Fixed — `/api/v1/init` batch endpoint |
-| No client-side caching | Every tab switch = full API calls | ✅ Fixed — stale-while-revalidate sessionStorage cache |
-| Render Free Tier cold starts | ~30s after 15min idle | 🔴 Open — needs paid plan ($7/mo) |
-
-### Cold Start Data
-| Endpoint | Warm | Cold (17min idle) |
-|----------|------|------------------|
-| `/health` | 0.20s | 0.20s (no auth) |
-| `/auth/me` | 1.1s | 4.0s |
-| `/projects` | 1.0s | 3.4s |
-| `/content` | 1.2s | 1.5s |
-
-### Improvement Results
-| Metric | Before | After |
-|--------|--------|-------|
-| Auth roundtrips/request | 3 Supabase calls | 1 + JWT decode |
-| Page load (5 calls) | ~5044ms | ~2067ms (60% faster) |
-| Tab switch (2nd+) | 1-3s API call | Instant (cache) |
-
-## E2E Test Suite (2026-04-21)
-
-### Overview
-- **Location:** `e2e/`
-- **Runner:** Playwright 1.59.1, Chromium only
-- **Target:** Live staging (Vercel + Render + Supabase)
-- **Config:** 60s timeout, 1 retry, sequential execution
-
-### Test Files (5 specs, 40 tests)
-| Spec | Tests | Focus |
-|------|-------|-------|
-| `auth-flow.spec.ts` | 6 | Login, logout, auth persistence, protected routes |
-| `api-performance.spec.ts` | 9 | API response times, batch /init, sequential load sim |
-| `dashboard-navigation.spec.ts` | 10 | Sidebar tabs, cached/fresh tab timing, mobile, keyboard |
-| `content-crud.spec.ts` | 6 | Content creation, detail page, Go Home bug tracking |
-| `ui-responsiveness.spec.ts` | 9 | FMP, tab clicks, search, button response, scroll perf |
-
-### Results (latest run: 2026-04-21 10:08 UTC)
-- **35 passed, 5 skipped, 0 failed**
-- Skips: 3 depend on content creation (monthly limit reached), 1 sidebar collapse (feature not present), 1 ui-responsive sidebar toggle
-- **Key threshold:** Sequential 5-call API load < 20s (Render free tier)
-- **Key threshold:** Batch /init < 5s
-- **Key threshold:** Tab switch < 4s cached, < 6s fresh
-
-### Known Issues
-- Content pages (`/content/new`, `/content/[id]`) take 15-20s to load (Supabase session hydration on standalone pages)
-- Monthly content limit (10) blocks content creation E2E tests
-- Content tab in dashboard auto-navigates to `/content/new` (expected behavior, not a bug)
-
----
-
-*Last updated: 2026-04-21 10:10 UTC | E2E test suite committed (1ef3b8e)*
+*Last updated: 2026-04-21 18:25 UTC*
