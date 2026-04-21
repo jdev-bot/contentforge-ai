@@ -215,8 +215,8 @@ All three providers have **authenticated CLIs installed on this machine (srv1503
 
 ## Git Status
 
-- **Local HEAD: `6d38468` (fix: disable UsageTrackingMiddleware)
-- **Remote HEAD:** `ba11c3e` (in sync)
+- **Local HEAD:** `1ef3b8e` (E2E test suite)
+- **Remote HEAD:** `1ef3b8e` (in sync)
 - **Render live:** `dcd0610` (route ordering fixes — no backend changes in UI commit)
 - **Vercel deploy:** `frontend-qny3rx0zl` (deployed 2026-04-20 14:25 UTC ✅)
 
@@ -268,6 +268,35 @@ All three providers have **authenticated CLIs installed on this machine (srv1503
 | Page load (5 calls) | ~5044ms | ~2067ms (60% faster) |
 | Tab switch (2nd+) | 1-3s API call | Instant (cache) |
 
+## E2E Test Suite (2026-04-21)
+
+### Overview
+- **Location:** `e2e/`
+- **Runner:** Playwright 1.59.1, Chromium only
+- **Target:** Live staging (Vercel + Render + Supabase)
+- **Config:** 60s timeout, 1 retry, sequential execution
+
+### Test Files (5 specs, 40 tests)
+| Spec | Tests | Focus |
+|------|-------|-------|
+| `auth-flow.spec.ts` | 6 | Login, logout, auth persistence, protected routes |
+| `api-performance.spec.ts` | 9 | API response times, batch /init, sequential load sim |
+| `dashboard-navigation.spec.ts` | 10 | Sidebar tabs, cached/fresh tab timing, mobile, keyboard |
+| `content-crud.spec.ts` | 6 | Content creation, detail page, Go Home bug tracking |
+| `ui-responsiveness.spec.ts` | 9 | FMP, tab clicks, search, button response, scroll perf |
+
+### Results (latest run: 2026-04-21 10:08 UTC)
+- **35 passed, 5 skipped, 0 failed**
+- Skips: 3 depend on content creation (monthly limit reached), 1 sidebar collapse (feature not present), 1 ui-responsive sidebar toggle
+- **Key threshold:** Sequential 5-call API load < 20s (Render free tier)
+- **Key threshold:** Batch /init < 5s
+- **Key threshold:** Tab switch < 4s cached, < 6s fresh
+
+### Known Issues
+- Content pages (`/content/new`, `/content/[id]`) take 15-20s to load (Supabase session hydration on standalone pages)
+- Monthly content limit (10) blocks content creation E2E tests
+- Content tab in dashboard auto-navigates to `/content/new` (expected behavior, not a bug)
+
 ---
 
-*Last updated: 2026-04-21 05:10 UTC | Performance fixes deployed (8b269cf)*
+*Last updated: 2026-04-21 10:10 UTC | E2E test suite committed (1ef3b8e)*
