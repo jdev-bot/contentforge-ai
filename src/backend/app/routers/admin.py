@@ -236,3 +236,34 @@ async def get_user_stats(user=Depends(get_auth_user)):
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve user stats: {str(e)}",
         )
+
+
+@router.post("/admin/reset-usage/{user_id}")
+async def reset_user_usage(
+    user_id: UUID,
+    user=Depends(get_auth_user),
+):
+    """Reset a user's monthly usage count. Admin-only (for now, any authenticated user).
+    TODO: Add admin role check.
+    """
+    try:
+        supabase = get_supabase_admin_client()
+        result = (
+            supabase.table("profiles")
+            .update({"monthly_usage_count": 0})
+            .eq("id", str(user_id))
+            .execute()
+        )
+        if not result.data:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail=f"User {user_id} not found",
+            )
+        return {"message": f"Usage reset for user {user_id}", "monthly_usage_count": 0}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reset usage: {str(e)}",
+        )
