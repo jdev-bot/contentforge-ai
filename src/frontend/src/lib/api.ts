@@ -252,6 +252,126 @@ async function apiFetch(url: string, options: RequestInit = {}): Promise<Respons
   return response
 }
 
+// ============ Init API (Batch) ============
+
+export interface InitUserProfile {
+  id: string
+  email: string
+  full_name: string | null
+  is_active: boolean
+  subscription_tier: string
+  monthly_usage_count: number
+  monthly_usage_limit: number
+}
+
+export interface InitProjectItem {
+  id: string
+  name: string
+  description: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface InitContentItem {
+  id: string
+  project_id: string
+  title: string
+  source_type: string
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+export interface InitUsageSummary {
+  monthly_usage_count: number
+  monthly_usage_limit: number
+  remaining: number
+  percentage_used: number
+  subscription_tier: string
+}
+
+export interface InitDashboardKPIs {
+  total_content: number
+  total_assets: number
+  total_distributions: number
+  published_distributions: number
+  content_growth_30d: number
+  asset_growth_30d: number
+  distribution_success_rate: number
+}
+
+export interface InitResponse {
+  user: InitUserProfile
+  projects: InitProjectItem[]
+  content: InitContentItem[]
+  usage: InitUsageSummary
+  dashboard_kpis: InitDashboardKPIs
+}
+
+/**
+ * Batch init — fetches all data needed on page load in a single request.
+ * Replaces 5+ individual API calls (auth/me, projects, content, usage, analytics).
+ * All sub-queries run in parallel on the backend.
+ *
+ * Uses stale-while-revalidate: returns cached data immediately if available,
+ * then revalidates in the background.
+ */
+const INIT_CACHE_KEY = 'contentforge_init_data'
+const INIT_CACHE_TTL_MS = 30_000 // 30 seconds — fresh enough for tab switching
+
+function getCachedInit(): InitResponse | null {
+  try {
+    const raw = sessionStorage.getItem(INIT_CACHE_KEY)
+    if (!raw) return null
+    const { data, timestamp } = JSON.parse(raw)
+    if (Date.now() - timestamp < INIT_CACHE_TTL_MS) {
+      return data
+    }
+  } catch {
+    // Corrupt cache — ignore
+  }
+  return null
+}
+
+function setCachedInit(data: InitResponse): void {
+  try {
+    sessionStorage.setItem(INIT_CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }))
+  } catch {
+    // Storage full or unavailable — ignore
+  }
+}
+
+export async function getInit(forceRefresh = false): Promise<InitResponse> {
+  // Return cached data immediately if available and not forced
+  if (!forceRefresh) {
+    const cached = getCachedInit()
+    if (cached) {
+      // Revalidate in background (fire-and-forget)
+      apiFetch(`${API_URL}/init`).then(async (res) => {
+        if (res.ok) {
+          const fresh = await res.json()
+          setCachedInit(fresh)
+        }
+      }).catch(() => {}) // Swallow background revalidation errors
+      return cached
+    }
+  }
+
+  const response = await apiFetch(`${API_URL}/init`)
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to initialize app')
+  }
+
+  const data = await response.json()
+  setCachedInit(data)
+  return data
+}
+
+// ============ Content API ============
+
 export async function createContent(data: ContentCreate): Promise<Content> {
     const response = await apiFetch(`${API_URL}/content`, {
     method: 'POST',

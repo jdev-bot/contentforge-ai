@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { listContent, Content } from '@/lib/api'
+import { getInit, InitResponse } from '@/lib/api'
 import { Card, CardContent, StatsCard } from '@/components/ui/Card'
 import { CardHeader } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -53,16 +54,26 @@ function StatsCardSkeleton() {
 
 export default function HomeTab({ onCreateContent, onCreateProject, onViewSchedule, onTabChange }: HomeTabProps) {
   const router = useRouter()
+  const [initData, setInitData] = useState<InitResponse | null>(null)
   const [content, setContent] = useState<Content[]>([])
   const [loading, setLoading] = useState(true)
 
   const loadContent = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await listContent()
-      setContent(data)
+      // Use batch init endpoint — single request replaces 5+ individual calls
+      const data = await getInit()
+      setInitData(data)
+      setContent(data.content as unknown as Content[])
     } catch (error) {
-      console.error('Failed to load content for home:', error)
+      // Fallback to individual call if init fails
+      console.error('Init failed, falling back:', error)
+      try {
+        const data = await listContent()
+        setContent(data)
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError)
+      }
     } finally {
       setLoading(false)
     }
@@ -72,9 +83,9 @@ export default function HomeTab({ onCreateContent, onCreateProject, onViewSchedu
     loadContent()
   }, [loadContent])
 
-  // Compute stats
+  // Compute stats — prefer init data (single-source), fallback to content list
   const stats = {
-    total: content.length,
+    total: initData?.dashboard_kpis?.total_content ?? content.length,
     completed: content.filter(c => c.status === 'completed').length,
     processing: content.filter(c => c.status === 'processing').length,
     failed: content.filter(c => c.status === 'failed').length,

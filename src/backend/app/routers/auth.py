@@ -41,7 +41,18 @@ class TokenResponse(BaseModel):
 
 
 def get_auth_user(request: Request):
-    """Dependency to get current authenticated user from Supabase session."""
+    """Dependency to get current authenticated user from Supabase session.
+
+    Caches the user_id in request state so downstream middleware
+    (error tracking, rate limit headers) can use it without
+    making another supabase.auth.get_user() network call.
+    """
+    # Check if user was already validated and cached in this request
+    from app.core.request_context import get_request_user, set_request_user_id, set_request_user
+    cached = get_request_user(request)
+    if cached:
+        return cached
+
     auth_header = request.headers.get("authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(
@@ -61,7 +72,12 @@ def get_auth_user(request: Request):
                 detail="Invalid token",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        # Cache for downstream middleware
+        set_request_user_id(request, str(user.user.id))
+        set_request_user(request, user.user)
         return user.user
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_401_UNAUTHORIZED,

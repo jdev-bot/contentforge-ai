@@ -22,6 +22,7 @@ ETAG_ENABLED_PREFIXES = (
     "/competitors/",
     "/freshness/",
     "/dashboard",
+    "/init",
 )
 
 

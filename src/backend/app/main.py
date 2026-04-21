@@ -32,6 +32,7 @@ from app.routers import (
     freshness,
     funnel,
     health,
+    init,
     integration_framework,
     integrations,
     marketplace,
@@ -142,6 +143,7 @@ app.add_middleware(
 
 # Routers
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
+app.include_router(init.router, prefix="/api/v1", tags=["init"])
 app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
 app.include_router(organizations.router, prefix="/api/v1", tags=["organizations"])
 app.include_router(projects.router, prefix="/api/v1", tags=["projects"])
