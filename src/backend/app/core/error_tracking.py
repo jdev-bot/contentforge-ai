@@ -93,6 +93,11 @@ def log_error_to_database(
 class ErrorTrackingMiddleware(BaseHTTPMiddleware):
     """
     Middleware to track and log all 4xx/5xx errors to the database.
+
+    PERFORMANCE FIX: Extracts user_id from JWT locally instead of calling
+    supabase.auth.get_user() on every request. The full auth validation
+    happens in the route handler's get_auth_user() dependency — no need
+    to duplicate that network call here.
     """
 
     async def dispatch(self, request: Request, call_next):
@@ -105,20 +110,13 @@ class ErrorTrackingMiddleware(BaseHTTPMiddleware):
         ip_address = request.client.host if request.client else None
         user_agent = request.headers.get("user-agent")
 
-        # Try to get user ID from auth header
+        # Extract user ID from JWT locally (no network call)
         user_id = None
         auth_header = request.headers.get("authorization")
         if auth_header and auth_header.startswith("Bearer "):
-            try:
-                from app.core.supabase import get_supabase_client
-
-                token = auth_header.replace("Bearer ", "")
-                supabase = _get_anon_client()
-                user = supabase.auth.get_user(token)
-                if user and user.user:
-                    user_id = str(user.user.id)
-            except Exception:
-                pass  # Don't fail if auth fails
+            from app.core.request_context import decode_jwt_subject
+            token = auth_header.replace("Bearer ", "")
+            user_id = decode_jwt_subject(token)
 
         # Read request body for errors
         request_body = None
@@ -141,6 +139,11 @@ class ErrorTrackingMiddleware(BaseHTTPMiddleware):
                 )
                 message = f"HTTP {response.status_code} error"
 
+                # Try to get user_id from request context (set by auth dependency)
+                if not user_id:
+                    from app.core.request_context import get_request_user_id
+                    user_id = get_request_user_id(request)
+
                 log_error_to_database(
                     status_code=response.status_code,
                     error_type=error_type,
@@ -162,6 +165,10 @@ class ErrorTrackingMiddleware(BaseHTTPMiddleware):
             # Log HTTP exceptions
             error_type = "client_error" if exc.status_code < 500 else "server_error"
 
+            if not user_id:
+                from app.core.request_context import get_request_user_id
+                user_id = get_request_user_id(request)
+
             log_error_to_database(
                 status_code=exc.status_code,
                 error_type=error_type,
@@ -174,13 +181,16 @@ class ErrorTrackingMiddleware(BaseHTTPMiddleware):
                 request_body=request_body,
                 metadata={
                     "response_time_ms": round((time.time() - start_time) * 1000, 2),
-                    "headers": dict(request.headers),
                 },
             )
             raise
 
         except Exception as exc:
             # Log unhandled exceptions
+            if not user_id:
+                from app.core.request_context import get_request_user_id
+                user_id = get_request_user_id(request)
+
             log_error_to_database(
                 status_code=500,
                 error_type="unhandled_exception",
