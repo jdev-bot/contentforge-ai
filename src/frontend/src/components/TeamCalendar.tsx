@@ -257,6 +257,7 @@ export default function TeamCalendar() {
         title="Team Calendar"
         description="Schedule and manage content across your team"
         icon={<Calendar className="w-5 h-5 text-blue-600" />}
+        badge={<span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">Demo Data</span>}
         actions={
           <div className="flex items-center gap-3">
             <Button

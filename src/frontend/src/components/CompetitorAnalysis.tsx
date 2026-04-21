@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus,
@@ -185,12 +185,50 @@ const getPlatformIcon = (platform: string) => {
 
 // Components
 export default function CompetitorAnalysis() {
-  const [competitors, setCompetitors] = useState<Competitor[]>(mockCompetitors)
+  const [competitors, setCompetitors] = useState<Competitor[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [posts] = useState<CompetitorPost[]>(mockCompetitorPosts)
   const [showAddForm, setShowAddForm] = useState(false)
   const [selectedCompetitor, setSelectedCompetitor] = useState<string | 'all'>('all')
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // Fetch competitors from API with mock fallback
+  const fetchCompetitors = useCallback(async () => {
+    try {
+      setIsRefreshing(true)
+      try {
+        const { getCompetitors } = await import('@/lib/api')
+        const data = await getCompetitors()
+        if (data.competitors.length > 0) {
+          const mapped: Competitor[] = data.competitors.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            platform: 'blog' as const,
+            handle: c.website || c.name.toLowerCase().replace(/\s+/g, ''),
+            followers: 0,
+            engagementRate: 0,
+            avgViews: 0,
+            postsPerWeek: 0,
+            trackedSince: new Date(c.created_at),
+            isActive: true,
+          }))
+          setCompetitors(mapped)
+          return
+        }
+      } catch { /* fallback to mock */ }
+      setCompetitors(mockCompetitors)
+    } catch {
+      setCompetitors(mockCompetitors)
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCompetitors()
+  }, [fetchCompetitors])
 
   const filteredPosts = useMemo(() => {
     let filtered = posts

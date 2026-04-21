@@ -15,6 +15,7 @@ interface PageHeaderProps {
   description: string
   icon?: ReactNode
   actions?: ReactNode
+  badge?: ReactNode
   breadcrumbs?: Breadcrumb[]
   className?: string
 }
@@ -24,6 +25,7 @@ export function PageHeader({
   description,
   icon,
   actions,
+  badge,
   breadcrumbs,
   className,
 }: PageHeaderProps) {
@@ -61,6 +63,7 @@ export function PageHeader({
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 truncate">
               {title}
+              {badge && <span className="ml-3">{badge}</span>}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
               {description}

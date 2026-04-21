@@ -4638,3 +4638,108 @@ export async function getIntegrationStatus(configId: string): Promise<Integratio
 
 // ============ End P4: Integration Framework API ============
 
+// ============ Alerts API ============
+
+export interface AlertData {
+  id: string
+  user_id: string
+  alert_type: string
+  content_id: string | null
+  metric_name: string
+  threshold_value: number
+  current_value: number
+  status: string
+  message: string | null
+  created_at: string
+  acknowledged_at: string | null
+}
+
+export interface AlertListData {
+  alerts: AlertData[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface UnreadCountData {
+  count: number
+}
+
+export interface AlertRuleData {
+  id: string
+  name: string
+  alert_type: string
+  metric_name: string
+  operator: string
+  threshold: number
+  enabled: boolean
+  created_at: string
+}
+
+export async function getAlerts(limit: number = 50, offset: number = 0): Promise<AlertListData> {
+  const response = await apiFetch(`${API_URL}/alerts?limit=${limit}&offset=${offset}`)
+  if (!response.ok) throw new Error('Failed to fetch alerts')
+  return response.json()
+}
+
+export async function getUnreadAlertCount(): Promise<UnreadCountData> {
+  const response = await apiFetch(`${API_URL}/alerts/unread-count`)
+  if (!response.ok) throw new Error('Failed to fetch unread count')
+  return response.json()
+}
+
+export async function acknowledgeAlert(alertId: string): Promise<void> {
+  const response = await apiFetch(`${API_URL}/alerts/acknowledge/${alertId}`, { method: 'POST' })
+  if (!response.ok) throw new Error('Failed to acknowledge alert')
+}
+
+export async function resolveAlert(alertId: string): Promise<void> {
+  const response = await apiFetch(`${API_URL}/alerts/resolve/${alertId}`, { method: 'POST' })
+  if (!response.ok) throw new Error('Failed to resolve alert')
+}
+
+export async function getAlertRules(): Promise<AlertRuleData[]> {
+  const response = await apiFetch(`${API_URL}/alerts/rules`)
+  if (!response.ok) throw new Error('Failed to fetch alert rules')
+  const data = await response.json()
+  return data.rules ?? data
+}
+
+// ============ End Alerts API ============
+
+// ============ Competitors API ============
+
+export interface CompetitorData {
+  id: string
+  name: string
+  website: string | null
+  industry: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface CompetitorListData {
+  competitors: CompetitorData[]
+}
+
+export interface PerformanceAnalysisData {
+  competitors: Array<{
+    name: string
+    metrics: Record<string, number>
+  }>
+}
+
+export async function getCompetitors(): Promise<CompetitorListData> {
+  const response = await apiFetch(`${API_URL}/competitors`)
+  if (!response.ok) throw new Error('Failed to fetch competitors')
+  return response.json()
+}
+
+export async function getCompetitorAnalysis(): Promise<PerformanceAnalysisData> {
+  const response = await apiFetch(`${API_URL}/competitors/analysis`)
+  if (!response.ok) throw new Error('Failed to fetch competitor analysis')
+  return response.json()
+}
+
+// ============ End Competitors API ============
+

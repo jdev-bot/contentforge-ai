@@ -103,6 +103,7 @@ export default function EngagementPrediction({
         title="Engagement Prediction"
         description="AI-powered prediction of content performance"
         icon={<Activity className="w-5 h-5 text-blue-600" />}
+        badge={<span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">Demo Data</span>}
       />
 
       {!prediction ? (

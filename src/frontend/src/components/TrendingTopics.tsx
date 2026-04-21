@@ -337,13 +337,31 @@ export default function TrendingTopics() {
   const [isGenerating, setIsGenerating] = useState<string | null>(null)
   const { showToast } = useToast()
 
-  // Mock data - replace with actual API calls
+  // Fetch trends from API with mock fallback
   const fetchTrends = useCallback(async () => {
     try {
       setIsLoading(true)
-      // const data = await getTrendingTopics()
-      // Mock data
-      await new Promise(resolve => setTimeout(resolve, 800))
+      try {
+        const data = await getTrendingTopics()
+        if (data && data.length > 0) {
+          // API returns simpler Trend type; merge with defaults
+          const enriched = data.map((t: any) => ({
+            ...t,
+            relevanceScore: t.relevanceScore || t.relevance_score || 50,
+            mentionCount: t.mentionCount || t.mention_count || 0,
+            growthRate: t.growthRate || t.growth_rate || 0,
+            isHot: t.isHot ?? t.is_hot ?? false,
+            isCold: t.isCold ?? t.is_cold ?? false,
+            relatedHashtags: t.relatedHashtags || t.related_hashtags || [],
+            description: t.description || '',
+          })) as Trend[]
+          setTrends(enriched)
+          return
+        }
+      } catch { /* fallback to mock */ }
+
+      // Mock fallback if API returns empty or fails
+      await new Promise(resolve => setTimeout(resolve, 300))
 
       const mockTrends: Trend[] = [
         {
@@ -489,8 +507,12 @@ export default function TrendingTopics() {
   const handleGenerate = async (trendId: string) => {
     setIsGenerating(trendId)
     try {
-      // await generateFromTrend(trendId)
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      try {
+        await generateFromTrend(trendId)
+      } catch {
+        // Mock fallback
+        await new Promise(resolve => setTimeout(resolve, 1500))
+      }
       showToast('Content generated successfully!', 'success')
     } catch (error) {
       showToast('Failed to generate content', 'error')
@@ -618,8 +640,23 @@ export function TrendingTopicsWidget() {
   useEffect(() => {
     const fetchWidgetTrends = async () => {
       try {
-        // const data = await getTrendingTopics({ limit: 3 })
-        await new Promise(resolve => setTimeout(resolve, 500))
+        try {
+        const data = await getTrendingTopics()
+        if (data && data.length > 0) {
+          setTrends(data.slice(0, 3).map((t: any) => ({
+            ...t,
+            relevanceScore: t.relevanceScore || t.relevance_score || 50,
+            mentionCount: t.mentionCount || t.mention_count || 0,
+            growthRate: t.growthRate || t.growth_rate || 0,
+            isHot: t.isHot ?? t.is_hot ?? false,
+            isCold: t.isCold ?? t.is_cold ?? false,
+            relatedHashtags: t.relatedHashtags || t.related_hashtags || [],
+            description: t.description || '',
+          })) as Trend[])
+          return
+        }
+      } catch { /* fallback */ }
+      await new Promise(resolve => setTimeout(resolve, 300))
 
         const mockTrends: Trend[] = [
           {

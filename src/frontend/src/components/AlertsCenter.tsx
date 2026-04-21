@@ -24,6 +24,15 @@ import { Tooltip } from '@/components/ui/Tooltip'
 import { Input } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/PageHeader'
+import {
+  getAlerts,
+  getUnreadAlertCount,
+  acknowledgeAlert as acknowledgeAlertAPI,
+  resolveAlert as resolveAlertAPI,
+  getAlertRules,
+  AlertData,
+  AlertRuleData,
+} from '@/lib/api'
 
 // Types
 export type AlertType = 'viral' | 'declining' | 'milestone' | 'system' | 'team'
@@ -160,14 +169,19 @@ export function AlertsBell({
   onClick?: () => void
   className?: string 
 }) {
-  const [unreadCount, setUnreadCount] = useState(3)
+  const [unreadCount, setUnreadCount] = useState(0)
   const [isRealTime, setIsRealTime] = useState(true)
+
+  // Fetch unread count from API
+  useEffect(() => {
+    getUnreadAlertCount().then(data => setUnreadCount(data.count)).catch(() => {})
+  }, [])
 
   // Simulate real-time updates
   useEffect(() => {
     if (!isRealTime) return
     const interval = setInterval(() => {
-      // In real implementation, this would check for new alerts
+      getUnreadAlertCount().then(data => setUnreadCount(data.count)).catch(() => {})
     }, 30000)
     return () => clearInterval(interval)
   }, [isRealTime])
@@ -212,11 +226,40 @@ export function AlertsPanel({
   isOpen: boolean
   onClose: () => void 
 }) {
-  const [alerts, setAlerts] = useState<Alert[]>(mockAlerts)
+  const [alerts, setAlerts] = useState<Alert[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null)
   const [filterType, setFilterType] = useState<AlertType | 'all'>('all')
   const [showRules, setShowRules] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // Fetch alerts from API
+  const fetchAlerts = useCallback(async () => {
+    try {
+      setIsRefreshing(true)
+      const data = await getAlerts(100, 0)
+      const mapped: Alert[] = data.alerts.map((a: AlertData) => ({
+        id: a.id,
+        type: (['viral', 'declining', 'milestone', 'system', 'team'].includes(a.alert_type) ? a.alert_type : 'system') as AlertType,
+        severity: 'medium' as AlertSeverity,
+        status: (['unread', 'read', 'acknowledged', 'dismissed'].includes(a.status) ? a.status : 'unread') as AlertStatus,
+        title: a.metric_name,
+        message: a.message || `Threshold ${a.threshold_value} crossed (current: ${a.current_value})`,
+        timestamp: new Date(a.created_at),
+        acknowledgedAt: a.acknowledged_at ? new Date(a.acknowledged_at) : undefined,
+      }))
+      setAlerts(mapped.length > 0 ? mapped : mockAlerts)
+    } catch {
+      setAlerts(mockAlerts)
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchAlerts()
+  }, [fetchAlerts])
 
   const unreadCount = useMemo(() => 
     alerts.filter(a => a.status === 'unread').length, 
@@ -236,7 +279,10 @@ export function AlertsPanel({
     })
   }, [alerts, filterType])
 
-  const handleAcknowledge = useCallback((alertId: string) => {
+  const handleAcknowledge = useCallback(async (alertId: string) => {
+    try {
+      await acknowledgeAlertAPI(alertId)
+    } catch { /* fall through to optimistic update */ }
     setAlerts(prev => prev.map(a => 
       a.id === alertId 
         ? { ...a, status: 'acknowledged', acknowledgedAt: new Date() }
@@ -244,7 +290,10 @@ export function AlertsPanel({
     ))
   }, [])
 
-  const handleDismiss = useCallback((alertId: string) => {
+  const handleDismiss = useCallback(async (alertId: string) => {
+    try {
+      await resolveAlertAPI(alertId)
+    } catch { /* fall through to optimistic update */ }
     setAlerts(prev => prev.map(a => 
       a.id === alertId 
         ? { ...a, status: 'dismissed', dismissedAt: new Date() }

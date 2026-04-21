@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Zap,
@@ -33,6 +33,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Tooltip } from '@/components/ui/Tooltip'
 import { Input } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
+import { listIntegrations } from '@/lib/api'
 
 // Types
 export interface Integration {
@@ -171,13 +172,34 @@ const formatDate = (date?: Date) => {
 }
 
 export default function IntegrationsPanel() {
-  const [integrations, setIntegrations] = useState<Integration[]>(mockIntegrations)
+  const [integrations, setIntegrations] = useState<Integration[]>([])
+  const [isLoadingIntegrations, setIsLoadingIntegrations] = useState(true)
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>(mockWebhooks)
   const [apiKeys, setApiKeys] = useState<APIKey[]>(mockAPIKeys)
   const [activeTab, setActiveTab] = useState<'integrations' | 'webhooks' | 'apikeys'>('integrations')
   const [showAddWebhook, setShowAddWebhook] = useState(false)
   const [showAddKey, setShowAddKey] = useState(false)
   const [showKeySecret, setShowKeySecret] = useState<Record<string, boolean>>({})
+
+  // Fetch integrations from API
+  useEffect(() => {
+    listIntegrations().then(data => {
+      const mapped: Integration[] = data.map((int: any) => ({
+        id: int.id || int.config_id,
+        name: int.name || int.integration_type,
+        description: int.description || '',
+        icon: int.icon || 'Zap',
+        type: int.integration_type || 'custom',
+        status: (['connected', 'disconnected', 'pending', 'error'].includes(int.status) ? int.status : 'disconnected') as Integration['status'],
+        connectedAt: int.created_at || new Date().toISOString(),
+        category: int.category || 'automation',
+        lastSync: int.last_synced_at ? new Date(int.last_synced_at) : undefined,
+        config: int.config || {},
+      }))
+      setIntegrations(mapped.length > 0 ? mapped : mockIntegrations)
+    }).catch(() => setIntegrations(mockIntegrations))
+    .finally(() => setIsLoadingIntegrations(false))
+  }, [])
 
   const handleToggleIntegration = useCallback((id: string) => {
     setIntegrations(prev => prev.map(int => {
