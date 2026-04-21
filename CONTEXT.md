@@ -243,6 +243,31 @@ All three providers have **authenticated CLIs installed on this machine (srv1503
 3. Push: `git push origin main`
 4. This file is our memory — if it's not here, it's not known.
 
+## Performance Optimization (2026-04-21)
+
+### Root Cause Analysis
+| Issue | Impact | Status |
+|-------|--------|--------|
+| 3x Supabase `auth.get_user()` per request (2 in middleware, 1 in handler) | ~400ms overhead per request | ✅ Fixed — JWT decode in middleware, per-request caching |
+| No batch endpoint — 5+ sequential API calls on page load | 5-7s total page load | ✅ Fixed — `/api/v1/init` batch endpoint |
+| No client-side caching | Every tab switch = full API calls | ✅ Fixed — stale-while-revalidate sessionStorage cache |
+| Render Free Tier cold starts | ~30s after 15min idle | 🔴 Open — needs paid plan ($7/mo) |
+
+### Cold Start Data
+| Endpoint | Warm | Cold (17min idle) |
+|----------|------|------------------|
+| `/health` | 0.20s | 0.20s (no auth) |
+| `/auth/me` | 1.1s | 4.0s |
+| `/projects` | 1.0s | 3.4s |
+| `/content` | 1.2s | 1.5s |
+
+### Improvement Results
+| Metric | Before | After |
+|--------|--------|-------|
+| Auth roundtrips/request | 3 Supabase calls | 1 + JWT decode |
+| Page load (5 calls) | ~5044ms | ~2067ms (60% faster) |
+| Tab switch (2nd+) | 1-3s API call | Instant (cache) |
+
 ---
 
-*Last updated: 2026-04-20 12:34 UTC | UI overhaul deployed — sidebar, home tab, search, content filters*
+*Last updated: 2026-04-21 05:10 UTC | Performance fixes deployed (8b269cf)*
