@@ -20,6 +20,8 @@ import { cn, trackTabUsage, getPinnedTabs, savePinnedTabs, getMostUsedTabs } fro
 
 // Dynamic imports for code splitting
 const ContentTab = lazy(() => import('./ContentTab'))
+const ContentCreatePanel = lazy(() => import('./ContentCreatePanel'))
+const ContentDetailPanel = lazy(() => import('./ContentDetailPanel'))
 const ProjectsTab = lazy(() => import('./ProjectsTab'))
 const DistributionsTab = lazy(() => import('./DistributionsTab'))
 const AnalyticsTab = lazy(() => import('./AnalyticsTab'))
@@ -69,6 +71,8 @@ export default function Dashboard({ user }: DashboardProps) {
   })
   const [pinnedTabIds, setPinnedTabIds] = useState<string[]>([])
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false)
+  const [activeContentId, setActiveContentId] = useState<string | null>(null)
+  const [showContentCreate, setShowContentCreate] = useState(false)
   const router = useRouter()
 
   // Initialize pinned tabs from localStorage
@@ -216,7 +220,8 @@ export default function Dashboard({ user }: DashboardProps) {
       // Ctrl/Cmd + N for new content
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault()
-        router.push('/content/new')
+        setShowContentCreate(true)
+        setActiveTab('content')
       }
       // Ctrl/Cmd + P for new project
       if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
@@ -268,10 +273,43 @@ export default function Dashboard({ user }: DashboardProps) {
           </ErrorBoundary>
         )
       case 'content':
+        // Show inline content panels if active
+        if (activeContentId) {
+          return (
+            <ErrorBoundary onReset={() => { setActiveContentId(null) }}>
+              <Suspense fallback={fallback}>
+                <ContentDetailPanel
+                  id={activeContentId}
+                  user={user}
+                  onBack={() => setActiveContentId(null)}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          )
+        }
+        if (showContentCreate) {
+          return (
+            <ErrorBoundary onReset={() => { setShowContentCreate(false) }}>
+              <Suspense fallback={fallback}>
+                <ContentCreatePanel
+                  user={user}
+                  onBack={() => setShowContentCreate(false)}
+                  onContentCreated={(id) => {
+                    setShowContentCreate(false)
+                    setActiveContentId(id)
+                  }}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          )
+        }
         return (
           <ErrorBoundary onReset={() => setActiveTab('content')}>
             <Suspense fallback={fallback}>
-              <ContentTab />
+              <ContentTab
+                onCreateContent={() => setShowContentCreate(true)}
+                onViewContent={(id) => setActiveContentId(id)}
+              />
             </Suspense>
           </ErrorBoundary>
         )

@@ -32,7 +32,8 @@ type ViewMode = 'list' | 'grid'
 type StatusFilter = 'pending' | 'processing' | 'completed' | 'failed'
 
 interface ContentTabProps {
-  router?: ReturnType<typeof import('next/navigation').useRouter>
+  onCreateContent?: () => void
+  onViewContent?: (id: string) => void
 }
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
@@ -42,9 +43,8 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'failed', label: 'Failed' },
 ]
 
-export default function ContentTab({ router: routerProp }: ContentTabProps) {
-  const nextRouter = useRouter()
-  const router = routerProp || nextRouter
+export default function ContentTab({ onCreateContent, onViewContent }: ContentTabProps) {
+  const router = useRouter()
   const { showToast } = useToast()
   const [content, setContent] = useState<Content[]>([])
   const [loading, setLoading] = useState(true)
@@ -234,7 +234,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
               variant="primary"
               size="sm"
               leftIcon={<Plus className="h-4 w-4" />}
-              onClick={() => router.push('/content/new')}
+              onClick={() => onCreateContent ? onCreateContent() : router.push('/content/new')}
             >
               New Content
             </Button>
@@ -243,7 +243,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
         <NoDataState
           title="No content yet"
           description="Get started by adding your first piece of content. We'll transform it into multiple formats."
-          onCreate={() => router.push('/content/new')}
+          onCreate={() => onCreateContent ? onCreateContent() : router.push('/content/new')}
           createLabel="Add Content"
         />
       </div>
@@ -261,7 +261,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
             variant="primary"
             size="sm"
             leftIcon={<Plus className="h-4 w-4" />}
-            onClick={() => router.push('/content/new')}
+            onClick={() => onCreateContent ? onCreateContent() : router.push('/content/new')}
           >
             New Content
           </Button>
@@ -408,7 +408,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
               key={item.id}
               interactive
               className="group hover:shadow-lg transition-all duration-200"
-              onClick={() => router.push(`/content/${item.id}`)}
+              onClick={() => onViewContent ? onViewContent(item.id) : router.push(`/content/${item.id}`)}
             >
               <CardContent className="p-5">
                 <div className="flex items-start gap-3">
@@ -444,7 +444,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
               key={item.id}
               interactive
               className="group hover:shadow-md transition-all duration-200"
-              onClick={() => router.push(`/content/${item.id}`)}
+              onClick={() => onViewContent ? onViewContent(item.id) : router.push(`/content/${item.id}`)}
             >
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
@@ -498,7 +498,7 @@ export default function ContentTab({ router: routerProp }: ContentTabProps) {
                         <button
                           className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
                           onClick={() => {
-                            router.push(`/content/${item.id}`)
+                            onViewContent ? onViewContent(item.id) : router.push(`/content/${item.id}`)
                             setShowMenu(null)
                           }}
                         >
