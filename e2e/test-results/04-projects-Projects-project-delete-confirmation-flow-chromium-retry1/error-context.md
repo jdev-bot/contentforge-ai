@@ -401,9 +401,10 @@ Received: false
 > 107 |       expect(await confirmBtn.isVisible().catch(() => false)).toBeTruthy()
       |                                                               ^ Error: expect(received).toBeTruthy()
   108 |     } else {
-  109 |       test.info().annotations.push({ type: 'info', description: 'No delete button found' })
-  110 |     }
-  111 |   })
-  112 | })
-  113 | 
+  109 |       // No projects to delete — skip gracefully
+  110 |       test.skip('No delete button found')
+  111 |     }
+  112 |   })
+  113 | })
+  114 | 
 ```

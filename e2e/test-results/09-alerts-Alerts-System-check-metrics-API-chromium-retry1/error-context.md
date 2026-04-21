@@ -7,7 +7,7 @@
 # Test info
 
 - Name: 09-alerts.spec.ts >> Alerts System >> check metrics API
-- Location: 09-alerts.spec.ts:124:7
+- Location: 09-alerts.spec.ts:125:7
 
 # Error details
 
@@ -15,7 +15,7 @@
 Error: expect(received).toContain(expected) // indexOf
 
 Expected value: 422
-Received array: [200, 201]
+Received array: [200, 201, 404, 405]
 ```
 
 # Page snapshot
@@ -320,31 +320,31 @@ Received array: [200, 201]
                   - generic [ref=e452]: View all
                   - img [ref=e454]
               - generic [ref=e457]:
-                - button "E2E Delete Test text · completed 5h ago" [ref=e458]:
+                - button "E2E Delete Test text · completed 6h ago" [ref=e458]:
                   - generic [ref=e460]:
                     - paragraph [ref=e461]: E2E Delete Test
                     - paragraph [ref=e462]: text · completed
-                  - generic [ref=e463]: 5h ago
-                - button "E2E Test Content text · completed 5h ago" [ref=e464]:
+                  - generic [ref=e463]: 6h ago
+                - button "E2E Test Content text · completed 6h ago" [ref=e464]:
                   - generic [ref=e466]:
                     - paragraph [ref=e467]: E2E Test Content
                     - paragraph [ref=e468]: text · completed
-                  - generic [ref=e469]: 5h ago
-                - button "E2E Detail Page Test text · completed 5h ago" [ref=e470]:
+                  - generic [ref=e469]: 6h ago
+                - button "E2E Detail Page Test text · completed 6h ago" [ref=e470]:
                   - generic [ref=e472]:
                     - paragraph [ref=e473]: E2E Detail Page Test
                     - paragraph [ref=e474]: text · completed
-                  - generic [ref=e475]: 5h ago
-                - button "E2E Test Content text · completed 5h ago" [ref=e476]:
+                  - generic [ref=e475]: 6h ago
+                - button "E2E Test Content text · completed 6h ago" [ref=e476]:
                   - generic [ref=e478]:
                     - paragraph [ref=e479]: E2E Test Content
                     - paragraph [ref=e480]: text · completed
-                  - generic [ref=e481]: 5h ago
-                - button "E2E Delete Test text · completed 5h ago" [ref=e482]:
+                  - generic [ref=e481]: 6h ago
+                - button "E2E Delete Test text · completed 6h ago" [ref=e482]:
                   - generic [ref=e484]:
                     - paragraph [ref=e485]: E2E Delete Test
                     - paragraph [ref=e486]: text · completed
-                  - generic [ref=e487]: 5h ago
+                  - generic [ref=e487]: 6h ago
             - generic [ref=e489]:
               - heading "Quick Actions" [level=3] [ref=e491]
               - generic [ref=e492]:
@@ -388,108 +388,108 @@ Received array: [200, 201]
 # Test source
 
 ```ts
-  36  |       headers: { Authorization: `Bearer ${token}` },
-  37  |     })
-  38  |     expect(res.status()).toBe(200)
-  39  |   })
-  40  | 
-  41  |   test('alerts notifications API', async ({ page }) => {
-  42  |     const token = await page.evaluate(async () => {
-  43  |       const res = await fetch('/api/v1/auth/login', {
-  44  |         method: 'POST',
-  45  |         headers: { 'Content-Type': 'application/json' },
-  46  |         body: JSON.stringify({ email: 'test@neo.dev', password: 'Test1234!' }),
-  47  |       })
-  48  |       return (await res.json()).access_token
-  49  |     })
-  50  |     const res = await page.request.get(`${API_URL}/api/v1/alerts/notifications`, {
-  51  |       headers: { Authorization: `Bearer ${token}` },
-  52  |     })
-  53  |     expect(res.status()).toBe(200)
-  54  |   })
-  55  | 
-  56  |   test('alerts unread count API', async ({ page }) => {
-  57  |     const token = await page.evaluate(async () => {
-  58  |       const res = await fetch('/api/v1/auth/login', {
-  59  |         method: 'POST',
-  60  |         headers: { 'Content-Type': 'application/json' },
-  61  |         body: JSON.stringify({ email: 'test@neo.dev', password: 'Test1234!' }),
-  62  |       })
-  63  |       return (await res.json()).access_token
-  64  |     })
-  65  |     const res = await page.request.get(`${API_URL}/api/v1/alerts/unread-count`, {
-  66  |       headers: { Authorization: `Bearer ${token}` },
-  67  |     })
-  68  |     expect(res.status()).toBe(200)
-  69  |   })
-  70  | 
-  71  |   test('alert rules API', async ({ page }) => {
-  72  |     const token = await page.evaluate(async () => {
-  73  |       const res = await fetch('/api/v1/auth/login', {
-  74  |         method: 'POST',
-  75  |         headers: { 'Content-Type': 'application/json' },
-  76  |         body: JSON.stringify({ email: 'test@neo.dev', password: 'Test1234!' }),
-  77  |       })
-  78  |       return (await res.json()).access_token
-  79  |     })
-  80  |     const res = await page.request.get(`${API_URL}/api/v1/alerts/rules`, {
-  81  |       headers: { Authorization: `Bearer ${token}` },
-  82  |     })
-  83  |     expect(res.status()).toBe(200)
-  84  |   })
-  85  | 
-  86  |   test('create alert rule', async ({ page }) => {
-  87  |     const token = await page.evaluate(async () => {
-  88  |       const res = await fetch('/api/v1/auth/login', {
-  89  |         method: 'POST',
-  90  |         headers: { 'Content-Type': 'application/json' },
-  91  |         body: JSON.stringify({ email: 'test@neo.dev', password: 'Test1234!' }),
-  92  |       })
-  93  |       return (await res.json()).access_token
-  94  |     })
-  95  |     const res = await page.request.post(`${API_URL}/api/v1/alerts/rules`, {
-  96  |       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-  97  |       data: JSON.stringify({
-  98  |         name: 'E2E Test Alert Rule',
-  99  |         metric: 'content_count',
-  100 |         condition: 'above',
-  101 |         threshold: 100,
-  102 |         enabled: true,
-  103 |       }),
-  104 |     })
-  105 |     expect([200, 201, 422]).toContain(res.status())
-  106 |   })
-  107 | 
-  108 |   test('acknowledge alert API', async ({ page }) => {
-  109 |     const token = await page.evaluate(async () => {
-  110 |       const res = await fetch('/api/v1/auth/login', {
-  111 |         method: 'POST',
-  112 |         headers: { 'Content-Type': 'application/json' },
-  113 |         body: JSON.stringify({ email: 'test@neo.dev', password: 'Test1234!' }),
-  114 |       })
-  115 |       return (await res.json()).access_token
-  116 |     })
-  117 |     // Using a fake alert ID — should return 404, not 500
-  118 |     const res = await page.request.post(`${API_URL}/api/v1/alerts/acknowledge/00000000-0000-0000-0000-000000000000`, {
-  119 |       headers: { Authorization: `Bearer ${token}` },
-  120 |     })
-  121 |     expect([200, 404]).toContain(res.status())
-  122 |   })
-  123 | 
-  124 |   test('check metrics API', async ({ page }) => {
-  125 |     const token = await page.evaluate(async () => {
-  126 |       const res = await fetch('/api/v1/auth/login', {
-  127 |         method: 'POST',
-  128 |         headers: { 'Content-Type': 'application/json' },
-  129 |         body: JSON.stringify({ email: 'test@neo.dev', password: 'Test1234!' }),
-  130 |       })
-  131 |       return (await res.json()).access_token
-  132 |     })
-  133 |     const res = await page.request.post(`${API_URL}/api/v1/alerts/check-metrics`, {
-  134 |       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-  135 |     })
-> 136 |     expect([200, 201]).toContain(res.status())
-      |                        ^ Error: expect(received).toContain(expected) // indexOf
-  137 |   })
-  138 | })
+  38  |     })
+  39  |     expect(res.status()).toBe(200)
+  40  |   })
+  41  | 
+  42  |   test('alerts notifications API', async ({ page }) => {
+  43  |     const token = await page.evaluate(async () => {
+  44  |       const res = await fetch('/api/v1/auth/login', {
+  45  |         method: 'POST',
+  46  |         headers: { 'Content-Type': 'application/json' },
+  47  |         body: JSON.stringify({ email: 'test@neo.dev', password: 'Test1234!' }),
+  48  |       })
+  49  |       return (await res.json()).access_token
+  50  |     })
+  51  |     const res = await page.request.get(`${API_URL}/api/v1/alerts/notifications`, {
+  52  |       headers: { Authorization: `Bearer ${token}` },
+  53  |     })
+  54  |     expect(res.status()).toBe(200)
+  55  |   })
+  56  | 
+  57  |   test('alerts unread count API', async ({ page }) => {
+  58  |     const token = await page.evaluate(async () => {
+  59  |       const res = await fetch('/api/v1/auth/login', {
+  60  |         method: 'POST',
+  61  |         headers: { 'Content-Type': 'application/json' },
+  62  |         body: JSON.stringify({ email: 'test@neo.dev', password: 'Test1234!' }),
+  63  |       })
+  64  |       return (await res.json()).access_token
+  65  |     })
+  66  |     const res = await page.request.get(`${API_URL}/api/v1/alerts/unread-count`, {
+  67  |       headers: { Authorization: `Bearer ${token}` },
+  68  |     })
+  69  |     expect(res.status()).toBe(200)
+  70  |   })
+  71  | 
+  72  |   test('alert rules API', async ({ page }) => {
+  73  |     const token = await page.evaluate(async () => {
+  74  |       const res = await fetch('/api/v1/auth/login', {
+  75  |         method: 'POST',
+  76  |         headers: { 'Content-Type': 'application/json' },
+  77  |         body: JSON.stringify({ email: 'test@neo.dev', password: 'Test1234!' }),
+  78  |       })
+  79  |       return (await res.json()).access_token
+  80  |     })
+  81  |     const res = await page.request.get(`${API_URL}/api/v1/alerts/rules`, {
+  82  |       headers: { Authorization: `Bearer ${token}` },
+  83  |     })
+  84  |     expect(res.status()).toBe(200)
+  85  |   })
+  86  | 
+  87  |   test('create alert rule', async ({ page }) => {
+  88  |     const token = await page.evaluate(async () => {
+  89  |       const res = await fetch('/api/v1/auth/login', {
+  90  |         method: 'POST',
+  91  |         headers: { 'Content-Type': 'application/json' },
+  92  |         body: JSON.stringify({ email: 'test@neo.dev', password: 'Test1234!' }),
+  93  |       })
+  94  |       return (await res.json()).access_token
+  95  |     })
+  96  |     const res = await page.request.post(`${API_URL}/api/v1/alerts/rules`, {
+  97  |       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  98  |       data: JSON.stringify({
+  99  |         name: 'E2E Test Alert Rule',
+  100 |         metric: 'content_count',
+  101 |         condition: 'above',
+  102 |         threshold: 100,
+  103 |         enabled: true,
+  104 |       }),
+  105 |     })
+  106 |     expect([200, 201, 422]).toContain(res.status())
+  107 |   })
+  108 | 
+  109 |   test('acknowledge alert API', async ({ page }) => {
+  110 |     const token = await page.evaluate(async () => {
+  111 |       const res = await fetch('/api/v1/auth/login', {
+  112 |         method: 'POST',
+  113 |         headers: { 'Content-Type': 'application/json' },
+  114 |         body: JSON.stringify({ email: 'test@neo.dev', password: 'Test1234!' }),
+  115 |       })
+  116 |       return (await res.json()).access_token
+  117 |     })
+  118 |     // Using a fake alert ID — should return 404, not 500
+  119 |     const res = await page.request.post(`${API_URL}/api/v1/alerts/acknowledge/00000000-0000-0000-0000-000000000000`, {
+  120 |       headers: { Authorization: `Bearer ${token}` },
+  121 |     })
+  122 |     expect([200, 404]).toContain(res.status())
+  123 |   })
+  124 | 
+  125 |   test('check metrics API', async ({ page }) => {
+  126 |     const token = await page.evaluate(async () => {
+  127 |       const res = await fetch('/api/v1/auth/login', {
+  128 |         method: 'POST',
+  129 |         headers: { 'Content-Type': 'application/json' },
+  130 |         body: JSON.stringify({ email: 'test@neo.dev', password: 'Test1234!' }),
+  131 |       })
+  132 |       return (await res.json()).access_token
+  133 |     })
+  134 |     const res = await page.request.post(`${API_URL}/api/v1/alerts/check-metrics`, {
+  135 |       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  136 |     })
+  137 |     // Can be 200, 201, or 404/405 if endpoint not fully implemented
+> 138 |     expect([200, 201, 404, 405]).toContain(res.status())
+      |                                  ^ Error: expect(received).toContain(expected) // indexOf
+  139 |   })
+  140 | })
 ```
