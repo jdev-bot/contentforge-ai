@@ -43,15 +43,20 @@ class TokenResponse(BaseModel):
 def get_auth_user(request: Request):
     """Dependency to get current authenticated user from Supabase session.
 
+    PERFORMANCE: Uses in-memory auth cache (5-min TTL) to avoid
+    supabase.auth.get_user() network call (~400ms) on every request.
+    The JWT is still checked for expiry locally. Full Supabase
+    revalidation happens when the cache TTL expires.
+
     Caches the user_id in request state so downstream middleware
     (error tracking, rate limit headers) can use it without
-    making another supabase.auth.get_user() network call.
+    making another network call.
     """
     # Check if user was already validated and cached in this request
     from app.core.request_context import get_request_user, set_request_user_id, set_request_user
-    cached = get_request_user(request)
-    if cached:
-        return cached
+    cached_req = get_request_user(request)
+    if cached_req:
+        return cached_req
 
     auth_header = request.headers.get("authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -62,6 +67,28 @@ def get_auth_user(request: Request):
         )
 
     token = auth_header.replace("Bearer ", "")
+
+    # PERFORMANCE: Check in-memory auth cache first
+    from app.core.request_context import (
+        get_cached_auth_user,
+        set_cached_auth_user,
+        is_jwt_expired,
+    )
+
+    if is_jwt_expired(token):
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    cached_user = get_cached_auth_user(token)
+    if cached_user:
+        set_request_user_id(request, str(cached_user.id))
+        set_request_user(request, cached_user)
+        return cached_user
+
+    # Cache miss — validate with Supabase (slow path, ~400ms)
     supabase = get_supabase_client()
 
     try:
@@ -72,7 +99,9 @@ def get_auth_user(request: Request):
                 detail="Invalid token",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        # Cache for downstream middleware
+        # Cache for subsequent requests (5-min TTL)
+        set_cached_auth_user(token, user.user)
+        # Cache for downstream middleware in this request
         set_request_user_id(request, str(user.user.id))
         set_request_user(request, user.user)
         return user.user

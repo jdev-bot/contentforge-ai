@@ -1,13 +1,19 @@
 """
 Rate limiting and usage tracking middleware.
+
+PERFORMANCE: Usage stats are cached in-memory with a 30s TTL.
+This eliminates 2 Supabase round-trips (~600ms) per request in the
+RateLimitHeadersMiddleware. The cache is invalidated immediately
+when usage is incremented (content generation).
 """
 
 import logging
 import time
+import threading
 from collections import defaultdict
 from datetime import datetime, timezone
 from functools import wraps
-from typing import Dict, Literal, Optional
+from typing import Dict, Literal, Optional, Tuple
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status as http_status
@@ -20,6 +26,37 @@ from app.tasks.email import send_usage_alert_task
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
+
+# ── In-memory TTL cache for usage stats ──────────────────────────────────────
+# Avoids 2 Supabase queries per request in RateLimitHeadersMiddleware.
+# Cache is invalidated on usage increment (content generation).
+# TTL of 30s means stale data is at most 30s old — acceptable for
+# rate-limit header display.
+
+_usage_cache: Dict[str, Tuple[float, UsageStats]] = {}
+_usage_cache_lock = threading.Lock()
+USAGE_CACHE_TTL = 30  # seconds
+
+
+def _get_cached_usage(user_id: str) -> Optional["UsageStats"]:
+    """Return cached usage stats if still within TTL."""
+    with _usage_cache_lock:
+        entry = _usage_cache.get(user_id)
+        if entry and (time.time() - entry[0]) < USAGE_CACHE_TTL:
+            return entry[1]
+    return None
+
+
+def _set_cached_usage(user_id: str, stats: "UsageStats") -> None:
+    """Store usage stats in cache."""
+    with _usage_cache_lock:
+        _usage_cache[user_id] = (time.time(), stats)
+
+
+def invalidate_usage_cache(user_id: str) -> None:
+    """Remove cached usage stats — call after incrementing usage."""
+    with _usage_cache_lock:
+        _usage_cache.pop(user_id, None)
 
 
 # Subscription tier limits with clear enforcement values
@@ -227,6 +264,9 @@ def check_and_increment_usage(user_id: str) -> UsageStats:
             }
         ).eq("id", user_id).execute()
 
+        # Invalidate cache so next request gets fresh stats
+        invalidate_usage_cache(user_id)
+
         # Log usage
         log_usage_event(user_id, "content_generation", 1)
 
@@ -296,6 +336,9 @@ def increment_usage(user_id: str) -> None:
             }
         ).eq("id", user_id).execute()
 
+        # Invalidate cache so next request gets fresh stats
+        invalidate_usage_cache(user_id)
+
         log_usage_event(user_id, "content_generation", 1)
 
     except Exception as e:
@@ -320,8 +363,18 @@ def log_usage_event(user_id: str, event_type: str, tokens_used: Optional[int] = 
         logger.error(f"Failed to log usage event: {e}")
 
 
-def get_user_usage_stats(user_id: str) -> UsageStats:
-    """Get current usage statistics for a user."""
+def get_user_usage_stats(user_id: str, use_cache: bool = True) -> UsageStats:
+    """Get current usage statistics for a user.
+    
+    PERFORMANCE: Uses in-memory TTL cache (30s) by default.
+    Set use_cache=False to force a fresh Supabase query.
+    """
+    # Check cache first — avoids 2 Supabase queries per request
+    if use_cache:
+        cached = _get_cached_usage(user_id)
+        if cached:
+            return cached
+
     supabase = get_supabase_admin_client()
 
     try:
@@ -358,12 +411,16 @@ def get_user_usage_stats(user_id: str) -> UsageStats:
             remaining = max(0, usage_limit - usage_count)
             usage_limit_display = usage_limit
 
-        return UsageStats(
+        stats = UsageStats(
             monthly_usage_count=usage_count,
             monthly_usage_limit=usage_limit_display,
             remaining=remaining,
             subscription_tier=subscription_tier,
         )
+
+        # Cache for subsequent requests
+        _set_cached_usage(user_id, stats)
+        return stats
 
     except HTTPException:
         raise

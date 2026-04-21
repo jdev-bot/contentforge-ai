@@ -79,16 +79,19 @@ class InitResponse(BaseModel):
 
 async def _fetch_user_profile(user) -> InitUserProfile:
     """Fetch user profile with subscription details."""
+    import asyncio
     supabase = get_supabase_admin_client()
     profile_data = user.user_metadata or {}
 
     try:
-        result = (
-            supabase.table("profiles")
-            .select("subscription_tier, monthly_usage_count, monthly_usage_limit")
-            .eq("id", str(user.id))
-            .single()
-            .execute()
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            lambda: supabase.table("profiles")
+                .select("subscription_tier, monthly_usage_count, monthly_usage_limit")
+                .eq("id", str(user.id))
+                .single()
+                .execute()
         )
         if result.data:
             return InitUserProfile(
@@ -113,15 +116,18 @@ async def _fetch_user_profile(user) -> InitUserProfile:
 
 async def _fetch_projects(user_id: str) -> list[InitProjectItem]:
     """Fetch user's projects."""
+    import asyncio
     supabase = get_supabase_admin_client()
     try:
-        result = (
-            supabase.table("projects")
-            .select("id, name, description, is_active, created_at, updated_at")
-            .eq("user_id", user_id)
-            .order("updated_at", desc=True)
-            .limit(50)
-            .execute()
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            lambda: supabase.table("projects")
+                .select("id, name, description, is_active, created_at, updated_at")
+                .eq("user_id", user_id)
+                .order("updated_at", desc=True)
+                .limit(50)
+                .execute()
         )
         return [InitProjectItem(**p) for p in (result.data or [])]
     except Exception as e:
@@ -131,15 +137,18 @@ async def _fetch_projects(user_id: str) -> list[InitProjectItem]:
 
 async def _fetch_content(user_id: str) -> list[InitContentItem]:
     """Fetch user's content."""
+    import asyncio
     supabase = get_supabase_admin_client()
     try:
-        result = (
-            supabase.table("content")
-            .select("id, project_id, title, source_type, status, created_at, updated_at")
-            .eq("user_id", user_id)
-            .order("updated_at", desc=True)
-            .limit(50)
-            .execute()
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            lambda: supabase.table("content")
+                .select("id, project_id, title, source_type, status, created_at, updated_at")
+                .eq("user_id", user_id)
+                .order("updated_at", desc=True)
+                .limit(50)
+                .execute()
         )
         return [InitContentItem(**c) for c in (result.data or [])]
     except Exception as e:
@@ -174,43 +183,59 @@ async def _fetch_usage(user_id: str) -> InitUsageSummary:
 
 
 async def _fetch_dashboard_kpis(user_id: str) -> InitDashboardKPIs:
-    """Fetch dashboard KPIs."""
+    """Fetch dashboard KPIs — optimized to use fewer Supabase queries."""
     supabase = get_supabase_admin_client()
     try:
-        # Content count
-        content_result = (
-            supabase.table("content")
-            .select("id", count="exact")
-            .eq("user_id", user_id)
-            .execute()
-        )
-        total_content = content_result.count or 0
+        # Use a single RPC call or parallel queries
+        # Content count + Asset count in parallel
+        import asyncio
 
-        # Asset count
-        assets_result = (
-            supabase.table("generated_assets")
-            .select("id", count="exact")
-            .eq("user_id", user_id)
-            .execute()
-        )
-        total_assets = assets_result.count or 0
+        def _count_content():
+            try:
+                result = (
+                    supabase.table("content")
+                    .select("id", count="exact")
+                    .eq("user_id", user_id)
+                    .execute()
+                )
+                return result.count or 0
+            except Exception:
+                return 0
 
-        # Distribution count
-        dist_total = 0
-        dist_published = 0
-        try:
-            dist_result = (
-                supabase.table("distributions")
-                .select("id, status")
-                .eq("user_id", user_id)
-                .execute()
-            )
-            dist_total = len(dist_result.data or [])
-            dist_published = len(
-                [d for d in (dist_result.data or []) if d.get("status") == "published"]
-            )
-        except Exception:
-            pass
+        def _count_assets():
+            try:
+                result = (
+                    supabase.table("generated_assets")
+                    .select("id", count="exact")
+                    .eq("user_id", user_id)
+                    .execute()
+                )
+                return result.count or 0
+            except Exception:
+                return 0
+
+        def _fetch_distributions():
+            try:
+                result = (
+                    supabase.table("distributions")
+                    .select("id, status")
+                    .eq("user_id", user_id)
+                    .execute()
+                )
+                data = result.data or []
+                total = len(data)
+                published = len([d for d in data if d.get("status") == "published"])
+                return total, published
+            except Exception:
+                return 0, 0
+
+        # Run all 3 queries in parallel via thread pool
+        loop = asyncio.get_event_loop()
+        total_content, total_assets, (dist_total, dist_published) = await asyncio.gather(
+            loop.run_in_executor(None, _count_content),
+            loop.run_in_executor(None, _count_assets),
+            loop.run_in_executor(None, _fetch_distributions),
+        )
 
         return InitDashboardKPIs(
             total_content=total_content,
@@ -239,20 +264,33 @@ async def get_init(user=Depends(get_auth_user)):
     - Dashboard KPIs
 
     All sub-queries run in parallel via asyncio.gather for maximum performance.
+    User profile and usage share a single Supabase query (dedup).
     """
     user_id = str(user.id)
 
-    # Run all fetches in parallel — this is the key performance win
-    profile, projects, content, usage, kpis = await asyncio.gather(
-        _fetch_user_profile(user),
+    # Fetch profile + usage together (same table, same row) — avoids duplicate query
+    profile_data = await _fetch_user_profile(user)
+
+    # Build usage from profile data we already have (no extra query)
+    usage = InitUsageSummary(
+        monthly_usage_count=profile_data.monthly_usage_count,
+        monthly_usage_limit=profile_data.monthly_usage_limit,
+        remaining=max(0, profile_data.monthly_usage_limit - profile_data.monthly_usage_count),
+        percentage_used=round(
+            (profile_data.monthly_usage_count / profile_data.monthly_usage_limit) * 100, 1
+        ) if profile_data.monthly_usage_limit > 0 else 0,
+        subscription_tier=profile_data.subscription_tier,
+    )
+
+    # Run remaining fetches in parallel
+    projects, content, kpis = await asyncio.gather(
         _fetch_projects(user_id),
         _fetch_content(user_id),
-        _fetch_usage(user_id),
         _fetch_dashboard_kpis(user_id),
     )
 
     return InitResponse(
-        user=profile,
+        user=profile_data,
         projects=projects,
         content=content,
         usage=usage,

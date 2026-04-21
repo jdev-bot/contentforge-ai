@@ -259,6 +259,9 @@ async def reset_user_usage(
                 status_code=http_status.HTTP_404_NOT_FOUND,
                 detail=f"User {user_id} not found",
             )
+        # Invalidate usage cache so next request gets fresh data
+        from app.core.rate_limit import invalidate_usage_cache
+        invalidate_usage_cache(str(user_id))
         return {"message": f"Usage reset for user {user_id}", "monthly_usage_count": 0}
     except HTTPException:
         raise
