@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, Suspense, lazy } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthUser } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -59,7 +59,12 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ user }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState('home')
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [activeTab, setActiveTabInternal] = useState(() => {
+    const tabParam = searchParams.get('tab')
+    return tabParam || 'home'
+  })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showSearchModal, setShowSearchModal] = useState(false)
@@ -73,7 +78,6 @@ export default function Dashboard({ user }: DashboardProps) {
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false)
   const [activeContentId, setActiveContentId] = useState<string | null>(null)
   const [showContentCreate, setShowContentCreate] = useState(false)
-  const router = useRouter()
 
   // Initialize pinned tabs from localStorage
   useEffect(() => {
@@ -196,12 +200,20 @@ export default function Dashboard({ user }: DashboardProps) {
     })
   }
 
-  // Enhanced setActiveTab that tracks usage
+  // Enhanced setActiveTab that tracks usage and updates URL
   const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId)
+    setActiveTabInternal(tabId)
     trackTabUsage(tabId)
     setMobileMenuOpen(false)
     setMobileMoreOpen(false)
+    // Update URL params without full navigation
+    const url = new URL(window.location.href)
+    if (tabId === 'home') {
+      url.searchParams.delete('tab')
+    } else {
+      url.searchParams.set('tab', tabId)
+    }
+    router.replace(url.pathname + url.search, { scroll: false })
   }
 
   // Toggle section collapse
@@ -221,7 +233,7 @@ export default function Dashboard({ user }: DashboardProps) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault()
         setShowContentCreate(true)
-        setActiveTab('content')
+        handleTabChange('content')
       }
       // Ctrl/Cmd + P for new project
       if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
@@ -266,7 +278,7 @@ export default function Dashboard({ user }: DashboardProps) {
     switch (activeTab) {
       case 'home':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('home')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('home')}>
             <Suspense fallback={fallback}>
               <HomeTab onTabChange={handleTabChange} />
             </Suspense>
@@ -304,7 +316,7 @@ export default function Dashboard({ user }: DashboardProps) {
           )
         }
         return (
-          <ErrorBoundary onReset={() => setActiveTab('content')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('content')}>
             <Suspense fallback={fallback}>
               <ContentTab
                 onCreateContent={() => setShowContentCreate(true)}
@@ -315,7 +327,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'projects':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('projects')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('projects')}>
             <Suspense fallback={fallback}>
               <ProjectsTab />
             </Suspense>
@@ -323,7 +335,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'distributions':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('distributions')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('distributions')}>
             <Suspense fallback={fallback}>
               <DistributionsTab />
             </Suspense>
@@ -331,7 +343,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'schedule':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('schedule')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('schedule')}>
             <Suspense fallback={fallback}>
               <ScheduleTab />
             </Suspense>
@@ -339,7 +351,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'rss':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('rss')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('rss')}>
             <Suspense fallback={fallback}>
               <RSSTab user={user} />
             </Suspense>
@@ -347,7 +359,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'freshness':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('freshness')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('freshness')}>
             <Suspense fallback={fallback}>
               <FreshnessDashboard />
             </Suspense>
@@ -355,7 +367,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'trends':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('trends')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('trends')}>
             <Suspense fallback={fallback}>
               <TrendingTopics />
             </Suspense>
@@ -363,7 +375,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'analytics':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('analytics')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('analytics')}>
             <Suspense fallback={fallback}>
               <AnalyticsTab />
             </Suspense>
@@ -371,7 +383,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'competitors':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('competitors')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('competitors')}>
             <Suspense fallback={fallback}>
               <CompetitorAnalysis />
             </Suspense>
@@ -379,7 +391,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'team':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('team')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('team')}>
             <Suspense fallback={fallback}>
               <TeamTab user={user} />
             </Suspense>
@@ -387,7 +399,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'team-calendar':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('team-calendar')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('team-calendar')}>
             <Suspense fallback={fallback}>
               <TeamCalendar />
             </Suspense>
@@ -395,7 +407,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'alerts':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('alerts')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('alerts')}>
             <Suspense fallback={fallback}>
               <AlertsCenter />
             </Suspense>
@@ -403,7 +415,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'integrations':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('integrations')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('integrations')}>
             <Suspense fallback={fallback}>
               <IntegrationsPanel />
             </Suspense>
@@ -411,7 +423,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'quality':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('quality')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('quality')}>
             <Suspense fallback={fallback}>
               <QualityDashboard />
             </Suspense>
@@ -419,7 +431,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'sentiment':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('sentiment')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('sentiment')}>
             <Suspense fallback={fallback}>
               <SentimentDashboard />
             </Suspense>
@@ -427,7 +439,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'suggestions':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('suggestions')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('suggestions')}>
             <Suspense fallback={fallback}>
               <SuggestionPanel />
             </Suspense>
@@ -435,7 +447,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'categorization':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('categorization')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('categorization')}>
             <Suspense fallback={fallback}>
               <CategorizationPanel />
             </Suspense>
@@ -443,7 +455,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'performance':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('performance')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('performance')}>
             <Suspense fallback={fallback}>
               <PerformanceAnalytics />
             </Suspense>
@@ -451,7 +463,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'retention':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('retention')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('retention')}>
             <Suspense fallback={fallback}>
               <DataRetentionManager />
             </Suspense>
@@ -459,7 +471,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'comments':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('comments')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('comments')}>
             <Suspense fallback={fallback}>
               <CommentsPanel />
             </Suspense>
@@ -467,7 +479,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'version-history':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('version-history')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('version-history')}>
             <Suspense fallback={fallback}>
               <VersionHistory />
             </Suspense>
@@ -475,7 +487,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'audit-logs':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('audit-logs')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('audit-logs')}>
             <Suspense fallback={fallback}>
               <AuditLogs />
             </Suspense>
@@ -483,7 +495,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'custom-dashboards':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('custom-dashboards')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('custom-dashboards')}>
             <Suspense fallback={fallback}>
               <CustomDashboards />
             </Suspense>
@@ -491,7 +503,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'plugins':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('plugins')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('plugins')}>
             <Suspense fallback={fallback}>
               <PluginManager organizationId="default" />
             </Suspense>
@@ -499,15 +511,15 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'marketplace':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('marketplace')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('marketplace')}>
             <Suspense fallback={fallback}>
-              <TemplateMarketplace isOpen={true} onClose={() => setActiveTab('content')} />
+              <TemplateMarketplace isOpen={true} onClose={() => handleTabChange('content')} />
             </Suspense>
           </ErrorBoundary>
         )
       case 'funnels':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('funnels')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('funnels')}>
             <Suspense fallback={fallback}>
               <FunnelAnalytics />
             </Suspense>
@@ -515,7 +527,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'attribution':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('attribution')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('attribution')}>
             <Suspense fallback={fallback}>
               <AttributionDashboard />
             </Suspense>
@@ -523,7 +535,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'sla':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('sla')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('sla')}>
             <Suspense fallback={fallback}>
               <SLAMonitoring />
             </Suspense>
@@ -531,7 +543,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'integration-hub':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('integration-hub')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('integration-hub')}>
             <Suspense fallback={fallback}>
               <IntegrationHub />
             </Suspense>
@@ -539,7 +551,7 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'settings':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('settings')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('settings')}>
             <Suspense fallback={fallback}>
               <SettingsTab user={user} />
             </Suspense>
@@ -547,15 +559,15 @@ export default function Dashboard({ user }: DashboardProps) {
         )
       case 'trash':
         return (
-          <ErrorBoundary onReset={() => setActiveTab('trash')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('trash')}>
             <Suspense fallback={fallback}>
-              <TrashTab onItemRestored={() => setActiveTab('content')} />
+              <TrashTab onItemRestored={() => handleTabChange('content')} />
             </Suspense>
           </ErrorBoundary>
         )
       default:
         return (
-          <ErrorBoundary onReset={() => setActiveTab('home')}>
+          <ErrorBoundary onReset={() => setActiveTabInternal('home')}>
             <Suspense fallback={fallback}>
               <HomeTab onTabChange={handleTabChange} />
             </Suspense>

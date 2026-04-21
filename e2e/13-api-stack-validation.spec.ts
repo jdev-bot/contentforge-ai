@@ -133,11 +133,12 @@ test.describe('API Stack Validation', () => {
       headers: { Authorization: `Bearer ${token}` },
     })
     expect([200, 422, 429]).toContain(res1.status())
-    // Quality scoring — endpoint returns 404
-    const res2 = await page.request.get(`${API_URL}/api/v1/quality-scoring`, {
-      headers: { Authorization: `Bearer ${token}` },
+    // Quality scoring — needs a content_id, so POST batch with empty list returns 422
+    const res2 = await page.request.post(`${API_URL}/api/v1/quality-scoring/batch`, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      data: JSON.stringify({ content_ids: [] }),
     })
-    expect([200, 404]).toContain(res2.status())
+    expect([200, 201, 422]).toContain(res2.status())
   })
 
   // ─── Categorization ────────────────────────────────────────────────

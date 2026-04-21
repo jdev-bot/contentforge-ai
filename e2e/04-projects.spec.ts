@@ -102,13 +102,15 @@ test.describe('Projects', () => {
     if (await deleteBtn.isVisible().catch(() => false)) {
       await deleteBtn.click()
       await page.waitForTimeout(1000)
-      // Should show confirmation dialog or handle deletion gracefully
-      // Check for any confirmation dialog, toast, or page still functional after click
-      const confirmBtn = page.getByRole('button', { name: /confirm|yes|delete|cancel/i }).first()
-      const hasConfirmation = await confirmBtn.isVisible().catch(() => false)
-      if (!hasConfirmation) {
-        // No confirmation dialog — deletion may be direct; just verify page didn't crash
-        await expect(page.locator('body')).toBeVisible()
+      // Should show confirmation modal dialog
+      const confirmDialog = page.getByText(/delete project/i).first()
+      const confirmBtn = page.getByRole('button', { name: /yes.*delete|confirm/i }).first()
+      const hasConfirmation = await confirmDialog.isVisible().catch(() => false) || await confirmBtn.isVisible().catch(() => false)
+      expect(hasConfirmation).toBeTruthy()
+      // Dismiss the dialog without deleting
+      const cancelBtn = page.getByRole('button', { name: /cancel/i }).first()
+      if (await cancelBtn.isVisible().catch(() => false)) {
+        await cancelBtn.click()
       }
     } else {
       // No projects to delete — skip gracefully

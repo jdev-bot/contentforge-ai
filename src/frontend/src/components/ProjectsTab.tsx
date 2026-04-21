@@ -26,6 +26,7 @@ export default function ProjectsTab() {
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showMenu, setShowMenu] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null)
 
   useEffect(() => {
     loadProjects()
@@ -45,10 +46,13 @@ export default function ProjectsTab() {
   }
 
   const handleDelete = async (projectId: string, projectName: string) => {
-    if (!confirm(`Are you sure you want to delete "${projectName}"? This action cannot be undone.`)) {
-      setShowMenu(null)
-      return
-    }
+    setConfirmDelete({ id: projectId, name: projectName })
+  }
+
+  const confirmDeleteProject = async () => {
+    if (!confirmDelete) return
+    const { id: projectId, name: projectName } = confirmDelete
+    setConfirmDelete(null)
 
     try {
       setDeletingId(projectId)
@@ -228,6 +232,33 @@ export default function ProjectsTab() {
           </Card>
         ))}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setConfirmDelete(null)}>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4 shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Delete Project?</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to delete &quot;{confirmDelete.name}&quot;? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                onClick={() => setConfirmDelete(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                onClick={confirmDeleteProject}
+                disabled={!!deletingId}
+              >
+                {deletingId ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
