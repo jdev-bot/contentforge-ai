@@ -31,12 +31,26 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { Input } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
+import {
+  addCompetitor,
+  listCompetitors,
+  removeCompetitor,
+  getCompetitorContent,
+  getCompetitorPerformanceAnalysis,
+  getContentGaps,
+  getBenchmarkComparison,
+  refreshCompetitorData,
+  type CompetitorItem,
+  type CompetitorContentItem,
+  type ContentGapItem,
+  type PerformanceInsight,
+} from '@/lib/api'
 
 // Types
 export interface Competitor {
   id: string
   name: string
-  platform: 'linkedin' | 'twitter' | 'facebook' | 'instagram' | 'youtube' | 'blog'
+  platform: 'linkedin' | 'twitter' | 'facebook' | 'instagram' | 'youtube' | 'blog' | 'tiktok' | 'newsletter' | 'other'
   handle: string
   profileUrl?: string
   avatar?: string
@@ -74,8 +88,6 @@ export interface PerformanceComparison {
   trend: 'up' | 'down' | 'stable'
 }
 
-// No mock data — all data fetched from real API
-
 // Helper functions
 const formatNumber = (num: number): string => {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -91,98 +103,165 @@ const getPlatformIcon = (platform: string) => {
     instagram: '📷',
     youtube: '📺',
     blog: '📝',
+    tiktok: '🎵',
+    newsletter: '📧',
+    other: '📄',
   }
   return icons[platform] || '📄'
 }
+
+const mapCompetitorItem = (c: CompetitorItem): Competitor => ({
+  id: c.id,
+  name: c.name,
+  platform: c.platform as Competitor['platform'],
+  handle: c.handle,
+  profileUrl: c.profile_url || undefined,
+  followers: c.follower_count,
+  engagementRate: 0,
+  avgViews: 0,
+  postsPerWeek: 0,
+  trackedSince: new Date(c.created_at),
+  isActive: c.is_active,
+})
+
+const mapContentItem = (item: CompetitorContentItem): CompetitorPost => ({
+  id: item.id,
+  competitorId: item.competitor_id,
+  title: item.content.substring(0, 80) + (item.content.length > 80 ? '...' : ''),
+  content: item.content,
+  platform: item.content_type,
+  publishedAt: new Date(item.published_at),
+  metrics: {
+    views: item.views,
+    likes: item.likes,
+    comments: item.comments,
+    shares: item.shares,
+    engagement: item.engagement_score,
+  },
+  url: item.url || undefined,
+})
 
 // Components
 export default function CompetitorAnalysis() {
   const [competitors, setCompetitors] = useState<Competitor[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [posts, setPosts] = useState<CompetitorPost[]>([])
-  const [comparison, setComparison] = useState<PerformanceComparison[]>([])
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [selectedCompetitor, setSelectedCompetitor] = useState<string | 'all'>('all')
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [comparisonData, setComparisonData] = useState<PerformanceComparison[]>([])
+  const [isLoadingComparison, setIsLoadingComparison] = useState(false)
+  const [contentGaps, setContentGaps] = useState<ContentGapItem[]>([])
+  const [isLoadingGaps, setIsLoadingGaps] = useState(false)
+  const [insights, setInsights] = useState<PerformanceInsight[]>([])
 
   // Fetch competitors from API
   const fetchCompetitors = useCallback(async () => {
     try {
       setIsRefreshing(true)
-      try {
-        const { listCompetitors } = await import('@/lib/api')
-        const data = await listCompetitors()
-        const mapped: Competitor[] = data.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          platform: c.platform || 'blog',
-          handle: c.handle || c.name.toLowerCase().replace(/\s+/g, ''),
-          followers: c.follower_count || 0,
-          engagementRate: 0,
-          avgViews: 0,
-          postsPerWeek: 0,
-          trackedSince: new Date(c.created_at),
-          isActive: c.is_active !== false,
-        }))
-        setCompetitors(mapped)
-      } catch {
-        setCompetitors([])
-      }
-
-      // Fetch performance analysis for comparison
-      try {
-        const { getCompetitorPerformanceAnalysis } = await import('@/lib/api')
-        const analysis = await getCompetitorPerformanceAnalysis()
-        const comp: PerformanceComparison[] = analysis.competitors.map(c => ({
-          metric: c.name,
-          yourValue: 0,
-          competitorAvg: c.avg_engagement_rate,
-          gap: 0,
-          trend: 'stable' as const,
-        }))
-        setComparison(comp)
-      } catch {
-        setComparison([])
-      }
-
-      // Fetch posts for selected competitor
-      if (selectedCompetitor !== 'all') {
-        try {
-          const { getCompetitorContent } = await import('@/lib/api')
-          const contentData = await getCompetitorContent(selectedCompetitor)
-          const mappedPosts: CompetitorPost[] = contentData.map((p: any) => ({
-            id: p.id,
-            competitorId: p.competitor_id,
-            title: p.content_type || 'Post',
-            content: p.content,
-            platform: selectedCompetitor && competitors.find(c => c.id === selectedCompetitor)?.platform || 'blog',
-            publishedAt: new Date(p.published_at),
-            metrics: {
-              views: p.views || 0,
-              likes: p.likes || 0,
-              comments: p.comments || 0,
-              shares: p.shares || 0,
-              engagement: p.engagement_score || 0,
-            },
-            url: p.url || undefined,
-          }))
-          setPosts(mappedPosts)
-        } catch {
-          setPosts([])
-        }
-      }
-    } catch {
-      setCompetitors([])
+      setError(null)
+      const data = await listCompetitors()
+      const mapped = data.map(mapCompetitorItem)
+      setCompetitors(mapped)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load competitors')
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
     }
-  }, [selectedCompetitor, competitors])
+  }, [])
+
+  // Fetch performance comparison
+  const fetchComparison = useCallback(async () => {
+    try {
+      setIsLoadingComparison(true)
+      const data = await getBenchmarkComparison()
+      // Map benchmark response to PerformanceComparison
+      const comp = data.comparison
+      const mapped: PerformanceComparison[] = Object.keys(comp).map((key) => {
+        const val = comp[key] as Record<string, unknown>
+        return {
+          metric: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+          yourValue: (val.user_value as number) ?? 0,
+          competitorAvg: (val.competitor_avg as number) ?? 0,
+          gap: (val.gap as number) ?? 0,
+          trend: ((val.gap as number) ?? 0) > 0 ? 'up' : ((val.gap as number) ?? 0) < 0 ? 'down' : 'stable',
+        }
+      })
+      setComparisonData(mapped)
+    } catch {
+      // Benchmark comparison may not be available yet
+      setComparisonData([])
+    } finally {
+      setIsLoadingComparison(false)
+    }
+  }, [])
+
+  // Fetch content gaps
+  const fetchGaps = useCallback(async () => {
+    try {
+      setIsLoadingGaps(true)
+      const data = await getContentGaps()
+      setContentGaps(data)
+    } catch {
+      setContentGaps([])
+    } finally {
+      setIsLoadingGaps(false)
+    }
+  }, [])
+
+  // Fetch performance analysis (for insights)
+  const fetchInsights = useCallback(async () => {
+    try {
+      const data = await getCompetitorPerformanceAnalysis()
+      setInsights(data.insights || [])
+    } catch {
+      setInsights([])
+    }
+  }, [])
 
   useEffect(() => {
     fetchCompetitors()
-  }, [fetchCompetitors])
+    fetchComparison()
+    fetchGaps()
+    fetchInsights()
+  }, [fetchCompetitors, fetchComparison, fetchGaps, fetchInsights])
+
+  // Fetch posts for selected competitor(s)
+  const fetchPosts = useCallback(async () => {
+    try {
+      setIsLoadingPosts(true)
+      if (selectedCompetitor === 'all') {
+        // Fetch content for all competitors
+        const allPosts: CompetitorPost[] = []
+        for (const comp of competitors) {
+          try {
+            const content = await getCompetitorContent(comp.id, 20, 0)
+            allPosts.push(...content.map(mapContentItem))
+          } catch {
+            // Skip competitors with no content
+          }
+        }
+        setPosts(allPosts)
+      } else {
+        const content = await getCompetitorContent(selectedCompetitor, 50, 0)
+        setPosts(content.map(mapContentItem))
+      }
+    } catch {
+      setPosts([])
+    } finally {
+      setIsLoadingPosts(false)
+    }
+  }, [selectedCompetitor, competitors])
+
+  useEffect(() => {
+    if (competitors.length > 0) {
+      fetchPosts()
+    }
+  }, [competitors.length > 0, selectedCompetitor, fetchPosts])
 
   const filteredPosts = useMemo(() => {
     let filtered = posts
@@ -194,52 +273,35 @@ export default function CompetitorAnalysis() {
 
   const handleAddCompetitor = useCallback(async (data: { name: string; platform: string; handle: string }) => {
     try {
-      const { addCompetitor } = await import('@/lib/api')
-      const result = await addCompetitor({ name: data.name, platform: data.platform, handle: data.handle })
-      const newCompetitor: Competitor = {
-        id: result.id,
-        name: result.name,
-        platform: result.platform as Competitor['platform'],
-        handle: result.handle,
-        followers: result.follower_count || 0,
-        engagementRate: 0,
-        avgViews: 0,
-        postsPerWeek: 0,
-        trackedSince: new Date(result.created_at),
-        isActive: result.is_active !== false,
-      }
-      setCompetitors(prev => [...prev, newCompetitor])
-    } catch {
-      // Fallback: add locally
-      const newCompetitor: Competitor = {
-        id: Date.now().toString(),
+      const newComp = await addCompetitor({
         name: data.name,
-        platform: data.platform as Competitor['platform'],
+        platform: data.platform,
         handle: data.handle,
-        followers: 0,
-        engagementRate: 0,
-        avgViews: 0,
-        postsPerWeek: 0,
-        trackedSince: new Date(),
-        isActive: true,
-      }
-      setCompetitors(prev => [...prev, newCompetitor])
+      })
+      const mapped = mapCompetitorItem(newComp)
+      setCompetitors(prev => [...prev, mapped])
+      setShowAddForm(false)
+    } catch (err) {
+      // Could add toast notification
     }
-    setShowAddForm(false)
   }, [])
 
   const handleRemoveCompetitor = useCallback(async (id: string) => {
     try {
-      const { removeCompetitor } = await import('@/lib/api')
       await removeCompetitor(id)
-    } catch { /* fall through to local removal */ }
-    setCompetitors(prev => prev.filter(c => c.id !== id))
+      setCompetitors(prev => prev.filter(c => c.id !== id))
+    } catch {
+      // Remove failed
+    }
   }, [])
 
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true)
-    setTimeout(() => setIsRefreshing(false), 1500)
-  }, [])
+    await fetchCompetitors()
+    await fetchComparison()
+    await fetchGaps()
+    await fetchInsights()
+  }, [fetchCompetitors, fetchComparison, fetchGaps, fetchInsights])
 
   const getCompetitorById = (id: string) => competitors.find(c => c.id === id)
 
@@ -273,6 +335,18 @@ export default function CompetitorAnalysis() {
         }
       />
 
+      {/* Error State */}
+      {error && (
+        <div className="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-lg flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 flex-shrink-0" />
+          <div>
+            <p className="text-sm text-rose-800 dark:text-rose-300 font-medium">Failed to load competitor data</p>
+            <p className="text-sm text-rose-700 dark:text-rose-400 mt-1">{error}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleRefresh} className="ml-auto">Retry</Button>
+        </div>
+      )}
+
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-blue-500">
@@ -288,11 +362,10 @@ export default function CompetitorAnalysis() {
           <CardContent className="p-4">
             <p className="text-sm text-slate-500 dark:text-slate-400">Avg Engagement</p>
             <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">
-              4.4%
-            </p>
-            <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              +0.3% vs yours
+              {competitors.length > 0
+                ? (competitors.reduce((sum, c) => sum + c.engagementRate, 0) / competitors.length).toFixed(1)
+                : '—'
+              }%
             </p>
           </CardContent>
         </Card>
@@ -301,7 +374,7 @@ export default function CompetitorAnalysis() {
           <CardContent className="p-4">
             <p className="text-sm text-slate-500 dark:text-slate-400">Content Tracked</p>
             <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">
-              {posts.length}
+              {isLoadingPosts ? '...' : posts.length}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Last 30 days
@@ -313,12 +386,17 @@ export default function CompetitorAnalysis() {
           <CardContent className="p-4">
             <p className="text-sm text-slate-500 dark:text-slate-400">Top Performer</p>
             <p className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-1 truncate">
-              Growth Daily
+              {competitors.length > 0
+                ? competitors.reduce((best, c) => c.engagementRate > best.engagementRate ? c : best, competitors[0]).name
+                : '—'
+              }
             </p>
-            <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              5.1% engagement
-            </p>
+            {competitors.length > 0 && (
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                {competitors.reduce((best, c) => c.engagementRate > best.engagementRate ? c : best, competitors[0]).engagementRate}% engagement
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -356,58 +434,74 @@ export default function CompetitorAnalysis() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {comparison.map((item) => (
-              <div key={item.metric} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-slate-900 dark:text-slate-100">
-                    {item.metric}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      'text-sm font-medium',
-                      item.gap > 0 
-                        ? 'text-emerald-600 dark:text-emerald-400' 
-                        : 'text-rose-600 dark:text-rose-400'
-                    )}>
-                      {item.gap > 0 ? '+' : ''}{item.gap}%
+          {isLoadingComparison && (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="h-5 w-5 text-slate-400 animate-spin" />
+              <span className="ml-2 text-slate-500">Loading comparison...</span>
+            </div>
+          )}
+
+          {!isLoadingComparison && comparisonData.length === 0 && (
+            <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+              <p>No benchmark data available yet.</p>
+              <p className="text-sm mt-1">Add competitors and refresh to see comparison data.</p>
+            </div>
+          )}
+
+          {!isLoadingComparison && comparisonData.length > 0 && (
+            <div className="space-y-4">
+              {comparisonData.map((item) => (
+                <div key={item.metric} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-900 dark:text-slate-100">
+                      {item.metric}
                     </span>
-                    {item.trend === 'up' && <TrendingUp className="h-4 w-4 text-emerald-500" />}
-                    {item.trend === 'down' && <TrendingDown className="h-4 w-4 text-rose-500" />}
-                    {item.trend === 'stable' && <Minus className="h-4 w-4 text-slate-400" />}
-                  </div>
-                </div>
-                
-                <div className="relative h-8 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden">
-                  <div className="absolute inset-y-0 left-0 flex">
-                    <div
-                      className="h-full bg-blue-500 flex items-center justify-end px-2"
-                      style={{ width: `${Math.min((item.yourValue / (item.competitorAvg * 1.5)) * 50, 50)}%` }}
-                    >
-                      <span className="text-xs font-medium text-white whitespace-nowrap">
-                        You: {typeof item.yourValue === 'number' && item.yourValue > 1000 
-                          ? formatNumber(item.yourValue) 
-                          : item.yourValue}
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        'text-sm font-medium',
+                        item.gap > 0 
+                          ? 'text-emerald-600 dark:text-emerald-400' 
+                          : 'text-rose-600 dark:text-rose-400'
+                      )}>
+                        {item.gap > 0 ? '+' : ''}{item.gap}%
                       </span>
+                      {item.trend === 'up' && <TrendingUp className="h-4 w-4 text-emerald-500" />}
+                      {item.trend === 'down' && <TrendingDown className="h-4 w-4 text-rose-500" />}
+                      {item.trend === 'stable' && <Minus className="h-4 w-4 text-slate-400" />}
                     </div>
                   </div>
                   
-                  <div className="absolute inset-y-0 right-0 flex">
-                    <div
-                      className="h-full bg-slate-400 dark:bg-slate-600 flex items-center px-2"
-                      style={{ width: `${Math.min((item.competitorAvg / (item.yourValue * 1.5)) * 50, 50)}%` }}
-                    >
-                      <span className="text-xs font-medium text-white whitespace-nowrap">
-                        Avg: {typeof item.competitorAvg === 'number' && item.competitorAvg > 1000 
-                          ? formatNumber(item.competitorAvg) 
-                          : item.competitorAvg}
-                      </span>
+                  <div className="relative h-8 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden">
+                    <div className="absolute inset-y-0 left-0 flex">
+                      <div
+                        className="h-full bg-blue-500 flex items-center justify-end px-2"
+                        style={{ width: `${Math.min((item.yourValue / (item.competitorAvg * 1.5)) * 50, 50)}%` }}
+                      >
+                        <span className="text-xs font-medium text-white whitespace-nowrap">
+                          You: {typeof item.yourValue === 'number' && item.yourValue > 1000 
+                            ? formatNumber(item.yourValue) 
+                            : item.yourValue}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="absolute inset-y-0 right-0 flex">
+                      <div
+                        className="h-full bg-slate-400 dark:bg-slate-600 flex items-center px-2"
+                        style={{ width: `${Math.min((item.competitorAvg / (item.yourValue * 1.5)) * 50, 50)}%` }}
+                      >
+                        <span className="text-xs font-medium text-white whitespace-nowrap">
+                          Avg: {typeof item.competitorAvg === 'number' && item.competitorAvg > 1000 
+                            ? formatNumber(item.competitorAvg) 
+                            : item.competitorAvg}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -425,7 +519,24 @@ export default function CompetitorAnalysis() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {competitors.map((competitor) => (
+              {isLoading && (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-5 w-5 text-slate-400 animate-spin" />
+                  <span className="ml-2 text-slate-500">Loading...</span>
+                </div>
+              )}
+
+              {!isLoading && competitors.length === 0 && (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Target className="h-8 w-8 text-slate-400" />
+                  </div>
+                  <p className="text-slate-500 dark:text-slate-400">No competitors tracked yet.</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Add a competitor to start analyzing.</p>
+                </div>
+              )}
+
+              {!isLoading && competitors.map((competitor) => (
                 <motion.div
                   key={competitor.id}
                   layout
@@ -470,7 +581,7 @@ export default function CompetitorAnalysis() {
                           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                           onClick={(e) => {
                             e.stopPropagation()
-                            window.open(competitor.profileUrl || '#', '_blank')
+                            if (competitor.profileUrl) window.open(competitor.profileUrl, '_blank')
                           }}
                         >
                           <ExternalLink className="h-4 w-4 text-slate-400" />
@@ -539,41 +650,66 @@ export default function CompetitorAnalysis() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="font-medium text-emerald-700 dark:text-emerald-300">
-                    Strength
-                  </span>
+              {isLoadingGaps && (
+                <div className="flex items-center justify-center py-4">
+                  <RefreshCw className="h-5 w-5 text-slate-400 animate-spin" />
                 </div>
-                <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
-                  Your posting frequency (+7/week) is above competitor average
+              )}
+
+              {!isLoadingGaps && contentGaps.length === 0 && insights.length === 0 && (
+                <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+                  No gap data available yet. Add competitors and analyze gaps to see opportunities.
                 </p>
-              </div>
-              
-              <div className="p-3 bg-rose-50 dark:bg-rose-500/10 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-                  <span className="font-medium text-rose-700 dark:text-rose-300">
-                    Gap
-                  </span>
+              )}
+
+              {insights.map((insight, idx) => (
+                <div key={idx} className={cn(
+                  'p-3 rounded-lg',
+                  insight.type === 'strength' ? 'bg-emerald-50 dark:bg-emerald-500/10' :
+                  insight.type === 'gap' || insight.type === 'weakness' ? 'bg-rose-50 dark:bg-rose-500/10' :
+                  'bg-blue-50 dark:bg-blue-500/10'
+                )}>
+                  <div className="flex items-center gap-2">
+                    {insight.type === 'strength' && <Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
+                    {(insight.type === 'gap' || insight.type === 'weakness') && <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
+                    {insight.type === 'trend' && <LineChart className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+                    <span className={cn(
+                      'font-medium',
+                      insight.type === 'strength' ? 'text-emerald-700 dark:text-emerald-300' :
+                      (insight.type === 'gap' || insight.type === 'weakness') ? 'text-rose-700 dark:text-rose-300' :
+                      'text-blue-700 dark:text-blue-300'
+                    )}>
+                      {insight.title}
+                    </span>
+                  </div>
+                  <p className={cn(
+                    'text-sm mt-1',
+                    insight.type === 'strength' ? 'text-emerald-600 dark:text-emerald-400' :
+                    (insight.type === 'gap' || insight.type === 'weakness') ? 'text-rose-600 dark:text-rose-400' :
+                    'text-blue-600 dark:text-blue-400'
+                  )}>
+                    {insight.description}
+                  </p>
                 </div>
-                <p className="text-sm text-rose-600 dark:text-rose-400 mt-1">
-                  Average views per post are 28% lower than competitors
-                </p>
-              </div>
-              
-              <div className="p-3 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <LineChart className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  <span className="font-medium text-blue-700 dark:text-blue-300">
-                    Trend
-                  </span>
+              ))}
+
+              {contentGaps.length > 0 && contentGaps.slice(0, 3).map((gap) => (
+                <div key={gap.id} className={cn(
+                  'p-3 rounded-lg',
+                  gap.priority === 'high' ? 'bg-rose-50 dark:bg-rose-500/10' :
+                  gap.priority === 'medium' ? 'bg-amber-50 dark:bg-amber-500/10' :
+                  'bg-slate-50 dark:bg-slate-500/10'
+                )}>
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <span className="font-medium text-slate-700 dark:text-slate-300">{gap.topic}</span>
+                    <Badge variant="outline" size="sm">{gap.priority}</Badge>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    {gap.suggested_action || `${gap.competitor_count} competitors cover this`}
+                  </p>
                 </div>
-                <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-                  Engagement rate is stable and competitive
-                </p>
-              </div>
+              ))}
             </CardContent>
           </Card>
         </div>
@@ -612,14 +748,23 @@ export default function CompetitorAnalysis() {
             </CardHeader>
             
             <CardContent className="space-y-4">
-              {filteredPosts.length === 0 ? (
+              {isLoadingPosts && (
+                <div className="flex items-center justify-center py-12">
+                  <RefreshCw className="h-6 w-6 text-slate-400 animate-spin" />
+                  <span className="ml-3 text-slate-500">Loading content...</span>
+                </div>
+              )}
+
+              {!isLoadingPosts && filteredPosts.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Search className="h-8 w-8 text-slate-400" />
                   </div>
                   <p className="text-slate-500 dark:text-slate-400">No posts found</p>
                   <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
-                    Try adjusting your filters
+                    {competitors.length === 0 
+                      ? 'Add competitors to see their content'
+                      : 'Try adjusting your filters'}
                   </p>
                 </div>
               ) : (
@@ -656,7 +801,7 @@ export default function CompetitorAnalysis() {
                         <Tooltip content="View post" position="top">
                           <button 
                             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                            onClick={() => window.open(post.url || '#', '_blank')}
+                            onClick={() => { if (post.url) window.open(post.url, '_blank') }}
                           >
                             <ExternalLink className="h-4 w-4 text-slate-400" />
                           </button>
@@ -808,7 +953,9 @@ function AddCompetitorForm({
             <option value="facebook">Facebook</option>
             <option value="instagram">Instagram</option>
             <option value="youtube">YouTube</option>
+            <option value="tiktok">TikTok</option>
             <option value="blog">Blog</option>
+            <option value="newsletter">Newsletter</option>
           </select>
         </div>
         

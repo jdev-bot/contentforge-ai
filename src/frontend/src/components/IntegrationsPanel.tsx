@@ -7,33 +7,33 @@ import {
   Webhook,
   Globe,
   Key,
-  CheckCircle2,
-  XCircle,
   RefreshCw,
   Copy,
   Eye,
   EyeOff,
-  MoreVertical,
-  ExternalLink,
   Settings,
   Plus,
   Trash2,
   AlertCircle,
   Shield,
   Clock,
-  Check,
-  X,
-  ArrowRight,
   Puzzle
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { Input } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
-import { listIntegrations } from '@/lib/api'
+import {
+  listUserIntegrations,
+  createIntegration,
+  updateIntegrationById,
+  deleteIntegrationById,
+  testIntegrationConnection,
+  type IntegrationItem,
+} from '@/lib/api'
 
 // Types
 export interface Integration {
@@ -69,77 +69,180 @@ export interface APIKey {
   scopes: string[]
 }
 
-// No mock data — all data fetched from real API
-// Webhooks and API keys don't have backend CRUD yet — initialized empty
-
 // Helper functions
-const formatDate = (date?: Date) => {
+const formatDate = (date?: Date | string | null) => {
   if (!date) return 'Never'
+  const d = date instanceof Date ? date : new Date(date)
   const now = new Date()
-  const diff = now.getTime() - date.getTime()
+  const diff = now.getTime() - d.getTime()
   const hours = Math.floor(diff / 3600000)
   if (hours < 1) return 'Just now'
   if (hours < 24) return `${hours}h ago`
   const days = Math.floor(hours / 24)
   if (days < 7) return `${days}d ago`
-  return date.toLocaleDateString()
+  return d.toLocaleDateString()
+}
+
+const mapIntegrationStatus = (item: IntegrationItem): Integration['status'] => {
+  if (item.is_active) return 'connected'
+  return 'disconnected'
+}
+
+const getIntegrationIcon = (type: string): string => {
+  const icons: Record<string, string> = {
+    zapier: '⚡',
+    wordpress: '📰',
+    webhook: '🪝',
+    slack: '💬',
+    make: '🔗',
+    linkedin: '💼',
+    twitter: '🐦',
+  }
+  return icons[type] || '🔗'
+}
+
+const getIntegrationCategory = (type: string): Integration['category'] => {
+  if (type === 'webhook') return 'webhook'
+  if (type === 'zapier' || type === 'make') return 'automation'
+  if (type === 'wordpress') return 'cms'
+  return 'api'
 }
 
 export default function IntegrationsPanel() {
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [isLoadingIntegrations, setIsLoadingIntegrations] = useState(true)
+  const [integrationsError, setIntegrationsError] = useState<string | null>(null)
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>([])
+  const [isLoadingWebhooks, setIsLoadingWebhooks] = useState(true)
   const [apiKeys, setApiKeys] = useState<APIKey[]>([])
+  const [isLoadingApiKeys, setIsLoadingApiKeys] = useState(false)
   const [activeTab, setActiveTab] = useState<'integrations' | 'webhooks' | 'apikeys'>('integrations')
   const [showAddWebhook, setShowAddWebhook] = useState(false)
   const [showAddKey, setShowAddKey] = useState(false)
   const [showKeySecret, setShowKeySecret] = useState<Record<string, boolean>>({})
+  const [testingId, setTestingId] = useState<string | null>(null)
 
   // Fetch integrations from API
-  useEffect(() => {
-    listIntegrations().then(data => {
-      const mapped: Integration[] = data.map((int: any) => ({
-        id: int.id || int.config_id,
-        name: int.name || int.integration_type,
-        description: int.description || '',
-        icon: int.icon || 'Zap',
-        type: int.integration_type || 'custom',
-        status: (['connected', 'disconnected', 'pending', 'error'].includes(int.status) ? int.status : 'disconnected') as Integration['status'],
-        connectedAt: int.created_at || new Date().toISOString(),
-        category: int.category || 'automation',
-        lastSync: int.last_synced_at ? new Date(int.last_synced_at) : undefined,
-        config: int.config || {},
+  const fetchIntegrations = useCallback(async () => {
+    try {
+      setIsLoadingIntegrations(true)
+      setIntegrationsError(null)
+      const data = await listUserIntegrations()
+      const mapped: Integration[] = data.integrations.map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.integration_type,
+        icon: getIntegrationIcon(item.integration_type),
+        status: mapIntegrationStatus(item),
+        lastSync: item.last_used_at ? new Date(item.last_used_at) : undefined,
+        category: getIntegrationCategory(item.integration_type),
+        config: item.config,
       }))
-      setIntegrations(mapped.length > 0 ? mapped : [])
-    }).catch(() => setIntegrations([]))
-    .finally(() => setIsLoadingIntegrations(false))
+      setIntegrations(mapped)
+    } catch (err) {
+      setIntegrationsError(err instanceof Error ? err.message : 'Failed to load integrations')
+    } finally {
+      setIsLoadingIntegrations(false)
+    }
   }, [])
 
-  const handleToggleIntegration = useCallback((id: string) => {
-    setIntegrations(prev => prev.map(int => {
-      if (int.id === id) {
-        const newStatus = int.status === 'connected' ? 'disconnected' : 'connected'
-        return {
-          ...int,
-          status: newStatus,
-          lastSync: newStatus === 'connected' ? new Date() : int.lastSync,
-        }
-      }
-      return int
-    }))
+  // Fetch webhook-type integrations from API
+  const fetchWebhooks = useCallback(async () => {
+    try {
+      setIsLoadingWebhooks(true)
+      const data = await listUserIntegrations('webhook')
+      const mapped: WebhookConfig[] = data.integrations
+        .filter((item) => item.integration_type === 'webhook')
+        .map((item) => ({
+          id: item.id,
+          name: item.name,
+          url: (item.config?.url as string) || '',
+          events: (item.config?.events as string[]) || [],
+          secret: (item.config?.secret as string) || '••••••••',
+          isActive: item.is_active,
+          createdAt: new Date(item.created_at),
+          lastTriggered: item.last_used_at ? new Date(item.last_used_at) : undefined,
+        }))
+      setWebhooks(mapped)
+    } catch {
+      // Webhooks may be empty — that's fine
+    } finally {
+      setIsLoadingWebhooks(false)
+    }
   }, [])
+
+  useEffect(() => {
+    fetchIntegrations()
+    fetchWebhooks()
+    setIsLoadingApiKeys(false)
+  }, [fetchIntegrations, fetchWebhooks])
+
+  const handleToggleIntegration = useCallback(async (id: string) => {
+    const integration = integrations.find((i) => i.id === id)
+    if (!integration) return
+
+    const newActive = integration.status !== 'connected'
+    // Optimistic update
+    setIntegrations((prev) =>
+      prev.map((int) => {
+        if (int.id === id) {
+          return {
+            ...int,
+            status: newActive ? 'connected' as const : 'disconnected' as const,
+            lastSync: newActive ? new Date() : int.lastSync,
+          }
+        }
+        return int
+      })
+    )
+
+    try {
+      await updateIntegrationById(id, { is_active: newActive })
+    } catch {
+      // Revert on failure
+      setIntegrations((prev) =>
+        prev.map((int) => {
+          if (int.id === id) {
+            return {
+              ...int,
+              status: !newActive ? 'connected' as const : 'disconnected' as const,
+              lastSync: !newActive ? new Date() : int.lastSync,
+            }
+          }
+          return int
+        })
+      )
+    }
+  }, [integrations])
+
+  const handleTestIntegration = useCallback(async (id: string) => {
+    setTestingId(id)
+    try {
+      await testIntegrationConnection(id)
+      // Refresh to get updated last_used_at
+      fetchIntegrations()
+    } catch {
+      // Test failed
+    } finally {
+      setTestingId(null)
+    }
+  }, [fetchIntegrations])
 
   const handleCopy = async (text: string) => {
     await navigator.clipboard.writeText(text)
-    // Could add toast notification here
   }
 
-  const handleDeleteWebhook = (id: string) => {
-    setWebhooks(prev => prev.filter(w => w.id !== id))
-  }
+  const handleDeleteWebhook = useCallback(async (id: string) => {
+    try {
+      await deleteIntegrationById(id)
+      setWebhooks((prev) => prev.filter((w) => w.id !== id))
+    } catch {
+      // Delete failed
+    }
+  }, [])
 
   const handleDeleteKey = (id: string) => {
-    setApiKeys(prev => prev.filter(k => k.id !== id))
+    setApiKeys((prev) => prev.filter((k) => k.id !== id))
   }
 
   const getStatusColor = (status: string) => {
@@ -197,7 +300,29 @@ export default function IntegrationsPanel() {
       {/* Integrations Tab */}
       {activeTab === 'integrations' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {integrations.map((integration) => (
+          {isLoadingIntegrations && (
+            <div className="col-span-full flex items-center justify-center py-12">
+              <RefreshCw className="h-6 w-6 text-slate-400 animate-spin" />
+              <span className="ml-3 text-slate-500">Loading integrations...</span>
+            </div>
+          )}
+
+          {integrationsError && !isLoadingIntegrations && (
+            <div className="col-span-full">
+              <Card className="bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-rose-800 dark:text-rose-300 font-medium">Failed to load integrations</p>
+                    <p className="text-sm text-rose-700 dark:text-rose-400 mt-1">{integrationsError}</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={fetchIntegrations} className="ml-auto">Retry</Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {!isLoadingIntegrations && !integrationsError && integrations.map((integration) => (
             <Card key={integration.id} className="relative">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
@@ -227,6 +352,15 @@ export default function IntegrationsPanel() {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <Tooltip content="Test connection" position="top">
+                      <button
+                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                        onClick={() => handleTestIntegration(integration.id)}
+                        disabled={testingId === integration.id}
+                      >
+                        <RefreshCw className={cn('h-4 w-4 text-slate-500', testingId === integration.id && 'animate-spin')} />
+                      </button>
+                    </Tooltip>
                     <Tooltip content="Settings" position="top">
                       <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
                         <Settings className="h-4 w-4 text-slate-500" />
@@ -236,36 +370,28 @@ export default function IntegrationsPanel() {
                 </div>
 
                 {integration.config && (
-                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700"
-                  >
-                    <div className="flex items-center gap-4 text-sm"
-                    >
+                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                    <div className="flex items-center gap-4 text-sm">
                       {(integration.config.account as string) && (
-                        <div className="flex items-center gap-1.5"
-                        >
+                        <div className="flex items-center gap-1.5">
                           <Shield className="h-4 w-4 text-blue-500" />
-                          <span className="text-slate-600 dark:text-slate-400"
-                          >
+                          <span className="text-slate-600 dark:text-slate-400">
                             {String(integration.config.account)} plan
                           </span>
                         </div>
                       )}
                       {integration.config.zaps !== undefined && (
-                        <div className="flex items-center gap-1.5"
-                        >
+                        <div className="flex items-center gap-1.5">
                           <Zap className="h-4 w-4 text-amber-500" />
-                          <span className="text-slate-600 dark:text-slate-400"
-                          >
+                          <span className="text-slate-600 dark:text-slate-400">
                             {String(integration.config.zaps)} active Zaps
                           </span>
                         </div>
                       )}
                       {(integration.config.site as string) && (
-                        <div className="flex items-center gap-1.5"
-                        >
+                        <div className="flex items-center gap-1.5">
                           <Globe className="h-4 w-4 text-emerald-500" />
-                          <span className="text-slate-600 dark:text-slate-400 truncate max-w-[200px]"
-                          >
+                          <span className="text-slate-600 dark:text-slate-400 truncate max-w-[200px]">
                             {String(integration.config.site)}
                           </span>
                         </div>
@@ -275,8 +401,8 @@ export default function IntegrationsPanel() {
                 )}
 
                 <div className="mt-4 flex items-center justify-between">
-                  <Badge 
-                    variant={integration.status === 'connected' ? 'success' : 'default'} 
+                  <Badge
+                    variant={integration.status === 'connected' ? 'success' : 'default'}
                     size="sm"
                   >
                     {getStatusText(integration.status)}
@@ -293,6 +419,20 @@ export default function IntegrationsPanel() {
               </CardContent>
             </Card>
           ))}
+
+          {!isLoadingIntegrations && !integrationsError && integrations.length === 0 && (
+            <Card className="col-span-full border-dashed border-2">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Puzzle className="h-8 w-8 text-slate-400" />
+                </div>
+                <h3 className="font-medium text-slate-900 dark:text-slate-100">No integrations yet</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Connect your favorite tools to get started
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Add Custom Integration */}
           <Card className="border-dashed border-2 border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer">
@@ -333,97 +473,110 @@ export default function IntegrationsPanel() {
             </Button>
           </div>
 
-          <div className="space-y-3">
-            {webhooks.map((webhook) => (
-              <Card key={webhook.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-slate-900 dark:text-slate-100">
-                          {webhook.name}
-                        </h4>
-                        <Badge 
-                          variant={webhook.isActive ? 'success' : 'default'} 
-                          size="sm"
-                        >
-                          {webhook.isActive ? 'Active' : 'Paused'}
-                        </Badge>
+          {isLoadingWebhooks && (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw className="h-6 w-6 text-slate-400 animate-spin" />
+              <span className="ml-3 text-slate-500">Loading webhooks...</span>
+            </div>
+          )}
+
+          {!isLoadingWebhooks && (
+            <div className="space-y-3">
+              {webhooks.map((webhook) => (
+                <Card key={webhook.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-slate-900 dark:text-slate-100">
+                            {webhook.name}
+                          </h4>
+                          <Badge
+                            variant={webhook.isActive ? 'success' : 'default'}
+                            size="sm"
+                          >
+                            {webhook.isActive ? 'Active' : 'Paused'}
+                          </Badge>
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-2">
+                          <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-600 dark:text-slate-400">
+                            {webhook.url}
+                          </code>
+                          <Tooltip content="Copy URL" position="top">
+                            <button
+                              onClick={() => handleCopy(webhook.url)}
+                              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
+                            >
+                              <Copy className="h-3 w-3 text-slate-400" />
+                            </button>
+                          </Tooltip>
+                        </div>
+
+                        <div className="flex items-center gap-4 mt-3 text-xs text-slate-500 dark:text-slate-400">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Created {formatDate(webhook.createdAt)}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <RefreshCw className="h-3 w-3" />
+                            Last triggered {formatDate(webhook.lastTriggered)}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1 mt-3">
+                          {webhook.events.map(event => (
+                            <Badge key={event} variant="outline" size="sm">
+                              {event}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2 mt-2">
-                        <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-600 dark:text-slate-400">
-                          {webhook.url}
+                      <div className="flex items-center gap-2">
+                        <Tooltip content="Test webhook" position="top">
+                          <button
+                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                            onClick={() => handleTestIntegration(webhook.id)}
+                            disabled={testingId === webhook.id}
+                          >
+                            <RefreshCw className={cn('h-4 w-4 text-slate-500', testingId === webhook.id && 'animate-spin')} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip content="Delete" position="top">
+                          <button
+                            onClick={() => handleDeleteWebhook(webhook.id)}
+                            className="p-2 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4 text-rose-500" />
+                          </button>
+                        </Tooltip>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 dark:text-slate-400">Secret:</span>
+                        <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-600 dark:text-slate-400 font-mono">
+                          {webhook.secret}
                         </code>
-                        <Tooltip content="Copy URL" position="top">
-                          <button 
-                            onClick={() => handleCopy(webhook.url)}
+                        <Tooltip content="Copy secret" position="top">
+                          <button
+                            onClick={() => handleCopy(webhook.secret)}
                             className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
                           >
                             <Copy className="h-3 w-3 text-slate-400" />
                           </button>
                         </Tooltip>
                       </div>
-
-                      <div className="flex items-center gap-4 mt-3 text-xs text-slate-500 dark:text-slate-400">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Created {formatDate(webhook.createdAt)}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <RefreshCw className="h-3 w-3" />
-                          Last triggered {formatDate(webhook.lastTriggered)}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1 mt-3">
-                        {webhook.events.map(event => (
-                          <Badge key={event} variant="outline" size="sm">
-                            {event}
-                          </Badge>
-                        ))}
-                      </div>
                     </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
-                    <div className="flex items-center gap-2">
-                      <Tooltip content="Test webhook" position="top">
-                        <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                          <RefreshCw className="h-4 w-4 text-slate-500" />
-                        </button>
-                      </Tooltip>
-                      <Tooltip content="Delete" position="top">
-                        <button 
-                          onClick={() => handleDeleteWebhook(webhook.id)}
-                          className="p-2 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4 text-rose-500" />
-                        </button>
-                      </Tooltip>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500 dark:text-slate-400">Secret:</span>
-                      <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-600 dark:text-slate-400 font-mono">
-                        {webhook.secret}
-                      </code>
-                      <Tooltip content="Copy secret" position="top">
-                        <button 
-                          onClick={() => handleCopy(webhook.secret)}
-                          className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
-                        >
-                          <Copy className="h-3 w-3 text-slate-400" />
-                        </button>
-                      </Tooltip>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {webhooks.length === 0 && (
+          {!isLoadingWebhooks && webhooks.length === 0 && (
             <Card className="border-dashed border-2">
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -478,7 +631,7 @@ export default function IntegrationsPanel() {
                   Security Notice
                 </p>
                 <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                  Keep your API keys secure. Never share them or commit them to version control. 
+                  Keep your API keys secure. Never share them or commit them to version control.
                   Keys with write access should be treated with extra caution.
                 </p>
               </div>
@@ -508,9 +661,9 @@ export default function IntegrationsPanel() {
                           {showKeySecret[apiKey.id] ? apiKey.key : apiKey.key.replace(/\*/g, '•')}
                         </code>
                         <button
-                          onClick={() => setShowKeySecret(prev => ({ 
-                            ...prev, 
-                            [apiKey.id]: !prev[apiKey.id] 
+                          onClick={() => setShowKeySecret(prev => ({
+                            ...prev,
+                            [apiKey.id]: !prev[apiKey.id]
                           }))}
                           className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
                         >
@@ -548,7 +701,7 @@ export default function IntegrationsPanel() {
                     </div>
 
                     <Tooltip content="Delete key" position="top">
-                      <button 
+                      <button
                         onClick={() => handleDeleteKey(apiKey.id)}
                         className="p-2 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
                       >
@@ -561,7 +714,7 @@ export default function IntegrationsPanel() {
             ))}
           </div>
 
-          {apiKeys.length === 0 && (
+          {apiKeys.length === 0 && !isLoadingApiKeys && (
             <Card className="border-dashed border-2">
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
