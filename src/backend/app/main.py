@@ -55,6 +55,7 @@ from app.routers import (
 )
 from app.routers import stripe as stripe_router
 from app.routers import (
+    engagement_prediction,
     suggestions,
     team_calendar,
     trash,
@@ -196,6 +197,7 @@ app.include_router(
 app.include_router(funnel.router, prefix="/api/v1", tags=["funnels"])
 app.include_router(attribution.router, prefix="/api/v1", tags=["attribution"])
 app.include_router(team_calendar.router, prefix="/api/v1", tags=["team-calendar"])
+app.include_router(engagement_prediction.router, prefix="/api/v1", tags=["engagement-prediction"])
 
 
 @app.get("/")

@@ -4920,3 +4920,108 @@ export async function checkTeamCalendarConflicts(
 }
 
 // ============ End Team Calendar API ============
+
+// ============ Engagement Prediction API ============
+
+export interface EngagementFactorScores {
+  readability: number
+  emotional_impact: number
+  hashtag_usage: number
+  optimal_length: number
+  call_to_action: number
+}
+
+export interface PredictedEngagementMetrics {
+  likes: number
+  comments: number
+  shares: number
+  impressions: number
+}
+
+export interface EngagementPredictionResult {
+  score: number
+  confidence: number
+  factors: EngagementFactorScores
+  suggestions: string[]
+  predicted_engagement: PredictedEngagementMetrics
+  best_posting_time: string
+  platform: string
+  content_length: number
+  analyzed_at: string
+}
+
+export interface EngagementPredictionHistoryItem {
+  id: string
+  user_id: string
+  content_id: string | null
+  platform: string
+  score: number
+  content_preview: string
+  created_at: string
+}
+
+export interface EngagementPredictionHistory {
+  items: EngagementPredictionHistoryItem[]
+  total: number
+  page: number
+  limit: number
+}
+
+export interface PlatformConfig {
+  optimal_length_range: [number, number]
+  max_length: number
+  hashtag_ideal: [number, number]
+  best_times: string[]
+  base_engagement: {
+    likes: number
+    comments: number
+    shares: number
+    impressions: number
+  }
+}
+
+export async function analyzeEngagement(
+  content: string,
+  platform: string = 'twitter',
+  contentId?: string,
+  useAi: boolean = false,
+): Promise<EngagementPredictionResult> {
+  const response = await apiFetch(`${API_URL}/engagement-prediction/analyze`, {
+    method: 'POST',
+    body: JSON.stringify({
+      content,
+      platform,
+      content_id: contentId,
+      use_ai: useAi,
+    }),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to analyze engagement')
+  }
+  return response.json()
+}
+
+export async function getEngagementPredictionHistory(
+  limit: number = 20,
+  offset: number = 0,
+): Promise<EngagementPredictionHistory> {
+  const response = await apiFetch(`${API_URL}/engagement-prediction/history?limit=${limit}&offset=${offset}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get prediction history')
+  }
+  return response.json()
+}
+
+export async function getEngagementPlatformConfig(): Promise<Record<string, PlatformConfig>> {
+  const response = await apiFetch(`${API_URL}/engagement-prediction/platform-config`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get platform config')
+  }
+  const data = await response.json()
+  return data.platforms
+}
+
+// ============ End Engagement Prediction API ============

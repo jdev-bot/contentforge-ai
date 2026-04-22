@@ -3,10 +3,15 @@
 import { useState, useCallback } from 'react'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
-import { Input } from './ui/Input'
 import { useToast } from '../hooks/useToast'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Activity } from 'lucide-react'
+import {
+  analyzeEngagement,
+  type EngagementPredictionResult,
+  type EngagementFactorScores,
+  type PredictedEngagementMetrics,
+} from '@/lib/api'
 
 interface EngagementPredictionProps {
   contentId?: string
@@ -14,60 +19,37 @@ interface EngagementPredictionProps {
   platform?: string
 }
 
-interface PredictionResult {
-  score: number
-  confidence: number
-  factors: {
-    readability: number
-    emotionalImpact: number
-    hashtagUsage: number
-    optimalLength: number
-    callToAction: number
-  }
-  suggestions: string[]
-  predictedEngagement: {
-    likes: number
-    comments: number
-    shares: number
-    impressions: number
-  }
-  bestPostingTime: string
+function getScoreColor(score: number) {
+  if (score >= 80) return 'text-green-600'
+  if (score >= 60) return 'text-yellow-600'
+  return 'text-red-600'
 }
 
-const MOCK_PREDICTION: PredictionResult = {
-  score: 78,
-  confidence: 0.82,
-  factors: {
-    readability: 85,
-    emotionalImpact: 75,
-    hashtagUsage: 60,
-    optimalLength: 90,
-    callToAction: 80,
-  },
-  suggestions: [
-    'Add 2-3 more relevant hashtags to increase discoverability',
-    'Include a clear call-to-action to boost engagement',
-    'Consider posting between 9-11 AM for maximum reach',
-    'Your hook is strong - keep it up!',
-  ],
-  predictedEngagement: {
-    likes: 245,
-    comments: 32,
-    shares: 18,
-    impressions: 3200,
-  },
-  bestPostingTime: '09:30 AM EST',
+function getScoreBg(score: number) {
+  if (score >= 80) return 'bg-green-500'
+  if (score >= 60) return 'bg-yellow-500'
+  return 'bg-red-500'
+}
+
+function formatFactorName(key: string) {
+  return key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()
+}
+
+function formatMetricName(key: string) {
+  return key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()
 }
 
 export default function EngagementPrediction({
   contentId,
   contentText,
-  platform = 'twitter',
+  platform: initialPlatform = 'twitter',
 }: EngagementPredictionProps) {
   const { showToast } = useToast()
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [prediction, setPrediction] = useState<PredictionResult | null>(null)
+  const [prediction, setPrediction] = useState<EngagementPredictionResult | null>(null)
   const [content, setContent] = useState(contentText || '')
+  const [platform, setPlatform] = useState(initialPlatform)
+  const [error, setError] = useState<string | null>(null)
 
   const analyzeContent = useCallback(async () => {
     if (!content.trim()) {
@@ -76,26 +58,20 @@ export default function EngagementPrediction({
     }
 
     setIsAnalyzing(true)
-    
-    // Simulate API call
-    setTimeout(() => {
-      setPrediction(MOCK_PREDICTION)
-      setIsAnalyzing(false)
+    setError(null)
+
+    try {
+      const result = await analyzeEngagement(content, platform, contentId)
+      setPrediction(result)
       showToast('Engagement prediction complete!', 'success')
-    }, 2000)
-  }, [content, showToast])
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600'
-    if (score >= 60) return 'text-yellow-600'
-    return 'text-red-600'
-  }
-
-  const getScoreBg = (score: number) => {
-    if (score >= 80) return 'bg-green-500'
-    if (score >= 60) return 'bg-yellow-500'
-    return 'bg-red-500'
-  }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Analysis failed'
+      setError(message)
+      showToast(message, 'error')
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }, [content, platform, contentId, showToast])
 
   return (
     <Card className="p-6">
@@ -103,7 +79,6 @@ export default function EngagementPrediction({
         title="Engagement Prediction"
         description="AI-powered prediction of content performance"
         icon={<Activity className="w-5 h-5 text-blue-600" />}
-        badge={<span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">Demo Data</span>}
       />
 
       {!prediction ? (
@@ -126,7 +101,7 @@ export default function EngagementPrediction({
             </label>
             <select
               value={platform}
-              onChange={(e) => {}}
+              onChange={(e) => setPlatform(e.target.value)}
               className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:border-gray-600 bg-white dark:bg-gray-800"
             >
               <option value="twitter">Twitter/X</option>
@@ -135,6 +110,12 @@ export default function EngagementPrediction({
               <option value="instagram">Instagram</option>
             </select>
           </div>
+
+          {error && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-900/20 rounded-lg text-sm text-rose-700 dark:text-rose-300">
+              {error}
+            </div>
+          )}
 
           <Button
             onClick={analyzeContent}
@@ -201,6 +182,11 @@ export default function EngagementPrediction({
                   ? 'Good potential with some improvements needed.'
                   : 'Consider revising to improve engagement potential.'}
               </p>
+              <div className="mt-2 flex items-center gap-2 text-xs text-slate-400">
+                <span>Platform: {prediction.platform}</span>
+                <span>·</span>
+                <span>{prediction.content_length} chars</span>
+              </div>
             </div>
           </div>
 
@@ -214,7 +200,7 @@ export default function EngagementPrediction({
                 <div key={factor}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="capitalize text-slate-700 dark:text-slate-300">
-                      {factor.replace(/([A-Z])/g, ' $1').trim()}
+                      {formatFactorName(factor)}
                     </span>
                     <span className="font-medium">{score}%</span>
                   </div>
@@ -235,7 +221,7 @@ export default function EngagementPrediction({
               Predicted Engagement
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {Object.entries(prediction.predictedEngagement).map(([metric, value]) => (
+              {Object.entries(prediction.predicted_engagement).map(([metric, value]) => (
                 <div
                   key={metric}
                   className="text-center p-3 bg-slate-50 dark:bg-slate-900 dark:bg-gray-800 rounded-lg"
@@ -244,7 +230,7 @@ export default function EngagementPrediction({
                     {value >= 1000 ? `${(value / 1000).toFixed(1)}K` : value}
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-                    {metric.replace(/([A-Z])/g, ' $1').trim()}
+                    {formatMetricName(metric)}
                   </div>
                 </div>
               ))}
@@ -278,7 +264,7 @@ export default function EngagementPrediction({
                   Optimal Posting Time:{' '}
                 </span>
                 <span className="text-blue-600 font-bold">
-                  {prediction.bestPostingTime}
+                  {prediction.best_posting_time}
                 </span>
               </div>
             </div>
