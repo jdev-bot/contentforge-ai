@@ -69,17 +69,17 @@
 | 1 | **GROQ_API_KEY** — provide real key for AI content generation | High | Currently placeholder; AI features non-functional without it |
 | 2 | ~~PageHeader rollout~~ | ~~Medium~~ | ✅ **Done** — 36/42 components (6 skipped: Dashboard, SmartEditor, ContentCreatePanel, ContentDetailPanel, ScheduleCalendar, ScheduleModal) |
 | 3 | ~~Mobile QA~~ | ~~Medium~~ | ✅ **Done** — safe-area, touch targets, 16 responsive grid fixes, viewport config |
-| 4 | **TeamCalendar backend** — build API endpoints | Medium | Currently demo data only |
+| 4 | ~~TeamCalendar backend~~ | ~~Medium~~ | ✅ **Done** — 6 API endpoints, real data integration |
 | 5 | **EngagementPrediction backend** — build API endpoints | Medium | Currently demo data only |
 | 6 | **Custom Vercel domain** | Low | |
 | 7 | **Render paid plan** — eliminate 30s cold starts | Low | $7/mo |
 
 ## Git HEAD
 
-- **Local/Remote:** `1db24ee` (synced)
-- **Render:** `685f1e0` (backend, no changes needed)
-- **Vercel:** `1db24ee` (deployed 2026-04-22, mobile responsiveness fixes)
+- **Local/Remote:** `304436e` (synced)
+- **Render:** `304436e` (deployed 2026-04-22 18:16 UTC, TeamCalendar backend)
+- **Vercel:** `304436e` (deployed 2026-04-22, TeamCalendar frontend + mobile fixes)
 
 ---
 
-*Last updated: 2026-04-22 16:05 UTC*
+*Last updated: 2026-04-22 18:20 UTC*
