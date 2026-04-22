@@ -514,7 +514,7 @@ export default function CompetitorAnalysis() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                     <div>
                       <p className="text-xs text-slate-500 dark:text-slate-400">Engagement</p>
                       <p className="font-semibold text-slate-900 dark:text-slate-100">

@@ -624,7 +624,7 @@ function AlertDetailView({
               {alert.contentPreview.title}
             </p>
             
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {alert.contentPreview.metrics.views && (
                 <div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Views</p>

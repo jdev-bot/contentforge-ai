@@ -340,7 +340,7 @@ export default function AttributionDashboard() {
                       </p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="text-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800">
                       <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
                         {channel.total_touchpoints}

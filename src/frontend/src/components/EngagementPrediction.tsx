@@ -234,7 +234,7 @@ export default function EngagementPrediction({
             <h4 className="font-medium text-slate-900 dark:text-slate-100 dark:text-white mb-3">
               Predicted Engagement
             </h4>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {Object.entries(prediction.predictedEngagement).map(([metric, value]) => (
                 <div
                   key={metric}

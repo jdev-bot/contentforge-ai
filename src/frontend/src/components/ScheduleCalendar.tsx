@@ -483,7 +483,7 @@ export default function ScheduleCalendar({ onEditSchedule }: ScheduleCalendarPro
 
   const renderWeekView = () => (
     <div className="flex-1 overflow-auto">
-      <div className="grid grid-cols-7 min-w-[800px]">
+      <div className="grid grid-cols-7 min-w-[600px] sm:min-w-[800px]">
         {weekDays.map(({ date, schedules }) => {
           const isToday = new Date().toDateString() === date.toDateString()
           

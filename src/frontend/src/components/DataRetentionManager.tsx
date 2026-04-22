@@ -469,7 +469,7 @@ export default function DataRetentionManager() {
                               className="overflow-hidden"
                             >
                               <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50 space-y-3">
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   <div>
                                     <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Content Type</label>
                                     <input
@@ -489,7 +489,7 @@ export default function DataRetentionManager() {
                                     />
                                   </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   <div>
                                     <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Delete After (days)</label>
                                     <input
@@ -607,7 +607,7 @@ export default function DataRetentionManager() {
                         ? 'Some areas need attention to achieve full compliance.'
                         : 'Significant compliance issues detected. Immediate action recommended.'}
                   </p>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     <div className="flex items-center gap-1">
                       <span className="text-slate-500">Content Covered:</span>
                       <span className="font-medium text-slate-900 dark:text-slate-100">{compliance.content_covered_by_policy}</span>

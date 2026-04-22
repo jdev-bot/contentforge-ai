@@ -203,7 +203,7 @@ export default function ContentCreatePanel({ user, onBack, onContentCreated }: C
                 Content Source
               </label>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {sourceTypes.map((type) => {
                   const Icon = type.icon
                   return (

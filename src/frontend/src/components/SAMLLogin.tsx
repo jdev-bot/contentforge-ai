@@ -386,7 +386,7 @@ export default function SAMLLogin({ isOpen, onClose, onLoginSuccess }: SAMLLogin
                         <Key className="w-4 h-4" /> Provider Details
                       </h4>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                             Name *

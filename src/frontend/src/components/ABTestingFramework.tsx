@@ -187,7 +187,7 @@ export default function ABTestingFramework() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
                 Variant A
@@ -272,7 +272,7 @@ export default function ABTestingFramework() {
           </div>
 
           {/* Variants Comparison */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Card className={`p-4 ${selectedTest.results?.winner === 'A' ? 'border-green-500 border-2' : ''}`}>
               <div className="flex items-center justify-between mb-3">
                 <span className="font-bold">Variant A</span>

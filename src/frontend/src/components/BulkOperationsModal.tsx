@@ -406,7 +406,7 @@ export default function BulkOperationsModal({
 
               {importPreview && (
                 <Card className="p-4">
-                  <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                     <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                       <div className="text-2xl font-bold text-blue-600">{importPreview.total}</div>
                       <div className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500">Total Items</div>

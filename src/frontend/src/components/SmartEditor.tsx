@@ -315,7 +315,7 @@ export default function SmartEditor({
         </div>
         
         {/* Comparison view */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Current */}
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Current</p>
@@ -538,7 +538,7 @@ export default function SmartEditor({
                         <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 block">
                           Tone
                         </label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {toneOptions.map((tone) => (
                             <button
                               key={tone.value}

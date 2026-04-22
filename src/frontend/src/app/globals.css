@@ -456,6 +456,29 @@ body {
   }
 }
 
+/* Mobile Safe Area — for bottom nav on notched devices */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Mobile touch improvements */
+@media (pointer: coarse) {
+  /* Increase touch targets for interactive elements */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  /* Disable hover effects on touch devices */
+  .hover-lift:hover {
+    transform: none;
+    box-shadow: inherit;
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
