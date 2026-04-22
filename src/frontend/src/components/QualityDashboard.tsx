@@ -20,12 +20,10 @@ import {
   Palette,
   TrendingUp,
   Lightbulb,
-  AlertTriangle,
   CheckCircle2,
   Loader2,
   BarChart3,
   Zap,
-  ArrowUpRight,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
@@ -38,49 +36,22 @@ import {
   getQualityScore,
   getQualityScoreHistory,
   batchAnalyzeQuality,
-  getBatchAnalysisStatus,
-  QualityScoreResult,
-  QualityScoreHistory,
-  BatchAnalysisProgress,
+  QualityScoreResponse,
+  QualityHistoryResponse,
 } from '@/lib/api'
 
 interface QualityDashboardProps {
   contentId?: string
 }
 
-const DIMENSION_ICONS: Record<string, React.ReactNode> = {
-  readability: <BookOpen className="w-4 h-4" />,
-  seo: <Search className="w-4 h-4" />,
-  engagement: <Heart className="w-4 h-4" />,
-  grammar: <SpellCheck className="w-4 h-4" />,
-  brand: <Palette className="w-4 h-4" />,
-}
-
-const DIMENSION_COLORS: Record<string, string> = {
-  readability: '#3b82f6',
-  seo: '#8b5cf6',
-  engagement: '#f59e0b',
-  grammar: '#10b981',
-  brand: '#ec4899',
-}
-
-const PRIORITY_STYLES: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-  high: {
-    bg: 'bg-rose-100 dark:bg-rose-500/20',
-    text: 'text-rose-700 dark:text-rose-300',
-    icon: <AlertTriangle className="w-3.5 h-3.5" />,
-  },
-  medium: {
-    bg: 'bg-amber-100 dark:bg-amber-500/20',
-    text: 'text-amber-700 dark:text-amber-300',
-    icon: <Lightbulb className="w-3.5 h-3.5" />,
-  },
-  low: {
-    bg: 'bg-blue-100 dark:bg-blue-500/20',
-    text: 'text-blue-700 dark:text-blue-300',
-    icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-  },
-}
+/** Dimension metadata derived from the flat QualityScoreResponse fields */
+const DIMENSIONS = [
+  { key: 'readability', label: 'Readability', icon: <BookOpen className="w-4 h-4" />, color: '#3b82f6' },
+  { key: 'seo', label: 'SEO', icon: <Search className="w-4 h-4" />, color: '#8b5cf6' },
+  { key: 'engagement', label: 'Engagement', icon: <Heart className="w-4 h-4" />, color: '#f59e0b' },
+  { key: 'grammar', label: 'Grammar', icon: <SpellCheck className="w-4 h-4" />, color: '#10b981' },
+  { key: 'brand', label: 'Brand', icon: <Palette className="w-4 h-4" />, color: '#ec4899' },
+] as const
 
 // Circular gauge component
 function QualityGauge({ score, size = 180 }: { score: number; size?: number }) {
@@ -147,27 +118,27 @@ function QualityGauge({ score, size = 180 }: { score: number; size?: number }) {
 
 // Dimension score bar
 function DimensionBar({
-  name,
+  label,
   score,
-  maxScore,
+  icon,
+  color,
 }: {
-  name: string
+  label: string
   score: number
-  maxScore: number
+  icon: React.ReactNode
+  color: string
 }) {
-  const percentage = (score / maxScore) * 100
-  const color = DIMENSION_COLORS[name.toLowerCase()] ?? '#6b7280'
-  const icon = DIMENSION_ICONS[name.toLowerCase()]
+  const percentage = Math.min(Math.max(score, 0), 100)
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
           <span style={{ color }}>{icon}</span>
-          <span className="capitalize">{name}</span>
+          <span>{label}</span>
         </div>
         <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-          {score}<span className="text-slate-400">/{maxScore}</span>
+          {score}<span className="text-slate-400">/100</span>
         </span>
       </div>
       <div className="h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
@@ -184,30 +155,28 @@ function DimensionBar({
 }
 
 export default function QualityDashboard({ contentId }: QualityDashboardProps) {
-  const [qualityResult, setQualityResult] = useState<QualityScoreResult | null>(null)
-  const [history, setHistory] = useState<QualityScoreHistory[]>([])
+  const [qualityResult, setQualityResult] = useState<QualityScoreResponse | null>(null)
+  const [historyData, setHistoryData] = useState<QualityScoreResponse[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [batchProgress, setBatchProgress] = useState<BatchAnalysisProgress | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [batchProgress, setBatchProgress] = useState<{ completed: number; total: number } | null>(null)
   const { showToast } = useToast()
 
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true)
+      setError(null)
       if (contentId) {
         const [result, hist] = await Promise.all([
-          getQualityScore(contentId).catch(() => MOCK_QUALITY),
-          getQualityScoreHistory(contentId).catch(() => MOCK_HISTORY),
+          getQualityScore(contentId).catch(() => null),
+          getQualityScoreHistory(contentId).catch(() => null),
         ])
         setQualityResult(result)
-        setHistory(hist)
-      } else {
-        setQualityResult(MOCK_QUALITY)
-        setHistory(MOCK_HISTORY)
+        setHistoryData(hist?.history ?? [])
       }
-    } catch {
-      setQualityResult(MOCK_QUALITY)
-      setHistory(MOCK_HISTORY)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load quality data')
     } finally {
       setIsLoading(false)
     }
@@ -232,27 +201,23 @@ export default function QualityDashboard({ contentId }: QualityDashboardProps) {
   }
 
   const handleBatchAnalyze = async () => {
+    if (!contentId) {
+      showToast('No content selected for batch analysis', 'error')
+      return
+    }
     try {
       setIsAnalyzing(true)
-      // Simulated batch analysis
-      setBatchProgress({
-        total: 10,
-        completed: 0,
-        failed: 0,
-        in_progress: 10,
-        estimated_completion: new Date(Date.now() + 60000).toISOString(),
-      })
-      for (let i = 0; i <= 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 300))
-        setBatchProgress(prev => prev ? {
-          ...prev,
-          completed: i,
-          in_progress: 10 - i,
-        } : null)
+      setBatchProgress({ completed: 0, total: 1 })
+      // Use real batch API — analyze the current content
+      const results = await batchAnalyzeQuality([{ content_id: contentId, text: '' }])
+      if (results.length > 0) {
+        setQualityResult(results[0])
       }
-      setBatchProgress(null)
+      setBatchProgress({ completed: 1, total: 1 })
+      setTimeout(() => setBatchProgress(null), 800)
       showToast('Batch analysis completed', 'success')
     } catch {
+      setBatchProgress(null)
       showToast('Batch analysis failed', 'error')
     } finally {
       setIsAnalyzing(false)
@@ -273,6 +238,38 @@ export default function QualityDashboard({ contentId }: QualityDashboardProps) {
       </div>
     )
   }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Quality Dashboard"
+          description="Content quality analysis and improvement suggestions"
+          icon={<Award className="w-5 h-5 text-blue-600" />}
+        />
+        <Card variant="glass">
+          <CardContent className="p-6 text-center">
+            <p className="text-sm text-rose-500 mb-3">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchData}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Build chart data from history entries
+  const chartData = historyData.map((entry, i) => ({
+    index: i,
+    date: entry.created_at ? new Date(entry.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : `#${i + 1}`,
+    overall: entry.overall_score,
+    readability: entry.readability,
+    seo: entry.seo,
+    engagement: entry.engagement,
+    grammar: entry.grammar,
+    brand: entry.brand,
+  }))
 
   return (
     <div className="space-y-6">
@@ -355,8 +352,8 @@ export default function QualityDashboard({ contentId }: QualityDashboardProps) {
               Overall Quality Score
             </p>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-              {qualityResult?.analyzed_at
-                ? `Analyzed ${new Date(qualityResult.analyzed_at).toLocaleDateString()}`
+              {qualityResult?.created_at
+                ? `Analyzed ${new Date(qualityResult.created_at).toLocaleDateString()}`
                 : 'No analysis yet'}
             </p>
           </CardContent>
@@ -374,12 +371,13 @@ export default function QualityDashboard({ contentId }: QualityDashboardProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {qualityResult?.dimensions.map(dim => (
+            {DIMENSIONS.map(dim => (
               <DimensionBar
-                key={dim.name}
-                name={dim.name}
-                score={dim.score}
-                maxScore={dim.max_score}
+                key={dim.key}
+                label={dim.label}
+                score={qualityResult?.[dim.key] ?? 0}
+                icon={dim.icon}
+                color={dim.color}
               />
             ))}
           </CardContent>
@@ -398,59 +396,64 @@ export default function QualityDashboard({ contentId }: QualityDashboardProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={history}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="currentColor"
-                  className="text-slate-200 dark:text-slate-700"
-                />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 12, fill: '#94a3b8' }}
-                  tickFormatter={(val: string) => new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                />
-                <YAxis
-                  domain={[0, 100]}
-                  tick={{ fontSize: 12, fill: '#94a3b8' }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                    border: '1px solid rgba(148, 163, 184, 0.2)',
-                    borderRadius: '12px',
-                    color: '#f1f5f9',
-                    fontSize: 12,
-                  }}
-                />
-                {Object.entries(DIMENSION_COLORS).map(([key, color]) => (
-                  <Line
-                    key={key}
-                    type="monotone"
-                    dataKey={key}
-                    stroke={color}
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4 }}
+          {chartData.length > 0 ? (
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="currentColor"
+                    className="text-slate-200 dark:text-slate-700"
                   />
-                ))}
-                <Line
-                  type="monotone"
-                  dataKey="overall"
-                  stroke="#f8fafc"
-                  strokeWidth={3}
-                  dot={false}
-                  activeDot={{ r: 5 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 12, fill: '#94a3b8' }}
+                  />
+                  <YAxis
+                    domain={[0, 100]}
+                    tick={{ fontSize: 12, fill: '#94a3b8' }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                      border: '1px solid rgba(148, 163, 184, 0.2)',
+                      borderRadius: '12px',
+                      color: '#f1f5f9',
+                      fontSize: 12,
+                    }}
+                  />
+                  {DIMENSIONS.map(dim => (
+                    <Line
+                      key={dim.key}
+                      type="monotone"
+                      dataKey={dim.key}
+                      stroke={dim.color}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4 }}
+                    />
+                  ))}
+                  <Line
+                    type="monotone"
+                    dataKey="overall"
+                    stroke="#f8fafc"
+                    strokeWidth={3}
+                    dot={false}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-48 flex items-center justify-center text-sm text-slate-400 dark:text-slate-500">
+              No history data available. Analyze content to start tracking scores.
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Improvement Suggestions */}
-      {qualityResult?.improvement_suggestions && qualityResult.improvement_suggestions.length > 0 && (
+      {qualityResult?.suggestions && qualityResult.suggestions.length > 0 && (
         <Card variant="glass">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -459,20 +462,31 @@ export default function QualityDashboard({ contentId }: QualityDashboardProps) {
                 <CardTitle>Improvement Suggestions</CardTitle>
               </div>
               <Badge variant="warning" size="sm">
-                {qualityResult.improvement_suggestions.length} suggestions
+                {qualityResult.suggestions.length} suggestions
               </Badge>
             </div>
             <CardDescription>
-              Prioritized recommendations to boost your quality score
+              Recommendations to boost your quality score
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {qualityResult.improvement_suggestions.map((suggestion, idx) => {
-                const style = PRIORITY_STYLES[suggestion.priority] ?? PRIORITY_STYLES.low
+              {qualityResult.suggestions.map((suggestion, idx) => {
+                // Auto-assign priority based on position (first = high, middle = medium, rest = low)
+                const priority = idx < qualityResult.suggestions.length / 3
+                  ? 'high' as const
+                  : idx < (qualityResult.suggestions.length * 2) / 3
+                    ? 'medium' as const
+                    : 'low' as const
+                const style = {
+                  high: { bg: 'bg-rose-100 dark:bg-rose-500/20', text: 'text-rose-700 dark:text-rose-300', icon: <Lightbulb className="w-3.5 h-3.5" /> },
+                  medium: { bg: 'bg-amber-100 dark:bg-amber-500/20', text: 'text-amber-700 dark:text-amber-300', icon: <Lightbulb className="w-3.5 h-3.5" /> },
+                  low: { bg: 'bg-blue-100 dark:bg-blue-500/20', text: 'text-blue-700 dark:text-blue-300', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+                }[priority]
+
                 return (
                   <motion.div
-                    key={suggestion.id || idx}
+                    key={idx}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.05 }}
@@ -484,21 +498,14 @@ export default function QualityDashboard({ contentId }: QualityDashboardProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <Badge
-                          variant={suggestion.priority === 'high' ? 'error' : suggestion.priority === 'medium' ? 'warning' : 'info'}
+                          variant={priority === 'high' ? 'error' : priority === 'medium' ? 'warning' : 'info'}
                           size="sm"
                         >
-                          {suggestion.priority}
+                          {priority}
                         </Badge>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-                          {suggestion.dimension}
-                        </span>
-                        <span className="text-xs text-slate-400 ml-auto flex items-center gap-0.5">
-                          <ArrowUpRight className="w-3 h-3" />
-                          +{suggestion.impact_score} impact
-                        </span>
                       </div>
                       <p className="text-sm text-slate-700 dark:text-slate-300">
-                        {suggestion.text}
+                        {suggestion}
                       </p>
                     </div>
                   </motion.div>
@@ -513,44 +520,22 @@ export default function QualityDashboard({ contentId }: QualityDashboardProps) {
           </CardFooter>
         </Card>
       )}
+
+      {/* Empty state when no data */}
+      {!qualityResult && (
+        <Card variant="glass">
+          <CardContent className="p-8 text-center">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+              No quality analysis available yet.
+            </p>
+            {contentId && (
+              <Button variant="primary" size="sm" onClick={handleAnalyze} loading={isAnalyzing}>
+                Run Quality Analysis
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
-
-// Mock data
-const MOCK_QUALITY: QualityScoreResult = {
-  id: 'q1',
-  content_id: 'c1',
-  user_id: 'u1',
-  overall_score: 72,
-  dimensions: [
-    { name: 'readability', score: 78, max_score: 100, suggestions: ['Shorten long paragraphs'] },
-    { name: 'seo', score: 65, max_score: 100, suggestions: ['Add more keywords', 'Improve meta description'] },
-    { name: 'engagement', score: 82, max_score: 100, suggestions: [] },
-    { name: 'grammar', score: 90, max_score: 100, suggestions: [] },
-    { name: 'brand', score: 55, max_score: 100, suggestions: ['Align tone with brand guidelines', 'Add brand-specific terminology'] },
-  ],
-  improvement_suggestions: [
-    { id: 's1', text: 'Add relevant keywords to headings to improve SEO discoverability', priority: 'high', dimension: 'seo', impact_score: 15 },
-    { id: 's2', text: 'Align content tone with your brand voice guidelines', priority: 'high', dimension: 'brand', impact_score: 12 },
-    { id: 's3', text: 'Break long paragraphs into shorter ones for better readability', priority: 'medium', dimension: 'readability', impact_score: 8 },
-    { id: 's4', text: 'Add a compelling meta description including primary keyword', priority: 'medium', dimension: 'seo', impact_score: 7 },
-    { id: 's5', text: 'Include brand-specific call-to-action phrases', priority: 'low', dimension: 'brand', impact_score: 4 },
-    { id: 's6', text: 'Add internal links to related content for SEO benefit', priority: 'low', dimension: 'seo', impact_score: 3 },
-  ],
-  analyzed_at: new Date().toISOString(),
-}
-
-const MOCK_HISTORY: QualityScoreHistory[] = Array.from({ length: 14 }, (_, i) => {
-  const date = new Date()
-  date.setDate(date.getDate() - (13 - i))
-  return {
-    date: date.toISOString().split('T')[0],
-    overall: 60 + Math.round(Math.random() * 20),
-    readability: 65 + Math.round(Math.random() * 25),
-    seo: 55 + Math.round(Math.random() * 20),
-    engagement: 70 + Math.round(Math.random() * 15),
-    grammar: 80 + Math.round(Math.random() * 15),
-    brand: 45 + Math.round(Math.random() * 20),
-  }
-})

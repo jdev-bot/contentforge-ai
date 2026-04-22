@@ -43,9 +43,11 @@ import { useToast } from '@/hooks/useToast'
 import {
   analyzeSentiment,
   getSentiment,
-  getSentimentTrend,
-  SentimentResult,
-  SentimentTrendPoint,
+  getSentimentTrends,
+  getSentimentDistribution,
+  SentimentResponse,
+  SentimentTrendsResponse,
+  SentimentDistributionResponse,
 } from '@/lib/api'
 
 interface SentimentDashboardProps {
@@ -54,11 +56,11 @@ interface SentimentDashboardProps {
 
 const EMOTION_COLORS: Record<string, string> = {
   joy: '#fbbf24',
-  trust: '#3b82f6',
+  anger: '#ef4444',
+  sadness: '#6b7280',
   fear: '#8b5cf6',
   surprise: '#ec4899',
-  sadness: '#6b7280',
-  anticipation: '#10b981',
+  disgust: '#10b981',
 }
 
 const TONE_COLORS = [
@@ -74,6 +76,7 @@ const SENTIMENT_LABEL_COLORS: Record<string, string> = {
   positive: '#10b981',
   negative: '#ef4444',
   neutral: '#6b7280',
+  mixed: '#f59e0b',
 }
 
 // Circular gauge for sentiment (-1.0 to +1.0)
@@ -145,18 +148,17 @@ function SentimentGauge({ value, size = 180 }: { value: number; size?: number })
 
 // Aspect sentiment card
 function AspectCard({
-  aspect,
+  section,
+  sentiment,
   score,
-  label,
-  evidence,
 }: {
-  aspect: string
+  section: string
+  sentiment: string
   score: number
-  label: 'positive' | 'negative' | 'neutral'
-  evidence: string[]
 }) {
-  const color = SENTIMENT_LABEL_COLORS[label]
-  const Icon = label === 'positive' ? ThumbsUp : label === 'negative' ? ThumbsDown : Minus
+  const label = sentiment as 'positive' | 'negative' | 'neutral'
+  const color = SENTIMENT_LABEL_COLORS[sentiment] ?? '#6b7280'
+  const Icon = sentiment === 'positive' ? ThumbsUp : sentiment === 'negative' ? ThumbsDown : Minus
 
   return (
     <motion.div
@@ -168,7 +170,7 @@ function AspectCard({
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4" style={{ color }} />
           <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 capitalize">
-            {aspect}
+            {section}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -176,7 +178,7 @@ function AspectCard({
             variant={label === 'positive' ? 'success' : label === 'negative' ? 'error' : 'secondary'}
             size="sm"
           >
-            {label}
+            {sentiment}
           </Badge>
           <span className="text-sm font-bold" style={{ color }}>
             {score.toFixed(2)}
@@ -184,7 +186,7 @@ function AspectCard({
         </div>
       </div>
       {/* Mini bar */}
-      <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mb-3">
+      <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${((score + 1) / 2) * 100}%` }}
@@ -193,43 +195,36 @@ function AspectCard({
           style={{ backgroundColor: color }}
         />
       </div>
-      {evidence.length > 0 && (
-        <div className="space-y-1">
-          {evidence.slice(0, 2).map((e, i) => (
-            <p key={i} className="text-xs text-slate-500 dark:text-slate-400 truncate">
-              &ldquo;{e}&rdquo;
-            </p>
-          ))}
-        </div>
-      )}
     </motion.div>
   )
 }
 
 export default function SentimentDashboard({ contentId }: SentimentDashboardProps) {
-  const [sentiment, setSentiment] = useState<SentimentResult | null>(null)
-  const [trend, setTrend] = useState<SentimentTrendPoint[]>([])
+  const [sentiment, setSentiment] = useState<SentimentResponse | null>(null)
+  const [trendsData, setTrendsData] = useState<SentimentResponse[]>([])
+  const [distribution, setDistribution] = useState<SentimentDistributionResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const { showToast } = useToast()
 
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true)
+      setError(null)
       if (contentId) {
-        const [result, trendData] = await Promise.all([
-          getSentiment(contentId).catch(() => MOCK_SENTIMENT),
-          getSentimentTrend(contentId).catch(() => MOCK_TREND),
+        const [result, trendResp] = await Promise.all([
+          getSentiment(contentId).catch(() => null),
+          getSentimentTrends(contentId).catch(() => null),
         ])
         setSentiment(result)
-        setTrend(trendData)
-      } else {
-        setSentiment(MOCK_SENTIMENT)
-        setTrend(MOCK_TREND)
+        setTrendsData(trendResp?.trends ?? [])
       }
-    } catch {
-      setSentiment(MOCK_SENTIMENT)
-      setTrend(MOCK_TREND)
+      // Always fetch distribution (global, doesn't need contentId)
+      const dist = await getSentimentDistribution().catch(() => null)
+      setDistribution(dist)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load sentiment data')
     } finally {
       setIsLoading(false)
     }
@@ -253,25 +248,41 @@ export default function SentimentDashboard({ contentId }: SentimentDashboardProp
     }
   }
 
-  // Prepare chart data
-  const emotionRadarData = sentiment?.emotions.map(e => ({
-    emotion: e.emotion.charAt(0).toUpperCase() + e.emotion.slice(1),
-    score: e.score,
-    fullMark: 1,
-  })) ?? []
-
-  const tonePieData = sentiment?.tone_distribution.map(t => ({
-    name: t.tone.charAt(0).toUpperCase() + t.tone.slice(1),
-    value: t.percentage,
-  })) ?? []
-
-  const distributionBarData = sentiment
-    ? [
-        { name: 'Positive', value: sentiment.content_distribution.positive, fill: '#10b981' },
-        { name: 'Negative', value: sentiment.content_distribution.negative, fill: '#ef4444' },
-        { name: 'Neutral', value: sentiment.content_distribution.neutral, fill: '#6b7280' },
-      ]
+  // Prepare chart data from the real backend response shape
+  // Emotion radar: emotions is { joy, anger, sadness, fear, surprise, disgust }
+  const emotionRadarData = sentiment
+    ? Object.entries(sentiment.emotions).map(([key, value]) => ({
+        emotion: key.charAt(0).toUpperCase() + key.slice(1),
+        score: value,
+        fullMark: 1,
+      }))
     : []
+
+  // Tone: single string from backend, show as a simple visual
+  const toneDisplayData = sentiment
+    ? [{ name: sentiment.tone.charAt(0).toUpperCase() + sentiment.tone.slice(1), value: 100 }]
+    : []
+
+  // Distribution bar data from the distribution endpoint
+  const distributionBarData = distribution
+    ? Object.entries(distribution.distribution).map(([key, value]) => ({
+        name: key.charAt(0).toUpperCase() + key.slice(1),
+        value,
+        fill: SENTIMENT_LABEL_COLORS[key] ?? '#6b7280',
+      }))
+    : sentiment
+      ? [
+          { name: sentiment.sentiment, value: 1, fill: SENTIMENT_LABEL_COLORS[sentiment.sentiment] ?? '#6b7280' },
+        ]
+      : []
+
+  // Trend data for line chart
+  const trendChartData = trendsData.map((entry, i) => ({
+    index: i,
+    date: entry.created_at ? new Date(entry.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : `#${i + 1}`,
+    score: entry.score,
+    sentiment: entry.score,
+  }))
 
   if (isLoading) {
     return (
@@ -281,6 +292,26 @@ export default function SentimentDashboard({ contentId }: SentimentDashboardProp
           <div className="h-64 rounded-xl animate-pulse bg-slate-200 dark:bg-slate-800" />
           <div className="h-64 rounded-xl animate-pulse bg-slate-200 dark:bg-slate-800" />
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Sentiment Analysis"
+          description="Emotional and tonal analysis of your content"
+          icon={<Activity className="w-5 h-5 text-purple-600" />}
+        />
+        <Card variant="glass">
+          <CardContent className="p-6 text-center">
+            <p className="text-sm text-rose-500 mb-3">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchData}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -316,7 +347,7 @@ export default function SentimentDashboard({ contentId }: SentimentDashboardProp
         }
       />
 
-      {/* Top Row: Gauge + Radar + Pie */}
+      {/* Top Row: Gauge + Radar + Tone */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sentiment Gauge */}
         <Card variant="glass" className="flex flex-col items-center justify-center">
@@ -326,21 +357,23 @@ export default function SentimentDashboard({ contentId }: SentimentDashboardProp
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <SentimentGauge value={sentiment?.overall_sentiment ?? 0} />
+              <SentimentGauge value={sentiment?.score ?? 0} />
             </motion.div>
             <div className="mt-4 flex items-center gap-2">
               <Badge
                 variant={
-                  sentiment?.sentiment_label === 'positive'
+                  sentiment?.sentiment === 'positive'
                     ? 'success'
-                    : sentiment?.sentiment_label === 'negative'
+                    : sentiment?.sentiment === 'negative'
                       ? 'error'
-                      : 'secondary'
+                      : sentiment?.sentiment === 'mixed'
+                        ? 'warning'
+                        : 'secondary'
                 }
                 size="sm"
                 dot
               >
-                {sentiment?.sentiment_label ?? 'N/A'}
+                {sentiment?.sentiment ?? 'N/A'}
               </Badge>
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
@@ -359,98 +392,97 @@ export default function SentimentDashboard({ contentId }: SentimentDashboardProp
             <CardDescription>Six primary emotions detected</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={emotionRadarData}>
-                  <PolarGrid
-                    stroke="currentColor"
-                    className="text-slate-200 dark:text-slate-700"
-                  />
-                  <PolarAngleAxis
-                    dataKey="emotion"
-                    tick={{ fontSize: 11, fill: '#94a3b8' }}
-                  />
-                  <PolarRadiusAxis
-                    angle={30}
-                    domain={[0, 1]}
-                    tick={{ fontSize: 9, fill: '#64748b' }}
-                  />
-                  <Radar
-                    name="Score"
-                    dataKey="score"
-                    stroke="#8b5cf6"
-                    fill="#8b5cf6"
-                    fillOpacity={0.2}
-                    strokeWidth={2}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                      border: '1px solid rgba(148, 163, 184, 0.2)',
-                      borderRadius: '12px',
-                      color: '#f1f5f9',
-                      fontSize: 12,
-                    }}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
+            {emotionRadarData.length > 0 ? (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={emotionRadarData}>
+                    <PolarGrid
+                      stroke="currentColor"
+                      className="text-slate-200 dark:text-slate-700"
+                    />
+                    <PolarAngleAxis
+                      dataKey="emotion"
+                      tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    />
+                    <PolarRadiusAxis
+                      angle={30}
+                      domain={[0, 1]}
+                      tick={{ fontSize: 9, fill: '#64748b' }}
+                    />
+                    <Radar
+                      name="Score"
+                      dataKey="score"
+                      stroke="#8b5cf6"
+                      fill="#8b5cf6"
+                      fillOpacity={0.2}
+                      strokeWidth={2}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        border: '1px solid rgba(148, 163, 184, 0.2)',
+                        borderRadius: '12px',
+                        color: '#f1f5f9',
+                        fontSize: 12,
+                      }}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-sm text-slate-400">
+                No emotion data available
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Tone Distribution Pie */}
+        {/* Detected Tone */}
         <Card variant="glass">
           <CardHeader>
             <div className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-blue-500" />
-              <CardTitle>Tone Distribution</CardTitle>
+              <CardTitle>Detected Tone</CardTitle>
             </div>
-            <CardDescription>Detected tones in your content</CardDescription>
+            <CardDescription>Primary tone of the content</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={tonePieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {tonePieData.map((_, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={TONE_COLORS[index % TONE_COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                      border: '1px solid rgba(148, 163, 184, 0.2)',
-                      borderRadius: '12px',
-                      color: '#f1f5f9',
-                      fontSize: 12,
-                    }}
-                    formatter={(value: unknown) => [`${value}%`, 'Percentage']}
-                  />
-                  <Legend
-                    verticalAlign="bottom"
-                    height={36}
-                    iconType="circle"
-                    iconSize={8}
-                    formatter={(value: string) => (
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {value}
-                      </span>
-                    )}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            {sentiment ? (
+              <div className="h-64 flex flex-col items-center justify-center gap-4">
+                <div
+                  className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold"
+                  style={{
+                    background: `linear-gradient(135deg, ${TONE_COLORS[0]}20, ${TONE_COLORS[1]}20)`,
+                    border: `2px solid ${TONE_COLORS[0]}40`,
+                    color: TONE_COLORS[0],
+                  }}
+                >
+                  {sentiment.tone.charAt(0).toUpperCase()}
+                </div>
+                <p className="text-lg font-semibold text-slate-900 dark:text-slate-100 capitalize">
+                  {sentiment.tone}
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {['formal', 'casual', 'urgent', 'persuasive', 'informative'].map(t => (
+                    <span
+                      key={t}
+                      className={cn(
+                        'px-2 py-1 rounded-full text-xs font-medium',
+                        t === sentiment.tone
+                          ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300'
+                          : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
+                      )}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-sm text-slate-400">
+                No tone data available
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -460,49 +492,65 @@ export default function SentimentDashboard({ contentId }: SentimentDashboardProp
         <CardHeader>
           <div className="flex items-center gap-2">
             <Meh className="w-5 h-5 text-slate-500" />
-            <CardTitle>Content Distribution</CardTitle>
+            <CardTitle>Sentiment Distribution</CardTitle>
           </div>
           <CardDescription>
-            Positive, negative, and neutral content breakdown
+            Breakdown of sentiment across analyzed content
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={distributionBarData} layout="vertical">
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="currentColor"
-                  className="text-slate-200 dark:text-slate-700"
-                  horizontal={false}
-                />
-                <XAxis
-                  type="number"
-                  tick={{ fontSize: 12, fill: '#94a3b8' }}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  tick={{ fontSize: 12, fill: '#94a3b8' }}
-                  width={80}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                    border: '1px solid rgba(148, 163, 184, 0.2)',
-                    borderRadius: '12px',
-                    color: '#f1f5f9',
-                    fontSize: 12,
-                  }}
-                />
-                <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={24}>
-                  {distributionBarData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {distributionBarData.length > 0 ? (
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={distributionBarData} layout="vertical">
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="currentColor"
+                    className="text-slate-200 dark:text-slate-700"
+                    horizontal={false}
+                  />
+                  <XAxis
+                    type="number"
+                    tick={{ fontSize: 12, fill: '#94a3b8' }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fontSize: 12, fill: '#94a3b8' }}
+                    width={80}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                      border: '1px solid rgba(148, 163, 184, 0.2)',
+                      borderRadius: '12px',
+                      color: '#f1f5f9',
+                      fontSize: 12,
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={24}>
+                    {distributionBarData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-48 flex items-center justify-center text-sm text-slate-400">
+              No distribution data available. Analyze content to see distribution.
+            </div>
+          )}
+          {distribution && (
+            <div className="mt-3 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+              <span>Total analyses: {distribution.total_analyses}</span>
+              {Object.entries(distribution.percentages).map(([key, value]) => (
+                <span key={key}>
+                  {key}: {value.toFixed(1)}%
+                </span>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -518,79 +566,63 @@ export default function SentimentDashboard({ contentId }: SentimentDashboardProp
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trend}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="currentColor"
-                  className="text-slate-200 dark:text-slate-700"
-                />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 12, fill: '#94a3b8' }}
-                  tickFormatter={(val: string) =>
-                    new Date(val).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                    })
-                  }
-                />
-                <YAxis
-                  domain={[-1, 1]}
-                  tick={{ fontSize: 12, fill: '#94a3b8' }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                    border: '1px solid rgba(148, 163, 184, 0.2)',
-                    borderRadius: '12px',
-                    color: '#f1f5f9',
-                    fontSize: 12,
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="sentiment"
-                  stroke="#8b5cf6"
-                  strokeWidth={3}
-                  dot={false}
-                  activeDot={{ r: 5 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="positive_count"
-                  stroke="#10b981"
-                  strokeWidth={1.5}
-                  strokeDasharray="4 4"
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="negative_count"
-                  stroke="#ef4444"
-                  strokeWidth={1.5}
-                  strokeDasharray="4 4"
-                  dot={false}
-                />
-                <Legend
-                  verticalAlign="top"
-                  height={36}
-                  iconType="line"
-                  formatter={(value: string) => (
-                    <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-                      {value.replace('_', ' ')}
-                    </span>
-                  )}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {trendChartData.length > 0 ? (
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendChartData}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="currentColor"
+                    className="text-slate-200 dark:text-slate-700"
+                  />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 12, fill: '#94a3b8' }}
+                  />
+                  <YAxis
+                    domain={[-1, 1]}
+                    tick={{ fontSize: 12, fill: '#94a3b8' }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                      border: '1px solid rgba(148, 163, 184, 0.2)',
+                      borderRadius: '12px',
+                      color: '#f1f5f9',
+                      fontSize: 12,
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="sentiment"
+                    stroke="#8b5cf6"
+                    strokeWidth={3}
+                    dot={false}
+                    activeDot={{ r: 5 }}
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    height={36}
+                    iconType="line"
+                    formatter={(value: string) => (
+                      <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
+                        {value.replace('_', ' ')}
+                      </span>
+                    )}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-72 flex items-center justify-center text-sm text-slate-400 dark:text-slate-500">
+              No trend data available. Analyze content to start tracking sentiment.
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Aspect-Based Sentiment Cards */}
-      {sentiment?.aspect_sentiments && sentiment.aspect_sentiments.length > 0 && (
+      {sentiment?.aspects && sentiment.aspects.length > 0 && (
         <Card variant="glass">
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -598,110 +630,39 @@ export default function SentimentDashboard({ contentId }: SentimentDashboardProp
               <CardTitle>Aspect-Based Sentiment</CardTitle>
             </div>
             <CardDescription>
-              Sentiment broken down by content aspects
+              Sentiment broken down by content sections
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {sentiment.aspect_sentiments.map((aspect, idx) => (
+              {sentiment.aspects.map((aspect, idx) => (
                 <AspectCard
-                  key={aspect.aspect}
-                  aspect={aspect.aspect}
-                  score={aspect.sentiment_score}
-                  label={aspect.sentiment_label}
-                  evidence={aspect.evidence}
+                  key={aspect.section}
+                  section={aspect.section}
+                  sentiment={aspect.sentiment}
+                  score={aspect.score}
                 />
               ))}
             </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Empty state when no data */}
+      {!sentiment && (
+        <Card variant="glass">
+          <CardContent className="p-8 text-center">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+              No sentiment analysis available yet.
+            </p>
+            {contentId && (
+              <Button variant="primary" size="sm" onClick={handleAnalyze} loading={isAnalyzing}>
+                Run Sentiment Analysis
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
-
-// Mock data
-const MOCK_SENTIMENT: SentimentResult = {
-  id: 's1',
-  content_id: 'c1',
-  user_id: 'u1',
-  overall_sentiment: 0.42,
-  sentiment_label: 'positive',
-  emotions: [
-    { emotion: 'joy', score: 0.72 },
-    { emotion: 'trust', score: 0.65 },
-    { emotion: 'anticipation', score: 0.58 },
-    { emotion: 'surprise', score: 0.3 },
-    { emotion: 'fear', score: 0.12 },
-    { emotion: 'sadness', score: 0.08 },
-  ],
-  tone_distribution: [
-    { tone: 'professional', percentage: 35 },
-    { tone: 'friendly', percentage: 28 },
-    { tone: 'authoritative', percentage: 18 },
-    { tone: 'conversational', percentage: 12 },
-    { tone: 'persuasive', percentage: 7 },
-  ],
-  aspect_sentiments: [
-    {
-      aspect: 'Product Quality',
-      sentiment_score: 0.82,
-      sentiment_label: 'positive',
-      evidence: [
-        'The build quality exceeded expectations',
-        'Premium materials throughout',
-      ],
-    },
-    {
-      aspect: 'Pricing',
-      sentiment_score: -0.25,
-      sentiment_label: 'negative',
-      evidence: [
-        'Significantly more expensive than competitors',
-        'Limited value at this price point',
-      ],
-    },
-    {
-      aspect: 'Customer Service',
-      sentiment_score: 0.61,
-      sentiment_label: 'positive',
-      evidence: ['Responsive support team', 'Quick resolution times'],
-    },
-    {
-      aspect: 'User Experience',
-      sentiment_score: 0.44,
-      sentiment_label: 'positive',
-      evidence: ['Intuitive interface design'],
-    },
-    {
-      aspect: 'Documentation',
-      sentiment_score: -0.1,
-      sentiment_label: 'neutral',
-      evidence: ['Documentation could be more comprehensive'],
-    },
-    {
-      aspect: 'Performance',
-      sentiment_score: 0.7,
-      sentiment_label: 'positive',
-      evidence: ['Fast load times', 'Smooth animations'],
-    },
-  ],
-  content_distribution: {
-    positive: 62,
-    negative: 18,
-    neutral: 20,
-  },
-  analyzed_at: new Date().toISOString(),
-}
-
-const MOCK_TREND: SentimentTrendPoint[] = Array.from({ length: 14 }, (_, i) => {
-  const date = new Date()
-  date.setDate(date.getDate() - (13 - i))
-  return {
-    date: date.toISOString().split('T')[0],
-    sentiment: -0.3 + Math.random() * 0.8,
-    positive_count: Math.floor(5 + Math.random() * 15),
-    negative_count: Math.floor(2 + Math.random() * 8),
-    neutral_count: Math.floor(3 + Math.random() * 10),
-  }
-})

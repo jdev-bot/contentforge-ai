@@ -1979,6 +1979,48 @@ export async function bulkRefreshContent(contentIds?: string[]): Promise<{ refre
 
 // ============ Trending Topics API ============
 
+export interface TrendingTopicData {
+  id: string
+  topic: string
+  category: string | null
+  trend_score: number | null
+  mention_count: number | null
+  velocity: number | null
+  source: string | null
+  discovered_at: string
+  expires_at: string | null
+  related_keywords: string[] | null
+  sample_content: Array<{ title: string; url: string }> | null
+}
+
+export interface TrendingTopicWithRelevanceData extends TrendingTopicData {
+  relevance_score: number
+}
+
+export interface TrendCategoryData {
+  category: string
+  topics: TrendingTopicData[]
+  topic_count: number
+}
+
+export interface TrackTopicRequestData {
+  topic_id: string
+  relevance_score?: number
+}
+
+export interface TrackTopicResponseData {
+  success: boolean
+  message: string
+}
+
+export interface TrendVelocityData {
+  id: string
+  topic: string
+  velocity: number
+  category: string | null
+}
+
+// Legacy Trend interface kept for backward compatibility
 export interface Trend {
   id: string
   title: string
@@ -1994,11 +2036,12 @@ export interface Trend {
   description?: string
 }
 
-export async function getTrendingTopics(category?: string): Promise<Trend[]> {
-  let url = `${API_URL}/trends`
-  if (category) {
-    url += `?category=${category}`
-  }
+export async function getTrendingTopics(category?: string, limit?: number, minScore?: number): Promise<TrendingTopicData[]> {
+  const params = new URLSearchParams()
+  if (category) params.append('category', category)
+  if (limit) params.append('limit', limit.toString())
+  if (minScore !== undefined) params.append('min_score', minScore.toString())
+  const url = `${API_URL}/trends${params.toString() ? `?${params.toString()}` : ''}`
   const response = await apiFetch(url)
   
   if (!response.ok) {
@@ -2009,8 +2052,84 @@ export async function getTrendingTopics(category?: string): Promise<Trend[]> {
   return response.json()
 }
 
-export async function generateFromTrend(topicId: string): Promise<Content> {
-    const response = await apiFetch(`${API_URL}/trends/${topicId}/generate`, { method: 'POST' })
+export async function getRelevantTrends(limit?: number): Promise<TrendingTopicWithRelevanceData[]> {
+  const params = new URLSearchParams()
+  if (limit) params.append('limit', limit.toString())
+  const url = `${API_URL}/trends/relevant${params.toString() ? `?${params.toString()}` : ''}`
+  const response = await apiFetch(url)
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch relevant trends')
+  }
+  
+  return response.json()
+}
+
+export async function getTrendsByCategory(): Promise<TrendCategoryData[]> {
+  const response = await apiFetch(`${API_URL}/trends/categories`)
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch trends by category')
+  }
+  
+  return response.json()
+}
+
+export async function trackTopic(request: TrackTopicRequestData): Promise<TrackTopicResponseData> {
+  const response = await apiFetch(`${API_URL}/trends/track`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to track topic')
+  }
+  
+  return response.json()
+}
+
+export async function getTrackedTopics(): Promise<Array<Record<string, unknown>>> {
+  const response = await apiFetch(`${API_URL}/trends/tracked`)
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch tracked topics')
+  }
+  
+  return response.json()
+}
+
+export async function untrackTopic(topicId: string): Promise<void> {
+  const response = await apiFetch(`${API_URL}/trends/tracked/${topicId}`, { method: 'DELETE' })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to untrack topic')
+  }
+}
+
+export async function getTrendsVelocity(limit?: number): Promise<TrendVelocityData[]> {
+  const params = new URLSearchParams()
+  if (limit) params.append('limit', limit.toString())
+  const url = `${API_URL}/trends/velocity${params.toString() ? `?${params.toString()}` : ''}`
+  const response = await apiFetch(url)
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch velocity data')
+  }
+  
+  return response.json()
+}
+
+export async function generateFromTrend(topicId: string, request?: { topic?: string; category?: string; platform?: string; tone?: string }): Promise<Content> {
+    const response = await apiFetch(`${API_URL}/trends/${topicId}/generate`, {
+      method: 'POST',
+      body: JSON.stringify(request || {}),
+    })
   
   if (!response.ok) {
     const error = await response.json()
@@ -2019,6 +2138,8 @@ export async function generateFromTrend(topicId: string): Promise<Content> {
   
   return response.json()
 }
+
+// ============ End Trending Topics API ============
 
 // ============ RSS Feed API ============
 
@@ -2437,6 +2558,15 @@ export async function getAuditLogStats(): Promise<AuditLogStats> {
   return response.json()
 }
 
+export async function getAuditLogById(logId: string): Promise<AuditLogEntry> {
+  const response = await apiFetch(`${API_URL}/audit-logs/${logId}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch audit log')
+  }
+  return response.json()
+}
+
 export async function exportAuditLogsCSV(
   filters?: AuditLogsFilters
 ): Promise<Blob> {
@@ -2461,118 +2591,139 @@ export async function exportAuditLogsCSV(
 
 // ============ Quality Scoring API ============
 
-export interface QualityDimensionScore {
-  name: string
-  score: number
-  max_score: number
-  suggestions: string[]
-}
-
-export interface QualityScoreResult {
-  id: string
-  content_id: string
-  user_id: string
+/** Backend response: QualityScoreResponse (flat score fields) */
+export interface QualityScoreResponse {
+  id?: string | null
+  content_id?: string | null
   overall_score: number
-  dimensions: QualityDimensionScore[]
-  improvement_suggestions: Array<{
-    id: string
-    text: string
-    priority: 'high' | 'medium' | 'low'
-    dimension: string
-    impact_score: number
-  }>
-  analyzed_at: string
-}
-
-export interface QualityScoreHistory {
-  date: string
-  overall: number
   readability: number
   seo: number
   engagement: number
   grammar: number
   brand: number
+  suggestions: string[]
+  created_at?: string | null
 }
 
-export interface BatchAnalysisProgress {
-  total: number
-  completed: number
-  failed: number
-  in_progress: number
-  estimated_completion: string
+export interface QualityHistoryResponse {
+  content_id: string
+  history: QualityScoreResponse[]
 }
 
-export interface BatchAnalysisResponse {
-  batch_id: string
-  status: 'queued' | 'processing' | 'completed' | 'failed'
-  progress: BatchAnalysisProgress
-  results?: QualityScoreResult[]
+export interface QualitySuggestionsResponse {
+  content_id: string
+  suggestions: string[]
 }
 
-export async function analyzeContentQuality(
-  contentId: string
-): Promise<QualityScoreResult> {
-    const response = await apiFetch(`${API_URL}/quality-scoring/${contentId}/analyze`, { method: 'POST' })
+export interface QualityBatchItem {
+  content_id: string
+  text: string
+  brand_voice?: Record<string, unknown>
+}
 
+/**
+ * Analyze content quality by submitting raw text.
+ */
+export async function analyzeQualityText(
+  text: string,
+  brandVoice?: Record<string, unknown>
+): Promise<QualityScoreResponse> {
+  const response = await apiFetch(`${API_URL}/quality-scoring/analyze`, {
+    method: 'POST',
+    body: JSON.stringify({ text, brand_voice: brandVoice }),
+  })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to analyze content quality')
   }
-
   return response.json()
 }
 
+/**
+ * Get quality score for existing content by content ID.
+ */
 export async function getQualityScore(
   contentId: string
-): Promise<QualityScoreResult> {
-    const response = await apiFetch(`${API_URL}/quality-scoring/${contentId}`)
-
+): Promise<QualityScoreResponse> {
+  const response = await apiFetch(`${API_URL}/quality-scoring/${contentId}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch quality score')
   }
-
   return response.json()
 }
 
+/**
+ * Analyze quality for existing content by content ID (fetches text from DB, then analyzes).
+ */
+export async function analyzeContentQuality(
+  contentId: string
+): Promise<QualityScoreResponse> {
+  const response = await apiFetch(`${API_URL}/quality-scoring/${contentId}/analyze`, { method: 'POST' })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to analyze content quality')
+  }
+  return response.json()
+}
+
+/**
+ * Get quality score history for a content item.
+ */
 export async function getQualityScoreHistory(
   contentId: string,
   days: number = 30
-): Promise<QualityScoreHistory[]> {
-    const response = await apiFetch(`${API_URL}/quality-scoring/${contentId}/history?days=${days}`)
-
+): Promise<QualityHistoryResponse> {
+  const response = await apiFetch(`${API_URL}/quality-scoring/${contentId}/history?days=${days}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch quality history')
   }
-
   return response.json()
 }
 
+/**
+ * Batch analyze multiple content items.
+ */
 export async function batchAnalyzeQuality(
-  contentIds: string[]
-): Promise<BatchAnalysisResponse> {
-    const response = await apiFetch(`${API_URL}/quality-scoring/batch`, { method: 'POST', body: JSON.stringify({ content_ids: contentIds  }),
+  items: QualityBatchItem[]
+): Promise<QualityScoreResponse[]> {
+  const response = await apiFetch(`${API_URL}/quality-scoring/batch`, {
+    method: 'POST',
+    body: JSON.stringify({ items }),
   })
-
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to start batch analysis')
   }
-
   return response.json()
 }
 
-export async function getBatchAnalysisStatus(
-  batchId: string
-): Promise<BatchAnalysisResponse> {
-    const response = await apiFetch(`${API_URL}/quality-scoring/batch/${batchId}`)
-
+/**
+ * Get improvement suggestions for a content item.
+ */
+export async function getQualitySuggestions(
+  contentId: string
+): Promise<QualitySuggestionsResponse> {
+  const response = await apiFetch(`${API_URL}/quality-scoring/suggestions/${contentId}`)
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(error.detail || 'Failed to fetch batch status')
+    throw new Error(error.detail || 'Failed to fetch quality suggestions')
   }
+  return response.json()
+}
 
+/**
+ * Get quality score for content by the /content/{id} route (alias).
+ */
+export async function getContentQualityScore(
+  contentId: string
+): Promise<QualityScoreResponse> {
+  const response = await apiFetch(`${API_URL}/quality-scoring/content/${contentId}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch quality score')
+  }
   return response.json()
 }
 
@@ -2580,85 +2731,151 @@ export async function getBatchAnalysisStatus(
 
 // ============ Sentiment Analysis API ============
 
-export interface EmotionScore {
-  emotion: string
+/** Backend response: EmotionScores */
+export interface EmotionScores {
+  joy: number
+  anger: number
+  sadness: number
+  fear: number
+  surprise: number
+  disgust: number
+}
+
+/** Backend response: AspectSentiment */
+export interface AspectSentiment {
+  section: string
+  sentiment: string
   score: number
 }
 
-export interface ToneDistribution {
+/** Backend response: SentimentResponse */
+export interface SentimentResponse {
+  id?: string | null
+  content_id?: string | null
+  sentiment: string
+  score: number
+  emotions: EmotionScores
+  aspects: AspectSentiment[]
   tone: string
-  percentage: number
+  created_at?: string | null
 }
 
-export interface AspectSentiment {
-  aspect: string
-  sentiment_score: number
-  sentiment_label: 'positive' | 'negative' | 'neutral'
-  evidence: string[]
-}
-
-export interface SentimentResult {
-  id: string
+export interface SentimentTrendsResponse {
   content_id: string
-  user_id: string
-  overall_sentiment: number
-  sentiment_label: 'positive' | 'negative' | 'neutral'
-  emotions: EmotionScore[]
-  tone_distribution: ToneDistribution[]
-  aspect_sentiments: AspectSentiment[]
-  content_distribution: {
-    positive: number
-    negative: number
-    neutral: number
-  }
-  analyzed_at: string
+  trends: SentimentResponse[]
 }
 
-export interface SentimentTrendPoint {
-  date: string
-  sentiment: number
-  positive_count: number
-  negative_count: number
-  neutral_count: number
+export interface SentimentDistributionResponse {
+  total_analyses: number
+  distribution: Record<string, number>
+  percentages: Record<string, number>
 }
 
-export async function analyzeSentiment(
-  contentId: string
-): Promise<SentimentResult> {
-    const response = await apiFetch(`${API_URL}/sentiment/${contentId}/analyze`, { method: 'POST' })
+export interface SentimentBatchItem {
+  content_id: string
+  text: string
+}
 
+/**
+ * Analyze sentiment of raw text.
+ */
+export async function analyzeSentimentText(
+  text: string
+): Promise<SentimentResponse> {
+  const response = await apiFetch(`${API_URL}/sentiment/analyze`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  })
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to analyze sentiment')
   }
-
   return response.json()
 }
 
+/**
+ * Analyze sentiment for existing content by content ID.
+ */
+export async function analyzeSentiment(
+  contentId: string
+): Promise<SentimentResponse> {
+  const response = await apiFetch(`${API_URL}/sentiment/${contentId}/analyze`, { method: 'POST' })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to analyze sentiment')
+  }
+  return response.json()
+}
+
+/**
+ * Get sentiment analysis for existing content by content ID.
+ */
 export async function getSentiment(
   contentId: string
-): Promise<SentimentResult> {
-    const response = await apiFetch(`${API_URL}/sentiment/${contentId}`)
-
+): Promise<SentimentResponse> {
+  const response = await apiFetch(`${API_URL}/sentiment/${contentId}`)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch sentiment')
   }
-
   return response.json()
 }
 
-export async function getSentimentTrend(
-  contentId: string,
-  days: number = 30
-): Promise<SentimentTrendPoint[]> {
-    const response = await apiFetch(`${API_URL}/sentiment/${contentId}/trend?days=${days}`)
-
+/**
+ * Get sentiment for content via the /content/{id} route (alias).
+ */
+export async function getContentSentiment(
+  contentId: string
+): Promise<SentimentResponse> {
+  const response = await apiFetch(`${API_URL}/sentiment/content/${contentId}`)
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(error.detail || 'Failed to fetch sentiment trend')
+    throw new Error(error.detail || 'Failed to fetch sentiment')
   }
+  return response.json()
+}
 
+/**
+ * Get sentiment trends for a content item.
+ */
+export async function getSentimentTrends(
+  contentId: string,
+  days: number = 30
+): Promise<SentimentTrendsResponse> {
+  const response = await apiFetch(`${API_URL}/sentiment/${contentId}/trend?days=${days}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch sentiment trends')
+  }
+  return response.json()
+}
+
+/**
+ * Batch analyze sentiment for multiple content items.
+ */
+export async function batchAnalyzeSentiment(
+  items: SentimentBatchItem[]
+): Promise<SentimentResponse[]> {
+  const response = await apiFetch(`${API_URL}/sentiment/batch`, {
+    method: 'POST',
+    body: JSON.stringify({ items }),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to batch analyze sentiment')
+  }
+  return response.json()
+}
+
+/**
+ * Get sentiment distribution across all user content.
+ */
+export async function getSentimentDistribution(): Promise<SentimentDistributionResponse> {
+  const response = await apiFetch(`${API_URL}/sentiment/distribution`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch sentiment distribution')
+  }
   return response.json()
 }
 
@@ -4662,18 +4879,21 @@ export interface AlertListData {
 }
 
 export interface UnreadCountData {
-  count: number
+  unread_count: number
 }
 
 export interface AlertRuleData {
   id: string
+  user_id: string
   name: string
   alert_type: string
   metric_name: string
   operator: string
-  threshold: number
-  enabled: boolean
+  threshold_value: number
+  is_enabled: boolean
+  notification_channels: string[]
   created_at: string
+  updated_at: string
 }
 
 export async function getAlerts(limit: number = 50, offset: number = 0): Promise<AlertListData> {
@@ -4703,6 +4923,54 @@ export async function getAlertRules(): Promise<AlertRuleData[]> {
   if (!response.ok) throw new Error('Failed to fetch alert rules')
   const data = await response.json()
   return data.rules ?? data
+}
+
+export interface AlertRuleCreateData {
+  name: string
+  alert_type: string
+  metric_name: string
+  operator: string
+  threshold_value: number
+  notification_channels?: string[]
+}
+
+export interface AlertRuleUpdateData {
+  name?: string
+  alert_type?: string
+  metric_name?: string
+  operator?: string
+  threshold_value?: number
+  is_enabled?: boolean
+  notification_channels?: string[]
+}
+
+export async function createAlertRule(rule: AlertRuleCreateData): Promise<AlertRuleData> {
+  const response = await apiFetch(`${API_URL}/alerts/rules`, {
+    method: 'POST',
+    body: JSON.stringify(rule),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create alert rule')
+  }
+  return response.json()
+}
+
+export async function updateAlertRule(ruleId: string, updates: AlertRuleUpdateData): Promise<AlertRuleData> {
+  const response = await apiFetch(`${API_URL}/alerts/rules/${ruleId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update alert rule')
+  }
+  return response.json()
+}
+
+export async function deleteAlertRule(ruleId: string): Promise<void> {
+  const response = await apiFetch(`${API_URL}/alerts/rules/${ruleId}`, { method: 'DELETE' })
+  if (!response.ok) throw new Error('Failed to delete alert rule')
 }
 
 // ============ End Alerts API ============
@@ -5025,3 +5293,493 @@ export async function getEngagementPlatformConfig(): Promise<Record<string, Plat
 }
 
 // ============ End Engagement Prediction API ============
+
+// ============ Integrations Panel API (CRUD) ============
+
+export interface IntegrationItem {
+  id: string
+  user_id: string
+  integration_type: string
+  name: string
+  config: Record<string, unknown>
+  is_active: boolean
+  last_used_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface IntegrationListResult {
+  integrations: IntegrationItem[]
+  total: number
+}
+
+export interface IntegrationTypeInfo {
+  type: string
+  name: string
+  description: string
+  icon: string
+  config_schema: Record<string, unknown>
+}
+
+export interface IntegrationTypesResult {
+  types: IntegrationTypeInfo[]
+  event_types: Array<{ value: string; label: string }>
+}
+
+export interface IntegrationTestResult {
+  success: boolean
+  message: string
+  integration_id: string
+}
+
+export async function listUserIntegrations(
+  integrationType?: string,
+  isActive?: boolean,
+): Promise<IntegrationListResult> {
+  const params = new URLSearchParams()
+  if (integrationType) params.append('integration_type', integrationType)
+  if (isActive !== undefined) params.append('is_active', String(isActive))
+  const qs = params.toString()
+  const response = await apiFetch(`${API_URL}/integrations${qs ? `?${qs}` : ''}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to list integrations')
+  }
+  return response.json()
+}
+
+export async function getIntegrationById(id: string): Promise<IntegrationItem> {
+  const response = await apiFetch(`${API_URL}/integrations/${id}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get integration')
+  }
+  return response.json()
+}
+
+export async function createIntegration(data: {
+  integration_type: string
+  name: string
+  config?: Record<string, unknown>
+  is_active?: boolean
+}): Promise<IntegrationItem> {
+  const response = await apiFetch(`${API_URL}/integrations`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create integration')
+  }
+  return response.json()
+}
+
+export async function updateIntegrationById(
+  id: string,
+  data: { name?: string; config?: Record<string, unknown>; is_active?: boolean },
+): Promise<IntegrationItem> {
+  const response = await apiFetch(`${API_URL}/integrations/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update integration')
+  }
+  return response.json()
+}
+
+export async function deleteIntegrationById(id: string): Promise<void> {
+  const response = await apiFetch(`${API_URL}/integrations/${id}`, { method: 'DELETE' })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete integration')
+  }
+}
+
+export async function getIntegrationTypes(): Promise<IntegrationTypesResult> {
+  const response = await apiFetch(`${API_URL}/integrations/types`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get integration types')
+  }
+  return response.json()
+}
+
+export async function testIntegrationConnection(id: string): Promise<IntegrationTestResult> {
+  const response = await apiFetch(`${API_URL}/integrations/${id}/test`, { method: 'POST' })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to test integration')
+  }
+  return response.json()
+}
+
+// ============ End Integrations Panel API ============
+
+// ============ A/B Testing API ============
+
+export interface ABExperiment {
+  id: string
+  user_id: string
+  name: string
+  content_id: string | null
+  variant_a: string
+  variant_b: string
+  platform: string
+  status: 'draft' | 'running' | 'paused' | 'completed' | 'stopped'
+  duration_days: number
+  started_at: string | null
+  ended_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ABExperimentDetail extends ABExperiment {
+  variant_a_results: {
+    impressions: number
+    engagements: number
+    clicks: number
+    engagementRate: number
+    clickRate: number
+  } | null
+  variant_b_results: {
+    impressions: number
+    engagements: number
+    clicks: number
+    engagementRate: number
+    clickRate: number
+  } | null
+  winner: string | null
+  confidence: number | null
+}
+
+export interface ABExperimentListResult {
+  experiments: ABExperiment[]
+  total: number
+}
+
+export interface ABExperimentResults {
+  experiment_id: string
+  variant_a: {
+    impressions: number
+    engagements: number
+    clicks: number
+    engagementRate: number
+    clickRate: number
+  }
+  variant_b: {
+    impressions: number
+    engagements: number
+    clicks: number
+    engagementRate: number
+    clickRate: number
+  }
+  winner: string | null
+  confidence: number | null
+  total_results: number
+}
+
+export async function createABExperiment(data: {
+  name: string
+  content_id?: string
+  variant_a: string
+  variant_b: string
+  platform?: string
+  duration_days?: number
+}): Promise<ABExperiment> {
+  const response = await apiFetch(`${API_URL}/ab-testing/experiments`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create experiment')
+  }
+  return response.json()
+}
+
+export async function listABExperiments(status?: string): Promise<ABExperimentListResult> {
+  const params = new URLSearchParams()
+  if (status) params.append('status', status)
+  const qs = params.toString()
+  const response = await apiFetch(`${API_URL}/ab-testing/experiments${qs ? `?${qs}` : ''}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to list experiments')
+  }
+  return response.json()
+}
+
+export async function getABExperiment(id: string): Promise<ABExperimentDetail> {
+  const response = await apiFetch(`${API_URL}/ab-testing/experiments/${id}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get experiment')
+  }
+  return response.json()
+}
+
+export async function updateABExperiment(
+  id: string,
+  data: { status?: string; name?: string },
+): Promise<ABExperiment> {
+  const response = await apiFetch(`${API_URL}/ab-testing/experiments/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update experiment')
+  }
+  return response.json()
+}
+
+export async function recordABResult(
+  experimentId: string,
+  data: { variant: 'a' | 'b'; impressions: number; engagements: number; clicks: number },
+): Promise<{ success: boolean; message: string }> {
+  const response = await apiFetch(`${API_URL}/ab-testing/experiments/${experimentId}/results`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to record result')
+  }
+  return response.json()
+}
+
+export async function getABExperimentResults(experimentId: string): Promise<ABExperimentResults> {
+  const response = await apiFetch(`${API_URL}/ab-testing/experiments/${experimentId}/results`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get experiment results')
+  }
+  return response.json()
+}
+
+export async function deleteABExperiment(id: string): Promise<void> {
+  const response = await apiFetch(`${API_URL}/ab-testing/experiments/${id}`, { method: 'DELETE' })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete experiment')
+  }
+}
+
+// ============ End A/B Testing API ============
+
+// ============ Competitor Analysis Full API ============
+
+export interface CompetitorItem {
+  id: string
+  user_id: string
+  name: string
+  platform: string
+  handle: string
+  follower_count: number
+  description: string | null
+  profile_url: string | null
+  is_active: boolean
+  last_synced_at: string | null
+  created_at: string
+}
+
+export interface CompetitorContentItem {
+  id: string
+  competitor_id: string
+  external_id: string
+  content: string
+  content_type: string
+  published_at: string
+  url: string | null
+  likes: number
+  shares: number
+  comments: number
+  views: number
+  engagement_score: number
+  sentiment: string | null
+  topics: string[]
+  keywords: string[]
+  analyzed_at: string | null
+}
+
+export interface CompetitorAnalysisItem {
+  id: string
+  name: string
+  platform: string
+  handle: string
+  follower_count: number
+  content_last_30_days: number
+  avg_engagement_rate: number
+  last_synced: string | null
+}
+
+export interface PerformanceInsight {
+  type: string
+  title: string
+  description: string
+  platform: string | null
+  recommendation: string
+}
+
+export interface CompetitorPerformanceAnalysis {
+  competitor_count: number
+  competitors: CompetitorAnalysisItem[]
+  aggregated_metrics: Record<string, unknown>
+  platform_breakdown: Record<string, Record<string, unknown>>
+  insights: PerformanceInsight[]
+}
+
+export interface ContentGapItem {
+  id: string
+  user_id: string
+  topic: string
+  category: string | null
+  competitor_count: number
+  user_has_content: boolean
+  user_content_count: number
+  opportunity_score: number
+  suggested_action: string | null
+  content_ideas: string[]
+  priority: string
+  is_addressed: boolean
+  created_at: string
+}
+
+export interface ContentGapAnalysisResult {
+  gaps_analyzed: number
+  gaps_stored: number
+  gaps: ContentGapItem[]
+}
+
+export interface TopicOverlapResult {
+  competitor_topic_count: number
+  user_topic_count: number
+  overlap_count: number
+  overlap_percentage: number
+  shared_topics: string[]
+  competitor_only_topics: string[]
+  user_only_topics: string[]
+  recommendation: string
+}
+
+export interface BenchmarkComparisonResult {
+  user_metrics: Record<string, unknown>
+  competitor_avg: Record<string, unknown>
+  comparison: Record<string, unknown>
+  percentile: Record<string, number>
+}
+
+export async function addCompetitor(data: {
+  name: string
+  platform: string
+  handle: string
+  description?: string
+  profile_url?: string
+}): Promise<CompetitorItem> {
+  const response = await apiFetch(`${API_URL}/competitors`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to add competitor')
+  }
+  return response.json()
+}
+
+export async function listCompetitors(platform?: string): Promise<CompetitorItem[]> {
+  const params = new URLSearchParams()
+  if (platform) params.append('platform', platform)
+  const qs = params.toString()
+  const response = await apiFetch(`${API_URL}/competitors${qs ? `?${qs}` : ''}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to list competitors')
+  }
+  return response.json()
+}
+
+export async function removeCompetitor(id: string): Promise<{ success: boolean; message: string }> {
+  const response = await apiFetch(`${API_URL}/competitors/${id}`, { method: 'DELETE' })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to remove competitor')
+  }
+  return response.json()
+}
+
+export async function getCompetitorContent(
+  competitorId: string,
+  limit: number = 50,
+  offset: number = 0,
+): Promise<CompetitorContentItem[]> {
+  const response = await apiFetch(`${API_URL}/competitors/${competitorId}/content?limit=${limit}&offset=${offset}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch competitor content')
+  }
+  return response.json()
+}
+
+export async function getCompetitorPerformanceAnalysis(): Promise<CompetitorPerformanceAnalysis> {
+  const response = await apiFetch(`${API_URL}/competitors/analysis`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch performance analysis')
+  }
+  return response.json()
+}
+
+export async function getContentGaps(minOpportunity: number = 0): Promise<ContentGapItem[]> {
+  const response = await apiFetch(`${API_URL}/competitors/gaps?min_opportunity=${minOpportunity}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch content gaps')
+  }
+  return response.json()
+}
+
+export async function analyzeContentGaps(): Promise<ContentGapAnalysisResult> {
+  const response = await apiFetch(`${API_URL}/competitors/gaps/analyze`, { method: 'POST' })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to analyze content gaps')
+  }
+  return response.json()
+}
+
+export async function getTopicOverlap(): Promise<TopicOverlapResult> {
+  const response = await apiFetch(`${API_URL}/competitors/topics/overlap`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get topic overlap')
+  }
+  return response.json()
+}
+
+export async function getBenchmarkComparison(): Promise<BenchmarkComparisonResult> {
+  const response = await apiFetch(`${API_URL}/competitors/benchmark`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to get benchmark comparison')
+  }
+  return response.json()
+}
+
+export async function refreshCompetitorData(competitorId: string): Promise<{
+  success: boolean
+  competitor_id: string
+  new_content_count: number
+  total_content: number
+}> {
+  const response = await apiFetch(`${API_URL}/competitors/${competitorId}/refresh`, { method: 'POST' })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to refresh competitor data')
+  }
+  return response.json()
+}
+
+// ============ End Competitor Analysis Full API ============
