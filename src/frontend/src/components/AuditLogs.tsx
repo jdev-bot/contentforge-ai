@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Shield,
@@ -89,8 +89,9 @@ export default function AuditLogs() {
   const [logs, setLogs] = useState<AuditLogEntry[]>([])
   const [stats, setStats] = useState<AuditLogStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isStatsLoading, setIsStatsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
-  const [isStreaming, setIsStreaming] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
 
   // Filters
@@ -105,6 +106,7 @@ export default function AuditLogs() {
   const fetchLogs = useCallback(async () => {
     try {
       setIsLoading(true)
+      setError(null)
       const filters: AuditLogsFilters = {
         page,
         per_page: 20,
@@ -118,10 +120,10 @@ export default function AuditLogs() {
       const data = await getAuditLogs(filters)
       setLogs(data.logs)
       setTotal(data.total)
-    } catch {
-      // Use mock data on error
-      setLogs(MOCK_LOGS)
-      setTotal(MOCK_LOGS.length)
+    } catch (err) {
+      setError('Failed to load audit logs')
+      setLogs([])
+      setTotal(0)
     } finally {
       setIsLoading(false)
     }
@@ -129,10 +131,13 @@ export default function AuditLogs() {
 
   const fetchStats = useCallback(async () => {
     try {
+      setIsStatsLoading(true)
       const data = await getAuditLogStats()
       setStats(data)
     } catch {
-      setStats(MOCK_STATS)
+      setStats(null)
+    } finally {
+      setIsStatsLoading(false)
     }
   }, [])
 
@@ -140,14 +145,6 @@ export default function AuditLogs() {
     fetchLogs()
     fetchStats()
   }, [fetchLogs, fetchStats])
-
-  // Simulated real-time streaming
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsStreaming(prev => !prev)
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
 
   const handleExportCSV = async () => {
     try {
@@ -166,18 +163,7 @@ export default function AuditLogs() {
       a.click()
       URL.revokeObjectURL(url)
     } catch {
-      // Mock export
-      const csvContent = 'Timestamp,Actor,Action,Resource,Details\n' +
-        MOCK_LOGS.map(l =>
-          `"${l.created_at}","${l.actor_name}","${l.action}","${l.resource_type}","${l.details}"`
-        ).join('\n')
-      const blob = new Blob([csvContent], { type: 'text/csv' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`
-      a.click()
-      URL.revokeObjectURL(url)
+      // Export failed — show error
     } finally {
       setIsExporting(false)
     }
@@ -197,15 +183,6 @@ export default function AuditLogs() {
         description="Track all actions across your workspace"
         icon={<ScrollText className="w-5 h-5 text-blue-600" />}
         actions={<div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className={cn(
-                'w-2 h-2 rounded-full',
-                isStreaming ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
-              )} />
-              <span className="text-sm text-slate-500 dark:text-slate-400">
-                {isStreaming ? 'Live' : 'Paused'}
-              </span>
-            </div>
             <Button
               variant="outline"
               size="sm"
@@ -243,12 +220,12 @@ export default function AuditLogs() {
         />
         <StatsCard
           title="Top Actor"
-          value={stats?.top_actors[0]?.name ?? 'N/A'}
+          value={stats?.top_actors?.[0]?.name ?? 'N/A'}
           icon={<Users className="w-5 h-5" />}
         />
         <StatsCard
           title="Most Common"
-          value={stats?.action_distribution[0]?.action ?? 'N/A'}
+          value={stats?.action_distribution?.[0]?.action ?? 'N/A'}
           icon={<Zap className="w-5 h-5" />}
         />
       </div>
@@ -351,6 +328,20 @@ export default function AuditLogs() {
                 <div key={i} className="h-14 rounded-lg animate-pulse bg-slate-200 dark:bg-slate-800" />
               ))}
             </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Shield className="h-12 w-12 text-slate-400 mb-4" />
+              <p className="text-slate-500 dark:text-slate-400 mb-2">{error}</p>
+              <Button variant="outline" size="sm" onClick={fetchLogs}>
+                Try Again
+              </Button>
+            </div>
+          ) : logs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Shield className="h-12 w-12 text-slate-400 mb-4" />
+              <p className="text-slate-500 dark:text-slate-400">No audit log entries found</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Try adjusting your filters</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -394,15 +385,17 @@ export default function AuditLogs() {
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white text-xs font-semibold">
-                              {log.actor_name?.charAt(0)?.toUpperCase() ?? '?'}
+                              {log.actor_name?.charAt(0)?.toUpperCase() ?? log.actor_email?.charAt(0)?.toUpperCase() ?? '?'}
                             </div>
                             <div>
                               <p className="font-medium text-slate-900 dark:text-slate-100">
-                                {log.actor_name}
+                                {log.actor_name || log.actor_email}
                               </p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {log.actor_email}
-                              </p>
+                              {log.actor_name && (
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  {log.actor_email}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -417,7 +410,7 @@ export default function AuditLogs() {
                         <td className="py-3 px-4">
                           <div>
                             <p className="font-medium text-slate-900 dark:text-slate-100">
-                              {log.resource_name}
+                              {log.resource_name || log.resource_id}
                             </p>
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                               {log.resource_type}
@@ -425,7 +418,7 @@ export default function AuditLogs() {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-slate-600 dark:text-slate-400 max-w-xs truncate">
-                          {log.details}
+                          {typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}
                         </td>
                         <td className="py-3 px-4">
                           {expandedRow === log.id ? (
@@ -455,11 +448,11 @@ export default function AuditLogs() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="font-medium text-slate-700 dark:text-slate-300">IP Address:</span>{' '}
-                          <span className="text-slate-600 dark:text-slate-400">{log.ip_address}</span>
+                          <span className="text-slate-600 dark:text-slate-400">{log.ip_address || 'N/A'}</span>
                         </div>
                         <div>
                           <span className="font-medium text-slate-700 dark:text-slate-300">User Agent:</span>{' '}
-                          <span className="text-slate-600 dark:text-slate-400 truncate block">{log.user_agent}</span>
+                          <span className="text-slate-600 dark:text-slate-400 truncate block">{log.user_agent || 'N/A'}</span>
                         </div>
                         <div>
                           <span className="font-medium text-slate-700 dark:text-slate-300">Resource ID:</span>{' '}
@@ -513,145 +506,4 @@ export default function AuditLogs() {
       </Card>
     </div>
   )
-}
-
-// Mock data for development
-const MOCK_LOGS: AuditLogEntry[] = [
-  {
-    id: '1',
-    actor_id: 'u1',
-    actor_email: 'jan@contentforge.ai',
-    actor_name: 'Jan Eichhorn',
-    action: 'create',
-    resource_type: 'content',
-    resource_id: 'c1',
-    resource_name: '10 Tips for Marketing',
-    details: 'Created new content item',
-    ip_address: '192.168.1.100',
-    user_agent: 'Mozilla/5.0 Chrome/120',
-    metadata: { source: 'url', project_id: 'p1' },
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    actor_id: 'u1',
-    actor_email: 'jan@contentforge.ai',
-    actor_name: 'Jan Eichhorn',
-    action: 'publish',
-    resource_type: 'distribution',
-    resource_id: 'd1',
-    resource_name: 'Twitter Post #42',
-    details: 'Published to Twitter',
-    ip_address: '192.168.1.100',
-    user_agent: 'Mozilla/5.0 Chrome/120',
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: '3',
-    actor_id: 'u2',
-    actor_email: 'sarah@contentforge.ai',
-    actor_name: 'Sarah Chen',
-    action: 'update',
-    resource_type: 'content',
-    resource_id: 'c2',
-    resource_name: 'SEO Guide 2024',
-    details: 'Updated content text — 342 words changed',
-    ip_address: '10.0.0.55',
-    user_agent: 'Mozilla/5.0 Safari/17',
-    created_at: new Date(Date.now() - 7200000).toISOString(),
-  },
-  {
-    id: '4',
-    actor_id: 'u2',
-    actor_email: 'sarah@contentforge.ai',
-    actor_name: 'Sarah Chen',
-    action: 'delete',
-    resource_type: 'asset',
-    resource_id: 'a5',
-    resource_name: 'Old Newsletter Draft',
-    details: 'Permanently deleted asset',
-    ip_address: '10.0.0.55',
-    user_agent: 'Mozilla/5.0 Safari/17',
-    created_at: new Date(Date.now() - 14400000).toISOString(),
-  },
-  {
-    id: '5',
-    actor_id: 'u3',
-    actor_email: 'mike@contentforge.ai',
-    actor_name: 'Mike Johnson',
-    action: 'invite',
-    resource_type: 'organization',
-    resource_id: 'org1',
-    resource_name: 'ContentForge Team',
-    details: 'Invited alex@newco.io as member',
-    ip_address: '172.16.0.12',
-    user_agent: 'Mozilla/5.0 Firefox/121',
-    metadata: { invited_email: 'alex@newco.io', role: 'member' },
-    created_at: new Date(Date.now() - 28800000).toISOString(),
-  },
-  {
-    id: '6',
-    actor_id: 'u1',
-    actor_email: 'jan@contentforge.ai',
-    actor_name: 'Jan Eichhorn',
-    action: 'schedule',
-    resource_type: 'schedule',
-    resource_id: 's3',
-    resource_name: 'LinkedIn Post — Q1 Report',
-    details: 'Scheduled for 2024-01-15 09:00 EST',
-    ip_address: '192.168.1.100',
-    user_agent: 'Mozilla/5.0 Chrome/120',
-    created_at: new Date(Date.now() - 43200000).toISOString(),
-  },
-  {
-    id: '7',
-    actor_id: 'u3',
-    actor_email: 'mike@contentforge.ai',
-    actor_name: 'Mike Johnson',
-    action: 'export',
-    resource_type: 'content',
-    resource_id: 'c10',
-    resource_name: 'Monthly Analytics Report',
-    details: 'Exported as CSV — 45 records',
-    ip_address: '172.16.0.12',
-    user_agent: 'Mozilla/5.0 Firefox/121',
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: '8',
-    actor_id: 'u2',
-    actor_email: 'sarah@contentforge.ai',
-    actor_name: 'Sarah Chen',
-    action: 'approve',
-    resource_type: 'asset',
-    resource_id: 'a12',
-    resource_name: 'Instagram Carousel — Product Launch',
-    details: 'Approved for publishing',
-    ip_address: '10.0.0.55',
-    user_agent: 'Mozilla/5.0 Safari/17',
-    created_at: new Date(Date.now() - 100000000).toISOString(),
-  },
-]
-
-const MOCK_STATS: AuditLogStats = {
-  total_actions_today: 47,
-  total_actions_week: 312,
-  top_actors: [
-    { name: 'Jan Eichhorn', email: 'jan@contentforge.ai', count: 156 },
-    { name: 'Sarah Chen', email: 'sarah@contentforge.ai', count: 98 },
-    { name: 'Mike Johnson', email: 'mike@contentforge.ai', count: 58 },
-  ],
-  action_distribution: [
-    { action: 'update', count: 120 },
-    { action: 'create', count: 85 },
-    { action: 'publish', count: 52 },
-    { action: 'delete', count: 30 },
-    { action: 'schedule', count: 25 },
-  ],
-  resource_distribution: [
-    { resource: 'content', count: 145 },
-    { resource: 'asset', count: 88 },
-    { resource: 'distribution', count: 52 },
-    { resource: 'schedule', count: 27 },
-  ],
 }

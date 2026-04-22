@@ -30,6 +30,9 @@ import {
   acknowledgeAlert as acknowledgeAlertAPI,
   resolveAlert as resolveAlertAPI,
   getAlertRules,
+  createAlertRule,
+  updateAlertRule,
+  deleteAlertRule,
   AlertData,
   AlertRuleData,
 } from '@/lib/api'
@@ -75,91 +78,72 @@ export interface AlertRule {
   notificationChannels: ('in_app' | 'email' | 'push' | 'slack')[]
 }
 
-// Mock data
-const mockAlerts: Alert[] = [
-  {
-    id: '1',
-    type: 'viral',
-    severity: 'high',
-    status: 'unread',
-    title: 'Content Going Viral!',
-    message: 'Your post "10 AI Trends for 2025" is gaining rapid traction.',
-    contentPreview: {
-      title: '10 AI Trends for 2025',
-      platform: 'LinkedIn',
-      metrics: { views: 45000, engagement: 12.5, changePercent: 340 }
-    },
-    timestamp: new Date(Date.now() - 1000 * 60 * 15) // 15 mins ago
-  },
-  {
-    id: '2',
-    type: 'milestone',
-    severity: 'medium',
-    status: 'unread',
-    title: 'Milestone Reached!',
-    message: 'Congratulations! You\'ve reached 10,000 total views this month.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60) // 1 hour ago
-  },
-  {
-    id: '3',
-    type: 'declining',
-    severity: 'medium',
-    status: 'read',
-    title: 'Engagement Declining',
-    message: 'Your recent post engagement has dropped by 25% compared to average.',
-    contentPreview: {
-      title: 'Marketing Strategy Tips',
-      platform: 'Twitter',
-      metrics: { views: 1200, engagement: 2.1, changePercent: -25 }
-    },
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3) // 3 hours ago
-  },
-  {
-    id: '4',
-    type: 'team',
-    severity: 'low',
-    status: 'acknowledged',
-    title: 'New Team Member',
-    message: 'Sarah Johnson has joined your ContentForge team.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24) // 1 day ago
-  },
-  {
-    id: '5',
-    type: 'system',
-    severity: 'low',
-    status: 'dismissed',
-    title: 'Weekly Report Ready',
-    message: 'Your weekly performance report is now available.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48) // 2 days ago
-  }
-]
+/** Map backend AlertData to frontend Alert */
+function mapAlertFromAPI(a: AlertData): Alert {
+  const alertType = (['viral', 'declining', 'milestone', 'system', 'team'].includes(a.alert_type)
+    ? a.alert_type
+    : 'system') as AlertType
 
-const mockAlertRules: AlertRule[] = [
-  {
-    id: '1',
-    name: 'Viral Content Detection',
-    type: 'viral',
-    enabled: true,
-    conditions: { metric: 'views', operator: 'gt', threshold: 10000, timeframe: '24h' },
-    notificationChannels: ['in_app', 'email', 'push']
-  },
-  {
-    id: '2',
-    name: 'Engagement Drop Alert',
-    type: 'declining',
-    enabled: true,
-    conditions: { metric: 'engagement', operator: 'lt', threshold: 5, timeframe: '7d' },
-    notificationChannels: ['in_app', 'email']
-  },
-  {
-    id: '3',
-    name: 'Milestone Notifications',
-    type: 'milestone',
-    enabled: true,
-    conditions: { metric: 'views', operator: 'gte', threshold: 10000, timeframe: '30d' },
-    notificationChannels: ['in_app', 'push']
+  // Derive severity from alert_type and threshold
+  let severity: AlertSeverity = 'medium'
+  if (alertType === 'viral') severity = 'high'
+  if (a.current_value > a.threshold_value * 2) severity = 'critical'
+  if (alertType === 'system') severity = 'low'
+
+  // Map backend status to frontend status
+  const statusMap: Record<string, AlertStatus> = {
+    active: 'unread',
+    acknowledged: 'acknowledged',
+    resolved: 'dismissed',
   }
-]
+  const status = (statusMap[a.status] || 'unread') as AlertStatus
+
+  return {
+    id: a.id,
+    type: alertType,
+    severity,
+    status,
+    title: a.metric_name,
+    message: a.message || `Threshold ${a.threshold_value} crossed (current: ${a.current_value})`,
+    timestamp: new Date(a.created_at),
+    acknowledgedAt: a.acknowledged_at ? new Date(a.acknowledged_at) : undefined,
+  }
+}
+
+/** Map backend AlertRuleData to frontend AlertRule */
+function mapRuleFromAPI(r: AlertRuleData): AlertRule {
+  const operatorMap: Record<string, AlertRule['conditions']['operator']> = {
+    greater_than: 'gt',
+    less_than: 'lt',
+    equals: 'eq',
+    percentage_change: 'gt',
+  }
+  const metricMap: Record<string, AlertRule['conditions']['metric']> = {
+    views: 'views',
+    engagement: 'engagement',
+    clicks: 'engagement',
+    shares: 'shares',
+    comments: 'comments',
+    likes: 'reach',
+  }
+  return {
+    id: r.id,
+    name: r.name,
+    type: (['viral', 'declining', 'milestone', 'system', 'team'].includes(r.alert_type)
+      ? r.alert_type
+      : 'system') as AlertType,
+    enabled: r.is_enabled,
+    conditions: {
+      metric: metricMap[r.metric_name] || 'views',
+      operator: operatorMap[r.operator] || 'gt',
+      threshold: r.threshold_value,
+      timeframe: '24h',
+    },
+    notificationChannels: r.notification_channels.map(ch =>
+      ch === 'in_app' ? 'in_app' : ch === 'email' ? 'email' : ch === 'slack' ? 'push' : 'push'
+    ) as AlertRule['notificationChannels'],
+  }
+}
 
 // Components
 export function AlertsBell({ 
@@ -174,14 +158,16 @@ export function AlertsBell({
 
   // Fetch unread count from API
   useEffect(() => {
-    getUnreadAlertCount().then(data => setUnreadCount(data.count)).catch(() => {})
+    getUnreadAlertCount()
+      .then(data => setUnreadCount(data.unread_count))
+      .catch(() => {})
   }, [])
 
-  // Simulate real-time updates
+  // Poll for real-time updates
   useEffect(() => {
     if (!isRealTime) return
     const interval = setInterval(() => {
-      getUnreadAlertCount().then(data => setUnreadCount(data.count)).catch(() => {})
+      getUnreadAlertCount().then(data => setUnreadCount(data.unread_count)).catch(() => {})
     }, 30000)
     return () => clearInterval(interval)
   }, [isRealTime])
@@ -227,7 +213,10 @@ export function AlertsPanel({
   onClose: () => void 
 }) {
   const [alerts, setAlerts] = useState<Alert[]>([])
+  const [rules, setRules] = useState<AlertRule[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingRules, setIsLoadingRules] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null)
   const [filterType, setFilterType] = useState<AlertType | 'all'>('all')
   const [showRules, setShowRules] = useState(false)
@@ -237,29 +226,41 @@ export function AlertsPanel({
   const fetchAlerts = useCallback(async () => {
     try {
       setIsRefreshing(true)
+      setError(null)
       const data = await getAlerts(100, 0)
-      const mapped: Alert[] = data.alerts.map((a: AlertData) => ({
-        id: a.id,
-        type: (['viral', 'declining', 'milestone', 'system', 'team'].includes(a.alert_type) ? a.alert_type : 'system') as AlertType,
-        severity: 'medium' as AlertSeverity,
-        status: (['unread', 'read', 'acknowledged', 'dismissed'].includes(a.status) ? a.status : 'unread') as AlertStatus,
-        title: a.metric_name,
-        message: a.message || `Threshold ${a.threshold_value} crossed (current: ${a.current_value})`,
-        timestamp: new Date(a.created_at),
-        acknowledgedAt: a.acknowledged_at ? new Date(a.acknowledged_at) : undefined,
-      }))
-      setAlerts(mapped.length > 0 ? mapped : mockAlerts)
-    } catch {
-      setAlerts(mockAlerts)
+      setAlerts(data.alerts.map(mapAlertFromAPI))
+    } catch (err) {
+      setError('Failed to load alerts')
+      setAlerts([])
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
     }
   }, [])
 
+  // Fetch alert rules from API
+  const fetchRules = useCallback(async () => {
+    try {
+      setIsLoadingRules(true)
+      const data = await getAlertRules()
+      setRules(data.map(mapRuleFromAPI))
+    } catch {
+      setRules([])
+    } finally {
+      setIsLoadingRules(false)
+    }
+  }, [])
+
   useEffect(() => {
     fetchAlerts()
   }, [fetchAlerts])
+
+  // Fetch rules when rules tab is opened
+  useEffect(() => {
+    if (showRules) {
+      fetchRules()
+    }
+  }, [showRules, fetchRules])
 
   const unreadCount = useMemo(() => 
     alerts.filter(a => a.status === 'unread').length, 
@@ -313,9 +314,26 @@ export function AlertsPanel({
   }, [])
 
   const handleRefresh = useCallback(() => {
-    setIsRefreshing(true)
-    setTimeout(() => setIsRefreshing(false), 1000)
-  }, [])
+    fetchAlerts()
+  }, [fetchAlerts])
+
+  const handleToggleRule = useCallback(async (ruleId: string) => {
+    const rule = rules.find(r => r.id === ruleId)
+    if (!rule) return
+    const newEnabled = !rule.enabled
+    // Optimistic update
+    setRules(prev => prev.map(r => 
+      r.id === ruleId ? { ...r, enabled: newEnabled } : r
+    ))
+    try {
+      await updateAlertRule(ruleId, { is_enabled: newEnabled })
+    } catch {
+      // Revert on failure
+      setRules(prev => prev.map(r => 
+        r.id === ruleId ? { ...r, enabled: !newEnabled } : r
+      ))
+    }
+  }, [rules])
 
   const formatTimeAgo = (date: Date) => {
     const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
@@ -462,11 +480,10 @@ export function AlertsPanel({
             <div className="flex-1 overflow-y-auto">
               {showRules ? (
                 <AlertRulesConfig 
-                  rules={mockAlertRules}
-                  onSave={(rules) => {
-                    // Saving rules
-                    setShowRules(false)
-                  }}
+                  rules={rules}
+                  isLoading={isLoadingRules}
+                  onToggle={handleToggleRule}
+                  onClose={() => setShowRules(false)}
                 />
               ) : selectedAlert ? (
                 <AlertDetailView 
@@ -475,6 +492,21 @@ export function AlertsPanel({
                   onAcknowledge={() => handleAcknowledge(selectedAlert.id)}
                   onDismiss={() => handleDismiss(selectedAlert.id)}
                 />
+              ) : isLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <RefreshCw className="h-8 w-8 text-slate-400 animate-spin mb-4" />
+                  <p className="text-slate-500 dark:text-slate-400">Loading alerts...</p>
+                </div>
+              ) : error ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-4">
+                    <X className="h-8 w-8 text-rose-500" />
+                  </div>
+                  <p className="text-slate-500 dark:text-slate-400">{error}</p>
+                  <Button variant="outline" size="sm" className="mt-4" onClick={handleRefresh}>
+                    Try Again
+                  </Button>
+                </div>
               ) : (
                 <div className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filteredAlerts.length === 0 ? (
@@ -684,18 +716,23 @@ function AlertDetailView({
 
 function AlertRulesConfig({ 
   rules, 
-  onSave 
+  isLoading,
+  onToggle,
+  onClose
 }: { 
   rules: AlertRule[]
-  onSave: (rules: AlertRule[]) => void 
+  isLoading: boolean
+  onToggle: (ruleId: string) => void
+  onClose: () => void
 }) {
-  const [localRules, setLocalRules] = useState(rules)
-  const [editingRule, setEditingRule] = useState<AlertRule | null>(null)
-
-  const handleToggle = (ruleId: string) => {
-    setLocalRules(prev => prev.map(r => 
-      r.id === ruleId ? { ...r, enabled: !r.enabled } : r
-    ))
+  if (isLoading) {
+    return (
+      <div className="p-4 space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="h-24 rounded-xl animate-pulse bg-slate-200 dark:bg-slate-800" />
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -707,68 +744,74 @@ function AlertRulesConfig({
         <Button 
           size="sm" 
           leftIcon={<Check className="h-4 w-4" />}
-          onClick={() => onSave(localRules)}
+          onClick={onClose}
         >
-          Save Changes
+          Done
         </Button>
       </div>
 
-      <div className="space-y-4">
-        {localRules.map((rule) => (
-          <Card key={rule.id} className={cn(
-            'transition-all',
-            !rule.enabled && 'opacity-60'
-          )}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <h4 className="font-medium text-slate-900 dark:text-slate-100">
-                      {rule.name}
-                    </h4>
-                    <Badge 
-                      variant={rule.enabled ? 'success' : 'default'} 
-                      size="sm"
-                    >
-                      {rule.enabled ? 'Active' : 'Disabled'}
-                    </Badge>
-                  </div>
-                  
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                    Trigger when {rule.conditions.metric} is {rule.conditions.operator} {rule.conditions.threshold} in {rule.conditions.timeframe}
-                  </p>
-                  
-                  <div className="flex items-center gap-2 mt-3">
-                    <span className="text-xs text-slate-400">Notify via:</span>
-                    {rule.notificationChannels.map(channel => (
-                      <Badge key={channel} variant="outline" size="sm">
-                        {channel}
+      {rules.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-slate-500 dark:text-slate-400">No alert rules configured</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {rules.map((rule) => (
+            <Card key={rule.id} className={cn(
+              'transition-all',
+              !rule.enabled && 'opacity-60'
+            )}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <h4 className="font-medium text-slate-900 dark:text-slate-100">
+                        {rule.name}
+                      </h4>
+                      <Badge 
+                        variant={rule.enabled ? 'success' : 'default'} 
+                        size="sm"
+                      >
+                        {rule.enabled ? 'Active' : 'Disabled'}
                       </Badge>
-                    ))}
+                    </div>
+                    
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                      Trigger when {rule.conditions.metric} is {rule.conditions.operator} {rule.conditions.threshold} in {rule.conditions.timeframe}
+                    </p>
+                    
+                    <div className="flex items-center gap-2 mt-3">
+                      <span className="text-xs text-slate-400">Notify via:</span>
+                      {rule.notificationChannels.map(channel => (
+                        <Badge key={channel} variant="outline" size="sm">
+                          {channel}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onToggle(rule.id)}
+                      className={cn(
+                        'w-12 h-6 rounded-full transition-colors relative',
+                        rule.enabled 
+                          ? 'bg-blue-500' 
+                          : 'bg-slate-300 dark:bg-slate-600'
+                      )}
+                    >
+                      <span className={cn(
+                        'absolute top-1 w-4 h-4 rounded-full bg-white transition-transform',
+                        rule.enabled ? 'left-7' : 'left-1'
+                      )} />
+                    </button>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleToggle(rule.id)}
-                    className={cn(
-                      'w-12 h-6 rounded-full transition-colors relative',
-                      rule.enabled 
-                        ? 'bg-blue-500' 
-                        : 'bg-slate-300 dark:bg-slate-600'
-                    )}
-                  >
-                    <span className={cn(
-                      'absolute top-1 w-4 h-4 rounded-full bg-white transition-transform',
-                      rule.enabled ? 'left-7' : 'left-1'
-                    )} />
-                  </button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <Button 
         variant="outline" 
@@ -784,6 +827,15 @@ function AlertRulesConfig({
 // Main export component for tab view
 export default function AlertsCenter() {
   const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [rulesCount, setRulesCount] = useState(0)
+
+  useEffect(() => {
+    getUnreadAlertCount().then(data => setUnreadCount(data.unread_count)).catch(() => {})
+    getAlertRules().then(data => setRulesCount(data.length)).catch(() => {})
+  }, [])
+
+  const criticalCount = 0 // will be derived from real data
 
   return (
     <div className="space-y-6">
@@ -804,25 +856,25 @@ export default function AlertsCenter() {
         <Card className="border-l-4 border-l-rose-500">
           <CardContent className="p-4">
             <p className="text-sm text-slate-500 dark:text-slate-400">Critical Alerts</p>
-            <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">0</p>
+            <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">{criticalCount}</p>
           </CardContent>
         </Card>
         <Card className="border-l-4 border-l-orange-500">
           <CardContent className="p-4">
             <p className="text-sm text-slate-500 dark:text-slate-400">High Priority</p>
-            <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">1</p>
+            <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">{unreadCount}</p>
           </CardContent>
         </Card>
         <Card className="border-l-4 border-l-blue-500">
           <CardContent className="p-4">
             <p className="text-sm text-slate-500 dark:text-slate-400">Unread</p>
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">3</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{unreadCount}</p>
           </CardContent>
         </Card>
         <Card className="border-l-4 border-l-emerald-500">
           <CardContent className="p-4">
             <p className="text-sm text-slate-500 dark:text-slate-400">Active Rules</p>
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">3</p>
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{rulesCount}</p>
           </CardContent>
         </Card>
       </div>

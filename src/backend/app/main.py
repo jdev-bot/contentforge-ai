@@ -11,6 +11,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 
 from app.core.config import get_settings
 from app.routers import (
+    ab_testing,
     admin,
     ai_editor,
     ai_suggestions,
@@ -198,6 +199,7 @@ app.include_router(funnel.router, prefix="/api/v1", tags=["funnels"])
 app.include_router(attribution.router, prefix="/api/v1", tags=["attribution"])
 app.include_router(team_calendar.router, prefix="/api/v1", tags=["team-calendar"])
 app.include_router(engagement_prediction.router, prefix="/api/v1", tags=["engagement-prediction"])
+app.include_router(ab_testing.router, prefix="/api/v1", tags=["ab-testing"])
 
 
 @app.get("/")

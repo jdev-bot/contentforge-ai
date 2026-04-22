@@ -69,94 +69,8 @@ export interface APIKey {
   scopes: string[]
 }
 
-// Mock data
-const mockIntegrations: Integration[] = [
-  {
-    id: 'zapier',
-    name: 'Zapier',
-    description: 'Connect ContentForge with 5000+ apps via Zapier',
-    icon: '⚡',
-    status: 'connected',
-    lastSync: new Date(Date.now() - 3600000),
-    category: 'automation',
-    config: {
-      account: 'pro',
-      zaps: 12,
-    },
-  },
-  {
-    id: 'wordpress',
-    name: 'WordPress',
-    description: 'Publish directly to your WordPress site',
-    icon: '📰',
-    status: 'connected',
-    lastSync: new Date(Date.now() - 7200000),
-    category: 'cms',
-    config: {
-      site: 'https://blog.example.com',
-      autoPublish: true,
-    },
-  },
-  {
-    id: 'make',
-    name: 'Make (Integromat)',
-    description: 'Advanced automation and workflow builder',
-    icon: '🔗',
-    status: 'pending',
-    category: 'automation',
-  },
-  {
-    id: 'slack',
-    name: 'Slack',
-    description: 'Get notifications in your Slack workspace',
-    icon: '💬',
-    status: 'disconnected',
-    category: 'automation',
-  },
-]
-
-const mockWebhooks: WebhookConfig[] = [
-  {
-    id: '1',
-    name: 'Content Published Webhook',
-    url: 'https://api.example.com/webhooks/content-published',
-    events: ['content.published', 'content.updated'],
-    secret: 'whsec_***********a1b2',
-    isActive: true,
-    createdAt: new Date('2024-01-15'),
-    lastTriggered: new Date(Date.now() - 86400000),
-  },
-  {
-    id: '2',
-    name: 'Analytics Sync',
-    url: 'https://analytics.example.com/collect',
-    events: ['analytics.daily', 'content.viral'],
-    secret: 'whsec_***********c3d4',
-    isActive: true,
-    createdAt: new Date('2024-02-01'),
-    lastTriggered: new Date(Date.now() - 3600000),
-  },
-]
-
-const mockAPIKeys: APIKey[] = [
-  {
-    id: '1',
-    name: 'Production API Key',
-    key: 'cf_live_****************************abcd',
-    prefix: 'cf_live_',
-    createdAt: new Date('2024-01-01'),
-    lastUsed: new Date(Date.now() - 3600000),
-    scopes: ['content:read', 'content:write', 'analytics:read'],
-  },
-  {
-    id: '2',
-    name: 'Development Testing',
-    key: 'cf_test_****************************efgh',
-    prefix: 'cf_test_',
-    createdAt: new Date('2024-03-01'),
-    scopes: ['content:read', 'content:write'],
-  },
-]
+// No mock data — all data fetched from real API
+// Webhooks and API keys don't have backend CRUD yet — initialized empty
 
 // Helper functions
 const formatDate = (date?: Date) => {
@@ -174,8 +88,8 @@ const formatDate = (date?: Date) => {
 export default function IntegrationsPanel() {
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [isLoadingIntegrations, setIsLoadingIntegrations] = useState(true)
-  const [webhooks, setWebhooks] = useState<WebhookConfig[]>(mockWebhooks)
-  const [apiKeys, setApiKeys] = useState<APIKey[]>(mockAPIKeys)
+  const [webhooks, setWebhooks] = useState<WebhookConfig[]>([])
+  const [apiKeys, setApiKeys] = useState<APIKey[]>([])
   const [activeTab, setActiveTab] = useState<'integrations' | 'webhooks' | 'apikeys'>('integrations')
   const [showAddWebhook, setShowAddWebhook] = useState(false)
   const [showAddKey, setShowAddKey] = useState(false)
@@ -196,8 +110,8 @@ export default function IntegrationsPanel() {
         lastSync: int.last_synced_at ? new Date(int.last_synced_at) : undefined,
         config: int.config || {},
       }))
-      setIntegrations(mapped.length > 0 ? mapped : mockIntegrations)
-    }).catch(() => setIntegrations(mockIntegrations))
+      setIntegrations(mapped.length > 0 ? mapped : [])
+    }).catch(() => setIntegrations([]))
     .finally(() => setIsLoadingIntegrations(false))
   }, [])
 

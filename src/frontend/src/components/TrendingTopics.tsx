@@ -22,10 +22,9 @@ import {
   Heart,
   ShoppingBag,
   Gamepad2,
-  Music,
   Film,
-  BookOpen,
   Beaker,
+  RefreshCw,
   type LucideIcon,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -35,9 +34,19 @@ import { Badge } from '@/components/ui/Badge'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
-import { getTrendingTopics, generateFromTrend } from '@/lib/api'
+import {
+  getTrendingTopics,
+  getRelevantTrends,
+  getTrendsByCategory,
+  trackTopic,
+  getTrackedTopics,
+  untrackTopic,
+  getTrendsVelocity,
+  generateFromTrend,
+  TrendingTopicData,
+} from '@/lib/api'
 
-// Types
+// Types — mapped from backend TrendingTopicData
 interface Trend {
   id: string
   title: string
@@ -72,6 +81,25 @@ const categories: CategoryConfig[] = [
   { id: 'gaming', label: 'Gaming', icon: Gamepad2, color: 'text-purple-500' },
   { id: 'fashion', label: 'Fashion', icon: ShoppingBag, color: 'text-pink-500' },
 ]
+
+/** Map backend TrendingTopicData to frontend Trend */
+function mapTrendFromAPI(t: TrendingTopicData): Trend {
+  const velocity = t.velocity ?? t.trend_score ?? 0
+  return {
+    id: String(t.id),
+    title: t.topic,
+    category: t.category || 'other',
+    velocity: Math.min(100, Math.max(0, velocity)),
+    relevanceScore: t.trend_score ? Math.round(t.trend_score) : 50,
+    mentionCount: t.mention_count ?? 0,
+    growthRate: t.velocity ? Math.round(t.velocity * 0.5) : 0,
+    isHot: velocity > 70,
+    isCold: velocity < 30,
+    timestamp: t.discovered_at,
+    relatedHashtags: t.related_keywords?.slice(0, 5).map(k => `#${k}`) || [],
+    description: t.sample_content?.[0]?.title || undefined,
+  }
+}
 
 // Sparkline Component
 function Sparkline({ data, isPositive }: { data: number[]; isPositive: boolean }) {
@@ -180,14 +208,16 @@ function TrendTemperature({ isHot, isCold }: { isHot: boolean; isCold: boolean }
 interface TrendCardProps {
   trend: Trend
   onGenerate: (id: string) => void
+  onTrack: (id: string) => void
+  isTracked: boolean
   isGenerating: boolean
 }
 
-function TrendCard({ trend, onGenerate, isGenerating }: TrendCardProps) {
+function TrendCard({ trend, onGenerate, onTrack, isTracked, isGenerating }: TrendCardProps) {
   const category = categories.find(c => c.id === trend.category)
   const CategoryIcon = category?.icon || Globe
 
-  // Generate mock sparkline data based on velocity
+  // Generate sparkline data based on velocity
   const sparklineData = Array.from({ length: 10 }, (_, i) => {
     const base = trend.velocity
     const noise = Math.sin(i * 0.5) * 10 + Math.random() * 5
@@ -292,19 +322,28 @@ function TrendCard({ trend, onGenerate, isGenerating }: TrendCardProps) {
           </p>
         )}
 
-        {/* Generate Button */}
-        <Button
-          variant="primary"
-          size="sm"
-          className="w-full"
-          leftIcon={<Sparkles className="w-4 h-4" />}
-          rightIcon={<ChevronRight className="w-4 h-4" />}
-          onClick={() => onGenerate(trend.id)}
-          loading={isGenerating}
-          disabled={isGenerating}
-        >
-          Generate Content
-        </Button>
+        {/* Actions */}
+        <div className="flex gap-2">
+          <Button
+            variant="primary"
+            size="sm"
+            className="flex-1"
+            leftIcon={<Sparkles className="w-4 h-4" />}
+            rightIcon={<ChevronRight className="w-4 h-4" />}
+            onClick={() => onGenerate(trend.id)}
+            loading={isGenerating}
+            disabled={isGenerating}
+          >
+            Generate Content
+          </Button>
+          <Button
+            variant={isTracked ? 'outline' : 'outline'}
+            size="sm"
+            onClick={() => onTrack(trend.id)}
+          >
+            {isTracked ? 'Tracked' : 'Track'}
+          </Button>
+        </div>
       </div>
     </motion.div>
   )
@@ -332,192 +371,79 @@ function EmptyState({ category }: { category: string }) {
 // Main Component
 export default function TrendingTopics() {
   const [trends, setTrends] = useState<Trend[]>([])
+  const [trackedIds, setTrackedIds] = useState<Set<string>>(new Set())
   const [selectedCategory, setSelectedCategory] = useState<Category>('all')
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState<string | null>(null)
   const { showToast } = useToast()
 
-  // Fetch trends from API with mock fallback
+  // Fetch trends from API
   const fetchTrends = useCallback(async () => {
     try {
       setIsLoading(true)
-      try {
-        const data = await getTrendingTopics()
-        if (data && data.length > 0) {
-          // API returns simpler Trend type; merge with defaults
-          const enriched = data.map((t: any) => ({
-            ...t,
-            relevanceScore: t.relevanceScore || t.relevance_score || 50,
-            mentionCount: t.mentionCount || t.mention_count || 0,
-            growthRate: t.growthRate || t.growth_rate || 0,
-            isHot: t.isHot ?? t.is_hot ?? false,
-            isCold: t.isCold ?? t.is_cold ?? false,
-            relatedHashtags: t.relatedHashtags || t.related_hashtags || [],
-            description: t.description || '',
-          })) as Trend[]
-          setTrends(enriched)
-          return
-        }
-      } catch { /* fallback to mock */ }
-
-      // Mock fallback if API returns empty or fails
-      await new Promise(resolve => setTimeout(resolve, 300))
-
-      const mockTrends: Trend[] = [
-        {
-          id: '1',
-          title: 'AI Content Creation Tools',
-          category: 'tech',
-          velocity: 92,
-          relevanceScore: 95,
-          mentionCount: 125000,
-          growthRate: 45,
-          isHot: true,
-          isCold: false,
-          timestamp: new Date().toISOString(),
-          relatedHashtags: ['#AIContent', '#ContentCreation', '#AItools', '#MarketingAI'],
-          description: 'Revolutionary AI tools transforming how marketers create and optimize content at scale.',
-        },
-        {
-          id: '2',
-          title: 'Short-Form Video Marketing',
-          category: 'business',
-          velocity: 88,
-          relevanceScore: 90,
-          mentionCount: 98000,
-          growthRate: 32,
-          isHot: true,
-          isCold: false,
-          timestamp: new Date(Date.now() - 86400000).toISOString(),
-          relatedHashtags: ['#ShortFormVideo', '#TikTok', '#Reels', '#VideoMarketing'],
-          description: 'Brands leveraging TikTok, Reels, and Shorts for maximum engagement.',
-        },
-        {
-          id: '3',
-          title: 'Sustainable Fashion Trends',
-          category: 'fashion',
-          velocity: 65,
-          relevanceScore: 60,
-          mentionCount: 45000,
-          growthRate: 18,
-          isHot: false,
-          isCold: false,
-          timestamp: new Date(Date.now() - 172800000).toISOString(),
-          relatedHashtags: ['#SustainableFashion', '#EcoFriendly', '#SlowFashion', '#GreenStyle'],
-          description: 'Consumer shift towards eco-conscious and ethical fashion choices.',
-        },
-        {
-          id: '4',
-          title: 'Remote Work Best Practices',
-          category: 'business',
-          velocity: 72,
-          relevanceScore: 75,
-          mentionCount: 67000,
-          growthRate: 8,
-          isHot: false,
-          isCold: false,
-          timestamp: new Date(Date.now() - 259200000).toISOString(),
-          relatedHashtags: ['#RemoteWork', '#WorkFromHome', '#DigitalNomad', '#Productivity'],
-          description: 'Companies refining their remote and hybrid work strategies.',
-        },
-        {
-          id: '5',
-          title: 'Web3 and Blockchain Marketing',
-          category: 'tech',
-          velocity: 45,
-          relevanceScore: 40,
-          mentionCount: 28000,
-          growthRate: -15,
-          isHot: false,
-          isCold: true,
-          timestamp: new Date(Date.now() - 345600000).toISOString(),
-          relatedHashtags: ['#Web3', '#Blockchain', '#Crypto', '#NFTMarketing'],
-          description: 'Marketing strategies adapting to decentralized technologies.',
-        },
-        {
-          id: '6',
-          title: 'Gaming Industry Growth',
-          category: 'gaming',
-          velocity: 78,
-          relevanceScore: 55,
-          mentionCount: 82000,
-          growthRate: 28,
-          isHot: false,
-          isCold: false,
-          timestamp: new Date(Date.now() - 432000000).toISOString(),
-          relatedHashtags: ['#Gaming', '#Esports', '#GameDev', '#Streaming'],
-          description: 'Gaming continues to expand across demographics and platforms.',
-        },
-        {
-          id: '7',
-          title: 'Mindfulness and Wellness',
-          category: 'lifestyle',
-          velocity: 58,
-          relevanceScore: 50,
-          mentionCount: 39000,
-          growthRate: 12,
-          isHot: false,
-          isCold: false,
-          timestamp: new Date(Date.now() - 518400000).toISOString(),
-          relatedHashtags: ['#Mindfulness', '#Wellness', '#SelfCare', '#MentalHealth'],
-          description: 'Growing focus on mental health and holistic well-being.',
-        },
-        {
-          id: '8',
-          title: 'Streaming Wars Analysis',
-          category: 'entertainment',
-          velocity: 81,
-          relevanceScore: 70,
-          mentionCount: 74000,
-          growthRate: 22,
-          isHot: false,
-          isCold: false,
-          timestamp: new Date(Date.now() - 604800000).toISOString(),
-          relatedHashtags: ['#Streaming', '#Netflix', '#OTT', '#ContentWars'],
-          description: 'Competition intensifies among major streaming platforms.',
-        },
-        {
-          id: '9',
-          title: 'Climate Tech Innovation',
-          category: 'science',
-          velocity: 69,
-          relevanceScore: 45,
-          mentionCount: 52000,
-          growthRate: 24,
-          isHot: false,
-          isCold: false,
-          timestamp: new Date(Date.now() - 691200000).toISOString(),
-          relatedHashtags: ['#ClimateTech', '#GreenTech', '#Sustainability', '#Innovation'],
-          description: 'Breakthrough technologies addressing climate challenges.',
-        },
-      ]
-
-      setTrends(mockTrends)
-    } catch (error) {
-      showToast('Failed to load trending topics', 'error')
+      setError(null)
+      const data = await getTrendingTopics(
+        selectedCategory === 'all' ? undefined : selectedCategory
+      )
+      const mapped = data.map(mapTrendFromAPI)
+      setTrends(mapped)
+    } catch (err) {
+      setError('Failed to load trending topics')
+      setTrends([])
     } finally {
       setIsLoading(false)
     }
-  }, [showToast])
+  }, [selectedCategory])
+
+  // Fetch tracked topics
+  const fetchTracked = useCallback(async () => {
+    try {
+      const data = await getTrackedTopics()
+      const ids = new Set(data.map((t: Record<string, unknown>) => String(t.topic_id)))
+      setTrackedIds(ids)
+    } catch {
+      // Non-critical — leave tracked set empty
+    }
+  }, [])
 
   useEffect(() => {
     fetchTrends()
   }, [fetchTrends])
 
+  useEffect(() => {
+    fetchTracked()
+  }, [fetchTracked])
+
   const handleGenerate = async (trendId: string) => {
     setIsGenerating(trendId)
     try {
-      try {
-        await generateFromTrend(trendId)
-      } catch {
-        // Mock fallback
-        await new Promise(resolve => setTimeout(resolve, 1500))
-      }
+      await generateFromTrend(trendId)
       showToast('Content generated successfully!', 'success')
-    } catch (error) {
+    } catch {
       showToast('Failed to generate content', 'error')
     } finally {
       setIsGenerating(null)
+    }
+  }
+
+  const handleTrack = async (topicId: string) => {
+    try {
+      if (trackedIds.has(topicId)) {
+        await untrackTopic(topicId)
+        setTrackedIds(prev => {
+          const next = new Set(prev)
+          next.delete(topicId)
+          return next
+        })
+        showToast('Topic untracked', 'success')
+      } else {
+        await trackTopic({ topic_id: topicId })
+        setTrackedIds(prev => new Set(prev).add(topicId))
+        showToast('Topic tracked', 'success')
+      }
+    } catch {
+      showToast('Failed to update tracking', 'error')
     }
   }
 
@@ -561,6 +487,15 @@ export default function TrendingTopics() {
                 </div>
               </div>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<RefreshCw className="w-4 h-4" />}
+              onClick={fetchTrends}
+              loading={isLoading}
+            >
+              Refresh
+            </Button>
           </div>
         }
       />
@@ -599,6 +534,20 @@ export default function TrendingTopics() {
         })}
       </div>
 
+      {/* Error State */}
+      {error && !isLoading && (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-4">
+            <TrendingUp className="w-8 h-8 text-rose-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+            Failed to load trends
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{error}</p>
+          <Button variant="outline" onClick={fetchTrends}>Try Again</Button>
+        </div>
+      )}
+
       {/* Trends Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -606,7 +555,7 @@ export default function TrendingTopics() {
             <Card key={i} className="h-80 animate-pulse bg-slate-200 dark:bg-slate-800">{null}</Card>
           ))}
         </div>
-      ) : (
+      ) : !error && (
         <motion.div
           layout
           className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
@@ -620,6 +569,8 @@ export default function TrendingTopics() {
                   key={trend.id}
                   trend={trend}
                   onGenerate={handleGenerate}
+                  onTrack={handleTrack}
+                  isTracked={trackedIds.has(trend.id)}
                   isGenerating={isGenerating === trend.id}
                 />
               ))
@@ -640,68 +591,9 @@ export function TrendingTopicsWidget() {
   useEffect(() => {
     const fetchWidgetTrends = async () => {
       try {
-        try {
-        const data = await getTrendingTopics()
-        if (data && data.length > 0) {
-          setTrends(data.slice(0, 3).map((t: any) => ({
-            ...t,
-            relevanceScore: t.relevanceScore || t.relevance_score || 50,
-            mentionCount: t.mentionCount || t.mention_count || 0,
-            growthRate: t.growthRate || t.growth_rate || 0,
-            isHot: t.isHot ?? t.is_hot ?? false,
-            isCold: t.isCold ?? t.is_cold ?? false,
-            relatedHashtags: t.relatedHashtags || t.related_hashtags || [],
-            description: t.description || '',
-          })) as Trend[])
-          return
-        }
-      } catch { /* fallback */ }
-      await new Promise(resolve => setTimeout(resolve, 300))
-
-        const mockTrends: Trend[] = [
-          {
-            id: '1',
-            title: 'AI Content Creation Tools',
-            category: 'tech',
-            velocity: 92,
-            relevanceScore: 95,
-            mentionCount: 125000,
-            growthRate: 45,
-            isHot: true,
-            isCold: false,
-            timestamp: new Date().toISOString(),
-            relatedHashtags: ['#AIContent', '#ContentCreation'],
-          },
-          {
-            id: '2',
-            title: 'Short-Form Video Marketing',
-            category: 'business',
-            velocity: 88,
-            relevanceScore: 90,
-            mentionCount: 98000,
-            growthRate: 32,
-            isHot: true,
-            isCold: false,
-            timestamp: new Date(Date.now() - 86400000).toISOString(),
-            relatedHashtags: ['#ShortFormVideo', '#TikTok'],
-          },
-          {
-            id: '3',
-            title: 'Sustainable Fashion Trends',
-            category: 'fashion',
-            velocity: 65,
-            relevanceScore: 60,
-            mentionCount: 45000,
-            growthRate: 18,
-            isHot: false,
-            isCold: false,
-            timestamp: new Date(Date.now() - 172800000).toISOString(),
-            relatedHashtags: ['#SustainableFashion'],
-          },
-        ]
-
-        setTrends(mockTrends)
-      } catch (error) {
+        const data = await getTrendingTopics(undefined, 3)
+        setTrends(data.map(mapTrendFromAPI))
+      } catch {
         showToast('Failed to load trends', 'error')
       } finally {
         setIsLoading(false)
@@ -718,6 +610,14 @@ export function TrendingTopicsWidget() {
           <div key={i} className="h-16 rounded-xl animate-pulse bg-slate-200 dark:bg-slate-800" />
         ))}
       </div>
+    )
+  }
+
+  if (trends.length === 0) {
+    return (
+      <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+        No trending topics available
+      </p>
     )
   }
 

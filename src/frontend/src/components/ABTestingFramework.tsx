@@ -1,86 +1,82 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 import { Input } from './ui/Input'
 import { useToast } from '../hooks/useToast'
+import { RefreshCw } from 'lucide-react'
+import {
+  createABExperiment,
+  listABExperiments,
+  updateABExperiment,
+  deleteABExperiment,
+  getABExperiment,
+  type ABExperiment,
+  type ABExperimentDetail,
+} from '@/lib/api'
 
-interface ABTest {
+interface DisplayTest {
   id: string
   name: string
-  contentId: string
+  contentId: string | null
   variantA: string
   variantB: string
   platform: string
-  status: 'draft' | 'running' | 'paused' | 'completed'
+  status: 'draft' | 'running' | 'paused' | 'completed' | 'stopped'
   startDate?: string
   endDate?: string
-  duration: number // days
+  duration: number
   results?: {
-    variantA: TestResults
-    variantB: TestResults
+    variantA: { impressions: number; engagements: number; clicks: number; engagementRate: number; clickRate: number }
+    variantB: { impressions: number; engagements: number; clicks: number; engagementRate: number; clickRate: number }
     winner: 'A' | 'B' | 'tie'
     confidence: number
   }
 }
 
-interface TestResults {
-  impressions: number
-  engagements: number
-  clicks: number
-  engagementRate: number
-  clickRate: number
+function mapExperimentToDisplay(exp: ABExperiment, detail?: ABExperimentDetail): DisplayTest {
+  return {
+    id: exp.id,
+    name: exp.name,
+    contentId: exp.content_id,
+    variantA: exp.variant_a,
+    variantB: exp.variant_b,
+    platform: exp.platform,
+    status: exp.status,
+    startDate: exp.started_at || undefined,
+    endDate: exp.ended_at || undefined,
+    duration: exp.duration_days,
+    results: detail?.winner
+      ? {
+          variantA: {
+            impressions: detail.variant_a_results?.impressions ?? 0,
+            engagements: detail.variant_a_results?.engagements ?? 0,
+            clicks: detail.variant_a_results?.clicks ?? 0,
+            engagementRate: detail.variant_a_results?.engagementRate ?? 0,
+            clickRate: detail.variant_a_results?.clickRate ?? 0,
+          },
+          variantB: {
+            impressions: detail.variant_b_results?.impressions ?? 0,
+            engagements: detail.variant_b_results?.engagements ?? 0,
+            clicks: detail.variant_b_results?.clicks ?? 0,
+            engagementRate: detail.variant_b_results?.engagementRate ?? 0,
+            clickRate: detail.variant_b_results?.clickRate ?? 0,
+          },
+          winner: (detail.winner === 'A' ? 'A' : detail.winner === 'B' ? 'B' : 'tie') as 'A' | 'B' | 'tie',
+          confidence: detail.confidence ?? 0,
+        }
+      : undefined,
+  }
 }
-
-const MOCK_TESTS: ABTest[] = [
-  {
-    id: '1',
-    name: 'Hook Variation Test',
-    contentId: 'content-1',
-    variantA: 'Discover the secret to...',
-    variantB: 'Learn how to...',
-    platform: 'twitter',
-    status: 'completed',
-    startDate: '2026-04-01',
-    endDate: '2026-04-08',
-    duration: 7,
-    results: {
-      variantA: {
-        impressions: 12450,
-        engagements: 892,
-        clicks: 156,
-        engagementRate: 7.16,
-        clickRate: 1.25,
-      },
-      variantB: {
-        impressions: 12380,
-        engagements: 745,
-        clicks: 124,
-        engagementRate: 6.02,
-        clickRate: 1.0,
-      },
-      winner: 'A',
-      confidence: 0.94,
-    },
-  },
-  {
-    id: '2',
-    name: 'CTA Button Test',
-    contentId: 'content-2',
-    variantA: 'Get Started Now',
-    variantB: 'Start Your Free Trial',
-    platform: 'linkedin',
-    status: 'running',
-    duration: 14,
-  },
-]
 
 export default function ABTestingFramework() {
   const { showToast } = useToast()
-  const [tests, setTests] = useState<ABTest[]>(MOCK_TESTS)
+  const [tests, setTests] = useState<DisplayTest[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
-  const [selectedTest, setSelectedTest] = useState<ABTest | null>(null)
+  const [selectedTest, setSelectedTest] = useState<DisplayTest | null>(null)
   const [newTest, setNewTest] = useState({
     name: '',
     variantA: '',
@@ -88,63 +84,143 @@ export default function ABTestingFramework() {
     platform: 'twitter',
     duration: 7,
   })
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-  const createTest = useCallback(() => {
+  // Fetch experiments from API
+  const fetchExperiments = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const data = await listABExperiments()
+      const mapped: DisplayTest[] = data.experiments.map((exp) => mapExperimentToDisplay(exp))
+      setTests(mapped)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load experiments')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchExperiments()
+  }, [fetchExperiments])
+
+  const createTest = useCallback(async () => {
     if (!newTest.name || !newTest.variantA || !newTest.variantB) {
       showToast('Please fill in all fields', 'error')
       return
     }
 
-    const test: ABTest = {
-      id: `test-${Date.now()}`,
-      name: newTest.name,
-      contentId: `content-${Date.now()}`,
-      variantA: newTest.variantA,
-      variantB: newTest.variantB,
-      platform: newTest.platform,
-      status: 'draft',
-      duration: newTest.duration,
+    try {
+      const exp = await createABExperiment({
+        name: newTest.name,
+        variant_a: newTest.variantA,
+        variant_b: newTest.variantB,
+        platform: newTest.platform,
+        duration_days: newTest.duration,
+      })
+      setTests((prev) => [...prev, mapExperimentToDisplay(exp)])
+      setIsCreating(false)
+      setNewTest({ name: '', variantA: '', variantB: '', platform: 'twitter', duration: 7 })
+      showToast('A/B test created successfully', 'success')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to create test', 'error')
     }
-
-    setTests((prev) => [...prev, test])
-    setIsCreating(false)
-    setNewTest({ name: '', variantA: '', variantB: '', platform: 'twitter', duration: 7 })
-    showToast('A/B test created successfully', 'success')
   }, [newTest, showToast])
 
-  const startTest = useCallback((testId: string) => {
-    setTests((prev) =>
-      prev.map((test) =>
-        test.id === testId
-          ? {
-              ...test,
-              status: 'running' as const,
-              startDate: new Date().toISOString().split('T')[0],
-            }
-          : test
+  const startTest = useCallback(async (testId: string) => {
+    try {
+      setActionLoading(testId)
+      const exp = await updateABExperiment(testId, { status: 'running' })
+      setTests((prev) =>
+        prev.map((t) =>
+          t.id === testId ? mapExperimentToDisplay(exp) : t
+        )
       )
-    )
-    showToast('Test started', 'success')
-  }, [showToast])
+      if (selectedTest?.id === testId) {
+        setSelectedTest(mapExperimentToDisplay(exp))
+      }
+      showToast('Test started', 'success')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to start test', 'error')
+    } finally {
+      setActionLoading(null)
+    }
+  }, [showToast, selectedTest])
 
-  const pauseTest = useCallback((testId: string) => {
-    setTests((prev) =>
-      prev.map((test) =>
-        test.id === testId ? { ...test, status: 'paused' as const } : test
+  const pauseTest = useCallback(async (testId: string) => {
+    try {
+      setActionLoading(testId)
+      const exp = await updateABExperiment(testId, { status: 'paused' })
+      setTests((prev) =>
+        prev.map((t) =>
+          t.id === testId ? { ...t, status: 'paused' as const } : t
+        )
       )
-    )
-    showToast('Test paused', 'info')
-  }, [showToast])
+      if (selectedTest?.id === testId) {
+        setSelectedTest((prev) => prev ? { ...prev, status: 'paused' as const } : null)
+      }
+      showToast('Test paused', 'info')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to pause test', 'error')
+    } finally {
+      setActionLoading(null)
+    }
+  }, [showToast, selectedTest])
 
-  const getStatusBadge = (status: ABTest['status']) => {
-    const styles = {
+  const stopTest = useCallback(async (testId: string) => {
+    try {
+      setActionLoading(testId)
+      const exp = await updateABExperiment(testId, { status: 'stopped' })
+      setTests((prev) =>
+        prev.map((t) =>
+          t.id === testId ? { ...t, status: 'stopped' as const } : t
+        )
+      )
+      if (selectedTest?.id === testId) {
+        setSelectedTest((prev) => prev ? { ...prev, status: 'stopped' as const } : null)
+      }
+      showToast('Test stopped', 'info')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to stop test', 'error')
+    } finally {
+      setActionLoading(null)
+    }
+  }, [showToast, selectedTest])
+
+  const handleDeleteTest = useCallback(async (testId: string) => {
+    try {
+      await deleteABExperiment(testId)
+      setTests((prev) => prev.filter((t) => t.id !== testId))
+      if (selectedTest?.id === testId) setSelectedTest(null)
+      showToast('Test deleted', 'success')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to delete test', 'error')
+    }
+  }, [showToast, selectedTest])
+
+  const handleSelectTest = useCallback(async (test: DisplayTest) => {
+    setSelectedTest(test)
+    // Fetch full details including results
+    try {
+      const detail = await getABExperiment(test.id)
+      const full = mapExperimentToDisplay(detail, detail)
+      setSelectedTest(full)
+    } catch {
+      // Keep the basic view
+    }
+  }, [])
+
+  const getStatusBadge = (status: DisplayTest['status']) => {
+    const styles: Record<string, string> = {
       draft: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
       running: 'bg-green-100 text-green-700',
       paused: 'bg-yellow-100 text-yellow-700',
       completed: 'bg-blue-100 text-blue-700',
+      stopped: 'bg-rose-100 text-rose-700',
     }
     return (
-      <span className={`px-2 py-1 rounded text-xs font-medium ${styles[status]}`}>
+      <span className={`px-2 py-1 rounded text-xs font-medium ${styles[status] || styles.draft}`}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     )
@@ -159,25 +235,39 @@ export default function ABTestingFramework() {
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400">Test content variations to optimize performance</p>
         </div>
-        <Button onClick={() => setIsCreating(true)} size="sm">
+        <Button onClick={() => setIsCreating(true)} size="sm" disabled={isLoading}>
           + New Test
         </Button>
       </div>
 
-      {isCreating ? (
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="h-6 w-6 text-slate-400 animate-spin" />
+          <span className="ml-3 text-slate-500">Loading experiments...</span>
+        </div>
+      )}
+
+      {error && !isLoading && (
+        <div className="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-lg mb-4">
+          <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p>
+          <Button variant="outline" size="sm" onClick={fetchExperiments} className="mt-2">Retry</Button>
+        </div>
+      )}
+
+      {!isLoading && !error && isCreating ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="font-medium">Create New A/B Test</h4>
             <button
               onClick={() => setIsCreating(false)}
-              className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300"
+              className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
             >
               Cancel
             </button>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-600 mb-2">
               Test Name
             </label>
             <Input
@@ -189,7 +279,7 @@ export default function ABTestingFramework() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-600 mb-2">
                 Variant A
               </label>
               <textarea
@@ -200,7 +290,7 @@ export default function ABTestingFramework() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-600 mb-2">
                 Variant B
               </label>
               <textarea
@@ -214,7 +304,7 @@ export default function ABTestingFramework() {
 
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-600 mb-2">
                 Platform
               </label>
               <select
@@ -229,16 +319,16 @@ export default function ABTestingFramework() {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-600 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-600 mb-2">
                 Duration (days)
               </label>
               <Input
                 type="number"
                 min={1}
-                max={30}
+                max={90}
                 value={newTest.duration}
                 onChange={(e) =>
-                  setNewTest((prev) => ({ ...prev, duration: parseInt(e.target.value) }))
+                  setNewTest((prev) => ({ ...prev, duration: parseInt(e.target.value) || 7 }))
                 }
               />
             </div>
@@ -253,7 +343,7 @@ export default function ABTestingFramework() {
             </Button>
           </div>
         </div>
-      ) : selectedTest ? (
+      ) : !isLoading && !error && selectedTest ? (
         <div className="space-y-6">
           <button
             onClick={() => setSelectedTest(null)}
@@ -262,12 +352,25 @@ export default function ABTestingFramework() {
             ← Back to tests
           </button>
 
-          <div>
-            <h4 className="text-xl font-bold mb-2">{selectedTest.name}</h4>
-            <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
-              <span>{getStatusBadge(selectedTest.status)}</span>
-              <span>Platform: {selectedTest.platform}</span>
-              <span>Duration: {selectedTest.duration} days</span>
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-xl font-bold mb-2">{selectedTest.name}</h4>
+              <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+                <span>{getStatusBadge(selectedTest.status)}</span>
+                <span>Platform: {selectedTest.platform}</span>
+                <span>Duration: {selectedTest.duration} days</span>
+              </div>
+            </div>
+            <div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDeleteTest(selectedTest.id)}
+                className="text-rose-600 hover:text-rose-700"
+                disabled={!!actionLoading}
+              >
+                Delete
+              </Button>
             </div>
           </div>
 
@@ -282,7 +385,7 @@ export default function ABTestingFramework() {
                   </span>
                 )}
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500 mb-4 p-3 bg-slate-50 dark:bg-slate-900 dark:bg-gray-800 rounded">
+              <p className="text-sm text-slate-600 dark:text-slate-500 mb-4 p-3 bg-slate-50 dark:bg-gray-800 rounded">
                 {selectedTest.variantA}
               </p>
 
@@ -321,7 +424,7 @@ export default function ABTestingFramework() {
                   </span>
                 )}
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500 mb-4 p-3 bg-slate-50 dark:bg-slate-900 dark:bg-gray-800 rounded">
+              <p className="text-sm text-slate-600 dark:text-slate-500 mb-4 p-3 bg-slate-50 dark:bg-gray-800 rounded">
                 {selectedTest.variantB}
               </p>
 
@@ -360,7 +463,7 @@ export default function ABTestingFramework() {
                   Statistical Confidence: {(selectedTest.results.confidence * 100).toFixed(1)}%
                 </span>
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-400 dark:text-slate-500">
+              <p className="text-sm text-slate-600 dark:text-slate-500">
                 {selectedTest.results.winner === 'A'
                   ? 'Variant A performed significantly better than Variant B.'
                   : selectedTest.results.winner === 'B'
@@ -373,18 +476,41 @@ export default function ABTestingFramework() {
           {/* Test Controls */}
           <div className="flex gap-3">
             {selectedTest.status === 'draft' && (
-              <Button onClick={() => startTest(selectedTest.id)} className="flex-1">
-                Start Test
+              <Button
+                onClick={() => startTest(selectedTest.id)}
+                className="flex-1"
+                disabled={!!actionLoading}
+              >
+                {actionLoading === selectedTest.id ? 'Starting...' : 'Start Test'}
               </Button>
             )}
             {selectedTest.status === 'running' && (
-              <Button onClick={() => pauseTest(selectedTest.id)} variant="secondary" className="flex-1">
-                Pause Test
+              <Button
+                onClick={() => pauseTest(selectedTest.id)}
+                variant="secondary"
+                className="flex-1"
+                disabled={!!actionLoading}
+              >
+                {actionLoading === selectedTest.id ? 'Pausing...' : 'Pause Test'}
               </Button>
             )}
             {selectedTest.status === 'paused' && (
-              <Button onClick={() => startTest(selectedTest.id)} className="flex-1">
-                Resume Test
+              <Button
+                onClick={() => startTest(selectedTest.id)}
+                className="flex-1"
+                disabled={!!actionLoading}
+              >
+                {actionLoading === selectedTest.id ? 'Resuming...' : 'Resume Test'}
+              </Button>
+            )}
+            {(selectedTest.status === 'running' || selectedTest.status === 'paused') && (
+              <Button
+                onClick={() => stopTest(selectedTest.id)}
+                variant="outline"
+                className="flex-1"
+                disabled={!!actionLoading}
+              >
+                Stop Test
               </Button>
             )}
             <Button variant="secondary" onClick={() => setSelectedTest(null)} className="flex-1">
@@ -392,7 +518,7 @@ export default function ABTestingFramework() {
             </Button>
           </div>
         </div>
-      ) : (
+      ) : !isLoading && !error && (
         <div className="space-y-4">
           {tests.length === 0 ? (
             <div className="text-center py-8">
@@ -403,7 +529,7 @@ export default function ABTestingFramework() {
             tests.map((test) => (
               <Card
                 key={test.id}
-                onClick={() => setSelectedTest(test)}
+                onClick={() => handleSelectTest(test)}
                 className="p-4 cursor-pointer hover:border-blue-500 transition-colors"
               >
                 <div className="flex items-center justify-between">

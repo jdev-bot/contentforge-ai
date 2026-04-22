@@ -74,95 +74,7 @@ export interface PerformanceComparison {
   trend: 'up' | 'down' | 'stable'
 }
 
-// Mock data
-const mockCompetitors: Competitor[] = [
-  {
-    id: '1',
-    name: 'TechCorp Insights',
-    platform: 'linkedin',
-    handle: '@techcorp',
-    followers: 45000,
-    engagementRate: 4.2,
-    avgViews: 12000,
-    postsPerWeek: 5,
-    trackedSince: new Date('2024-01-15'),
-    isActive: true,
-  },
-  {
-    id: '2',
-    name: 'Marketing Pro',
-    platform: 'twitter',
-    handle: '@marketingpro',
-    followers: 32000,
-    engagementRate: 3.8,
-    avgViews: 8500,
-    postsPerWeek: 12,
-    trackedSince: new Date('2024-02-01'),
-    isActive: true,
-  },
-  {
-    id: '3',
-    name: 'Growth Daily',
-    platform: 'linkedin',
-    handle: '@growthdaily',
-    followers: 67000,
-    engagementRate: 5.1,
-    avgViews: 18000,
-    postsPerWeek: 3,
-    trackedSince: new Date('2024-03-10'),
-    isActive: true,
-  },
-]
-
-const mockCompetitorPosts: CompetitorPost[] = [
-  {
-    id: '1',
-    competitorId: '1',
-    title: '10 AI Trends for 2025',
-    content: 'The AI landscape is evolving rapidly. Here are the top trends...',
-    platform: 'linkedin',
-    publishedAt: new Date(Date.now() - 86400000),
-    metrics: { views: 25000, likes: 1200, comments: 89, shares: 234, engagement: 6.1 },
-    url: 'https://linkedin.com/post/1',
-  },
-  {
-    id: '2',
-    competitorId: '1',
-    title: 'Marketing Automation Guide',
-    content: 'How to automate your marketing workflows...',
-    platform: 'linkedin',
-    publishedAt: new Date(Date.now() - 172800000),
-    metrics: { views: 18000, likes: 890, comments: 45, shares: 156, engagement: 6.1 },
-    url: 'https://linkedin.com/post/2',
-  },
-  {
-    id: '3',
-    competitorId: '2',
-    title: 'Thread: Social Media Tips',
-    content: '1/ 🧵 Here are 10 social media tips that changed my business...',
-    platform: 'twitter',
-    publishedAt: new Date(Date.now() - 43200000),
-    metrics: { views: 45000, likes: 2300, comments: 234, shares: 890, engagement: 7.5 },
-    url: 'https://twitter.com/post/3',
-  },
-  {
-    id: '4',
-    competitorId: '3',
-    title: 'The Future of Content Marketing',
-    content: 'Content marketing is changing. Here\'s what you need to know...',
-    platform: 'linkedin',
-    publishedAt: new Date(Date.now() - 259200000),
-    metrics: { views: 32000, likes: 1500, comments: 123, shares: 340, engagement: 6.2 },
-    url: 'https://linkedin.com/post/4',
-  },
-]
-
-const mockComparison: PerformanceComparison[] = [
-  { metric: 'Followers', yourValue: 28500, competitorAvg: 48000, gap: -40.6, trend: 'up' },
-  { metric: 'Engagement Rate', yourValue: 4.5, competitorAvg: 4.4, gap: 2.3, trend: 'stable' },
-  { metric: 'Avg Views', yourValue: 11200, competitorAvg: 15600, gap: -28.2, trend: 'down' },
-  { metric: 'Posts/Week', yourValue: 7, competitorAvg: 6.7, gap: 4.5, trend: 'up' },
-]
+// No mock data — all data fetched from real API
 
 // Helper functions
 const formatNumber = (num: number): string => {
@@ -187,44 +99,86 @@ const getPlatformIcon = (platform: string) => {
 export default function CompetitorAnalysis() {
   const [competitors, setCompetitors] = useState<Competitor[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [posts] = useState<CompetitorPost[]>(mockCompetitorPosts)
+  const [posts, setPosts] = useState<CompetitorPost[]>([])
+  const [comparison, setComparison] = useState<PerformanceComparison[]>([])
   const [showAddForm, setShowAddForm] = useState(false)
   const [selectedCompetitor, setSelectedCompetitor] = useState<string | 'all'>('all')
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // Fetch competitors from API with mock fallback
+  // Fetch competitors from API
   const fetchCompetitors = useCallback(async () => {
     try {
       setIsRefreshing(true)
       try {
-        const { getCompetitors } = await import('@/lib/api')
-        const data = await getCompetitors()
-        if (data.competitors.length > 0) {
-          const mapped: Competitor[] = data.competitors.map((c: any) => ({
-            id: c.id,
-            name: c.name,
-            platform: 'blog' as const,
-            handle: c.website || c.name.toLowerCase().replace(/\s+/g, ''),
-            followers: 0,
-            engagementRate: 0,
-            avgViews: 0,
-            postsPerWeek: 0,
-            trackedSince: new Date(c.created_at),
-            isActive: true,
+        const { listCompetitors } = await import('@/lib/api')
+        const data = await listCompetitors()
+        const mapped: Competitor[] = data.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          platform: c.platform || 'blog',
+          handle: c.handle || c.name.toLowerCase().replace(/\s+/g, ''),
+          followers: c.follower_count || 0,
+          engagementRate: 0,
+          avgViews: 0,
+          postsPerWeek: 0,
+          trackedSince: new Date(c.created_at),
+          isActive: c.is_active !== false,
+        }))
+        setCompetitors(mapped)
+      } catch {
+        setCompetitors([])
+      }
+
+      // Fetch performance analysis for comparison
+      try {
+        const { getCompetitorPerformanceAnalysis } = await import('@/lib/api')
+        const analysis = await getCompetitorPerformanceAnalysis()
+        const comp: PerformanceComparison[] = analysis.competitors.map(c => ({
+          metric: c.name,
+          yourValue: 0,
+          competitorAvg: c.avg_engagement_rate,
+          gap: 0,
+          trend: 'stable' as const,
+        }))
+        setComparison(comp)
+      } catch {
+        setComparison([])
+      }
+
+      // Fetch posts for selected competitor
+      if (selectedCompetitor !== 'all') {
+        try {
+          const { getCompetitorContent } = await import('@/lib/api')
+          const contentData = await getCompetitorContent(selectedCompetitor)
+          const mappedPosts: CompetitorPost[] = contentData.map((p: any) => ({
+            id: p.id,
+            competitorId: p.competitor_id,
+            title: p.content_type || 'Post',
+            content: p.content,
+            platform: selectedCompetitor && competitors.find(c => c.id === selectedCompetitor)?.platform || 'blog',
+            publishedAt: new Date(p.published_at),
+            metrics: {
+              views: p.views || 0,
+              likes: p.likes || 0,
+              comments: p.comments || 0,
+              shares: p.shares || 0,
+              engagement: p.engagement_score || 0,
+            },
+            url: p.url || undefined,
           }))
-          setCompetitors(mapped)
-          return
+          setPosts(mappedPosts)
+        } catch {
+          setPosts([])
         }
-      } catch { /* fallback to mock */ }
-      setCompetitors(mockCompetitors)
+      }
     } catch {
-      setCompetitors(mockCompetitors)
+      setCompetitors([])
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
     }
-  }, [])
+  }, [selectedCompetitor, competitors])
 
   useEffect(() => {
     fetchCompetitors()
@@ -238,24 +192,47 @@ export default function CompetitorAnalysis() {
     return filtered.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())
   }, [posts, selectedCompetitor])
 
-  const handleAddCompetitor = useCallback((data: { name: string; platform: string; handle: string }) => {
-    const newCompetitor: Competitor = {
-      id: Date.now().toString(),
-      name: data.name,
-      platform: data.platform as Competitor['platform'],
-      handle: data.handle,
-      followers: 0,
-      engagementRate: 0,
-      avgViews: 0,
-      postsPerWeek: 0,
-      trackedSince: new Date(),
-      isActive: true,
+  const handleAddCompetitor = useCallback(async (data: { name: string; platform: string; handle: string }) => {
+    try {
+      const { addCompetitor } = await import('@/lib/api')
+      const result = await addCompetitor({ name: data.name, platform: data.platform, handle: data.handle })
+      const newCompetitor: Competitor = {
+        id: result.id,
+        name: result.name,
+        platform: result.platform as Competitor['platform'],
+        handle: result.handle,
+        followers: result.follower_count || 0,
+        engagementRate: 0,
+        avgViews: 0,
+        postsPerWeek: 0,
+        trackedSince: new Date(result.created_at),
+        isActive: result.is_active !== false,
+      }
+      setCompetitors(prev => [...prev, newCompetitor])
+    } catch {
+      // Fallback: add locally
+      const newCompetitor: Competitor = {
+        id: Date.now().toString(),
+        name: data.name,
+        platform: data.platform as Competitor['platform'],
+        handle: data.handle,
+        followers: 0,
+        engagementRate: 0,
+        avgViews: 0,
+        postsPerWeek: 0,
+        trackedSince: new Date(),
+        isActive: true,
+      }
+      setCompetitors(prev => [...prev, newCompetitor])
     }
-    setCompetitors(prev => [...prev, newCompetitor])
     setShowAddForm(false)
   }, [])
 
-  const handleRemoveCompetitor = useCallback((id: string) => {
+  const handleRemoveCompetitor = useCallback(async (id: string) => {
+    try {
+      const { removeCompetitor } = await import('@/lib/api')
+      await removeCompetitor(id)
+    } catch { /* fall through to local removal */ }
     setCompetitors(prev => prev.filter(c => c.id !== id))
   }, [])
 
@@ -380,7 +357,7 @@ export default function CompetitorAnalysis() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockComparison.map((item) => (
+            {comparison.map((item) => (
               <div key={item.metric} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-slate-900 dark:text-slate-100">
