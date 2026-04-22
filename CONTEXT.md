@@ -60,7 +60,7 @@
 | CompetitorAnalysis | ✅ Real API (mock fallback) |
 | TrendingTopics | ✅ Real API |
 | TeamCalendar | 🔶 Demo Data (no backend) |
-| EngagementPrediction | 🔶 Demo Data (no backend) |
+| EngagementPrediction | ✅ Real API (rule-based + optional GROQ AI) |
 
 ## What's Next — Prioritized
 
@@ -70,7 +70,7 @@
 | 2 | ~~PageHeader rollout~~ | ~~Medium~~ | ✅ **Done** — 36/42 components (6 skipped: Dashboard, SmartEditor, ContentCreatePanel, ContentDetailPanel, ScheduleCalendar, ScheduleModal) |
 | 3 | ~~Mobile QA~~ | ~~Medium~~ | ✅ **Done** — safe-area, touch targets, 16 responsive grid fixes, viewport config |
 | 4 | ~~TeamCalendar backend~~ | ~~Medium~~ | ✅ **Done** — 6 API endpoints, real data integration |
-| 5 | **EngagementPrediction backend** — build API endpoints | Medium | Currently demo data only |
+| 5 | ~~EngagementPrediction backend~~ | ~~Medium~~ | ✅ **Done** — Rule-based scoring + AI enhancement, 3 endpoints |
 | 6 | **Custom Vercel domain** | Low | |
 | 7 | **Render paid plan** — eliminate 30s cold starts | Low | $7/mo |
 
