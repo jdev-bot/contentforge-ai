@@ -7,6 +7,8 @@ RateLimitHeadersMiddleware. The cache is invalidated immediately
 when usage is incremented (content generation).
 """
 
+from __future__ import annotations
+
 import logging
 import time
 import threading
