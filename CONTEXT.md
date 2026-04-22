@@ -67,7 +67,7 @@
 | # | Item | Priority | Notes |
 |---|------|----------|-------|
 | 1 | **GROQ_API_KEY** — provide real key for AI content generation | High | Currently placeholder; AI features non-functional without it |
-| 2 | **PageHeader rollout** — apply to remaining 28/31 tabs | Medium | Only 3 done (Analytics, Schedule, Home) |
+| 2 | ~~PageHeader rollout~~ | ~~Medium~~ | ✅ **Done** — 36/42 components (6 skipped: Dashboard, SmartEditor, ContentCreatePanel, ContentDetailPanel, ScheduleCalendar, ScheduleModal) |
 | 3 | **Mobile QA** — visual review on actual devices | Medium | |
 | 4 | **TeamCalendar backend** — build API endpoints | Medium | Currently demo data only |
 | 5 | **EngagementPrediction backend** — build API endpoints | Medium | Currently demo data only |
@@ -76,10 +76,10 @@
 
 ## Git HEAD
 
-- **Local/Remote:** `685f1e0` (synced)
-- **Render:** `685f1e0` (deployed 2026-04-22 04:31 UTC)
-- **Vercel:** `e82d9a9` (frontend unchanged since Apr 21 — `685f1e0` is backend-only)
+- **Local/Remote:** `c85055e` (synced)
+- **Render:** `685f1e0` (deployed 2026-04-22 04:31 UTC, backend-only fix)
+- **Vercel:** `c85055e` (deployed 2026-04-22, PageHeader rollout)
 
 ---
 
-*Last updated: 2026-04-22 08:49 UTC*
+*Last updated: 2026-04-22 13:50 UTC*
