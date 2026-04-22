@@ -4743,3 +4743,180 @@ export async function getCompetitorAnalysis(): Promise<PerformanceAnalysisData> 
 
 // ============ End Competitors API ============
 
+
+// ============ Team Calendar API ============
+
+export interface TeamCalendarMember {
+  id: string
+  name: string
+  email: string
+  role: string
+  avatar_url: string | null
+  color: string | null
+}
+
+export interface TeamCalendarPost {
+  id: string
+  user_id: string
+  content_id: string
+  platform: string
+  scheduled_at: string
+  status: string
+  asset_type: string
+  timezone: string
+  content: string | null
+  settings: Record<string, unknown>
+  assigned_to: string[]
+  recurrence: string | null
+  created_at: string
+  updated_at: string
+  published_at: string | null
+  error_message: string | null
+  published_url: string | null
+  author_name: string | null
+  author_avatar: string | null
+}
+
+export interface TeamCalendarDay {
+  date: string
+  posts: TeamCalendarPost[]
+}
+
+export interface TeamCalendarMonthResponse {
+  org_id: string
+  year: number
+  month: number
+  members: TeamCalendarMember[]
+  days: TeamCalendarDay[]
+  stats: Record<string, number>
+}
+
+export interface TeamCalendarWeekResponse {
+  org_id: string
+  start_date: string
+  end_date: string
+  members: TeamCalendarMember[]
+  days: TeamCalendarDay[]
+  stats: Record<string, number>
+}
+
+export interface TeamCalendarDayResponse {
+  org_id: string
+  date: string
+  members: TeamCalendarMember[]
+  posts: TeamCalendarPost[]
+  stats: Record<string, number>
+}
+
+export interface TeamConflictDetail {
+  post_id: string
+  title: string | null
+  platform: string
+  scheduled_at: string
+  assigned_to: string[]
+}
+
+export interface TeamConflictCheckResponse {
+  has_conflicts: boolean
+  conflict_count: number
+  conflicts: TeamConflictDetail[]
+}
+
+export async function getTeamCalendarMonth(
+  orgId: string,
+  year: number,
+  month: number,
+  memberId?: string,
+  platform?: string,
+): Promise<TeamCalendarMonthResponse> {
+  const params = new URLSearchParams({ org_id: orgId, year: String(year), month: String(month) })
+  if (memberId) params.append('member', memberId)
+  if (platform) params.append('platform', platform)
+  const response = await apiFetch(`${API_URL}/team-calendar/month?${params.toString()}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch team calendar month')
+  }
+  return response.json()
+}
+
+export async function getTeamCalendarWeek(
+  orgId: string,
+  startDate: string,
+  memberId?: string,
+  platform?: string,
+): Promise<TeamCalendarWeekResponse> {
+  const params = new URLSearchParams({ org_id: orgId, start_date: startDate })
+  if (memberId) params.append('member', memberId)
+  if (platform) params.append('platform', platform)
+  const response = await apiFetch(`${API_URL}/team-calendar/week?${params.toString()}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch team calendar week')
+  }
+  return response.json()
+}
+
+export async function getTeamCalendarDay(
+  orgId: string,
+  date: string,
+  memberId?: string,
+  platform?: string,
+): Promise<TeamCalendarDayResponse> {
+  const params = new URLSearchParams({ org_id: orgId, date })
+  if (memberId) params.append('member', memberId)
+  if (platform) params.append('platform', platform)
+  const response = await apiFetch(`${API_URL}/team-calendar/day?${params.toString()}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch team calendar day')
+  }
+  return response.json()
+}
+
+export async function getTeamCalendarMembers(orgId: string): Promise<TeamCalendarMember[]> {
+  const params = new URLSearchParams({ org_id: orgId })
+  const response = await apiFetch(`${API_URL}/team-calendar/members?${params.toString()}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to fetch team members')
+  }
+  return response.json()
+}
+
+export async function updatePostAssignment(
+  postId: string,
+  orgId: string,
+  assignedTo: string[],
+): Promise<{ message: string; post_id: string; assigned_to: string[] }> {
+  const params = new URLSearchParams({ org_id: orgId })
+  const response = await apiFetch(`${API_URL}/team-calendar/schedule/${postId}/assign?${params.toString()}`, {
+    method: 'PUT',
+    body: JSON.stringify({ assigned_to: assignedTo }),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to update post assignment')
+  }
+  return response.json()
+}
+
+export async function checkTeamCalendarConflicts(
+  orgId: string,
+  scheduledAt: string,
+  platform: string,
+  excludeId?: string,
+  windowMinutes?: number,
+): Promise<TeamConflictCheckResponse> {
+  const params = new URLSearchParams({ org_id: orgId, scheduled_at: scheduledAt, platform })
+  if (excludeId) params.append('exclude_id', excludeId)
+  if (windowMinutes) params.append('window_minutes', String(windowMinutes))
+  const response = await apiFetch(`${API_URL}/team-calendar/conflicts?${params.toString()}`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to check conflicts')
+  }
+  return response.json()
+}
+
+// ============ End Team Calendar API ============
