@@ -31,6 +31,7 @@ import {
   MoreVertical,
   Loader2,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { cn } from '@/lib/utils'
 
 interface RSSFeedManagerProps {
@@ -246,25 +247,20 @@ export default function RSSFeedManager({ onFeedSelect, selectedFeedId }: RSSFeed
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Rss className="w-5 h-5 text-orange-500" />
-            RSS Feeds
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {feeds.length} feed{feeds.length !== 1 ? 's' : ''} subscribed
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowAddForm(!showAddForm)}
-          leftIcon={<Plus className="w-4 h-4" />}
-          variant={showAddForm ? 'secondary' : 'primary'}
-        >
-          {showAddForm ? 'Cancel' : 'Add Feed'}
-        </Button>
-      </div>
+      <PageHeader
+        title="RSS Feeds"
+        description={`${feeds.length} feed${feeds.length !== 1 ? 's' : ''} subscribed`}
+        icon={<Rss className="w-5 h-5 text-orange-500" />}
+        actions={
+          <Button
+            onClick={() => setShowAddForm(!showAddForm)}
+            leftIcon={<Plus className="w-4 h-4" />}
+            variant={showAddForm ? 'secondary' : 'primary'}
+          >
+            {showAddForm ? 'Cancel' : 'Add Feed'}
+          </Button>
+        }
+      />
 
       {/* Add Feed Form */}
       {showAddForm && (

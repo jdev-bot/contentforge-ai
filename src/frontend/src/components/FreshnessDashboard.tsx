@@ -20,6 +20,7 @@ import {
   ArrowUpRight,
   Filter,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, GradientCard } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -460,30 +461,28 @@ export default function FreshnessDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Content Freshness</h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Monitor and improve your content quality over time
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            Last scan: {metrics?.lastScan && new Date(metrics.lastScan).toLocaleTimeString()}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<RotateCcw className="w-4 h-4" />}
-            onClick={fetchData}
-            disabled={isLoading}
-          >
-            Refresh
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Content Freshness"
+        description="Monitor and improve your content quality over time"
+        icon={<BarChart3 className="w-5 h-5 text-emerald-600" />}
+        actions={
+          <>
+            <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              Last scan: {metrics?.lastScan && new Date(metrics.lastScan).toLocaleTimeString()}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<RotateCcw className="w-4 h-4" />}
+              onClick={fetchData}
+              disabled={isLoading}
+            >
+              Refresh
+            </Button>
+          </>
+        }
+      />
 
       {/* Score Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

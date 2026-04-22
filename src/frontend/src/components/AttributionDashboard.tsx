@@ -35,6 +35,7 @@ import {
   Search,
   Globe,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -208,24 +209,19 @@ export default function AttributionDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Target className="w-6 h-6 text-violet-600" />
-            Attribution Dashboard
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Multi-touch attribution modeling for content conversions
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowTouchpointForm(true)}
-          leftIcon={<Plus className="w-4 h-4" />}
-        >
-          Add Touchpoint
-        </Button>
-      </div>
+      <PageHeader
+        title="Attribution Dashboard"
+        description="Multi-touch attribution modeling for content conversions"
+        icon={<Target className="w-5 h-5 text-violet-600" />}
+        actions={
+          <Button
+            onClick={() => setShowTouchpointForm(true)}
+            leftIcon={<Plus className="w-4 h-4" />}
+          >
+            Add Touchpoint
+          </Button>
+        }
+      />
 
       {/* Add Touchpoint Modal */}
       <AnimatePresence>

@@ -27,6 +27,7 @@ import {
   Zap,
   ArrowUpRight,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -275,39 +276,35 @@ export default function QualityDashboard({ contentId }: QualityDashboardProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Quality Dashboard
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Content quality analysis and improvement suggestions
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {contentId && (
+      <PageHeader
+        title="Quality Dashboard"
+        description="Content quality analysis and improvement suggestions"
+        icon={<Award className="w-5 h-5 text-blue-600" />}
+        actions={
+          <>
+            {contentId && (
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<Award className="w-4 h-4" />}
+                onClick={handleAnalyze}
+                loading={isAnalyzing}
+              >
+                Analyze
+              </Button>
+            )}
             <Button
-              variant="primary"
+              variant="outline"
               size="sm"
-              leftIcon={<Award className="w-4 h-4" />}
-              onClick={handleAnalyze}
+              leftIcon={<Zap className="w-4 h-4" />}
+              onClick={handleBatchAnalyze}
               loading={isAnalyzing}
             >
-              Analyze
+              Batch Analyze
             </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Zap className="w-4 h-4" />}
-            onClick={handleBatchAnalyze}
-            loading={isAnalyzing}
-          >
-            Batch Analyze
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Batch Progress */}
       {batchProgress && (

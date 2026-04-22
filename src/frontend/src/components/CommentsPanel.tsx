@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Loader2,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -286,26 +287,21 @@ export default function CommentsPanel({ contentId }: CommentsPanelProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-blue-500" />
-            Comments
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {comments.filter(c => !c.is_resolved).length} unresolved · {comments.length} total
-          </p>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={loadComments}
-          title="Refresh comments"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </Button>
-      </div>
+      <PageHeader
+        title="Comments"
+        description={`${comments.filter(c => !c.is_resolved).length} unresolved · ${comments.length} total`}
+        icon={<MessageSquare className="w-5 h-5 text-blue-500" />}
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={loadComments}
+            title="Refresh comments"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        }
+      />
 
       {/* New Comment Input */}
       <Card variant="glass">

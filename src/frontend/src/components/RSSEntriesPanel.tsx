@@ -34,6 +34,7 @@ import {
   Inbox,
   X,
 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { cn } from '@/lib/utils'
 
 interface RSSEntriesPanelProps {
@@ -240,27 +241,19 @@ export default function RSSEntriesPanel({ selectedFeedId, onImportSuccess }: RSS
 
   return (
     <div className="space-y-6">
-      {/* Header with Search and Filters */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <Inbox className="w-5 h-5 text-blue-500" />
-              RSS Entries
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              {filteredEntries.length} entries • {unimportedCount} unimported
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:flex-none">
+      <PageHeader
+        title="RSS Entries"
+        description={`${filteredEntries.length} entries • ${unimportedCount} unimported`}
+        icon={<Inbox className="w-5 h-5 text-blue-500" />}
+        actions={
+          <>
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search entries..."
-                className="pl-10 w-full sm:w-64"
+                className="pl-10 w-48"
               />
             </div>
             <Button
@@ -271,8 +264,9 @@ export default function RSSEntriesPanel({ selectedFeedId, onImportSuccess }: RSS
             >
               Filters
             </Button>
-          </div>
-        </div>
+          </>
+        }
+      />
 
         {/* Filters Panel */}
         {showFilters && (
@@ -357,7 +351,6 @@ export default function RSSEntriesPanel({ selectedFeedId, onImportSuccess }: RSS
             </CardContent>
           </Card>
         )}
-      </div>
 
       {/* Bulk Actions */}
       {selectedCount > 0 && (
