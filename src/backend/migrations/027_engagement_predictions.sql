@@ -22,6 +22,9 @@ CREATE INDEX IF NOT EXISTS idx_engagement_predictions_created_at ON engagement_p
 CREATE INDEX IF NOT EXISTS idx_engagement_predictions_score ON engagement_predictions(user_id, score);
 
 ALTER TABLE engagement_predictions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own engagement predictions" ON engagement_predictions;
 CREATE POLICY "Users can view own engagement predictions" ON engagement_predictions FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own engagement predictions" ON engagement_predictions;
 CREATE POLICY "Users can insert own engagement predictions" ON engagement_predictions FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own engagement predictions" ON engagement_predictions;
 CREATE POLICY "Users can delete own engagement predictions" ON engagement_predictions FOR DELETE USING (auth.uid() = user_id);
