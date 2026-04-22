@@ -7,7 +7,7 @@
 
 - **Name:** ContentForge AI — AI content creation & management platform
 - **GitHub:** `jdev-bot/contentforge-ai` (SSH)
-- **Phase:** Staging — performance + bug fixes deployed, E2E v2 passing 99.4%
+- **Phase:** Staging — all platforms synced at HEAD, ready for next feature work
 - **Tech:** FastAPI (Python) + Next.js 16 (TypeScript) + Supabase (PostgreSQL + Auth)
 
 ## Infrastructure
@@ -30,63 +30,56 @@
 | Email | `test@neo.dev` |
 | Password | `Test1234!` |
 | User ID | `9b2538b0-99e2-4e1e-8864-36ae7e6289a1` |
+| Usage | **Reset to 0** (2026-04-22) |
 
-## Performance Fixes (commit `8b269cf`, deployed 2026-04-21)
+## Deploy Fix (commit `685f1e0`, deployed 2026-04-22)
 
-| Fix | Impact |
-|-----|--------|
-| Removed duplicate `get_user()` in ErrorTrackingMiddleware | ~400ms/request saved |
-| Per-request auth caching (`request_context.py`) | Eliminates redundant Supabase calls |
-| Batch `/api/v1/init` endpoint | 5-call waterfall → 1 call (60% faster) |
-| Client-side stale-while-revalidate cache | Instant tab switches |
-| ETag on `/init` | Conditional 304 responses |
+- **Bug:** `NameError: name 'UsageStats' is not defined` in `rate_limit.py` — class used in module-level annotation before definition
+- **Fix:** Added `from __future__ import annotations` — makes all annotations lazy
+- **Impact:** Render was stuck at `8b269cf` (3 commits behind). Now fully synced at `685f1e0`
 
-## E2E Test Suite v2 (commit `024089a`, 163/164 pass = 99.4%)
+## Performance & Quality Status
 
-- **16 spec files**, ~164 tests, Playwright 1.59.1
-- **1 skip:** Content creation (monthly usage limit 10/10)
-- Local Chromium libs: `/home/claw/.local/lib/playwright-libs/usr/lib/x86_64-linux-gnu/`
+- ✅ Auth caching, batch `/init`, stale-while-revalidate, ETag (commit `8b269cf`)
+- ✅ E2E v2: 163/164 pass (99.4%) — 1 skip (content creation, now unblocked by usage reset)
+- ✅ Backend tests: 530/530
+- ✅ TypeScript: Zero errors
+- ✅ Security audit: All 9 HIGH/CRITICAL findings fixed
+- ✅ 334 API routes live on Render
+- ✅ Test user usage reset to 0
 
-## Bug Fixes Deployed (commit `0e44d2e`, 2026-04-21)
-
-| Bug | Fix |
-|-----|-----|
-| Dashboard ignores `?tab=` URL params | Added `useSearchParams` + `router.replace` on tab change |
-| Project delete uses browser `confirm()` | Replaced with modal dialog (Cancel / Yes Delete) |
-| E2E quality-scoring test wrong endpoint | Fixed to `POST /quality-scoring/batch` |
-
-## Mock → Real API Wiring (commit `e82d9a9`, deployed 2026-04-21)
+## Mock → Real API Wiring Status
 
 | Component | Status |
 |-----------|--------|
-| AlertsCenter | ✅ API: getAlerts, getUnreadAlertCount, acknowledge, resolve |
-| AuditLogs | ✅ Already wired (getAuditLogs, getAuditLogStats) |
-| SentimentDashboard | ✅ Already wired (analyzeSentiment, getSentiment, getSentimentTrend) |
-| QualityDashboard | ✅ Already wired (batchAnalyzeQuality, getQualityScore) |
-| IntegrationsPanel | ✅ API: listIntegrations |
-| CompetitorAnalysis | ✅ API: getCompetitors (mock fallback) |
-| TrendingTopics | ✅ API: getTrendingTopics, generateFromTrend |
-| TeamCalendar | 🔶 Demo Data badge (no backend) |
-| EngagementPrediction | 🔶 Demo Data badge (no backend) |
+| AlertsCenter | ✅ Real API |
+| AuditLogs | ✅ Real API |
+| SentimentDashboard | ✅ Real API |
+| QualityDashboard | ✅ Real API |
+| IntegrationsPanel | ✅ Real API |
+| CompetitorAnalysis | ✅ Real API (mock fallback) |
+| TrendingTopics | ✅ Real API |
+| TeamCalendar | 🔶 Demo Data (no backend) |
+| EngagementPrediction | 🔶 Demo Data (no backend) |
 
-Added: PageHeader `badge` prop, alerts + competitors API functions in api.ts
+## What's Next — Prioritized
 
-## Pending Issues
-
-| Issue | Priority | Status |
-|-------|----------|--------|
-| `POST /admin/reset-usage/{user_id}` — deployed to git, waiting for Render | P3 | Pending Render deploy |
-| Test user at 10/10 monthly usage | P3 | Reset endpoint pending deploy |
-| GROQ_API_KEY placeholder | Low | User to provide |
-| Render Free tier cold starts | Low | Needs paid plan ($7/mo) |
-| Custom Vercel domain | Low | Future |
+| # | Item | Priority | Notes |
+|---|------|----------|-------|
+| 1 | **GROQ_API_KEY** — provide real key for AI content generation | High | Currently placeholder; AI features non-functional without it |
+| 2 | **PageHeader rollout** — apply to remaining 28/31 tabs | Medium | Only 3 done (Analytics, Schedule, Home) |
+| 3 | **Mobile QA** — visual review on actual devices | Medium | |
+| 4 | **TeamCalendar backend** — build API endpoints | Medium | Currently demo data only |
+| 5 | **EngagementPrediction backend** — build API endpoints | Medium | Currently demo data only |
+| 6 | **Custom Vercel domain** | Low | |
+| 7 | **Render paid plan** — eliminate 30s cold starts | Low | $7/mo |
 
 ## Git HEAD
 
-- **Local/Remote:** `e82d9a9` (synced)
-- **Render live:** Pending (auto-deploy from main)
-- **Vercel:** Deployed 2026-04-21 ~18:20 UTC
+- **Local/Remote:** `685f1e0` (synced)
+- **Render:** `685f1e0` (deployed 2026-04-22 04:31 UTC)
+- **Vercel:** `e82d9a9` (frontend unchanged since Apr 21 — `685f1e0` is backend-only)
 
 ---
 
-*Last updated: 2026-04-21 18:25 UTC*
+*Last updated: 2026-04-22 08:49 UTC*
