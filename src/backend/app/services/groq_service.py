@@ -116,5 +116,6 @@ class GroqService:
 
 
 # Legacy singleton — keeps `from app.services.groq_service import groq_service` working
-# Note: direct use of groq_service without a user key will raise NoAPIKeyConfigured
-groq_service = llm_service
+# This is a GroqService instance that delegates to the active per-user LLM service.
+# Direct use without a user key will raise NoAPIKeyConfigured.
+groq_service = GroqService()
