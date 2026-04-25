@@ -63,7 +63,7 @@ All 8 target components now use real API:
 
 | # | Item | Priority | Notes |
 |---|------|----------|-------|
-| 1 | **GROQ_API_KEY** — provide real key for AI content generation | High | Currently placeholder; AI features non-functional without it |
+| 1 | **AI_API_KEY** — provide Google AI Studio key for Gemini 2.5 Flash | High | Provider-agnostic layer done (commit aae3e09); set AI_PROVIDER=google + AI_API_KEY in Render |
 | 2 | ~~PageHeader rollout~~ | ~~Medium~~ | ✅ **Done** — 36/42 components |
 | 3 | ~~Mobile QA~~ | ~~Medium~~ | ✅ **Done** — safe-area, touch targets, 16 responsive grid fixes |
 | 4 | ~~TeamCalendar backend~~ | ~~Medium~~ | ✅ **Done** — 6 API endpoints |
@@ -75,10 +75,10 @@ All 8 target components now use real API:
 
 ## Git HEAD
 
-- **Local/Remote:** `fa77752` (synced)
+- **Local/Remote:** `aae3e09` (synced)
 - **Render:** Auto-deploy from main
 - **Vercel:** Auto-deploy from main
 
 ---
 
-*Last updated: 2026-04-22 18:45 UTC*
+*Last updated: 2026-04-25 14:30 UTC*
