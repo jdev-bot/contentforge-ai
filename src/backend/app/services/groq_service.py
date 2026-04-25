@@ -27,9 +27,19 @@ _user_llm_service: contextvars.ContextVar[Optional[LLMService]] = contextvars.Co
 )
 
 
-class NoAPIKeyConfigured(Exception):
+from fastapi import HTTPException, status as http_status
+
+
+class NoAPIKeyConfigured(HTTPException):
     """Raised when no user API key is configured and there's no platform fallback."""
-    pass
+    def __init__(self):
+        super().__init__(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail=(
+                "No API key configured. Please add your API key in Settings → API Keys. "
+                "ContentForge requires your own provider key (Google AI Studio, Groq, etc.) to use AI features."
+            ),
+        )
 
 
 def set_user_llm_service(svc: Optional[LLMService]) -> contextvars.Token:
@@ -56,10 +66,7 @@ def get_active_llm_service() -> LLMService:
     if svc is not None:
         return svc
     # No user key configured — raise a descriptive error
-    raise NoAPIKeyConfigured(
-        "No API key configured. Please add your API key in Settings → API Keys. "
-        "ContentForge requires your own provider key (Google AI Studio, Groq, etc.) to use AI features."
-    )
+    raise NoAPIKeyConfigured()
 
 
 class GroqService:

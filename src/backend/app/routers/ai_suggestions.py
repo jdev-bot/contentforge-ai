@@ -262,7 +262,6 @@ CONFIDENCE:
             )
 
         return AIImprovementSuggestion(**result.data[0])
-
     except HTTPException:
         raise
     except Exception as e:
@@ -468,7 +467,6 @@ HEADING_STRUCTURE:
             )
 
         return SEOAnalysisResult(**result.data[0])
-
     except HTTPException:
         raise
     except Exception as e:
@@ -600,7 +598,6 @@ Provide:
             )
 
         return ToneAdjustmentResult(**result.data[0])
-
     except HTTPException:
         raise
     except Exception as e:
@@ -634,6 +631,10 @@ async def list_suggestions(
         result = query.execute()
 
         return [AIImprovementSuggestion(**s) for s in result.data]
+
+    except HTTPException:
+
+        raise
 
     except Exception as e:
         raise HTTPException(
@@ -682,7 +683,6 @@ async def apply_suggestion(suggestion_id: UUID, user=Depends(get_auth_user)):
         ).eq("id", suggestion["content_id"]).execute()
 
         return AIImprovementSuggestion(**update_result.data[0])
-
     except HTTPException:
         raise
     except Exception as e:
@@ -709,6 +709,10 @@ async def list_seo_analyses(content_id: UUID, user=Depends(get_auth_user)):
 
         return [SEOAnalysisResult(**a) for a in result.data]
 
+    except HTTPException:
+
+        raise
+
     except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -734,6 +738,10 @@ async def list_tone_adjustments(content_id: UUID, user=Depends(get_auth_user)):
         )
 
         return [ToneAdjustmentResult(**t) for t in result.data]
+
+    except HTTPException:
+
+        raise
 
     except Exception as e:
         raise HTTPException(
@@ -765,6 +773,10 @@ async def rewrite_content_endpoint(
             content=rewritten_text,
             tokens_used=tokens_used,
         )
+
+    except HTTPException:
+
+        raise
 
     except Exception as e:
         raise HTTPException(
@@ -798,6 +810,10 @@ async def expand_content_endpoint(
             original_length=original_words,
             new_length=expanded_words,
         )
+
+    except HTTPException:
+
+        raise
 
     except Exception as e:
         raise HTTPException(
@@ -836,6 +852,10 @@ async def condense_content_endpoint(
             reduction_percentage=round(reduction_pct, 1),
         )
 
+    except HTTPException:
+
+        raise
+
     except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -868,6 +888,10 @@ async def optimize_content_endpoint(
                 "optimizations_applied", ["platform_formatting"]
             ),
         )
+
+    except HTTPException:
+
+        raise
 
     except Exception as e:
         raise HTTPException(

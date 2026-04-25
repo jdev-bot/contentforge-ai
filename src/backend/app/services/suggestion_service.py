@@ -52,6 +52,8 @@ class SuggestionService:
                 .execute()
             )
             return result.data or []
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to get user content history: {e}")
             return []
@@ -72,6 +74,8 @@ class SuggestionService:
                 .execute()
             )
             return result.data or []
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to get engagement data: {e}")
             return []
@@ -92,6 +96,8 @@ class SuggestionService:
                 .execute()
             )
             return result.data or []
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to get distributions: {e}")
             return []
@@ -175,6 +181,10 @@ Format your response as JSON:
             )
 
             return suggestions
+
+        except HTTPException:
+
+            raise
 
         except Exception as e:
             logger.error(f"Failed to suggest topics: {e}")
@@ -261,6 +271,10 @@ Format your response as JSON:
 
             return suggestions
 
+        except HTTPException:
+
+            raise
+
         except Exception as e:
             logger.error(f"Failed to suggest posting times: {e}")
             return []
@@ -346,6 +360,10 @@ Format your response as JSON:
             suggestions = self._parse_json_response(result, "suggestions")
             return suggestions[:limit]
 
+        except HTTPException:
+
+            raise
+
         except Exception as e:
             logger.error(f"Failed to suggest content improvements: {e}")
             return []
@@ -376,6 +394,8 @@ Format your response as JSON:
                 cache.delete_pattern("", prefix=f"suggestions:{user_id}")
                 return result.data[0]
             return None
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to save suggestions: {e}")
             return None
@@ -398,6 +418,8 @@ Format your response as JSON:
             query = query.order("created_at", desc=True).limit(limit)
             result = query.execute()
             return result.data or []
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to get saved suggestions: {e}")
             return []
@@ -413,6 +435,8 @@ Format your response as JSON:
                 .execute()
             )
             return bool(result.data)
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to delete suggestion: {e}")
             return False

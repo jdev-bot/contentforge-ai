@@ -150,6 +150,10 @@ class CategorizationService:
 
             return saved if saved else categorization
 
+        except HTTPException:
+
+            raise
+
         except Exception as e:
             logger.error(f"Failed to categorize content: {e}")
             return {"error": str(e), "content_id": content_id}
@@ -208,6 +212,8 @@ class CategorizationService:
                     )
                     await self._update_content_metadata(item["id"], categorization)
                     results.append(saved or categorization)
+                except HTTPException:
+                    raise
                 except Exception as e:
                     logger.error(f"Failed to categorize content {item['id']}: {e}")
                     continue
@@ -217,6 +223,10 @@ class CategorizationService:
                 "categorized": len(results),
                 "results": results,
             }
+
+        except HTTPException:
+
+            raise
 
         except Exception as e:
             logger.error(f"Batch categorization failed: {e}")
@@ -280,6 +290,10 @@ class CategorizationService:
 
             return saved or tags
 
+        except HTTPException:
+
+            raise
+
         except Exception as e:
             logger.error(f"Failed to auto-tag content: {e}")
             return {"error": str(e), "content_id": content_id}
@@ -340,6 +354,8 @@ class CategorizationService:
                         "id", item["id"]
                     ).execute()
                     results.append(saved or tags)
+                except HTTPException:
+                    raise
                 except Exception as e:
                     logger.error(f"Failed to tag content {item['id']}: {e}")
                     continue
@@ -349,6 +365,10 @@ class CategorizationService:
                 "tagged": len(results),
                 "results": results,
             }
+
+        except HTTPException:
+
+            raise
 
         except Exception as e:
             logger.error(f"Batch auto-tag failed: {e}")
@@ -446,6 +466,8 @@ Format your response as JSON:
                     "created_at": datetime.now(timezone.utc).isoformat(),
                 }
                 self.supabase.table("content_clusters").insert(cluster_data).execute()
+            except HTTPException:
+                raise
             except Exception as e:
                 logger.error(f"Failed to save clusters: {e}")
 
@@ -457,6 +479,10 @@ Format your response as JSON:
             )
 
             return response
+
+        except HTTPException:
+
+            raise
 
         except Exception as e:
             logger.error(f"Content clustering failed: {e}")
@@ -485,6 +511,8 @@ Format your response as JSON:
             if result.data:
                 return result.data[0]
             return None
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to get categorization: {e}")
             return None
@@ -508,6 +536,8 @@ Format your response as JSON:
             if result.data:
                 return result.data[0]
             return None
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to get content tags: {e}")
             return None
@@ -532,6 +562,8 @@ Format your response as JSON:
                 cache.delete_pattern("", prefix=f"categorization:{user_id}")
                 return result.data[0]
             return None
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to update categorization: {e}")
             return None
@@ -548,6 +580,8 @@ Format your response as JSON:
             )
             cache.delete_pattern("", prefix=f"categorization:{user_id}")
             return bool(result.data)
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to delete categorization: {e}")
             return False
@@ -573,6 +607,8 @@ Format your response as JSON:
             query = query.order("created_at", desc=True).limit(limit)
             result = query.execute()
             return result.data or []
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to list categorizations: {e}")
             return []
@@ -720,6 +756,8 @@ Format your response as JSON:
             )
             cache.delete_pattern("", prefix=f"categorization:{user_id}")
             return result.data[0] if result.data else None
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to save categorization: {e}")
             return None
@@ -745,6 +783,8 @@ Format your response as JSON:
             }
             result = self.supabase.table("content_tags").insert(data).execute()
             return result.data[0] if result.data else None
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to save tags: {e}")
             return None
@@ -764,6 +804,8 @@ Format your response as JSON:
                 "id", content_id
             ).execute()
             return True
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to update content metadata: {e}")
             return False
@@ -784,6 +826,8 @@ Format your response as JSON:
                 .execute()
             )
             return result.data or []
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to get user content for clustering: {e}")
             return []

@@ -567,7 +567,6 @@ Content to analyze:
             logger.warning(f"Failed to save prediction history: {save_err}")
 
         return result
-
     except HTTPException:
         raise
     except Exception as e:
@@ -630,6 +629,10 @@ async def get_prediction_history(
             page=(offset // limit) + 1,
             limit=limit,
         )
+
+    except HTTPException:
+
+        raise
 
     except Exception as e:
         logger.error(f"Failed to get prediction history: {e}")

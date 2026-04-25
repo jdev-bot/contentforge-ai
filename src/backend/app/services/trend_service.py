@@ -318,6 +318,10 @@ Format your response as JSON:
 
             return enriched_trends
 
+        except HTTPException:
+
+            raise
+
         except Exception as e:
             logger.error(f"AI analysis failed: {e}")
             return trends
@@ -346,6 +350,8 @@ Format your response as JSON:
                         "content_opportunities": item.get("content_opportunities", []),
                         "emerging_subtopics": item.get("emerging_subtopics", []),
                     }
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to parse AI analysis: {e}")
 
@@ -397,6 +403,10 @@ Format your response as JSON:
                     self.supabase.table("trending_topics").insert(insert_data).execute()
                     saved_count += 1
 
+            except HTTPException:
+
+                raise
+
             except Exception as e:
                 logger.error(f"Failed to save trend {trend.get('topic')}: {e}")
                 continue
@@ -420,6 +430,10 @@ Format your response as JSON:
             result = query.execute()
             return result.data or []
 
+        except HTTPException:
+
+            raise
+
         except Exception as e:
             logger.error(f"Failed to get trending topics: {e}")
             return []
@@ -442,6 +456,10 @@ Format your response as JSON:
                 topics_by_category[cat].append(topic)
 
             return topics_by_category
+
+        except HTTPException:
+
+            raise
 
         except Exception as e:
             logger.error(f"Failed to get topics by category: {e}")
@@ -489,6 +507,10 @@ Format your response as JSON:
             relevant_topics.sort(key=lambda x: x["relevance_score"], reverse=True)
             return relevant_topics[:limit]
 
+        except HTTPException:
+
+            raise
+
         except Exception as e:
             logger.error(f"Failed to get relevant topics: {e}")
             return []
@@ -535,6 +557,10 @@ Format your response as JSON:
             self.supabase.table("user_topic_interests").upsert(data).execute()
             return True
 
+        except HTTPException:
+
+            raise
+
         except Exception as e:
             logger.error(f"Failed to track topic for user: {e}")
             return False
@@ -550,6 +576,10 @@ Format your response as JSON:
             )
 
             return result.data or []
+
+        except HTTPException:
+
+            raise
 
         except Exception as e:
             logger.error(f"Failed to get user tracked topics: {e}")
@@ -604,6 +634,10 @@ CTA:
             content_data["platform"] = platform
 
             return content_data
+
+        except HTTPException:
+
+            raise
 
         except Exception as e:
             logger.error(f"Failed to generate content from trend: {e}")
@@ -675,6 +709,10 @@ CTA:
                 cta_section = result.split("CTA:")[1].strip()
                 data["cta"] = cta_section.split("\n")[0].strip()
 
+        except HTTPException:
+
+            raise
+
         except Exception as e:
             logger.error(f"Failed to parse generated content: {e}")
             data["content"] = result.strip()
@@ -703,6 +741,10 @@ CTA:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
+        except HTTPException:
+
+            raise
+
         except Exception as e:
             logger.error(f"Failed to update trending topics: {e}")
             return {
@@ -721,6 +763,8 @@ CTA:
                 .execute()
             )
             return len(result.data or [])
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to cleanup expired trends: {e}")
             return 0
@@ -736,6 +780,8 @@ CTA:
                 .execute()
             )
             return result.data or []
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to get velocity leaderboard: {e}")
             return []
@@ -783,6 +829,10 @@ CTA:
                 "highest_velocity_topic": highest_topic,
                 "category_distribution": categories,
             }
+
+        except HTTPException:
+
+            raise
 
         except Exception as e:
             logger.error(f"Failed to get trending insights: {e}")

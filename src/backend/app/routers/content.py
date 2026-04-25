@@ -144,6 +144,10 @@ async def create_content(
 
         return ContentResponse(**result.data[0])
 
+    except HTTPException:
+
+        raise
+
     except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
@@ -183,6 +187,10 @@ async def list_content(
         cache.set(cache_key, [c.model_dump() for c in content_list], ttl=CACHE_TTL["content_list"], prefix=f"user:{user.id}")
         return content_list
 
+    except HTTPException:
+
+        raise
+
     except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -221,7 +229,6 @@ async def get_content(content_id: UUID, user=Depends(get_auth_user)):
         # Cache the result
         cache.set(cache_key, content_item.model_dump(), ttl=CACHE_TTL["content_detail"], prefix=f"user:{user.id}")
         return content_item
-
     except HTTPException:
         raise
     except Exception as e:
@@ -287,6 +294,8 @@ async def generate_assets(
                         "status": "generated",
                     }
                 )
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Error generating threads: {e}")
 
@@ -306,6 +315,8 @@ async def generate_assets(
                         "status": "generated",
                     }
                 )
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Error generating LinkedIn posts: {e}")
 
@@ -322,6 +333,8 @@ async def generate_assets(
                     "status": "generated",
                 }
             )
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Error generating newsletter: {e}")
 
@@ -338,6 +351,8 @@ async def generate_assets(
                     "status": "generated",
                 }
             )
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Error generating video script: {e}")
 
@@ -359,7 +374,6 @@ async def generate_assets(
         cache.delete_pattern("analytics_", prefix=f"user:{user.id}")
 
         return created_assets
-
     except HTTPException:
         raise
     except Exception as e:
@@ -394,6 +408,10 @@ async def list_assets(content_id: UUID, user=Depends(get_auth_user)):
         # Cache the result
         cache.set(cache_key, [a.model_dump() for a in assets_list], ttl=CACHE_TTL["content_detail"], prefix=f"user:{user.id}")
         return assets_list
+
+    except HTTPException:
+
+        raise
 
     except Exception as e:
         raise HTTPException(
@@ -464,7 +482,6 @@ async def delete_content(
         cache.delete_pattern("analytics_", prefix=f"user:{user.id}")
 
         return None
-
     except HTTPException:
         raise
     except Exception as e:

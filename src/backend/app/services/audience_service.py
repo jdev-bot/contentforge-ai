@@ -521,6 +521,8 @@ Provide a brief summary (2-3 sentences) highlighting the key insight and one act
                 "key_finding": f"Period-over-period growth has {'improved' if comparisons.get('improved') else 'declined'} by {abs(comparisons.get('change_percent', 0))}%.",
                 "recommendation": "Focus on consistent posting and engagement to maintain momentum.",
             }
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Error generating AI insights: {e}")
             return {

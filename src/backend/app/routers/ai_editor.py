@@ -192,6 +192,10 @@ async def rewrite_content(
 
         return response
 
+    except HTTPException:
+
+        raise
+
     except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -232,6 +236,10 @@ async def expand_content(
         )
 
         return response
+
+    except HTTPException:
+
+        raise
 
     except Exception as e:
         raise HTTPException(
@@ -278,6 +286,10 @@ async def condense_content(
 
         return response
 
+    except HTTPException:
+
+        raise
+
     except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -315,6 +327,10 @@ async def optimize_content(
         )
 
         return response
+
+    except HTTPException:
+
+        raise
 
     except Exception as e:
         raise HTTPException(
@@ -356,6 +372,10 @@ async def get_editor_history(
             )
             for item in result.data
         ]
+
+    except HTTPException:
+
+        raise
 
     except Exception as e:
         raise HTTPException(
