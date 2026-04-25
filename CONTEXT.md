@@ -7,7 +7,7 @@
 
 - **Name:** ContentForge AI — AI content creation & management platform
 - **GitHub:** `jdev-bot/contentforge-ai` (SSH)
-- **Phase:** Staging — all platforms synced at HEAD, mock data fully purged
+- **Phase:** Staging — BYOK feature complete, awaiting Google AI key
 - **Tech:** FastAPI (Python) + Next.js 16 (TypeScript) + Supabase (PostgreSQL + Auth)
 
 ## Infrastructure
@@ -16,12 +16,31 @@
 |----------|---------|---------|
 | **Render** | Backend API | `srv-d7fhaif7f7vs73a168a0`, **Free tier**, cold starts ~30s, auto-deploy from main |
 | **Vercel** | Frontend + proxy | `prj_LG8wzPFJVaSDwueFnorflBBwHAOc`, Next.js 16.2.3, deploy from `src/frontend/` |
-| **Supabase** | DB + Auth | `zwbbmcbhrhlnoharfzdt`, 95 tables, all RLS enabled |
+| **Supabase** | DB + Auth | `zwbbmcbhrhlnoharfzdt`, 96 tables (incl. api_keys), all RLS enabled |
 
 - **Backend URL:** `https://contentforge-ai-api.onrender.com`
 - **Frontend URL:** `https://frontend-theta-seven-65.vercel.app`
 - **API Proxy:** `/api/v1/*` → Render (via Vercel rewrites)
-- **Deploy command:** `cd src/frontend && vercel --prod`
+
+## BYOK (Bring Your Own Key) — New Feature
+
+**Commit:** `c287993` — Per-user encrypted API keys for AI providers
+
+### Architecture
+- **Migration 029:** `api_keys` table — RLS, unique `(user_id, provider)`, encrypted at rest
+- **Encryption:** AES-256-GCM via `ENCRYPTION_KEY` (falls back to `SECRET_KEY`)
+- **Router:** `POST/GET/DELETE /api/v1/api-keys`, `POST .../validate` — live key validation on save
+- **Middleware:** `BYOKMiddleware` extracts JWT → resolves user key → sets context var
+- **Shim:** `groq_service` delegates to context var per-request; zero changes to existing service code
+- **Frontend:** `APIKeysTab` component in Settings → add, validate, delete keys
+- **Providers:** Google, Groq, Cerebras, OpenRouter, custom (any OpenAI-compatible)
+
+### How It Works
+1. User adds API key in Settings → "API Keys" tab
+2. Key is validated live against provider's `/models` endpoint
+3. Stored AES-256-GCM encrypted in Supabase, masked on read (`sk-abc...xyz`)
+4. Every API request: BYOK middleware decodes JWT → resolves user's key → context var
+5. All LLM calls transparently route through user's key (or fall back to platform default)
 
 ## Test Account
 
@@ -30,55 +49,30 @@
 | Email | `test@neo.dev` |
 | Password | `Test1234!` |
 | User ID | `9b2538b0-99e2-4e1e-8864-36ae7e6289a1` |
-| Usage | **Reset to 0** (2026-04-22) |
 
 ## Performance & Quality Status
 
-- ✅ Auth caching, batch `/init`, stale-while-revalidate, ETag (commit `8b269cf`)
-- ✅ E2E v2: 163/164 pass (99.4%)
-- ✅ Backend tests: 530/530
-- ✅ TypeScript: Zero errors
-- ✅ Security audit: All 9 HIGH/CRITICAL findings fixed
-- ✅ 335+ API routes live on Render
-- ✅ Mock data purge: **COMPLETE** — zero mock data across all components
-
-## Mock → Real API Status (COMPLETE)
-
-All 8 target components now use real API:
-
-| Component | Status | Backend Router |
-|-----------|--------|----------------|
-| AlertsCenter | ✅ Real API | `alerts.py` |
-| AuditLogs | ✅ Real API | `audit_logs.py` |
-| TrendingTopics | ✅ Real API | `trends.py` |
-| IntegrationsPanel | ✅ Real API | `integrations.py` (webhooks/API keys: no backend yet, empty state) |
-| ABTestingFramework | ✅ Real API | `ab_testing.py` (new, migration 028) |
-| CompetitorAnalysis | ✅ Real API | `competitors.py` |
-| QualityDashboard | ✅ Real API | `quality_scoring.py` |
-| SentimentDashboard | ✅ Real API | `sentiment.py` |
-| TeamCalendar | ✅ Real API | `team_calendar.py` |
-| EngagementPrediction | ✅ Real API | `engagement_prediction.py` |
+- ✅ Backend tests: 49 pass (encryption + BYOK + LLM presets + shim context var)
+- ✅ TypeScript: Zero errors (frontend compiles clean)
+- ✅ Security: Keys encrypted at rest, never returned unmasked, RLS enforced
+- ✅ All existing service/router code works unchanged via context var shim
 
 ## What's Next — Prioritized
 
 | # | Item | Priority | Notes |
 |---|------|----------|-------|
-| 1 | **AI_API_KEY** — provide Google AI Studio key for Gemini 2.5 Flash | High | Provider-agnostic layer done (commit aae3e09); set AI_PROVIDER=google + AI_API_KEY in Render |
-| 2 | ~~PageHeader rollout~~ | ~~Medium~~ | ✅ **Done** — 36/42 components |
-| 3 | ~~Mobile QA~~ | ~~Medium~~ | ✅ **Done** — safe-area, touch targets, 16 responsive grid fixes |
-| 4 | ~~TeamCalendar backend~~ | ~~Medium~~ | ✅ **Done** — 6 API endpoints |
-| 5 | ~~EngagementPrediction backend~~ | ~~Medium~~ | ✅ **Done** — Rule-based scoring + AI enhancement |
-| 6 | ~~Mock data purge~~ | ~~Medium~~ | ✅ **Done** — All 8 components + 2 already-done, ABTesting backend + migration 028 |
-| 7 | **Custom Vercel domain** | Low | |
-| 8 | **Render paid plan** — eliminate 30s cold starts | Low | $7/mo |
-| 9 | **Webhooks/API Keys CRUD backend** | Low | IntegrationsPanel webhooks & API keys tabs show empty state — no backend yet |
+| 1 | **AI_API_KEY** — set Google AI Studio key in Render env vars | High | Platform default until users add their own |
+| 2 | **ENCRYPTION_KEY** — set a dedicated key in Render env vars | High | Falls back to SECRET_KEY but should be separate |
+| 3 | **Custom Vercel domain** | Low | |
+| 4 | **Render paid plan** — eliminate 30s cold starts | Low | $7/mo |
+| 5 | **Webhooks/API Keys CRUD backend** | Low | IntegrationsPanel shows empty state |
 
 ## Git HEAD
 
-- **Local/Remote:** `aae3e09` (synced)
+- **Local/Remote:** `c287993` (synced, pushed)
 - **Render:** Auto-deploy from main
 - **Vercel:** Auto-deploy from main
 
 ---
 
-*Last updated: 2026-04-25 14:30 UTC*
+*Last updated: 2026-04-25 15:45 UTC*
