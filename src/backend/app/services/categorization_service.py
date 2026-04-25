@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from app.core.cache import CACHE_TTL, cache
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
-from app.services.groq_service import groq_service
+from app.services.ai_service import ai_service
 
 logger = logging.getLogger(__name__)
 
@@ -440,7 +440,7 @@ Format your response as JSON:
 
             system_prompt = "You are a content organization expert. Group content into meaningful thematic clusters. Return structured JSON."
 
-            result = await groq_service.generate_content(
+            result = await ai_service.generate_content(
                 prompt=prompt,
                 system_prompt=system_prompt,
                 temperature=0.4,
@@ -649,7 +649,7 @@ Format your response as JSON:
 
         system_prompt = "You are a content classification expert. Analyze content and provide precise categorization. Return structured JSON only."
 
-        result = await groq_service.generate_content(
+        result = await ai_service.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.3,
@@ -697,7 +697,7 @@ Format your response as JSON:
 
         system_prompt = "You are an SEO and content tagging expert. Generate precise, relevant tags for content discoverability. Return structured JSON only."
 
-        result = await groq_service.generate_content(
+        result = await ai_service.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.3,

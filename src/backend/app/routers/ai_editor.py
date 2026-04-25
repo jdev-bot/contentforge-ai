@@ -16,7 +16,7 @@ from app.core.rate_limit import (
 )
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
-from app.services.groq_service import groq_service
+from app.services.ai_service import ai_service
 
 router = APIRouter()
 
@@ -173,7 +173,7 @@ async def rewrite_content(
     usage_stats = check_and_increment_usage(str(user.id))
 
     try:
-        rewritten_text, tokens_used = await groq_service.rewrite_content(
+        rewritten_text, tokens_used = await ai_service.rewrite_content(
             content=request.content,
             tone=request.tone,
             style=request.style,
@@ -213,7 +213,7 @@ async def expand_content(
     usage_stats = check_and_increment_usage(str(user.id))
 
     try:
-        expanded_text, tokens_used = await groq_service.expand_content(
+        expanded_text, tokens_used = await ai_service.expand_content(
             content=request.content,
             target_length=request.target_length,
             focus_areas=request.focus_areas,
@@ -258,7 +258,7 @@ async def condense_content(
     usage_stats = check_and_increment_usage(str(user.id))
 
     try:
-        condensed_text, tokens_used = await groq_service.condense_content(
+        condensed_text, tokens_used = await ai_service.condense_content(
             content=request.content,
             target_percentage=request.target_percentage,
             preserve_key_points=request.preserve_key_points,
@@ -307,7 +307,7 @@ async def optimize_content(
     usage_stats = check_and_increment_usage(str(user.id))
 
     try:
-        result = await groq_service.optimize_content(
+        result = await ai_service.optimize_content(
             content=request.content,
             platform=request.platform,
             include_hashtags=request.include_hashtags,

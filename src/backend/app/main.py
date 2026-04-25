@@ -100,7 +100,7 @@ app = FastAPI(
 )
 
 
-from app.services.groq_service import NoAPIKeyConfigured
+from app.services.ai_service import NoAPIKeyConfigured
 @app.exception_handler(NoAPIKeyConfigured)
 async def no_api_key_handler(request, exc):
     """Return 403 with clear message when user has no API key configured."""

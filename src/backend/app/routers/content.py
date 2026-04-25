@@ -21,7 +21,7 @@ from app.core.rate_limit import (
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.extraction_service import content_extraction_service
-from app.services.groq_service import groq_service
+from app.services.ai_service import ai_service
 
 logger = logging.getLogger(__name__)
 
@@ -282,7 +282,7 @@ async def generate_assets(
 
         # Generate Twitter/X threads
         try:
-            threads = await groq_service.generate_thread(original_text, "twitter")
+            threads = await ai_service.generate_thread(original_text, "twitter")
             for i, thread_post in enumerate(threads):
                 assets_to_create.append(
                     {
@@ -301,7 +301,7 @@ async def generate_assets(
 
         # Generate LinkedIn posts
         try:
-            linkedin_posts = await groq_service.generate_social_posts(
+            linkedin_posts = await ai_service.generate_social_posts(
                 original_text, "linkedin", count=2
             )
             for post in linkedin_posts:
@@ -322,7 +322,7 @@ async def generate_assets(
 
         # Generate Newsletter
         try:
-            newsletter_result = await groq_service.generate_newsletter(original_text)
+            newsletter_result = await ai_service.generate_newsletter(original_text)
             assets_to_create.append(
                 {
                     "content_id": str(content_id),
@@ -340,7 +340,7 @@ async def generate_assets(
 
         # Generate video script
         try:
-            video_result = await groq_service.generate_short_video_script(original_text)
+            video_result = await ai_service.generate_short_video_script(original_text)
             assets_to_create.append(
                 {
                     "content_id": str(content_id),

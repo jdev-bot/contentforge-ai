@@ -255,13 +255,13 @@ class TestBYOKContextVar:
 
     def test_default_raises_no_key(self):
         """Without a user context, get_active_llm_service raises NoAPIKeyConfigured."""
-        from app.services.groq_service import get_active_llm_service, NoAPIKeyConfigured
+        from app.services.ai_service import get_active_llm_service, NoAPIKeyConfigured
         with pytest.raises(NoAPIKeyConfigured):
             get_active_llm_service()
 
     def test_set_user_service_overrides(self):
         """Setting a user service makes get_active_llm_service return it."""
-        from app.services.groq_service import (
+        from app.services.ai_service import (
             set_user_llm_service,
             reset_user_llm_service,
             get_active_llm_service,
@@ -283,7 +283,7 @@ class TestBYOKContextVar:
 
     def test_reset_raises_no_key_again(self):
         """Resetting the context raises NoAPIKeyConfigured again."""
-        from app.services.groq_service import (
+        from app.services.ai_service import (
             set_user_llm_service,
             reset_user_llm_service,
             get_active_llm_service,

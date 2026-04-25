@@ -7,7 +7,7 @@ has configured their own API key.
 
 This middleware runs early in the request lifecycle, before route handlers.
 It extracts the user ID from the JWT and looks up their stored key.
-The groq_service shim reads the context variable, so no changes to existing
+The ai_service reads the context variable, so no changes to existing
 service code or router call sites are needed.
 """
 
@@ -18,7 +18,7 @@ from starlette.requests import Request
 
 from app.core.request_context import decode_jwt_subject, is_jwt_expired
 from app.services.llm_service import create_llm_service_for_user, get_user_llm_config
-from app.services.groq_service import set_user_llm_service, reset_user_llm_service
+from app.services.ai_service import set_user_llm_service, reset_user_llm_service
 
 logger = logging.getLogger(__name__)
 

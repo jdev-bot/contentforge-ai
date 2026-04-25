@@ -16,7 +16,7 @@ from uuid import UUID
 
 from app.core.cache import cache
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
-from app.services.groq_service import groq_service
+from app.services.ai_service import ai_service
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ class SentimentService:
 
         prompt = f"Analyze the sentiment of this text:\n\n{text}"
 
-        raw = await groq_service.generate_content(
+        raw = await ai_service.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.2,

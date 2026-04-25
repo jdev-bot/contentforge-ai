@@ -304,12 +304,12 @@ for method in [
     "generate_newsletter",
     "generate_short_video_script",
 ]:
-    p = _safe_patch(f"app.services.groq_service.groq_service.{method}", new=_groq_str)
+    p = _safe_patch(f"app.services.ai_service.ai_service.{method}", new=_groq_str)
     if p:
         active_patches.append(p)
 
 for method in ["rewrite_content", "expand_content", "condense_content"]:
-    p = _safe_patch(f"app.services.groq_service.groq_service.{method}", new=_groq_tuple)
+    p = _safe_patch(f"app.services.ai_service.ai_service.{method}", new=_groq_tuple)
     if p:
         active_patches.append(p)
 

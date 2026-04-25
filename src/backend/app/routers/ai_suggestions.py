@@ -19,7 +19,7 @@ from app.core.rate_limit import (
 logger = logging.getLogger(__name__)
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
-from app.services.groq_service import groq_service
+from app.services.ai_service import ai_service
 
 router = APIRouter()
 
@@ -209,7 +209,7 @@ EXPLANATION:
 CONFIDENCE:
 [Score from 0.0 to 1.0]"""
 
-        result = await groq_service.generate_content(
+        result = await ai_service.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.5,
@@ -343,7 +343,7 @@ HEADING_STRUCTURE:
 
         system_prompt = """You are an SEO expert with deep knowledge of search engine optimization, keyword research, and content optimization. Provide actionable SEO advice."""
 
-        result = await groq_service.generate_content(
+        result = await ai_service.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.4,
@@ -520,7 +520,7 @@ async def adjust_content_tone(
 
 Respond with just the tone descriptor (e.g., formal, casual, professional, humorous)."""
 
-        original_tone = await groq_service.generate_content(
+        original_tone = await ai_service.generate_content(
             prompt=analysis_prompt,
             temperature=0.3,
             max_tokens=50,
@@ -552,7 +552,7 @@ Provide:
 1. The rewritten content in the new tone
 2. Three key characteristics of this tone that were applied"""
 
-        result = await groq_service.generate_content(
+        result = await ai_service.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.6,
@@ -763,7 +763,7 @@ async def rewrite_content_endpoint(
     check_and_increment_usage(str(user.id))
 
     try:
-        rewritten_text, tokens_used = await groq_service.rewrite_content(
+        rewritten_text, tokens_used = await ai_service.rewrite_content(
             content=request.content,
             tone=request.tone,
             style=request.style,
@@ -795,7 +795,7 @@ async def expand_content_endpoint(
     check_and_increment_usage(str(user.id))
 
     try:
-        expanded_text, tokens_used = await groq_service.expand_content(
+        expanded_text, tokens_used = await ai_service.expand_content(
             content=request.content,
             target_length=request.target_length,
             focus_areas=[],
@@ -832,7 +832,7 @@ async def condense_content_endpoint(
     check_and_increment_usage(str(user.id))
 
     try:
-        condensed_text, tokens_used = await groq_service.condense_content(
+        condensed_text, tokens_used = await ai_service.condense_content(
             content=request.content,
             target_percentage=request.percentage,
             preserve_key_points=True,
@@ -873,7 +873,7 @@ async def optimize_content_endpoint(
     check_and_increment_usage(str(user.id))
 
     try:
-        result = await groq_service.optimize_content(
+        result = await ai_service.optimize_content(
             content=request.content,
             platform=request.platform,
             include_hashtags=True,

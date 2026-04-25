@@ -142,8 +142,8 @@ class TestFullWorkflow:
             }
         )
 
-        with patch("app.services.groq_service.groq_service") as mock_groq:
-            mock_groq.generate_thread.return_value = ["Tweet 1", "Tweet 2", "Tweet 3"]
+        with patch("app.services.ai_service.ai_service") as mock_ai:
+            mock_ai.generate_thread.return_value = ["Tweet 1", "Tweet 2", "Tweet 3"]
 
             generate_response = client.post(
                 f"/api/v1/content/{content_id}/generate",
@@ -553,8 +553,8 @@ class TestThirdPartyServiceFailures:
             }
         )
 
-        with patch("app.services.groq_service.groq_service") as mock_groq:
-            mock_groq.generate_thread.side_effect = Exception("Groq API error")
+        with patch("app.services.ai_service.ai_service") as mock_ai:
+            mock_ai.generate_thread.side_effect = Exception("Groq API error")
 
             response = client.post(
                 "/api/v1/content/content-123/generate",
@@ -583,8 +583,8 @@ class TestThirdPartyServiceFailures:
             }
         )
 
-        with patch("app.services.groq_service.groq_service") as mock_groq:
-            mock_groq.generate_thread.side_effect = Exception("Rate limit exceeded")
+        with patch("app.services.ai_service.ai_service") as mock_ai:
+            mock_ai.generate_thread.side_effect = Exception("Rate limit exceeded")
 
             response = client.post(
                 "/api/v1/content/content-123/generate",

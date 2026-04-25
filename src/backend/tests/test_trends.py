@@ -393,8 +393,8 @@ class TestTrendService:
         """Test generating content from a trend."""
         from app.services.trend_service import trend_service
 
-        with patch("app.services.trend_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value="""
+        with patch("app.services.trend_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value="""
 HEADLINE: The Future of AI
 
 ANGLES:
@@ -456,8 +456,8 @@ Learn more about AI today!
         trend_service.supabase = mock_supabase
 
         try:
-            with patch("app.services.trend_service.groq_service") as mock_groq:
-                mock_groq.generate_content = AsyncMock(return_value='{"trends": []}')
+            with patch("app.services.trend_service.ai_service") as mock_ai:
+                mock_ai.generate_content = AsyncMock(return_value='{"trends": []}')
                 result = await trend_service.update_trending_topics()
         finally:
             trend_service._supabase = None
@@ -720,8 +720,8 @@ class TestTrendsIntegration:
         assert len(mock_data) > 0
 
         # 2. Analyze with AI (mocked)
-        with patch("app.services.trend_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value='{"trends": []}')
+        with patch("app.services.trend_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value='{"trends": []}')
             analyzed = await trend_service.analyze_trends_with_ai(mock_data)
             assert len(analyzed) == len(mock_data)
 
@@ -839,8 +839,8 @@ class TestTrendsEdgeCases:
         """Test generating content with invalid platform."""
         from app.services.trend_service import trend_service
 
-        with patch("app.services.trend_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value="Invalid response")
+        with patch("app.services.trend_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value="Invalid response")
 
             result = await trend_service.generate_content_from_trend(
                 topic="Test",
@@ -893,8 +893,8 @@ class TestTrendsPerformance:
 
         start = datetime.now(timezone.utc)
 
-        with patch("app.services.trend_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value='{"trends": []}')
+        with patch("app.services.trend_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value='{"trends": []}')
             analyzed = await trend_service.analyze_trends_with_ai(large_data)
 
         duration = (datetime.now(timezone.utc) - start).total_seconds()

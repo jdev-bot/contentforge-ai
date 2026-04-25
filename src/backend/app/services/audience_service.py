@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
-from app.services.groq_service import groq_service
+from app.services.ai_service import ai_service
 
 logger = logging.getLogger(__name__)
 

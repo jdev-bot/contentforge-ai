@@ -1,6 +1,6 @@
 """
 Tests for LLM service (provider-agnostic, mocked HTTP).
-Also verifies the backward-compatible GroqService shim.
+Also verifies the AIService shim and backward-compatible aliases.
 """
 
 import pytest
@@ -8,7 +8,7 @@ import httpx
 from unittest.mock import MagicMock, patch, AsyncMock
 
 from app.services.llm_service import LLMService, llm_service
-from app.services.groq_service import GroqService, groq_service
+from app.services.ai_service import AIService, ai_service, GroqService, groq_service, NoAPIKeyConfigured
 
 
 class TestLLMService:
@@ -336,41 +336,45 @@ class TestProviderPresets:
         svc = LLMService()
         assert svc.model == "gemini-2.5-flash"  # Google preset default, not GROQ_MODEL
 
-    def test_unknown_provider_without_base_url_raises(self, mock_settings_base):
-        """Unknown provider without AI_BASE_URL should raise ValueError."""
+    def test_unknown_provider_without_base_url_has_empty_base_url(self, mock_settings_base):
+        """Unknown provider without AI_BASE_URL defaults to empty base_url (BYOK-only mode)."""
         mock_settings_base.AI_PROVIDER = "unknown_provider"
         mock_settings_base.AI_API_KEY = "test-key"
         mock_settings_base.AI_BASE_URL = None
         mock_settings_base.AI_MODEL = "some-model"
-        with pytest.raises(ValueError, match="AI_BASE_URL"):
-            LLMService()
+        svc = LLMService()
+        assert svc.base_url == ""
+        assert svc.provider == "unknown_provider"
 
 
-class TestGroqServiceShim:
-    """Test that the backward-compatible GroqService shim delegates correctly."""
+class TestAIServiceShim:
+    """Test that AIService delegates correctly and backward-compatible aliases work."""
 
-    def test_groq_service_singleton_is_llm_service(self):
-        """groq_service singleton should be the same object as llm_service."""
-        # Both are the same underlying LLMService singleton
-        assert groq_service is llm_service
+    def test_ai_service_singleton_aliases(self):
+        """groq_service and GroqService are aliases for ai_service and AIService."""
+        assert groq_service is ai_service
+        assert GroqService is AIService
 
-    @pytest.fixture
-    def mock_settings(self):
-        """Mock settings for Groq shim test."""
-        with patch("app.services.llm_service.get_settings") as mock:
-            settings_mock = MagicMock()
-            settings_mock.AI_PROVIDER = "groq"
-            settings_mock.AI_API_KEY = "test-api-key"
-            settings_mock.AI_BASE_URL = None
-            settings_mock.AI_MODEL = "llama-3.3-70b-versatile"
-            settings_mock.GROQ_MODEL = "llama-3.3-70b-versatile"
-            settings_mock.APP_URL = "https://test.example.com"
-            mock.return_value = settings_mock
-            yield settings_mock
+    def test_ai_service_raises_no_key(self):
+        """AIService raises NoAPIKeyConfigured when no user key is set."""
+        svc = AIService()
+        with pytest.raises(NoAPIKeyConfigured):
+            _ = svc._svc
 
-    def test_groq_service_class_delegates(self, mock_settings):
-        """GroqService class should delegate all methods to LLMService."""
-        svc = GroqService()
-        assert svc._svc is llm_service
-        assert svc.api_key == llm_service.api_key
-        assert svc.model == llm_service.model
+    def test_ai_service_delegates_with_user_key(self):
+        """AIService delegates to user's LLM service when set via context var."""
+        from app.services.ai_service import set_user_llm_service, reset_user_llm_service
+        from app.services.llm_service import create_llm_service_for_user
+
+        user_svc = create_llm_service_for_user(
+            provider="groq",
+            api_key="test-user-key",
+        )
+        token = set_user_llm_service(user_svc)
+        try:
+            svc = AIService()
+            assert svc._svc is user_svc
+            assert svc.api_key == "test-user-key"
+            assert svc.model == "llama-3.3-70b-versatile"
+        finally:
+            reset_user_llm_service(token)

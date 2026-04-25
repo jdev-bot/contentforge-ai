@@ -19,7 +19,7 @@ from app.routers.ai_editor import (
     optimize_content,
 )
 from app.services.llm_service import LLMService, llm_service
-from app.services.groq_service import GroqService, groq_service
+from app.services.ai_service import AIService, ai_service
 
 
 class TestLLMServiceEditorMethods:
@@ -467,7 +467,7 @@ class TestEditorEndpoints:
             mock_usage.return_value = mock_usage_stats
 
             with patch.object(
-                groq_service, "rewrite_content", return_value=(mock_result, 150)
+                ai_service, "rewrite_content", return_value=(mock_result, 150)
             ):
                 request = RewriteRequest(
                     content="Original content to rewrite",
@@ -503,7 +503,7 @@ class TestEditorEndpoints:
             mock_usage.return_value = mock_usage_stats
 
             with patch.object(
-                groq_service, "expand_content", return_value=(expanded, 200)
+                ai_service, "expand_content", return_value=(expanded, 200)
             ):
                 request = ExpandRequest(
                     content=original,
@@ -532,7 +532,7 @@ class TestEditorEndpoints:
             mock_usage.return_value = mock_usage_stats
 
             with patch.object(
-                groq_service, "condense_content", return_value=(condensed, 100)
+                ai_service, "condense_content", return_value=(condensed, 100)
             ):
                 request = CondenseRequest(
                     content=original,
@@ -567,7 +567,7 @@ class TestEditorEndpoints:
             mock_usage.return_value = mock_usage_stats
 
             with patch.object(
-                groq_service, "optimize_content", return_value=result_dict
+                ai_service, "optimize_content", return_value=result_dict
             ):
                 request = OptimizeRequest(
                     content="Original content",
@@ -597,7 +597,7 @@ class TestEditorEndpoints:
             mock_usage.return_value = mock_usage_stats
 
             with patch.object(
-                groq_service,
+                ai_service,
                 "rewrite_content",
                 side_effect=httpx.HTTPStatusError(
                     "Rate limit exceeded",

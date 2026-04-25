@@ -49,8 +49,8 @@ class TestSentimentServiceAnalyze:
 
         svc = SentimentService()
         svc._supabase = MagicMock()
-        with patch("app.services.sentiment_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value=mock_ai_response)
+        with patch("app.services.sentiment_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value=mock_ai_response)
             result = await svc.analyze_sentiment("Great product, I love it!")
 
         assert result["sentiment"] in {"positive", "negative", "neutral", "mixed"}
@@ -64,8 +64,8 @@ class TestSentimentServiceAnalyze:
         """Non-JSON response should fall back to defaults."""
         svc = SentimentService()
         svc._supabase = MagicMock()
-        with patch("app.services.sentiment_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value="Not JSON")
+        with patch("app.services.sentiment_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value="Not JSON")
             result = await svc.analyze_sentiment("Some text")
 
         assert result["sentiment"] == "neutral"
@@ -93,8 +93,8 @@ class TestSentimentServiceAnalyze:
 
         svc = SentimentService()
         svc._supabase = MagicMock()
-        with patch("app.services.sentiment_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value=mock_ai_response)
+        with patch("app.services.sentiment_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value=mock_ai_response)
             result = await svc.analyze_sentiment("Test")
 
         assert result["score"] == 1.0  # Clamped
@@ -121,8 +121,8 @@ class TestSentimentServiceAnalyze:
 
         svc = SentimentService()
         svc._supabase = MagicMock()
-        with patch("app.services.sentiment_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value=mock_ai_response)
+        with patch("app.services.sentiment_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value=mock_ai_response)
             result = await svc.analyze_sentiment("Excited text")
 
         assert result["sentiment"] == "neutral"
@@ -149,8 +149,8 @@ class TestSentimentServiceAnalyze:
 
         svc = SentimentService()
         svc._supabase = MagicMock()
-        with patch("app.services.sentiment_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value=mock_ai_response)
+        with patch("app.services.sentiment_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value=mock_ai_response)
             result = await svc.analyze_sentiment("Some text")
 
         assert result["tone"] == "informative"
@@ -177,8 +177,8 @@ class TestSentimentServiceAnalyze:
 
         svc = SentimentService()
         svc._supabase = MagicMock()
-        with patch("app.services.sentiment_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value=mock_ai_response)
+        with patch("app.services.sentiment_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value=mock_ai_response)
             result = await svc.analyze_sentiment("Test")
 
         assert result["emotions"]["joy"] == 1.0  # clamped from 1.5
@@ -190,8 +190,8 @@ class TestSentimentServiceAnalyze:
         raw = '```json\n{"sentiment": "negative", "score": -0.6, "emotions": {"joy": 0.05, "anger": 0.7, "sadness": 0.4, "fear": 0.2, "surprise": 0.1, "disgust": 0.3}, "aspects": [{"section": "complaint", "sentiment": "negative", "score": -0.8}], "tone": "urgent"}\n```'
         svc = SentimentService()
         svc._supabase = MagicMock()
-        with patch("app.services.sentiment_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value=raw)
+        with patch("app.services.sentiment_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value=raw)
             result = await svc.analyze_sentiment("I hate this product")
 
         assert result["sentiment"] == "negative"
@@ -222,8 +222,8 @@ class TestSentimentServiceAnalyze:
 
         svc = SentimentService()
         svc._supabase = MagicMock()
-        with patch("app.services.sentiment_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value=mock_ai_response)
+        with patch("app.services.sentiment_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value=mock_ai_response)
             result = await svc.analyze_sentiment("Mixed text")
 
         assert len(result["aspects"]) == 2

@@ -12,7 +12,7 @@ from uuid import UUID
 logger = logging.getLogger(__name__)
 
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
-from app.services.groq_service import groq_service
+from app.services.ai_service import ai_service
 
 
 class TrendService:
@@ -288,7 +288,7 @@ Format your response as JSON:
 
         try:
             system_prompt = "You are a trend analysis expert. Analyze trending topics and provide structured insights in JSON format."
-            result = await groq_service.generate_content(
+            result = await ai_service.generate_content(
                 prompt=prompt,
                 system_prompt=system_prompt,
                 temperature=0.3,
@@ -621,7 +621,7 @@ CTA:
 
             system_prompt = f"You are an expert content creator specializing in {platform} content. Create engaging, platform-optimized content that leverages trending topics."
 
-            result = await groq_service.generate_content(
+            result = await ai_service.generate_content(
                 prompt=prompt,
                 system_prompt=system_prompt,
                 temperature=0.8,

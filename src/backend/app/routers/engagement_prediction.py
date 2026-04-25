@@ -489,9 +489,9 @@ async def predict_engagement(
         # Try AI-enhanced prediction if requested and GROQ key is available
         if request.use_ai:
             try:
-                from app.services.groq_service import groq_service
+                from app.services.ai_service import ai_service
 
-                ai_result = await groq_service.generate_content(
+                ai_result = await ai_service.generate_content(
                     prompt=f"""Analyze this social media content for {platform} and return JSON:
 {{
   "score": <0-100 overall engagement prediction>,

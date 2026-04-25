@@ -13,7 +13,7 @@ from app.core.supabase import get_supabase_admin_client, get_supabase_client
 
 logger = logging.getLogger(__name__)
 from app.core.cache import CACHE_TTL, cache
-from app.services.groq_service import groq_service
+from app.services.ai_service import ai_service
 
 
 class SuggestionService:
@@ -160,7 +160,7 @@ Format your response as JSON:
 
             system_prompt = "You are a content strategy expert. Analyze user patterns and suggest high-value content topics. Return structured JSON."
 
-            result = await groq_service.generate_content(
+            result = await ai_service.generate_content(
                 prompt=prompt,
                 system_prompt=system_prompt,
                 temperature=0.7,
@@ -252,7 +252,7 @@ Format your response as JSON:
 
             system_prompt = "You are a social media analytics expert. Analyze posting patterns and engagement data to recommend optimal publishing schedules. Return structured JSON."
 
-            result = await groq_service.generate_content(
+            result = await ai_service.generate_content(
                 prompt=prompt,
                 system_prompt=system_prompt,
                 temperature=0.5,
@@ -350,7 +350,7 @@ Format your response as JSON:
 
             system_prompt = "You are an expert content editor and SEO specialist. Provide specific, actionable improvement suggestions. Return structured JSON."
 
-            result = await groq_service.generate_content(
+            result = await ai_service.generate_content(
                 prompt=prompt,
                 system_prompt=system_prompt,
                 temperature=0.5,

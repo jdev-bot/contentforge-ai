@@ -16,7 +16,7 @@ from uuid import UUID
 
 from app.core.cache import cache
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
-from app.services.groq_service import groq_service
+from app.services.ai_service import ai_service
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ class QualityService:
 
         prompt = f"Analyze the quality of this content:\n\n{text}"
 
-        raw = await groq_service.generate_content(
+        raw = await ai_service.generate_content(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=0.3,

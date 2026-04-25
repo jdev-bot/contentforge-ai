@@ -102,8 +102,8 @@ class TestQualityServiceAnalyzeQuality:
 
         svc = QualityService()
         svc._supabase = MagicMock()
-        with patch("app.services.quality_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value=mock_ai_response)
+        with patch("app.services.quality_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value=mock_ai_response)
             result = await svc.analyze_quality("Some test content here.")
 
         assert "overall_score" in result
@@ -119,8 +119,8 @@ class TestQualityServiceAnalyzeQuality:
         """Non-JSON response should fall back to defaults."""
         svc = QualityService()
         svc._supabase = MagicMock()
-        with patch("app.services.quality_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(
+        with patch("app.services.quality_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(
                 return_value="This is not JSON at all"
             )
             result = await svc.analyze_quality("Some test content here.")
@@ -145,8 +145,8 @@ class TestQualityServiceAnalyzeQuality:
 
         svc = QualityService()
         svc._supabase = MagicMock()
-        with patch("app.services.quality_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value=mock_ai_response)
+        with patch("app.services.quality_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value=mock_ai_response)
             result = await svc.analyze_quality("Test content.")
 
         assert result["readability"] == 0
@@ -170,8 +170,8 @@ class TestQualityServiceAnalyzeQuality:
         brand_voice = {"tone": "professional", "vocabulary": "elevated"}
         svc = QualityService()
         svc._supabase = MagicMock()
-        with patch("app.services.quality_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value=mock_ai_response)
+        with patch("app.services.quality_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value=mock_ai_response)
             result = await svc.analyze_quality("Test content.", brand_voice=brand_voice)
 
         assert result["brand"] == 90
@@ -182,8 +182,8 @@ class TestQualityServiceAnalyzeQuality:
         raw = '```json\n{"readability": 70, "seo": 60, "engagement": 65, "grammar": 80, "brand": 75, "suggestions": ["Fix typo"]}\n```'
         svc = QualityService()
         svc._supabase = MagicMock()
-        with patch("app.services.quality_service.groq_service") as mock_groq:
-            mock_groq.generate_content = AsyncMock(return_value=raw)
+        with patch("app.services.quality_service.ai_service") as mock_ai:
+            mock_ai.generate_content = AsyncMock(return_value=raw)
             result = await svc.analyze_quality("Test content.")
 
         assert result["readability"] == 70
