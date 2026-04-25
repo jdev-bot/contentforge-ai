@@ -99,6 +99,21 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,
 )
 
+
+from app.services.groq_service import NoAPIKeyConfigured
+@app.exception_handler(NoAPIKeyConfigured)
+async def no_api_key_handler(request, exc):
+    """Return 403 with clear message when user has no API key configured."""
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=403,
+        content={
+            "detail": str(exc),
+            "code": "NO_API_KEY",
+            "action": "Add your API key in Settings → API Keys",
+        },
+    )
+
 from app.core.error_tracking import ErrorTrackingMiddleware
 
 # Import middleware

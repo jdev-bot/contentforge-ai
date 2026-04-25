@@ -1,14 +1,12 @@
 """
 BYOK (Bring Your Own Key) middleware.
 
-Automatically resolves per-user API keys for every authenticated API request.
-When a user has a valid API key stored, all LLM calls in that request
-use the user's key instead of the platform default.
+Resolves per-user API keys for every authenticated API request.
+There is no platform fallback — AI features only work when the user
+has configured their own API key.
 
 This middleware runs early in the request lifecycle, before route handlers.
-It extracts the user ID from the JWT (without full auth validation — that
-happens later in the route handler via Depends(get_auth_user)).
-
+It extracts the user ID from the JWT and looks up their stored key.
 The groq_service shim reads the context variable, so no changes to existing
 service code or router call sites are needed.
 """
@@ -29,7 +27,12 @@ _SKIP_PREFIXES = ("/api/v1/health", "/docs", "/openapi", "/redoc", "/")
 
 
 class BYOKMiddleware(BaseHTTPMiddleware):
-    """Resolve per-user LLM API keys for each request."""
+    """Resolve per-user LLM API keys for each request.
+
+    When a user has a valid API key, it's set in the request context.
+    When they don't, the context remains None — AI calls will raise
+    NoAPIKeyConfigured with a clear message directing the user to Settings.
+    """
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
@@ -62,8 +65,9 @@ class BYOKMiddleware(BaseHTTPMiddleware):
                     logger.debug(
                         "BYOK: user %s → provider=%s", user_id, user_config.get("provider")
                     )
+                # else: user has no key configured — AI calls will raise NoAPIKeyConfigured
             except Exception as exc:
-                logger.debug("BYOK: fallback to platform default for %s: %s", user_id, exc)
+                logger.warning("BYOK: error resolving key for %s: %s", user_id, exc)
 
         try:
             response = await call_next(request)

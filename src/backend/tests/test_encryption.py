@@ -60,12 +60,21 @@ class TestEncryption:
         encrypted = encrypt(plaintext)
         assert decrypt(encrypted) == plaintext
 
-    def test_no_encryption_key_raises(self):
-        """Without ENCRYPTION_KEY or SECRET_KEY, encryption should raise."""
+    def test_auto_generates_key_when_none_set(self):
+        """When neither ENCRYPTION_KEY nor SECRET_KEY is set, auto-generates a key."""
         os.environ.pop("ENCRYPTION_KEY", None)
         os.environ.pop("SECRET_KEY", None)
-        with pytest.raises(RuntimeError, match="Neither ENCRYPTION_KEY nor SECRET_KEY"):
-            encrypt("test")
+        # Clean up any previously generated key file
+        from app.core.encryption import _KEY_FILE
+        if _KEY_FILE.exists():
+            _KEY_FILE.unlink()
+        # Should auto-generate and work fine (dev mode)
+        encrypted = encrypt("test-auto-gen")
+        assert decrypt(encrypted) == "test-auto-gen"
+        # Key file should have been created
+        assert _KEY_FILE.exists()
+        # Clean up
+        _KEY_FILE.unlink()
 
     def test_fallback_to_secret_key(self):
         """Falls back to SECRET_KEY when ENCRYPTION_KEY is not set."""

@@ -57,7 +57,11 @@ PROVIDER_PRESETS: Dict[str, Dict[str, str]] = {
 
 
 class LLMService:
-    """Provider-agnostic LLM service using OpenAI-compatible chat/completions."""
+    """Provider-agnostic LLM service using OpenAI-compatible chat/completions.
+
+    In BYOK mode, the singleton may be initialized without a real API key.
+    The per-user LLM service (created by BYOK middleware) always has valid credentials.
+    """
 
     def __init__(self):
         settings = get_settings()
@@ -66,17 +70,12 @@ class LLMService:
         self.provider: str = settings.AI_PROVIDER
         preset = PROVIDER_PRESETS.get(self.provider, {})
 
-        # Resolve API key — new env var first, then legacy Groq fallback
+        # Resolve API key — may be empty in BYOK-only mode
         self.api_key: str = settings.AI_API_KEY or ""
 
-        # Resolve base URL — explicit override > preset > error
+        # Resolve base URL — explicit override > preset > empty (BYOK-only mode)
         self.base_url: str = settings.AI_BASE_URL or preset.get("base_url", "")
-        if not self.base_url:
-            raise ValueError(
-                f"AI_BASE_URL not set and no preset for provider '{self.provider}'. "
-                "Set AI_BASE_URL or use a known provider: "
-                + ", ".join(PROVIDER_PRESETS.keys())
-            )
+        # No longer raises ValueError — BYOK-only mode doesn't need a platform base_url
 
         # Resolve model — explicit AI_MODEL > legacy GROQ_MODEL (only when provider=groq) > preset default
         groq_model = settings.GROQ_MODEL if self.provider == "groq" else None

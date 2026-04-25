@@ -239,44 +239,58 @@ async def detailed_health_check():
         alerts.append("Redis connection failed")
 
     # Check LLM / AI provider
-    try:
-        health = await llm_service.check_health()
-        provider = health.get("provider", "unknown")
-        if health["status"] == "healthy":
-            components["llm"] = ComponentStatus(
-                status="healthy",
-                response_time_ms=health.get("response_time_ms"),
-                message=health.get("message", f"{provider} API accessible"),
-                details={
-                    "provider": provider,
-                    "model": llm_service.model,
-                },
-                last_checked=datetime.now(timezone.utc).isoformat(),
-            )
-        else:
+    # In BYOK-only mode, there may be no platform key — that's OK
+    if llm_service.api_key:
+        try:
+            health = await llm_service.check_health()
+            provider = health.get("provider", "unknown")
+            if health["status"] == "healthy":
+                components["llm"] = ComponentStatus(
+                    status="healthy",
+                    response_time_ms=health.get("response_time_ms"),
+                    message=health.get("message", f"{provider} API accessible"),
+                    details={
+                        "provider": provider,
+                        "model": llm_service.model,
+                    },
+                    last_checked=datetime.now(timezone.utc).isoformat(),
+                )
+            else:
+                overall_status = "degraded"
+                components["llm"] = ComponentStatus(
+                    status="unhealthy",
+                    message=health.get("message", "LLM API check failed"),
+                    details={
+                        "provider": provider,
+                        "model": llm_service.model,
+                    },
+                    last_checked=datetime.now(timezone.utc).isoformat(),
+                )
+                alerts.append(f"LLM provider ({provider}) unavailable")
+        except Exception as e:
             overall_status = "degraded"
             components["llm"] = ComponentStatus(
                 status="unhealthy",
-                message=health.get("message", "LLM API check failed"),
+                message=f"LLM API check failed: {str(e)}",
                 details={
-                    "provider": provider,
+                    "provider": settings.AI_PROVIDER,
                     "model": llm_service.model,
                 },
                 last_checked=datetime.now(timezone.utc).isoformat(),
             )
-            alerts.append(f"LLM provider ({provider}) unavailable")
-    except Exception as e:
-        overall_status = "degraded"
+            alerts.append("LLM API unavailable")
+    else:
+        # BYOK-only mode — no platform key, AI features require user keys
         components["llm"] = ComponentStatus(
-            status="unhealthy",
-            message=f"LLM API check failed: {str(e)}",
+            status="healthy",
+            message="BYOK mode — AI features require user-provided API keys",
             details={
                 "provider": settings.AI_PROVIDER,
-                "model": llm_service.model,
+                "model": llm_service.model or "(user-provided)",
+                "mode": "byok",
             },
             last_checked=datetime.now(timezone.utc).isoformat(),
         )
-        alerts.append("LLM API unavailable")
 
     # Check Stripe API
     stripe_key = getattr(settings, "STRIPE_SECRET_KEY", None)
@@ -458,22 +472,30 @@ async def system_metrics():
         metrics["database"] = {"status": "error", "error": str(e)}
 
     # LLM / AI provider metrics
-    try:
-        health = await llm_service.check_health()
-        provider = health.get("provider", settings.AI_PROVIDER)
+    if llm_service.api_key:
+        try:
+            health = await llm_service.check_health()
+            provider = health.get("provider", settings.AI_PROVIDER)
+            metrics["external_apis"]["llm"] = {
+                "status": health["status"],
+                "provider": provider,
+                "model": llm_service.model,
+                "response_time_ms": health.get("response_time_ms"),
+            }
+            if health.get("status_code"):
+                metrics["external_apis"]["llm"]["status_code"] = health["status_code"]
+        except Exception as e:
+            metrics["external_apis"]["llm"] = {
+                "status": "unhealthy",
+                "provider": settings.AI_PROVIDER,
+                "error": str(e),
+            }
+    else:
         metrics["external_apis"]["llm"] = {
-            "status": health["status"],
-            "provider": provider,
-            "model": llm_service.model,
-            "response_time_ms": health.get("response_time_ms"),
-        }
-        if health.get("status_code"):
-            metrics["external_apis"]["llm"]["status_code"] = health["status_code"]
-    except Exception as e:
-        metrics["external_apis"]["llm"] = {
-            "status": "unhealthy",
+            "status": "byok",
             "provider": settings.AI_PROVIDER,
-            "error": str(e),
+            "model": "(user-provided)",
+            "message": "BYOK mode — no platform key",
         }
 
     # Stripe

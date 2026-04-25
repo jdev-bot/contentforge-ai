@@ -100,3 +100,4 @@ htmlcov/
 .nox/
 src/backend/.env.staging
 supabase/.temp/
+.encryption_key

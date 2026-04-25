@@ -253,10 +253,11 @@ class TestPerUserLLMResolution:
 class TestBYOKContextVar:
     """Test that the context variable correctly routes to user vs platform LLM."""
 
-    def test_default_returns_platform_service(self):
-        """Without a user context, get_active_llm_service returns platform default."""
-        from app.services.groq_service import get_active_llm_service, llm_service
-        assert get_active_llm_service() is llm_service
+    def test_default_raises_no_key(self):
+        """Without a user context, get_active_llm_service raises NoAPIKeyConfigured."""
+        from app.services.groq_service import get_active_llm_service, NoAPIKeyConfigured
+        with pytest.raises(NoAPIKeyConfigured):
+            get_active_llm_service()
 
     def test_set_user_service_overrides(self):
         """Setting a user service makes get_active_llm_service return it."""
@@ -280,13 +281,13 @@ class TestBYOKContextVar:
         finally:
             reset_user_llm_service(token)
 
-    def test_reset_restores_platform_service(self):
-        """Resetting the context restores the platform default."""
+    def test_reset_raises_no_key_again(self):
+        """Resetting the context raises NoAPIKeyConfigured again."""
         from app.services.groq_service import (
             set_user_llm_service,
             reset_user_llm_service,
             get_active_llm_service,
-            llm_service,
+            NoAPIKeyConfigured,
         )
         from app.services.llm_service import create_llm_service_for_user
 
@@ -296,4 +297,5 @@ class TestBYOKContextVar:
         )
         token = set_user_llm_service(user_svc)
         reset_user_llm_service(token)
-        assert get_active_llm_service() is llm_service
+        with pytest.raises(NoAPIKeyConfigured):
+            get_active_llm_service()
