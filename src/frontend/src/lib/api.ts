@@ -5783,3 +5783,72 @@ export async function refreshCompetitorData(competitorId: string): Promise<{
 }
 
 // ============ End Competitor Analysis Full API ============
+
+// ============ BYOK API Keys ============
+
+export interface APIKey {
+  id: string
+  provider: string
+  masked_key: string
+  base_url?: string | null
+  model?: string | null
+  label?: string | null
+  is_valid: boolean
+  last_validated_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface APIKeyCreate {
+  provider: string
+  api_key: string
+  base_url?: string
+  model?: string
+  label?: string
+}
+
+export interface APIKeyValidation {
+  is_valid: boolean
+  message: string
+  provider: string
+  response_time_ms?: number | null
+}
+
+export async function listAPIKeys(): Promise<APIKey[]> {
+  const response = await apiFetch(`${API_URL}/api-keys`)
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to list API keys')
+  }
+  return response.json()
+}
+
+export async function createAPIKey(data: APIKeyCreate): Promise<APIKey> {
+  const response = await apiFetch(`${API_URL}/api-keys`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to create API key')
+  }
+  return response.json()
+}
+
+export async function deleteAPIKey(keyId: string): Promise<void> {
+  const response = await apiFetch(`${API_URL}/api-keys/${keyId}`, { method: 'DELETE' })
+  if (!response.ok && response.status !== 204) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to delete API key')
+  }
+}
+
+export async function validateAPIKey(keyId: string): Promise<APIKeyValidation> {
+  const response = await apiFetch(`${API_URL}/api-keys/${keyId}/validate`, { method: 'POST' })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to validate API key')
+  }
+  return response.json()
+}

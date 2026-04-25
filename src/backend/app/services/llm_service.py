@@ -8,6 +8,9 @@ Supports any OpenAI-compatible API provider. Configure via:
   AI_MODEL     — Model identifier (provider-specific defaults exist)
 
 Legacy GROQ_API_KEY / GROQ_MODEL are still supported as fallbacks.
+
+BYOK: Per-user API keys are resolved via the api_keys table.
+When a user has their own key, it overrides the platform default.
 """
 
 import logging
@@ -18,6 +21,13 @@ import httpx
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+# Cache decrypted per-user keys in-memory (short TTL)
+from functools import lru_cache
+import time as _time
+
+_user_key_cache: Dict[str, Tuple[float, Dict]] = {}  # user_id -> (timestamp, {provider: decrypted_key, ...})
+_USER_KEY_CACHE_TTL = 300  # 5 minutes
 
 # ---------------------------------------------------------------------------
 # Provider presets — known base URLs and default models
@@ -536,3 +546,107 @@ Provide the optimized content ready to publish on {platform}."""
 
 # Singleton instance
 llm_service = LLMService()
+
+
+# ---------------------------------------------------------------------------
+# Per-user LLM service factory (BYOK)
+# ---------------------------------------------------------------------------
+
+async def get_user_llm_config(user_id: str) -> Optional[Dict[str, str]]:
+    """Resolve a user's API key from the api_keys table.
+
+    Returns {provider, api_key, base_url, model} or None if the user has no key.
+    Results are cached for 5 minutes.
+    """
+    now = _time.time()
+    cached = _user_key_cache.get(user_id)
+    if cached and (now - cached[0]) < _USER_KEY_CACHE_TTL:
+        return cached[1]
+
+    try:
+        from app.core.supabase import get_supabase_admin_client
+        from app.core.encryption import decrypt as _decrypt
+
+        admin = get_supabase_admin_client()
+        result = admin.table("api_keys").select(
+            "provider, encrypted_key, base_url, model, is_valid"
+        ).eq("user_id", user_id).eq("is_valid", True).execute()
+
+        if not result.data:
+            _user_key_cache[user_id] = (now, None)
+            return None
+
+        # Use the first valid key (one per provider, pick the most recently validated)
+        best = result.data[0]
+        raw_key = _decrypt(best["encrypted_key"])
+
+        config = {
+            "provider": best["provider"],
+            "api_key": raw_key,
+            "base_url": best.get("base_url"),
+            "model": best.get("model"),
+        }
+        _user_key_cache[user_id] = (now, config)
+        return config
+    except Exception as exc:
+        logger.warning("Failed to resolve user API key for %s: %s", user_id, exc)
+        return None
+
+
+def invalidate_user_key_cache(user_id: str):
+    """Clear cached API key for a user (call after key CRUD)."""
+    _user_key_cache.pop(user_id, None)
+
+
+def create_llm_service_for_user(
+    provider: Optional[str] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    model: Optional[str] = None,
+) -> LLMService:
+    """Create an LLMService instance with explicit credentials.
+
+    Used when a user's own API key is available.
+    Falls back to platform defaults for any missing parameter.
+    """
+    settings = get_settings()
+    resolved_provider = provider or settings.AI_PROVIDER
+    preset = PROVIDER_PRESETS.get(resolved_provider, {})
+
+    resolved_api_key = api_key or settings.AI_API_KEY or ""
+    resolved_base_url = base_url or preset.get("base_url", "")
+
+    if not resolved_base_url:
+        raise ValueError(
+            f"No base_url for provider '{resolved_provider}'. Set AI_BASE_URL or use a known provider."
+        )
+
+    # Model: explicit > legacy GROQ_MODEL (groq only) > preset default
+    groq_model = settings.GROQ_MODEL if resolved_provider == "groq" else None
+    resolved_model = model or groq_model or preset.get("default_model", "")
+
+    models_url = preset.get("models_url", f"{resolved_base_url}/models")
+
+    headers = {
+        "Authorization": f"Bearer {resolved_api_key}",
+        "Content-Type": "application/json",
+    }
+    if resolved_provider == "openrouter":
+        headers["HTTP-Referer"] = getattr(
+            settings, "APP_URL", "https://contentforge-ai.onrender.com"
+        )
+
+    svc = LLMService.__new__(LLMService)
+    svc.provider = resolved_provider
+    svc.api_key = resolved_api_key
+    svc.base_url = resolved_base_url
+    svc.model = resolved_model
+    svc._models_url = models_url
+    svc.headers = headers
+
+    logger.info(
+        "Per-user LLMService: provider=%s, model=%s",
+        resolved_provider,
+        resolved_model,
+    )
+    return svc

@@ -14,6 +14,7 @@ from app.routers import (
     ab_testing,
     admin,
     ai_editor,
+    api_keys,
     ai_suggestions,
     alerts,
     analytics,
@@ -102,6 +103,7 @@ from app.core.error_tracking import ErrorTrackingMiddleware
 
 # Import middleware
 from app.core.rate_limit import UsageTrackingMiddleware
+from app.core.byok_middleware import BYOKMiddleware
 from app.middleware.rate_limit_headers import RateLimitHeadersMiddleware
 from app.middleware.performance import PerformanceMiddleware
 from app.middleware.request_id import RequestIDMiddleware
@@ -121,6 +123,9 @@ app.add_middleware(ErrorTrackingMiddleware)
 
 # Rate limit headers middleware (adds X-RateLimit headers)
 app.add_middleware(RateLimitHeadersMiddleware)
+
+# BYOK middleware — resolve per-user API keys before route handlers
+app.add_middleware(BYOKMiddleware)
 
 # Usage tracking middleware
 app.add_middleware(UsageTrackingMiddleware)
@@ -200,6 +205,7 @@ app.include_router(attribution.router, prefix="/api/v1", tags=["attribution"])
 app.include_router(team_calendar.router, prefix="/api/v1", tags=["team-calendar"])
 app.include_router(engagement_prediction.router, prefix="/api/v1", tags=["engagement-prediction"])
 app.include_router(ab_testing.router, prefix="/api/v1", tags=["ab-testing"])
+app.include_router(api_keys.router, prefix="/api/v1/api-keys", tags=["api-keys"])
 
 
 @app.get("/")

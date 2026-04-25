@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     # Security
     SECRET_KEY: str = Field(alias="SECRET_KEY")
+    ENCRYPTION_KEY: Optional[str] = Field(default=None, alias="ENCRYPTION_KEY")  # for encrypting user API keys at rest
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
         default=60 * 24 * 7, alias="ACCESS_TOKEN_EXPIRE_MINUTES"
     )  # 7 days

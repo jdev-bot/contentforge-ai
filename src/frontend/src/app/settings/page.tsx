@@ -13,6 +13,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { useToast } from '@/hooks/useToast'
 import SubscriptionModal from '@/components/SubscriptionModal'
+import APIKeysTab from '@/components/APIKeysTab'
 import { 
   User, 
   Key, 
@@ -30,7 +31,8 @@ import {
   Monitor,
   Upload,
   LogOut,
-  Sparkles
+  Sparkles,
+  Zap
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -42,7 +44,7 @@ interface SettingsTabProps {
   }
 }
 
-type SettingsTab = 'profile' | 'account' | 'billing' | 'notifications' | 'security' | 'appearance'
+type SettingsTab = 'profile' | 'account' | 'api-keys' | 'billing' | 'notifications' | 'security' | 'appearance'
 
 // Profile Tab Component
 function ProfileTab({ user, profile, loading, onSave }: { 
@@ -458,6 +460,7 @@ function SettingsContent({ user }: SettingsTabProps) {
   const tabs: { id: SettingsTab; name: string; icon: typeof User; badge?: string }[] = [
     { id: 'profile', name: 'Profile', icon: User },
     { id: 'account', name: 'Account', icon: Key },
+    { id: 'api-keys', name: 'API Keys', icon: Zap },
     { id: 'billing', name: 'Billing', icon: CreditCard },
     { id: 'notifications', name: 'Notifications', icon: Bell },
     { id: 'security', name: 'Security', icon: Shield },
@@ -540,6 +543,8 @@ function SettingsContent({ user }: SettingsTabProps) {
         )
       case 'account':
         return <AccountTab user={user} />
+      case 'api-keys':
+        return <APIKeysTab userId={user.id} />
       case 'billing':
         return (
           <BillingTab
