@@ -40,6 +40,8 @@ def clear_supabase_cache():
 os.environ["SUPABASE_KEY"] = "test-anon-key"
 os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key"
 os.environ["GROQ_API_KEY"] = "test-groq-api-key"
+os.environ["AI_PROVIDER"] = "groq"
+os.environ["AI_API_KEY"] = "test-ai-api-key"
 os.environ["RATE_LIMIT_REQUESTS"] = "1000"
 os.environ["RATE_LIMIT_WINDOW"] = "3600"
 os.environ["REDIS_URL"] = "redis://localhost:6379/0"

@@ -24,6 +24,8 @@ os.environ["SUPABASE_URL"] = "https://test.supabase.co"
 os.environ["SUPABASE_KEY"] = "test-key"
 os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-key"
 os.environ["GROQ_API_KEY"] = "test-groq-key"
+os.environ["AI_PROVIDER"] = "groq"
+os.environ["AI_API_KEY"] = "test-ai-api-key"
 
 from fastapi.testclient import TestClient
 

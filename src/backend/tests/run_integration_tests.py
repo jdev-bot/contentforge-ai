@@ -22,6 +22,8 @@ os.environ["SUPABASE_URL"] = "https://test.supabase.co"
 os.environ["SUPABASE_KEY"] = "test-anon-key"
 os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key"
 os.environ["GROQ_API_KEY"] = "test-groq-api-key"
+os.environ["AI_PROVIDER"] = "groq"
+os.environ["AI_API_KEY"] = "test-ai-api-key"
 
 # Now import the services
 from app.services.integration_services import (

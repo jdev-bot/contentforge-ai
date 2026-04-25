@@ -1,6 +1,6 @@
 """
 Health check endpoints with detailed component status.
-Includes database, Redis, Groq, Stripe, and n8n connectivity checks.
+Includes database, Redis, LLM provider, Stripe, and n8n connectivity checks.
 """
 
 import time
@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
+from app.services.llm_service import llm_service
 
 router = APIRouter()
 settings = get_settings()
@@ -237,42 +238,45 @@ async def detailed_health_check():
         )
         alerts.append("Redis connection failed")
 
-    # Check Groq API
+    # Check LLM / AI provider
     try:
-        start_time = time.time()
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(
-                "https://api.groq.com/openai/v1/models",
-                headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
+        health = await llm_service.check_health()
+        provider = health.get("provider", "unknown")
+        if health["status"] == "healthy":
+            components["llm"] = ComponentStatus(
+                status="healthy",
+                response_time_ms=health.get("response_time_ms"),
+                message=health.get("message", f"{provider} API accessible"),
+                details={
+                    "provider": provider,
+                    "model": llm_service.model,
+                },
+                last_checked=datetime.now(timezone.utc).isoformat(),
             )
-
-            if response.status_code == 200:
-                groq_response_time = (time.time() - start_time) * 1000
-                components["groq"] = ComponentStatus(
-                    status="healthy",
-                    response_time_ms=round(groq_response_time, 2),
-                    message="Groq API accessible",
-                    details={"model": settings.GROQ_MODEL},
-                    last_checked=datetime.now(timezone.utc).isoformat(),
-                )
-            else:
-                overall_status = "degraded"
-                components["groq"] = ComponentStatus(
-                    status="unhealthy",
-                    message=f"Groq API returned status {response.status_code}",
-                    details={"model": settings.GROQ_MODEL},
-                    last_checked=datetime.now(timezone.utc).isoformat(),
-                )
-                alerts.append(f"Groq API returned status {response.status_code}")
+        else:
+            overall_status = "degraded"
+            components["llm"] = ComponentStatus(
+                status="unhealthy",
+                message=health.get("message", "LLM API check failed"),
+                details={
+                    "provider": provider,
+                    "model": llm_service.model,
+                },
+                last_checked=datetime.now(timezone.utc).isoformat(),
+            )
+            alerts.append(f"LLM provider ({provider}) unavailable")
     except Exception as e:
         overall_status = "degraded"
-        components["groq"] = ComponentStatus(
+        components["llm"] = ComponentStatus(
             status="unhealthy",
-            message=f"Groq API check failed: {str(e)}",
-            details={"model": settings.GROQ_MODEL},
+            message=f"LLM API check failed: {str(e)}",
+            details={
+                "provider": settings.AI_PROVIDER,
+                "model": llm_service.model,
+            },
             last_checked=datetime.now(timezone.utc).isoformat(),
         )
-        alerts.append("Groq API unavailable")
+        alerts.append("LLM API unavailable")
 
     # Check Stripe API
     stripe_key = getattr(settings, "STRIPE_SECRET_KEY", None)
@@ -453,22 +457,24 @@ async def system_metrics():
     except Exception as e:
         metrics["database"] = {"status": "error", "error": str(e)}
 
-    # External API metrics
-    # Groq
+    # LLM / AI provider metrics
     try:
-        start_time = time.time()
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(
-                "https://api.groq.com/openai/v1/models",
-                headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
-            )
-            metrics["external_apis"]["groq"] = {
-                "status": "healthy" if response.status_code == 200 else "degraded",
-                "response_time_ms": round((time.time() - start_time) * 1000, 2),
-                "status_code": response.status_code,
-            }
+        health = await llm_service.check_health()
+        provider = health.get("provider", settings.AI_PROVIDER)
+        metrics["external_apis"]["llm"] = {
+            "status": health["status"],
+            "provider": provider,
+            "model": llm_service.model,
+            "response_time_ms": health.get("response_time_ms"),
+        }
+        if health.get("status_code"):
+            metrics["external_apis"]["llm"]["status_code"] = health["status_code"]
     except Exception as e:
-        metrics["external_apis"]["groq"] = {"status": "unhealthy", "error": str(e)}
+        metrics["external_apis"]["llm"] = {
+            "status": "unhealthy",
+            "provider": settings.AI_PROVIDER,
+            "error": str(e),
+        }
 
     # Stripe
     stripe_key = getattr(settings, "STRIPE_SECRET_KEY", None)

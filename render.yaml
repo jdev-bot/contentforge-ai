@@ -27,7 +27,12 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      # AI - Groq
+      # AI / LLM Provider
+      - key: AI_PROVIDER
+        value: google
+      - key: AI_API_KEY
+        sync: false
+      # Legacy (still supported as fallback)
       - key: GROQ_API_KEY
         sync: false
       # Email - Resend
@@ -76,6 +81,12 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      # AI / LLM Provider
+      - key: AI_PROVIDER
+        value: google
+      - key: AI_API_KEY
+        sync: false
+      # Legacy (still supported as fallback)
       - key: GROQ_API_KEY
         sync: false
       - key: REDIS_URL

@@ -34,9 +34,21 @@ class Settings(BaseSettings):
         default=None, alias="SUPABASE_SERVICE_ROLE_KEY"
     )
 
-    # Groq
-    GROQ_API_KEY: str = Field(alias="GROQ_API_KEY")
+    # AI / LLM Provider — supports google, groq, cerebras, openrouter, or custom
+    # New unified config (preferred)
+    AI_PROVIDER: str = Field(default="google", alias="AI_PROVIDER")
+    AI_API_KEY: Optional[str] = Field(default=None, alias="AI_API_KEY")
+    AI_BASE_URL: Optional[str] = Field(default=None, alias="AI_BASE_URL")
+    AI_MODEL: Optional[str] = Field(default=None, alias="AI_MODEL")
+
+    # Legacy Groq config — still supported as fallbacks
+    GROQ_API_KEY: str = Field(default="", alias="GROQ_API_KEY")
     GROQ_MODEL: str = Field(default="llama-3.3-70b-versatile", alias="GROQ_MODEL")
+
+    # App URL (used for OpenRouter attribution header)
+    APP_URL: str = Field(
+        default="https://contentforge-ai-api.onrender.com", alias="APP_URL"
+    )
 
     # Resend
     RESEND_API_KEY: Optional[str] = Field(default=None, alias="RESEND_API_KEY")
@@ -102,6 +114,15 @@ class Settings(BaseSettings):
         if isinstance(v, list):
             return v
         return [v]
+
+    def model_post_init(self, __context):
+        """Resolve AI_API_KEY / AI_MODEL from legacy GROQ_* vars when not set."""
+        # If AI_API_KEY is not set but GROQ_API_KEY is, fall back
+        if not self.AI_API_KEY and self.GROQ_API_KEY:
+            self.AI_API_KEY = self.GROQ_API_KEY
+        # If AI_MODEL is not set but GROQ_MODEL is (and provider is groq), fall back
+        if not self.AI_MODEL and self.AI_PROVIDER == "groq":
+            self.AI_MODEL = self.GROQ_MODEL
 
     class Config:
         env_file = ".env"

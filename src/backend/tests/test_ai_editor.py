@@ -1,5 +1,5 @@
 """
-Tests for AI Editor router and Groq service.
+Tests for AI Editor router and LLM service.
 """
 
 import pytest
@@ -18,29 +18,34 @@ from app.routers.ai_editor import (
     condense_content,
     optimize_content,
 )
+from app.services.llm_service import LLMService, llm_service
 from app.services.groq_service import GroqService, groq_service
 
 
-class TestGroqServiceEditorMethods:
-    """Test Groq service editor methods."""
+class TestLLMServiceEditorMethods:
+    """Test LLM service editor methods."""
 
     @pytest.fixture
     def mock_settings(self):
-        """Mock settings for Groq service."""
-        with patch("app.services.groq_service.get_settings") as mock:
+        """Mock settings for LLM service."""
+        with patch("app.services.llm_service.get_settings") as mock:
             settings_mock = MagicMock()
-            settings_mock.GROQ_API_KEY = "test-api-key"
+            settings_mock.AI_PROVIDER = "groq"
+            settings_mock.AI_API_KEY = "test-api-key"
+            settings_mock.AI_BASE_URL = None
+            settings_mock.AI_MODEL = "llama-3.3-70b-versatile"
             settings_mock.GROQ_MODEL = "llama-3.3-70b-versatile"
+            settings_mock.APP_URL = "https://test.example.com"
             mock.return_value = settings_mock
             yield settings_mock
 
     @pytest.fixture
-    def groq_service_instance(self, mock_settings):
-        """Create a GroqService instance with mocked settings."""
-        return GroqService()
+    def llm_service_instance(self, mock_settings):
+        """Create an LLMService instance with mocked settings."""
+        return LLMService()
 
     @pytest.mark.asyncio
-    async def test_rewrite_content_success(self, groq_service_instance):
+    async def test_rewrite_content_success(self, llm_service_instance):
         """Test successful content rewriting."""
         expected_content = "This is the rewritten content in a professional tone."
 
@@ -57,7 +62,7 @@ class TestGroqServiceEditorMethods:
             client_instance.post = AsyncMock(return_value=mock_response)
             mock_client.return_value = client_instance
 
-            result, tokens = await groq_service_instance.rewrite_content(
+            result, tokens = await llm_service_instance.rewrite_content(
                 content="Original content",
                 tone="professional",
                 style="persuasive",
@@ -72,7 +77,7 @@ class TestGroqServiceEditorMethods:
             assert call_args[1]["json"]["model"] == "llama-3.3-70b-versatile"
 
     @pytest.mark.asyncio
-    async def test_rewrite_content_different_tones(self, groq_service_instance):
+    async def test_rewrite_content_different_tones(self, llm_service_instance):
         """Test rewriting with different tones."""
         tones = [
             "casual",
@@ -98,7 +103,7 @@ class TestGroqServiceEditorMethods:
                 client_instance.post = AsyncMock(return_value=mock_response)
                 mock_client.return_value = client_instance
 
-                result, tokens = await groq_service_instance.rewrite_content(
+                result, tokens = await llm_service_instance.rewrite_content(
                     content="Test content",
                     tone=tone,
                     style="neutral",
@@ -107,7 +112,7 @@ class TestGroqServiceEditorMethods:
                 assert f"{tone}" in result.lower() or "rewritten" in result.lower()
 
     @pytest.mark.asyncio
-    async def test_expand_content_success(self, groq_service_instance):
+    async def test_expand_content_success(self, llm_service_instance):
         """Test successful content expansion."""
         original = "Short text."
         expanded = "This is a much longer version of the short text with additional details and elaboration to demonstrate the expansion functionality."
@@ -125,7 +130,7 @@ class TestGroqServiceEditorMethods:
             client_instance.post = AsyncMock(return_value=mock_response)
             mock_client.return_value = client_instance
 
-            result, tokens = await groq_service_instance.expand_content(
+            result, tokens = await llm_service_instance.expand_content(
                 content=original,
                 target_length=3,
                 focus_areas=["examples", "details"],
@@ -135,7 +140,7 @@ class TestGroqServiceEditorMethods:
             assert tokens > 0
 
     @pytest.mark.asyncio
-    async def test_condense_content_success(self, groq_service_instance):
+    async def test_condense_content_success(self, llm_service_instance):
         """Test successful content condensation."""
         original = "This is a very long piece of text that needs to be condensed. It contains many words and sentences that could be shortened while preserving the meaning."
         condensed = "Condensed text preserving meaning."
@@ -153,7 +158,7 @@ class TestGroqServiceEditorMethods:
             client_instance.post = AsyncMock(return_value=mock_response)
             mock_client.return_value = client_instance
 
-            result, tokens = await groq_service_instance.condense_content(
+            result, tokens = await llm_service_instance.condense_content(
                 content=original,
                 target_percentage=50,
                 preserve_key_points=True,
@@ -163,7 +168,7 @@ class TestGroqServiceEditorMethods:
             assert tokens > 0
 
     @pytest.mark.asyncio
-    async def test_optimize_content_success(self, groq_service_instance):
+    async def test_optimize_content_success(self, llm_service_instance):
         """Test successful content optimization."""
         optimized_text = "Check out this amazing content! #viral #content #marketing"
 
@@ -180,7 +185,7 @@ class TestGroqServiceEditorMethods:
             client_instance.post = AsyncMock(return_value=mock_response)
             mock_client.return_value = client_instance
 
-            result = await groq_service_instance.optimize_content(
+            result = await llm_service_instance.optimize_content(
                 content="Original content for social media",
                 platform="twitter",
                 include_hashtags=True,
@@ -194,7 +199,7 @@ class TestGroqServiceEditorMethods:
             assert result["estimated_tokens"] > 0
 
     @pytest.mark.asyncio
-    async def test_optimize_content_all_platforms(self, groq_service_instance):
+    async def test_optimize_content_all_platforms(self, llm_service_instance):
         """Test optimization for all supported platforms."""
         platforms = ["twitter", "linkedin", "blog", "newsletter", "instagram", "tiktok"]
 
@@ -212,7 +217,7 @@ class TestGroqServiceEditorMethods:
                 client_instance.post = AsyncMock(return_value=mock_response)
                 mock_client.return_value = client_instance
 
-                result = await groq_service_instance.optimize_content(
+                result = await llm_service_instance.optimize_content(
                     content="Test content",
                     platform=platform,
                     include_hashtags=True,
@@ -222,7 +227,7 @@ class TestGroqServiceEditorMethods:
                 assert result["platform"] == platform
 
     @pytest.mark.asyncio
-    async def test_editor_methods_api_error(self, groq_service_instance):
+    async def test_editor_methods_api_error(self, llm_service_instance):
         """Test handling API errors in editor methods."""
         import httpx
 
@@ -241,7 +246,7 @@ class TestGroqServiceEditorMethods:
             mock_client.return_value = client_instance
 
             with pytest.raises(httpx.HTTPStatusError):
-                await groq_service_instance.rewrite_content(
+                await llm_service_instance.rewrite_content(
                     content="Test content",
                     tone="professional",
                 )
