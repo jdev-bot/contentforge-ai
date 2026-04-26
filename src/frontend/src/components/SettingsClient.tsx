@@ -502,7 +502,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
               </div>
             </div>
 
-            <APIKeysTab userId={user.id} />
+            <APIKeysTab userId={user.id} showHeader={false} />
           </CardContent>
         </Card>
 

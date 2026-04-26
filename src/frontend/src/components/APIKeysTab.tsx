@@ -34,9 +34,10 @@ type ProviderId = (typeof PROVIDERS)[number]['id']
 
 interface APIKeysTabProps {
   userId?: string
+  showHeader?: boolean
 }
 
-export default function APIKeysTab(_props?: APIKeysTabProps) {
+export default function APIKeysTab({ userId: _userId, showHeader = true }: APIKeysTabProps) {
   const [keys, setKeys] = useState<APIKey[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -140,24 +141,35 @@ export default function APIKeysTab(_props?: APIKeysTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Key className="h-5 w-5 text-amber-600" />
-            AI Provider Keys
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Bring your own API key — use your own provider account for AI features.
-          </p>
+      {/* Header — hide when embedded in a card with its own header */}
+      {showHeader && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Key className="h-5 w-5 text-amber-600" />
+              AI Provider Keys
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Bring your own API key — use your own provider account for AI features.
+            </p>
+          </div>
+          {!showAddForm && (
+            <Button onClick={() => setShowAddForm(true)} size="sm" className="flex items-center gap-1.5">
+              <Plus className="h-4 w-4" />
+              Add Key
+            </Button>
+          )}
         </div>
-        {!showAddForm && (
+      )}
+      {/* Add button when header is hidden */}
+      {!showHeader && !showAddForm && (
+        <div className="flex justify-end">
           <Button onClick={() => setShowAddForm(true)} size="sm" className="flex items-center gap-1.5">
             <Plus className="h-4 w-4" />
             Add Key
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Info card */}
       <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20">

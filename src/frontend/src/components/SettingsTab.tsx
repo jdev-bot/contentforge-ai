@@ -489,7 +489,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
             </div>
           </div>
 
-          <APIKeysTab userId={user.id} />
+          <APIKeysTab userId={user.id} showHeader={false} />
         </CardContent>
       </Card>
 
