@@ -417,7 +417,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {currentTier === 'free' ? (
-                    <Button onClick={() => setShowSubscriptionModal(true)}>
+                    <Button onClick={() => setShowSubscriptionModal(true)} className="w-full sm:w-auto">
                       Upgrade
                     </Button>
                   ) : (
@@ -426,11 +426,12 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                         variant="outline"
                         onClick={handleManageSubscription}
                         disabled={portalLoading}
+                        className="w-full sm:w-auto"
                       >
                         {portalLoading ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin flex-shrink-0" />
                         ) : (
-                          <ExternalLink className="h-4 w-4 mr-2" />
+                          <ExternalLink className="h-4 w-4 mr-2 flex-shrink-0" />
                         )}
                         Manage Billing
                       </Button>
@@ -438,6 +439,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowSubscriptionModal(true)}
+                        className="w-full sm:w-auto"
                       >
                         Change Plan
                       </Button>
