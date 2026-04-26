@@ -69,7 +69,7 @@
 
 ## Git HEAD
 
-- **Local/Remote:** `20a5a52` (synced, pushed)
+- **Local/Remote:** `c57dcfe` (synced, pushed)
 - **Render:** Auto-deploy from main
 - **Vercel:** Auto-deploy from main
 
