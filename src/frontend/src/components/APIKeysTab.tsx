@@ -363,18 +363,18 @@ export default function APIKeysTab({ userId: _userId, showHeader = true }: APIKe
                     )}
                   </div>
                   {/* Actions row */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleValidate(key.id)}
                       disabled={validating === key.id}
-                      className="gap-1.5"
+                      className="whitespace-nowrap"
                     >
                       {validating === key.id ? (
-                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Validating</>
+                        <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Validating</>
                       ) : (
-                        <><RefreshCw className="h-3.5 w-3.5" /> Validate</>
+                        <><RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Validate</>
                       )}
                     </Button>
                     <Button
@@ -384,12 +384,12 @@ export default function APIKeysTab({ userId: _userId, showHeader = true }: APIKe
                         if (confirm('Remove this API key?')) handleDelete(key.id)
                       }}
                       disabled={deleting === key.id}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 gap-1.5"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 whitespace-nowrap"
                     >
                       {deleting === key.id ? (
-                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Removing</>
+                        <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Removing</>
                       ) : (
-                        <><Trash2 className="h-3.5 w-3.5" /> Remove</>
+                        <><Trash2 className="h-3.5 w-3.5 mr-1.5" /> Remove</>
                       )}
                     </Button>
                   </div>

@@ -395,7 +395,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
 
             <div className="space-y-6">
               {/* Current Plan */}
-              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-slate-600 dark:text-slate-400">Current Plan</p>
                   <div className="flex items-center gap-2 mt-1">
@@ -415,7 +415,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                     </p>
                   )}
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap gap-2">
                   {currentTier === 'free' ? (
                     <Button onClick={() => setShowSubscriptionModal(true)}>
                       Upgrade
@@ -551,8 +551,8 @@ export default function SettingsClient({ user }: SettingsClientProps) {
               )}
 
               {/* Download My Data */}
-              <div className="flex items-start justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                <div>
+              <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg sm:flex sm:items-start sm:justify-between">
+                <div className="flex-1">
                   <h4 className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
                     <Download className="h-4 w-4" />
                     Download My Data
@@ -566,6 +566,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                   variant="outline"
                   onClick={handleExportData}
                   disabled={exportLoading}
+                  className="sm:ml-4"
                 >
                   {exportLoading ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -578,8 +579,8 @@ export default function SettingsClient({ user }: SettingsClientProps) {
 
               {/* Delete Account */}
               {!deletionStatus?.deletion_scheduled && (
-                <div className="flex items-start justify-between p-4 bg-red-50 rounded-lg border border-red-100">
-                  <div>
+                <div className="space-y-3 p-4 bg-red-50 rounded-lg border border-red-100 sm:flex sm:items-start sm:justify-between">
+                  <div className="flex-1">
                     <h4 className="font-medium text-red-900 flex items-center gap-2">
                       <Trash2 className="h-4 w-4" />
                       Delete Account
@@ -592,6 +593,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                   <Button
                     variant="danger"
                     onClick={() => setShowDeleteConfirm(true)}
+                    className="sm:ml-4"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Account
