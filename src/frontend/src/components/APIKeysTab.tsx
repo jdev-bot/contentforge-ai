@@ -324,9 +324,9 @@ export default function APIKeysTab({ userId: _userId, showHeader = true }: APIKe
           {keys.map(key => (
             <Card key={key.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                <div className="space-y-3">
+                  {/* Key info row */}
+                  <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-slate-900 dark:text-slate-100">
                         {key.label || getProviderName(key.provider)}
                       </span>
@@ -346,51 +346,50 @@ export default function APIKeysTab({ userId: _userId, showHeader = true }: APIKe
                           </span>
                         </Badge>
                       )}
-                    </div>
-                    <div className="text-sm text-slate-500 dark:text-slate-400 space-y-0.5">
-                      <p>
-                        <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-xs">
-                          {key.masked_key}
-                        </span>
-                      </p>
-                      {key.model && <p>Model: {key.model}</p>}
-                      {key.base_url && <p className="truncate">URL: {key.base_url}</p>}
-                      {key.last_validated_at && (
-                        <p className="text-xs">
-                          Last validated: {new Date(key.last_validated_at).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
                   </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Key details */}
+                  <div className="text-sm text-slate-500 dark:text-slate-400 space-y-0.5">
+                    <p>
+                      <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-xs break-all">
+                        {key.masked_key}
+                      </span>
+                    </p>
+                    {key.model && <p>Model: {key.model}</p>}
+                    {key.base_url && <p className="truncate">URL: {key.base_url}</p>}
+                    {key.last_validated_at && (
+                      <p className="text-xs">
+                        Last validated: {new Date(key.last_validated_at).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  {/* Actions row */}
+                  <div className="flex items-center gap-2">
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => handleValidate(key.id)}
                       disabled={validating === key.id}
-                      title="Re-validate key"
+                      className="gap-1.5"
                     >
                       {validating === key.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Validating</>
                       ) : (
-                        <RefreshCw className="h-4 w-4" />
+                        <><RefreshCw className="h-3.5 w-3.5" /> Validate</>
                       )}
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => {
                         if (confirm('Remove this API key?')) handleDelete(key.id)
                       }}
                       disabled={deleting === key.id}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                      title="Delete key"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 gap-1.5"
                     >
                       {deleting === key.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Removing</>
                       ) : (
-                        <Trash2 className="h-4 w-4" />
+                        <><Trash2 className="h-3.5 w-3.5" /> Remove</>
                       )}
                     </Button>
                   </div>
