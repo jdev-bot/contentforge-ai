@@ -483,6 +483,9 @@ body {
 button {
   white-space: nowrap;
 }
+button svg {
+  flex-shrink: 0;
+}
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {

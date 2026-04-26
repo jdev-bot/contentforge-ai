@@ -163,7 +163,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         
         {/* Button Content */}
-        <span className="relative z-10 whitespace-nowrap">{children}</span>
+        <span className="relative z-10 inline-flex items-center whitespace-nowrap">{children}</span>
         
         {/* Right Icon */}
         {!loading && rightIcon && (
