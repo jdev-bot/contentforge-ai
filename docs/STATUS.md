@@ -22,7 +22,7 @@ All phases completed successfully:
 
 ### BYOK (Bring Your Own Key) — NEW
 - ✅ Per-user encrypted API keys (Google, Groq, Cerebras, OpenRouter, Custom)
-- ✅ Provider-agnostic LLM layer (AIService, renamed from GroqService)
+- ✅ Provider-agnostic LLM layer (AIService, renamed from AIService)
 - ✅ BYOK middleware — JWT → user key → context var
 - ✅ NoAPIKeyConfigured HTTPException(403) with `NO_API_KEY` code
 - ✅ Frontend APIKeysTab — add/validate/delete with provider cards
@@ -34,7 +34,7 @@ All phases completed successfully:
 ### P0 — Foundation
 - ✅ User authentication (JWT, Supabase)
 - ✅ Content creation & management
-- ✅ AI generation (Groq GLM-5.1)
+- ✅ AI generation (AIService (provider-agnostic))
 - ✅ Asset distribution (20+ formats)
 - ✅ Basic analytics
 
@@ -171,7 +171,7 @@ All phases completed successfully:
 ## 📁 DOCUMENTATION
 
 All documentation complete:
-- ✅ `API_COMPLETE.md` - Full API reference (375 endpoints)
+- ✅ `API_COMPLETE.md` - Full API reference (427 endpoints)
 - ✅ `FEATURES_GUIDE.md` - Feature documentation
 - ✅ `ARCHITECTURE.md` - System design overview
 - ✅ `DEPLOYMENT.md` - Production deployment guide

@@ -36,7 +36,7 @@ Response: {"status":"healthy","timestamp":"2026-04-14T...","version":"1.0.0"}
 ```
 Next.js build: SUCCESS
 TypeScript: ZERO ERRORS
-All 73 components building correctly
+All 59 components building correctly
 ```
 
 ---
@@ -158,7 +158,7 @@ All 73 components building correctly
 ### 4.2 Data Flow ✅
 
 ```
-User Input → SmartEditor Component → API Function → Backend → GroqService
+User Input → SmartEditor Component → API Function → Backend → AIService
      ↑                                                              ↓
      └──────────── Response ← Render ← API Response ←───────────────┘
 ```

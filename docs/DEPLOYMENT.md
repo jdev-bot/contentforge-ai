@@ -40,7 +40,7 @@ ContentForge AI uses a split deployment architecture:
 
 | Key | Source | Purpose |
 |-----|--------|---------|
-| Groq API key | [console.groq.com](https://console.groq.com) | AI content generation (GLM-5.1) |
+| AIService key | [console.groq.com](https://console.groq.com) | AI content generation (GLM-5.1) |
 | Resend API key | [resend.com](https://resend.com) | Email delivery |
 | Stripe API keys | [dashboard.stripe.com](https://dashboard.stripe.com) | Payment processing |
 | Stripe Webhook Secret | Stripe dashboard | Webhook verification |
@@ -203,7 +203,7 @@ vercel --prod
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Supabase settings |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | Supabase settings |
 
-> **Note:** `NEXT_PUBLIC_GROQ_API_KEY` has been removed. Groq API calls are proxied through the backend.
+> **Note:** `NEXT_PUBLIC_GROQ_API_KEY` has been removed. AIService calls are proxied through the backend.
 
 ### Backend (Render)
 
@@ -211,7 +211,7 @@ vercel --prod
 |----------|-------------|----------|
 | `SUPABASE_URL` | Supabase project URL | ✅ Yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service key | ✅ Yes |
-| `GROQ_API_KEY` | Groq API key (GLM-5.1) | ✅ Yes |
+| `ENCRYPTION_KEY` _(BYOK)_ | AIService key (GLM-5.1) | ✅ Yes |
 | `RESEND_API_KEY` | Resend email API | ⚠️ Email features |
 | `STRIPE_SECRET_KEY` | Stripe secret key | ⚠️ Payments |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook secret | ⚠️ Payments |
@@ -313,7 +313,7 @@ Or use Vercel dashboard → Deployments → Click "..." → "Promote to Producti
 - [x] All API keys in environment variables (no hardcoded secrets)
 - [x] `.env.production` removed from git tracking
 - [x] Redis authentication configured
-- [x] Groq API key backend-only (not in `NEXT_PUBLIC_` env)
+- [x] AIService key backend-only (not in `NEXT_PUBLIC_` env)
 - [x] `pickle` deserialization replaced with JSON
 - [x] RSS HTML sanitized with DOMPurify
 - [x] `python-jose` replaced with `PyJWT`

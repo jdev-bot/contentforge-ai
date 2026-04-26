@@ -958,7 +958,7 @@ Analyze content sentiment to ensure tone alignment with brand and audience expec
 #### Implementation
 
 ```python
-# Using Groq API with sentiment prompt
+# Using AIService with sentiment prompt
 SENTIMENT_PROMPT = """
 Analyze the following content for sentiment and tone:
 
@@ -1417,7 +1417,7 @@ Enterprise Features
   └── Requires: Audit log infrastructure
 
 AI Enhancements
-  └── Requires: Groq API scaling
+  └── Requires: AIService scaling
   └── Requires: Fine-tuning infrastructure
 
 Marketplace

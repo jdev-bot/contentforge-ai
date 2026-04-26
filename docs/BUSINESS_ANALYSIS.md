@@ -12,7 +12,7 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Content repurposing engine | ✅ Working | Groq AI integration active |
+| Content repurposing engine | ✅ Working | AI content generation (BYOK, provider-agnostic) active |
 | User authentication | ✅ Working | Supabase Auth + JWT + SSO/SAML |
 | Usage tracking | ✅ Working | Monthly limits tracked & enforced |
 | Payment processing | ✅ Working | Stripe integration complete |

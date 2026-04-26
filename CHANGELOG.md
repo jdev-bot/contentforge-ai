@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — BYOK (Bring Your Own Key) & Settings UI Overhaul
 - **BYOK Architecture:** Per-user encrypted API keys (Google, Groq, Cerebras, OpenRouter, Custom)
-- **AIService:** Provider-agnostic LLM layer (renamed from GroqService)
+- **AIService:** Provider-agnostic LLM layer (renamed from AIService)
 - **BYOKMiddleware:** JWT → user key lookup → context var for every AI request
 - **NoAPIKeyConfigured:** HTTPException(403) with `NO_API_KEY` code when no user key
 - **Migration 029:** `api_keys` table with RLS, unique `(user_id, provider)`
@@ -25,14 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Responsive mobile layouts:** Subscription, Export, Delete sections stack vertically on mobile
 - **Button component:** `whitespace-nowrap` + `inline-flex items-center` on content span, removed `overflow-hidden`
 - **Global CSS guard:** `button { white-space: nowrap; }` and `button svg { flex-shrink: 0; }`
-- **AI provider reference:** All references updated from `groq_service` to `ai_service`, `GroqService` to `AIService`
+- **AI provider reference:** All references updated from `ai_service` to `ai_service`, `AIService` to `AIService`
 
 ### Fixed
 - **Settings page:** Fixed missing `SettingsClient` import, created standalone settings page
 - **Double header:** `APIKeysTab` `showHeader={false}` avoids duplicate card headers
 - **Button text wrapping:** Icon+text on same line in all buttons, no overflow clipping on mobile
 - **NoAPIKeyConfigured:** Properly re-raised as HTTPException(403) in all AI routers
-- **GroqService singleton:** Fixed instance creation (was referencing `llm_service` instead of `GroqService()`)
+- **AIService singleton:** Fixed instance creation (was referencing `llm_service` instead of `AIService()`)
 
 ## [2.1.0] - 2026-04-14
 
@@ -50,11 +50,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Python runtime upgraded to 3.13
 - Node.js runtime upgraded to v22.22.2
-- AI provider updated from Llama 3.3 70B to GLM-5.1 via Groq API
-- API route count grew to 375 (184 GET · 124 POST · 15 PUT · 15 PATCH · 37 DELETE)
+- AI provider updated from Llama 3.3 70B to GLM-5.1 via AIService
+- API route count grew to 375 (211 GET · 144 POST · 16 PUT · 17 PATCH · 39 DELETE)
 - Backend test suite expanded to 571 tests (530 passing · 41 skipped · 0 failing)
-- Backend codebase grew to 44,101 lines of Python
-- Frontend codebase grew to 44,801 lines of TypeScript/TSX
+- Backend codebase grew to 48,494 lines of Python
+- Frontend codebase grew to 47,992 lines of TypeScript/TSX
 
 ## [2.0.1] - 2026-04-14
 
@@ -137,7 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Email notifications via Resend
 
 ### Infrastructure
-- FastAPI backend with 380+ routes across 49 modules
+- FastAPI backend with 380+ routes across 54 modules
 - Next.js 14 frontend with Tailwind CSS
 - Supabase Auth + PostgreSQL
 - Celery + Redis task queue

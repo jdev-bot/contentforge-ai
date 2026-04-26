@@ -4,9 +4,9 @@
 
 ContentForge AI is an AI-powered content repurposing and distribution platform. The system transforms long-form content into 20+ platform-native formats and distributes them across social platforms, email, and blogs.
 
-**Tech Stack:** Python 3.13 · FastAPI · Next.js 14 · Supabase PostgreSQL · Groq API (GLM-5.1) · Redis · Node v22.22.2
+**Tech Stack:** Python 3.13 · FastAPI · Next.js 14 · Supabase PostgreSQL · BYOK AI (AIService, provider-agnostic) · Redis · Node v22.22.2
 
-**Scale:** 375 API routes · 49 router modules · 34 backend services · 73 frontend components · 16 pages
+**Scale:** 427 API routes · 54 router modules · 36 backend services · 59 frontend components · 16 pages
 
 ---
 
@@ -24,7 +24,7 @@ ContentForge AI is an AI-powered content repurposing and distribution platform. 
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
 │                                    FRONTEND LAYER                                    │
 │  ┌──────────────────────────────────────────────────────────────────────────────┐  │
-│  │                      Next.js 14 + Tailwind CSS (73 components, 16 pages)      │  │
+│  │                      Next.js 14 + Tailwind CSS (59 components, 16 pages)      │  │
 │  │                    (Vercel - Edge Network, Serverless)                         │  │
 │  └──────────────────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────┬───────────────────────────────────────────────────┘
@@ -57,7 +57,7 @@ ContentForge AI is an AI-powered content repurposing and distribution platform. 
 │  ┌──────────────────────────────────────────────────────────────────────────────┐  │
 │  │                         FastAPI (Python 3.13)                                │  │
 │  │                    (Render - Web Service)                                    │  │
-│  │                     375 routes / 49 router modules                          │  │
+│  │                     427 routes / 54 router modules                          │  │
 │  │                                                                              │  │
 │  │  ┌──────────┬──────────┬──────────┬──────────┬──────────┬──────────┐        │  │
 │  │  │   Auth   │ Projects │ Content  │ Distrib. │  Usage   │  Admin   │        │  │
@@ -83,7 +83,7 @@ ContentForge AI is an AI-powered content repurposing and distribution platform. 
 ┌───────────────────┐ ┌───────────────────┐ ┌─────────────────────────────────────┐
 │   AI SERVICE      │ │  WORKER SERVICE   │ │         DATABASE LAYER              │
 │  ┌─────────────┐  │ │  ┌─────────────┐  │ │  ┌───────────┐    ┌───────────────┐  │
-│  │   Groq API  │  │ │  │   Celery    │  │ │  │ Supabase  │    │ Redis Cache   │  │
+│  │   AIService  │  │ │  │   Celery    │  │ │  │ Supabase  │    │ Redis Cache   │  │
 │  │  GLM-5.1   │  │ │  │   Worker    │  │ │  │PostgreSQL │    │ + In-Memory   │  │
 │  │             │  │ │  │  (Render)   │  │ │  │  (Auth)   │    │   Fallback    │  │
 │  └─────────────┘  │ │  └─────────────┘  │ │  └───────────┘    └───────────────┘  │
@@ -123,7 +123,7 @@ ContentForge AI is an AI-powered content repurposing and distribution platform. 
 **Technology Stack:**
 - **Framework:** Next.js 14 (App Router)
 - **Styling:** Tailwind CSS
-- **UI Components:** 73 custom components + 12 shared UI primitives (Card, Button, Input, Skeleton, etc.)
+- **UI Components:** 59 custom components + 12 shared UI primitives (Card, Button, Input, Skeleton, etc.)
 - **State Management:** React hooks
 - **Authentication:** Supabase Auth + SSO (OIDC/SAML)
 
@@ -178,7 +178,7 @@ ContentForge AI is an AI-powered content repurposing and distribution platform. 
 - **Validation:** Pydantic models
 - **Runtime:** Uvicorn
 
-**API Routes:** 375 total (184 GET | 124 POST | 15 PUT | 15 PATCH | 37 DELETE)
+**API Routes:** 375 total (211 GET | 144 POST | 16 PUT | 17 PATCH | 39 DELETE)
 
 **Router Modules (49):**
 
@@ -250,7 +250,7 @@ ContentForge AI is an AI-powered content repurposing and distribution platform. 
 | `extraction_service` | Content extraction |
 | `freshness_service` | Freshness scoring |
 | `funnel_service` | Funnel tracking |
-| `groq_service` | AI content generation (GLM-5.1) |
+| `ai_service` | AI content generation (GLM-5.1) |
 | `integration_framework_service` | Integration Hub |
 | `integration_services` | Third-party integrations |
 | `marketplace_service` | Plugin marketplace |
@@ -342,7 +342,7 @@ The backend applies the following middleware (in processing order):
 
 ### 6. AI Layer
 
-#### Groq API
+#### AIService
 
 **Purpose:** AI-powered content generation
 
@@ -361,7 +361,7 @@ The backend applies the following middleware (in processing order):
 
 **Services:**
 - `extraction_service.py` — Content extraction from URLs/files
-- `groq_service.py` — AI content generation interface
+- `ai_service.py` — AI content generation interface
 - `suggestion_service.py` — AI suggestion engine
 - `sentiment_service.py` — Sentiment analysis
 - `quality_service.py` — Quality scoring
@@ -659,7 +659,7 @@ User A → WebSocket → Backend → WebSocket → User B
 
 - [Project Status](./STATUS.md) — Current development status
 - [API Reference](./API.md) — API overview and examples
-- [API Complete Reference](./API_COMPLETE.md) — Full endpoint listing (375 routes)
+- [API Complete Reference](./API_COMPLETE.md) — Full endpoint listing (427 routes)
 - [Testing Report](./TESTING.md) — Test results and coverage
 - [Performance Report](./PERFORMANCE.md) — Benchmarks and optimizations
 - [Security Audit](./SECURITY_AUDIT_REPORT.md) — Security assessment

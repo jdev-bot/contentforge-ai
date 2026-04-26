@@ -76,7 +76,7 @@ Responsive design screenshots showing:
 ## Technical Details
 
 **Stack:**
-- Next.js 16.2.3 with App Router
+- Next.js 14.2.3 with App Router
 - React 19.2.4
 - Tailwind CSS 4.x
 - Lucide React icons

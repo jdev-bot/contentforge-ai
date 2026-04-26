@@ -21,7 +21,7 @@ ContentForge AI is technically production-ready. All P0–P4 features are implem
 | Background Tasks | Celery + Redis | ✅ Production |
 | Caching | Redis + In-memory | ✅ Production |
 | File Storage | Cloudflare R2 | ✅ Production |
-| AI Engine | Groq API | ✅ Production |
+| AI Engine | AIService | ✅ Production |
 | Payments | Stripe | ✅ Production |
 | Email | Resend | ✅ Production |
 | Automation | n8n Webhooks | ✅ Production |

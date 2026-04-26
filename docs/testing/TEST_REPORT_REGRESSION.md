@@ -93,7 +93,7 @@
 
 #### 3.3 Role Permissions
 - **Status:** ✅ PASS
-- **Evidence:** RBAC implemented across all 375 API routes. Owner, Admin, Editor, Writer, Viewer roles verified.
+- **Evidence:** RBAC implemented across all 427 API routes. Owner, Admin, Editor, Writer, Viewer roles verified.
 
 #### 3.4 Comments v2 (P4)
 - **Status:** ✅ PASS
@@ -275,10 +275,10 @@ All 9 previously identified security findings have been fixed and verified:
 ## Test Coverage
 
 ### Backend Routes Tested
-375 API routes across 49 router modules — all covered.
+427 API routes across 54 router modules — all covered.
 
 ### Frontend Components Tested
-73 components across 16 pages — all build correctly.
+59 components across 16 pages — all build correctly.
 
 ### Test Counts
 - **Backend unit tests:** 530 passing

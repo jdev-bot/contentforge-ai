@@ -178,7 +178,7 @@ src/frontend/src/
 │   ├── useOnboarding.ts   # Onboarding state
 │   └── ...
 ├── lib/                   # Utilities
-│   ├── api.ts             # API client (375 endpoints)
+│   ├── api.ts             # API client (427 endpoints)
 │   ├── supabase.ts        # Supabase client
 │   └── utils.ts           # Helper functions
 └── types/                 # TypeScript type definitions

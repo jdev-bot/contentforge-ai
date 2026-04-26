@@ -47,7 +47,7 @@
 |----------|--------|-------|
 | `SUPABASE_URL` | [ ] Set | Same as frontend |
 | `SUPABASE_SERVICE_ROLE_KEY` | [ ] Set | From Supabase dashboard |
-| `GROQ_API_KEY` | [ ] Set | From Groq console |
+| `ENCRYPTION_KEY` _(BYOK)_ | [ ] Set | From Groq console |
 | `R2_ACCOUNT_ID` | [ ] Set | From Cloudflare dashboard |
 | `R2_ACCESS_KEY_ID` | [ ] Set | From Cloudflare R2 |
 | `R2_SECRET_ACCESS_KEY` | [ ] Set | From Cloudflare R2 |
@@ -200,7 +200,7 @@
 
 ### External Services
 
-- [ ] Groq API calls succeed
+- [ ] AIService calls succeed
 - [ ] R2 file upload/download works
 - [ ] Email sending works (if Resend configured)
 - [ ] Stripe webhooks receive correctly (if configured)

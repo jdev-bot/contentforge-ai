@@ -79,7 +79,7 @@ Go to **Settings → API** in your Supabase dashboard. You need:
 
 ---
 
-## Step 3: Get a Groq API Key
+## Step 3: Get a AIService Key
 
 1. Go to [https://console.groq.com](https://console.groq.com)
 2. Sign up or log in
@@ -439,7 +439,7 @@ Check the browser console (F12). Usually a missing `NEXT_PUBLIC_SUPABASE_URL` or
 Verify the backend is running on port 8000. Check `NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1` in `.env.local`.
 
 ### AI features return errors
-Check that `GROQ_API_KEY` is set correctly in the backend `.env`. Verify at [https://console.groq.com](https://console.groq.com).
+Check that `ENCRYPTION_KEY` _(BYOK)_ is set correctly in the backend `.env`. Verify at [https://console.groq.com](https://console.groq.com).
 
 ### Celery tasks not running
 Make sure Redis is running (`redis-cli ping` → `PONG`) and both the Celery worker and beat are started.

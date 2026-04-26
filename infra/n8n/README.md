@@ -10,7 +10,7 @@ This directory contains exported n8n workflows for the ContentForge AI platform.
 - **Steps**:
   1. Receive content ID
   2. Extract content from source
-  3. Generate assets via Groq API
+  3. Generate assets via AIService
   4. Save to database
   5. Notify user
 
@@ -40,7 +40,7 @@ This directory contains exported n8n workflows for the ContentForge AI platform.
 3. Import workflows from this directory
 4. Configure credentials for:
    - Supabase
-   - Groq API
+   - AIService
    - Social media APIs
    - Email (Resend)
 

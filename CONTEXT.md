@@ -39,7 +39,7 @@
 - **Encryption:** AES-256-GCM, auto-generated key persisted to `.encryption_key` (dev) or `ENCRYPTION_KEY` env var (prod)
 - **Router:** `/api/v1/api-keys` — CRUD + validate (5 endpoints)
 - **Middleware:** `BYOKMiddleware` — JWT → user key lookup → context var
-- **Service:** `AIService` (renamed from `GroqService`) — delegates to context var; raises `NoAPIKeyConfigured` when no user key
+- **Service:** `AIService` (renamed from `AIService`) — delegates to context var; raises `NoAPIKeyConfigured` when no user key
 - **Exception handler:** Returns 403 `{detail, code: "NO_API_KEY", action}` for AI calls without a key
 - **Frontend:** `APIKeysTab` component — add/validate/delete with provider cards, `showHeader` prop
 - **Frontend:** `SettingsClient.tsx` (standalone) + `SettingsTab.tsx` (dashboard tab) — both integrate APIKeysTab

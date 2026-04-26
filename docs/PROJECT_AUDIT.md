@@ -314,7 +314,7 @@ All Python dependencies are up-to-date.
 
 ### Short-term Actions
 5. Create SECURITY.md
-6. Review Groq API key exposure
+6. Review AIService key exposure
 7. Update version numbers to reflect current state
 
 ### Long-term Actions

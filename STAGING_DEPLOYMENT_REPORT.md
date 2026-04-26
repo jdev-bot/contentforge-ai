@@ -30,7 +30,7 @@ The project is structurally ready for staging deployment but cannot be deployed 
 | Component | Status | Path |
 |-----------|--------|------|
 | Backend | ✅ Ready | `src/backend/app/main.py` |
-| Frontend | ✅ Ready | `src/frontend/` (Next.js 16.2.3) |
+| Frontend | ✅ Ready | `src/frontend/` (Next.js 14.2.3) |
 | Docker Config | ✅ Ready | `infra/docker/Dockerfile.backend` |
 | Render Blueprint | ✅ Ready | `render.yaml` |
 | Vercel Config | ✅ Ready | `vercel.json` |
@@ -71,7 +71,7 @@ The project is structurally ready for staging deployment but cannot be deployed 
 
 ### Frontend (Vercel)
 **Project Name:** contentforge-ai  
-**Framework:** Next.js 16.2.3  
+**Framework:** Next.js 14.2.3  
 **Build Command:** `cd src/frontend && npm run build`  
 
 **Required Environment Variables:**
@@ -259,7 +259,7 @@ After successful deployment, verify:
 ### Backend Features (FastAPI)
 - ✅ Health check endpoints (basic + detailed)
 - ✅ Authentication (JWT + Supabase + SSO/SAML)
-- ✅ Content management API (375 routes)
+- ✅ Content management API (427 routes)
 - ✅ Project management API
 - ✅ Distribution API
 - ✅ Webhook support

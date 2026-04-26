@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-ContentForge AI has completed five major development phases (P0–P4), delivering 375 API routes across 49 router modules with 73 frontend components and 16 pages. All 530 backend tests pass; CI is green across all 4 pipelines on the self-hosted runner (srv1503460). All 9 HIGH/CRITICAL security findings have been remediated.
+ContentForge AI has completed five major development phases (P0–P4), delivering 427 API routes across 54 router modules with 59 frontend components and 16 pages. All 530 backend tests pass; CI is green across all 4 pipelines on the self-hosted runner (srv1503460). All 9 HIGH/CRITICAL security findings have been remediated.
 
 The platform now enters the **P5: Integration Ecosystem** phase — expanding connectivity, partner integrations, and marketplace growth.
 
@@ -33,7 +33,7 @@ Core platform infrastructure and base functionality:
 |---------|--------|-------|
 | FastAPI backend + Next.js 14 frontend | ✅ Complete | Python 3.13, Node v22.22.2 |
 | Supabase (PostgreSQL + Auth) | ✅ Complete | Row-level security enabled |
-| Groq GLM-5.1 integration | ✅ Complete | AI content generation |
+| AIService (provider-agnostic) integration | ✅ Complete | AI content generation |
 | Content CRUD + Projects | ✅ Complete | Full lifecycle management |
 | Authentication & RBAC | ✅ Complete | JWT + Supabase Auth |
 | Stripe billing | ✅ Complete | Subscriptions + webhooks |
@@ -162,7 +162,7 @@ Expand the platform's connectivity and partner ecosystem, leveraging the Integra
 | CI Pipelines | 4/4 green |
 | Security Findings Fixed | 9/9 HIGH/CRITICAL |
 | Cached Endpoints | 9 |
-| Tech Stack | Python 3.13, Node v22.22.2, FastAPI, Next.js 14, Groq GLM-5.1, Supabase |
+| Tech Stack | Python 3.13, Node v22.22.2, FastAPI, Next.js 14, AIService (provider-agnostic), Supabase |
 
 ---
 

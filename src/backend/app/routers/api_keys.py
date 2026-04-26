@@ -93,12 +93,30 @@ async def validate_key_against_provider(provider: str, api_key: str, base_url: O
     if not models_url:
         return {"is_valid": False, "message": f"No models endpoint for provider '{provider}'", "response_time_ms": None}
 
+    # Provider-specific auth headers
+    headers: Dict[str, str] = {}
+    params: Optional[Dict[str, str]] = None
+
+    if provider == "google":
+        # Google AI Studio / Gemini API uses x-goog-api-key header
+        # and also accepts key as query param
+        headers["x-goog-api-key"] = api_key
+        params = {"key": api_key}
+    elif provider == "openrouter":
+        headers["Authorization"] = f"Bearer {api_key}"
+        headers["HTTP-Referer"] = "https://contentforge.ai"
+        headers["X-Title"] = "ContentForge AI"
+    else:
+        # Groq, Cerebras, and custom providers use Bearer auth
+        headers["Authorization"] = f"Bearer {api_key}"
+
     try:
         start = _time.time()
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(
                 models_url,
-                headers={"Authorization": f"Bearer {api_key}"},
+                headers=headers,
+                params=params,
             )
         elapsed = round((_time.time() - start) * 1000, 2)
 

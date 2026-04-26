@@ -150,7 +150,7 @@ The single failing test is a known non-blocking issue in an edge case scenario t
 |---------|--------------|---------|
 | Supabase Client | `unittest.mock.patch` on `get_supabase_client` | `mock_supabase` |
 | Supabase Admin | `unittest.mock.patch` on `get_supabase_admin_client` | `mock_supabase_admin` |
-| Groq API | `unittest.mock.patch` on `groq_service` | `mock_groq` |
+| AIService | `unittest.mock.patch` on `ai_service` | `mock_groq` |
 | Redis | Cache disabled or mock Redis | `mock_cache` |
 | Email (Resend) | `unittest.mock.patch` on `email_service.send` | `mock_email` |
 | httpx.AsyncClient | `unittest.mock.AsyncMock` | `mock_httpx` |

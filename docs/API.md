@@ -8,9 +8,9 @@ The ContentForge AI API is a RESTful API for AI-powered content repurposing and 
 
 **Current Version**: 2.0.0
 
-**Route Summary**: 375 routes across 49 modules (184 GET | 124 POST | 15 PUT | 15 PATCH | 37 DELETE)
+**Route Summary**: 427 routes across 54 modules (211 GET | 144 POST | 16 PUT | 17 PATCH | 39 DELETE)
 
-> **Full endpoint listing:** See [API_COMPLETE.md](./API_COMPLETE.md) for the complete reference of all 375 endpoints with parameters, request/response schemas, and examples.
+> **Full endpoint listing:** See [API_COMPLETE.md](./API_COMPLETE.md) for the complete reference of all 427 endpoints with parameters, request/response schemas, and examples.
 
 ---
 

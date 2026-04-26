@@ -108,7 +108,7 @@ Your content is automatically processed to create:
 | Feature | Description |
 |---------|-------------|
 | **📥 Content Import** | URLs, YouTube videos, RSS feeds, direct text, file uploads |
-| **🤖 AI Generation** | Groq GLM-5.1 powered content repurposing |
+| **🤖 AI Generation** | AIService (provider-agnostic) powered content repurposing |
 | **✏️ Smart Editor** | Rewrite, expand, condense, optimize for any platform |
 | **📅 Scheduled Publishing** | Queue posts for optimal times with timezone support |
 | **📊 Analytics Dashboard** | Track performance, growth, and engagement metrics |
@@ -251,7 +251,7 @@ All performance optimizations applied and verified in production:
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Frontend                                  │
 │                Next.js 14 + Tailwind CSS                         │
-│                   73 components · 16 pages                      │
+│                   59 components · 16 pages                      │
 │                        Vercel                                   │
 └────────────────────────┬────────────────────────────────────────┘
                          │ HTTPS
@@ -259,7 +259,7 @@ All performance optimizations applied and verified in production:
 ┌─────────────────────────────────────────────────────────────────┐
 │                         API                                      │
 │            FastAPI + Python 3.13                                 │
-│       375 routes · 49 routers · 34 services                     │
+│       427 routes · 49 routers · 34 services                     │
 │     Rate Limiting · JWT Auth · ETag · Request ID                │
 │                        Render                                   │
 └────────────────────────┬────────────────────────────────────────┘
@@ -322,7 +322,7 @@ All performance optimizations applied and verified in production:
 
 | Document | Description |
 |----------|-------------|
-| [📘 API Complete Reference](docs/API_COMPLETE.md) | All 375 endpoints documented with examples |
+| [📘 API Complete Reference](docs/API_COMPLETE.md) | All 427 endpoints documented with examples |
 | [📖 Features Guide](docs/FEATURES_GUIDE.md) | Detailed feature documentation |
 | [🎓 Tutorials](docs/TUTORIALS/) | Step-by-step user guides |
 | [⚙️ Admin Guide](docs/ADMIN_GUIDE.md) | Deployment and operations |
@@ -459,7 +459,7 @@ See [`.env.production`](.env.production) for complete list of required environme
 
 **Required for Production:**
 - `SUPABASE_URL` & `SUPABASE_SERVICE_ROLE_KEY`
-- `GROQ_API_KEY`
+- `ENCRYPTION_KEY` _(BYOK)_
 - `RESEND_API_KEY`
 - `REDIS_URL`
 - `SECRET_KEY` (generate with `openssl rand -hex 32`)
@@ -510,7 +510,7 @@ curl -X POST "https://api.contentforge.ai/api/v1/schedule" \
   }'
 ```
 
-See [API_COMPLETE.md](docs/API_COMPLETE.md) for full documentation of all 375 endpoints.
+See [API_COMPLETE.md](docs/API_COMPLETE.md) for full documentation of all 427 endpoints.
 
 ---
 

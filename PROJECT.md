@@ -8,8 +8,8 @@ contentforge-ai/
 │   ├── backend/                  # FastAPI backend (Python 3.13)
 │   │   └── app/
 │   │       ├── main.py           # Application entry point
-│   │       ├── routers/          # 49 router modules (375 routes)
-│   │       ├── services/        # 34 service modules
+│   │       ├── routers/          # 54 router modules (427 routes)
+│   │       ├── services/        # 36 service modules
 │   │       ├── middleware/       # 4 middleware modules
 │   │       ├── models/           # Pydantic models
 │   │       ├── schemas/          # Request/response schemas
@@ -18,7 +18,7 @@ contentforge-ai/
 │   ├── frontend/                 # Next.js 14 frontend (TypeScript)
 │   │   └── src/
 │   │       ├── app/              # 16 pages (App Router)
-│   │       ├── components/       # 73 components
+│   │       ├── components/       # 59 components
 │   │       ├── lib/              # Client libraries
 │   │       └── styles/           # Tailwind CSS styles
 │   └── workers/                  # Celery background workers
@@ -63,61 +63,66 @@ contentforge-ai/
     └── test_subscription_enforcement.py
 ```
 
-## Router Modules (49)
+## Router Modules (54)
 
 | # | Module | Key Endpoints |
 |---|--------|---------------|
-| 1 | `admin` | Admin operations |
-| 2 | `ai_editor` | AI-powered editing tools |
-| 3 | `ai_suggestions` | Smart content suggestions |
-| 4 | `alerts` | Performance alerts |
-| 5 | `analytics` | Analytics & KPIs |
-| 6 | `attribution` | Attribution modeling |
-| 7 | `audience` | Audience insights |
-| 8 | `audit_logs` | Audit logging & export |
-| 9 | `auth` | Authentication (JWT, SSO) |
-| 10 | `automation` | Automation rules & triggers |
-| 11 | `categorization` | Smart categorization |
-| 12 | `collaboration` | Real-time collaboration |
-| 13 | `comments` | Comments v2 (threaded) |
-| 14 | `competitors` | Competitor analysis |
-| 15 | `content` | Content CRUD & import |
-| 16 | `dashboards` | Custom dashboards |
-| 17 | `distributions` | Distribution management |
-| 18 | `docs` | API documentation |
-| 19 | `freshness` | Content freshness scoring |
-| 20 | `funnel` | Funnel tracking |
-| 21 | `health` | Health checks |
-| 22 | `integration_framework` | Integration hub |
-| 23 | `integrations` | External integrations |
-| 24 | `marketplace` | Plugin marketplace |
-| 25 | `notifications` | Notification management |
-| 26 | `organizations` | Organization management |
-| 27 | `performance` | Performance analytics |
-| 28 | `plugins` | Plugin system |
-| 29 | `presence` | WebSocket presence |
-| 30 | `projects` | Project management |
-| 31 | `quality_scoring` | Quality scoring |
-| 32 | `reports` | Report generation |
-| 33 | `retention` | Data retention policies |
-| 34 | `rss` | RSS feed management |
-| 35 | `saml` | SAML SSO |
-| 36 | `scheduler` | Scheduled publishing |
-| 37 | `search` | Full-text search |
-| 38 | `sentiment` | Sentiment analysis |
-| 39 | `sla` | SLA monitoring |
-| 40 | `sso` | OIDC SSO |
-| 41 | `stripe` | Stripe payments |
-| 42 | `suggestions` | Auto-suggestions |
-| 43 | `trash` | Trash/restore |
-| 44 | `trends` | Trending topics |
-| 45 | `usage` | Usage tracking |
-| 46 | `user` | User management |
-| 47 | `version_history` | Version history & diff |
-| 48 | `webhooks` | Webhook management |
-| 49 | `ws` | WebSocket endpoints |
+| 1 | `ab_testing` | A/B test management |
+| 2 | `admin` | Admin operations |
+| 3 | `ai_editor` | AI-powered editing tools |
+| 4 | `ai_keys` | BYOK API key management (CRUD + validate) |
+| 5 | `ai_suggestions` | Smart content suggestions |
+| 6 | `alerts` | Performance alerts |
+| 7 | `analytics` | Analytics & KPIs |
+| 8 | `attribution` | Attribution modeling |
+| 9 | `audience` | Audience insights |
+| 10 | `audit_logs` | Audit logging & export |
+| 11 | `auth` | Authentication (JWT, SSO) |
+| 12 | `automation` | Automation rules & triggers |
+| 13 | `categorization` | Smart categorization |
+| 14 | `collaboration` | Real-time collaboration |
+| 15 | `comments` | Comments v2 (threaded) |
+| 16 | `competitors` | Competitor analysis |
+| 17 | `content` | Content CRUD & import |
+| 18 | `dashboards` | Custom dashboards |
+| 19 | `distributions` | Distribution management |
+| 20 | `docs` | API documentation |
+| 21 | `engagement_prediction` | Engagement predictions |
+| 22 | `freshness` | Content freshness scoring |
+| 23 | `funnel` | Funnel tracking |
+| 24 | `health` | Health checks |
+| 25 | `init` | App initialization |
+| 26 | `integration_framework` | Integration hub |
+| 27 | `integrations` | External integrations |
+| 28 | `marketplace` | Plugin marketplace |
+| 29 | `notifications` | Notification management |
+| 30 | `organizations` | Organization management |
+| 31 | `performance` | Performance analytics |
+| 32 | `plugins` | Plugin system |
+| 33 | `presence` | WebSocket presence |
+| 34 | `projects` | Project management |
+| 35 | `quality_scoring` | Quality scoring |
+| 36 | `reports` | Report generation |
+| 37 | `retention` | Data retention policies |
+| 38 | `rss` | RSS feed management |
+| 39 | `saml` | SAML SSO |
+| 40 | `scheduler` | Scheduled publishing |
+| 41 | `search` | Full-text search |
+| 42 | `sentiment` | Sentiment analysis |
+| 43 | `sla` | SLA monitoring |
+| 44 | `sso` | OIDC SSO |
+| 45 | `stripe` | Stripe payments |
+| 46 | `suggestions` | Auto-suggestions |
+| 47 | `team_calendar` | Team content calendar |
+| 48 | `trash` | Trash/restore |
+| 49 | `trends` | Trending topics |
+| 50 | `usage` | Usage tracking |
+| 51 | `user` | User management |
+| 52 | `version_history` | Version history & diff |
+| 53 | `webhooks` | Webhook management |
+| 54 | `ws` | WebSocket endpoints |
 
-## Backend Services (34)
+## Backend Services (36)
 
 | Service | Description |
 |---------|-------------|
@@ -134,7 +139,7 @@ contentforge-ai/
 | `extraction_service` | Content extraction |
 | `freshness_service` | Content freshness scoring |
 | `funnel_service` | Conversion funnel analytics |
-| `groq_service` | Groq AI integration |
+| `ai_service` | AI content generation (BYOK, provider-agnostic) |
 | `integration_framework_service` | Integration hub management |
 | `integration_services` | External integrations |
 | `marketplace_service` | Plugin marketplace |
@@ -194,16 +199,18 @@ contentforge-ai/
 
 | Metric | Count |
 |--------|-------|
-| Total commits | 187 |
-| API routes | 375 (184 GET · 124 POST · 15 PUT · 15 PATCH · 37 DELETE) |
-| Router modules | 49 |
-| Backend services | 34 |
+| Total commits | 298 |
+| API routes | 427 (211 GET · 144 POST · 16 PUT · 17 PATCH · 39 DELETE) |
+| Router modules | 54 |
+| Backend services | 36 |
 | Middleware modules | 4 |
-| Backend Python LOC | 44,101 |
-| Frontend TypeScript/TSX LOC | 44,801 |
-| Frontend components | 73 |
+| Migrations | 20 (incl. BYOK api_keys) |
+| Backend Python LOC | 48,494 |
+| Frontend TypeScript/TSX LOC | 47,992 |
+| Frontend components | 59 |
 | Frontend pages | 16 |
-| Backend tests | 571 (530 passing · 41 skipped · 0 failing) |
+| Backend test files | 30 |
+| Integration tests | 13 |
 | Deep system tests | 163/164 (99.4%) |
 
 ## Team

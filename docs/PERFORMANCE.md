@@ -125,7 +125,7 @@ All API responses include the following headers for observability and client-sid
 | Authentication | 100–300ms | < 500ms | Depends on Supabase Auth |
 | Cached reads (analytics, content list) | 50–200ms | < 400ms | Cache hit assumed |
 | Content creation | 150–400ms | < 800ms | Database write |
-| AI generation | 2–10s | < 15s | Depends on Groq API |
+| AI generation | 2–10s | < 15s | Depends on AIService |
 
 ### Throughput Benchmarks
 
@@ -147,7 +147,7 @@ All API responses include the following headers for observability and client-sid
 
 | Dependency | Latency | Impact | Mitigation |
 |-----------|---------|--------|------------|
-| Groq API | 2–10s | High (asset generation) | Async processing, request queue |
+| AIService | 2–10s | High (asset generation) | Async processing, request queue |
 | Supabase Auth | 100–300ms | Medium (all auth endpoints) | Token caching, JWT validation |
 
 ### Database Operations

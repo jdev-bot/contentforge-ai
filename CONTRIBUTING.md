@@ -260,8 +260,8 @@ contentforge-ai/
 ├── src/
 │   ├── backend/          # FastAPI backend
 │   │   ├── app/
-│   │   │   ├── routers/  # 49 router modules, 375 API routes
-│   │   │   ├── services/ # 34 service modules
+│   │   │   ├── routers/  # 54 router modules, 427 API routes
+│   │   │   ├── services/ # 36 service modules
 │   │   │   └── main.py   # App entry point
 │   │   └── tests/        # 530+ tests
 │   └── frontend/         # Next.js frontend

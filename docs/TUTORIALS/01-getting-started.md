@@ -35,7 +35,7 @@ ContentForge AI supports a fully self-hosted deployment. If you prefer to run ev
 
 1. **Database**: Use self-hosted Supabase or a standalone PostgreSQL instance
 2. **Cache**: Run Redis locally (`docker run -p 6379:6379 redis:alpine`)
-3. **AI Provider**: Configure your own Groq API key (or swap the `GroqService` for another LLM provider)
+3. **AI Provider**: Configure your own AIService key (or swap the `AIService` for another LLM provider)
 4. **Runner**: Use the provided Dockerfile at `infra/docker/Dockerfile.backend`
 
 See [Deployment Guide](../DEPLOYMENT.md) for full self-hosted setup instructions.

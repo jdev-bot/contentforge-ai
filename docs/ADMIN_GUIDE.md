@@ -31,7 +31,7 @@
 | Node.js | v22.22.2 | Frontend runtime |
 | FastAPI | Latest | Backend API framework |
 | Next.js | 14 | Frontend framework |
-| Groq GLM-5.1 | — | AI content generation |
+| AIService (provider-agnostic) | — | AI content generation |
 | Supabase | — | PostgreSQL + Auth |
 | Redis | — | Caching + Celery queue |
 

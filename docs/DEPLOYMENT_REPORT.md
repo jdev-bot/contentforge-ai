@@ -32,7 +32,7 @@ The ContentForge AI production deployment preparation is **COMPLETE**. All code 
 | Component | Status | Path |
 |-----------|--------|------|
 | Backend API | ✅ Ready | `src/backend/` - FastAPI with 25+ routers |
-| Frontend | ✅ Ready | `src/frontend/` - Next.js 16.2.3 |
+| Frontend | ✅ Ready | `src/frontend/` - Next.js 14.2.3 |
 | Render Config | ✅ Ready | `render.yaml` - Blueprint with 4 services |
 | Vercel Config | ✅ Ready | `vercel.json` - Next.js deployment config |
 | Docker | ✅ Ready | `infra/docker/Dockerfile.backend` |

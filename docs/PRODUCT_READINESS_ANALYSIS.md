@@ -56,14 +56,14 @@ ContentForge AI has passed all quality gates and is production-ready. All P0–P
 
 | Dimension | Status | Details |
 |-----------|--------|---------|
-| Backend (FastAPI) | ✅ Production | 375 routes, 49 routers, 34 services |
+| Backend (FastAPI) | ✅ Production | 427 routes, 49 routers, 34 services |
 | Frontend (Next.js) | ✅ Production | React 19, TypeScript strict |
 | Database (Supabase) | ✅ Production | RLS, migrations, backups |
 | Background tasks | ✅ Production | Celery + Redis |
 | Caching | ✅ Production | Redis + in-memory on 9 endpoints |
 | Real-time | ✅ Production | WebSocket support |
 | File storage | ✅ Production | Cloudflare R2 |
-| AI integration | ✅ Production | Groq API |
+| AI integration | ✅ Production | AIService |
 | Authentication | ✅ Production | Supabase Auth + JWT + SSO/SAML |
 | Monitoring | ✅ Production | Health checks, response time headers |
 

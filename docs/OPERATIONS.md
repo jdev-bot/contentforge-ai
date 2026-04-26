@@ -358,7 +358,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 4. Rollback if needed
 5. Apply hotfix
 
-### Groq API Failures
+### AIService Failures
 
 **Diagnosis:**
 ```bash

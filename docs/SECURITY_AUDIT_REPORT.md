@@ -228,7 +228,7 @@ All workflows use `${{ secrets.* }}` properly. ✅
 | Destination | Purpose | Auth Method | Risk |
 |-------------|---------|-------------|------|
 | Supabase | Database, Auth | API key (service role key) | ✅ Expected |
-| Groq API | AI/LLM inference | API key from env (backend only) | ✅ Expected |
+| AIService | AI/LLM inference | API key from env (backend only) | ✅ Expected |
 | Stripe API | Payment processing | Secret key from env | ✅ Expected |
 | Resend API | Email delivery | API key from env | ✅ Expected |
 | n8n Webhook | Workflow callbacks | HMAC-SHA256 signature | ✅ Expected |
@@ -293,7 +293,7 @@ All workflows use `${{ secrets.* }}` properly. ✅
 | C1 | `pickle.loads` deserialization in `cache.py` | Replaced with JSON serialization | `json.dumps().encode('utf-8')` / `json.loads(value.decode('utf-8'))` — all cache values must be JSON-serializable |
 | C2 | `dangerouslySetInnerHTML` on RSS content | DOMPurify sanitization before rendering | `DOMPurify.sanitize(entry.content)` with max length limit of 2000 chars; sandboxed iframe alternative available |
 | H3 | Redis without authentication | `requirepass` configured | `redis-server --requirepass ${REDIS_PASSWORD}`; `REDIS_URL` updated to include password |
-| H4 | Groq API key in frontend | Moved to backend-only | Removed `NEXT_PUBLIC_GROQ_API_KEY`; frontend proxies through `/api/v1/ai/*` endpoints |
+| H4 | AIService key in frontend | Moved to backend-only | Removed `NEXT_PUBLIC_GROQ_API_KEY`; frontend proxies through `/api/v1/ai/*` endpoints |
 | H6 | `python-jose` unmaintained | Migrated to `PyJWT` | `jwt.encode()`/`jwt.decode()` from `PyJWT` package; HS256 algorithm retained |
 | H7 | `hashlib.md5` for cache keys | Replaced with `hashlib.sha256` | `hashlib.sha256(":".join(key_parts).encode()).hexdigest()` |
 
@@ -346,7 +346,7 @@ All 9 HIGH/CRITICAL findings have been resolved:
 1. ✅ `pickle` serialization replaced with JSON
 2. ✅ RSS HTML content sanitized with DOMPurify
 3. ✅ Redis authentication configured
-4. ✅ Groq API key moved to backend-only
+4. ✅ AIService key moved to backend-only
 5. ✅ `.env.production` removed from git tracking
 6. ✅ `python-jose` replaced with `PyJWT`
 7. ✅ `hashlib.md5` replaced with `hashlib.sha256`

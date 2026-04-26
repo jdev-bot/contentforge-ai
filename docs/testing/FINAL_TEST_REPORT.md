@@ -16,7 +16,7 @@
 | **Security Findings** | 9 found, 9 fixed |
 | **Performance Optimization** | Complete |
 | **Feature Completion** | P0–P4 complete |
-| **API Routes** | 375 across 49 router modules |
+| **API Routes** | 375 across 54 router modules |
 | **Backend Services** | 34 |
 | **Frontend Components** | 73 |
 | **Frontend Pages** | 16 |
@@ -63,7 +63,7 @@ The single non-passing deep system test is a non-blocking edge case involving a 
 
 | Test Category | Pass | Fail | Notes |
 |---------------|------|------|-------|
-| API endpoint validation | ✅ | — | All 375 routes verified |
+| API endpoint validation | ✅ | — | All 427 routes verified |
 | Service layer | ✅ | — | 34 services tested |
 | Database operations | ✅ | — | All CRUD operations |
 | Authentication flow | ✅ | — | JWT + Supabase auth |
@@ -213,7 +213,7 @@ Previous issues addressed:
 
 ### API Documentation Coverage
 
-375 API routes across 49 router modules fully documented.
+427 API routes across 54 router modules fully documented.
 
 ---
 

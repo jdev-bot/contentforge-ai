@@ -1,6 +1,6 @@
 # ContentForge AI - Features Guide
 
-> Complete guide to all platform features across 49 router modules and 375 API routes
+> Complete guide to all platform features across 54 router modules and 427 API routes
 
 ---
 
@@ -78,11 +78,11 @@
 
 The Smart Content Editor is an AI-powered tool that helps you transform and optimize your content for different purposes and platforms.
 
-**Router:** `ai_editor` | **Service:** `groq_service`, `extraction_service` | **Component:** `SmartEditor`
+**Router:** `ai_editor` | **Service:** `ai_service`, `extraction_service` | **Component:** `SmartEditor`
 
 ### Overview
 
-The editor uses Groq GLM-5.1 to rewrite, expand, condense, and optimize your content while maintaining your core message.
+The editor uses AIService (provider-agnostic) to rewrite, expand, condense, and optimize your content while maintaining your core message.
 
 ### Features
 
@@ -801,7 +801,7 @@ The ContentForge SDK provides a typed client library (Python and TypeScript) for
 
 ### Key Endpoints
 
-SDK wraps all 375 API routes with type-safe clients.
+SDK wraps all 427 API routes with type-safe clients.
 
 ### Usage Notes
 
