@@ -33,10 +33,10 @@ const PROVIDERS = [
 type ProviderId = (typeof PROVIDERS)[number]['id']
 
 interface APIKeysTabProps {
-  userId: string
+  userId?: string
 }
 
-export default function APIKeysTab({ userId: _userId }: APIKeysTabProps) {
+export default function APIKeysTab(_props?: APIKeysTabProps) {
   const [keys, setKeys] = useState<APIKey[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -145,7 +145,7 @@ export default function APIKeysTab({ userId: _userId }: APIKeysTabProps) {
         <div>
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Key className="h-5 w-5 text-amber-600" />
-            API Keys
+            AI Provider Keys
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Bring your own API key — use your own provider account for AI features.

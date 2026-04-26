@@ -12,15 +12,13 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
 import { PageHeader } from '@/components/ui/PageHeader'
 import SubscriptionModal from './SubscriptionModal'
+import APIKeysTab from './APIKeysTab'
 import { 
   User, 
   Key, 
   CreditCard, 
   CheckCircle, 
   AlertCircle,
-  Eye,
-  EyeOff,
-  Copy,
   Loader2,
   ExternalLink,
   Sparkles,
@@ -66,16 +64,6 @@ export default function SettingsTab({ user }: SettingsTabProps) {
   const [fullName, setFullName] = useState('')
   const [originalFullName, setOriginalFullName] = useState('')
   
-  // API Key visibility
-  const [showStripeKey, setShowStripeKey] = useState(false)
-  const [showGroqKey, setShowGroqKey] = useState(false)
-  
-  // Mock API keys (in production, these would be fetched from secure storage)
-  const [apiKeys] = useState({
-    stripe: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_live_•••••••••••••••••••••••••••••••••',
-    groq: '•••••••••••••••••••••••••••••••••', // Groq key is server-side only; never exposed to frontend
-  })
-
   useEffect(() => {
     loadSettings()
     loadStripeConfig()
@@ -120,7 +108,6 @@ export default function SettingsTab({ user }: SettingsTabProps) {
       setDeletionStatus(status)
     } catch (error) {
       // Deletion status endpoint may not exist yet, that's OK
-      // Deletion status not available
     }
   }
 
@@ -140,17 +127,6 @@ export default function SettingsTab({ user }: SettingsTabProps) {
     } finally {
       setSaving(false)
     }
-  }
-
-  const handleCopyKey = (key: string, label: string) => {
-    navigator.clipboard.writeText(key)
-    showToast(`${label} copied to clipboard`, 'success')
-  }
-
-  const maskKey = (key: string) => {
-    if (key.includes('•')) return key
-    if (key.length <= 8) return key
-    return `${key.slice(0, 8)}••••••••••••••••••••`
   }
 
   const handleManageSubscription = async () => {
@@ -500,7 +476,7 @@ export default function SettingsTab({ user }: SettingsTabProps) {
         </CardContent>
       </Card>
 
-      {/* API Keys */}
+      {/* API Keys — Real BYOK */}
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center gap-3 mb-6">
@@ -509,91 +485,11 @@ export default function SettingsTab({ user }: SettingsTabProps) {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">API Keys</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Manage your integration keys</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Manage your AI provider keys</p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            {/* Stripe Key */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Stripe Publishable Key
-              </label>
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <Input
-                    value={showStripeKey ? apiKeys.stripe : maskKey(apiKeys.stripe)}
-                    disabled
-                    className="font-mono text-sm"
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowStripeKey(!showStripeKey)}
-                >
-                  {showStripeKey ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleCopyKey(apiKeys.stripe, 'Stripe key')}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Used for payment processing
-              </p>
-            </div>
-
-            {/* Groq Key */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Groq API Key
-              </label>
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <Input
-                    value={showGroqKey ? apiKeys.groq : maskKey(apiKeys.groq)}
-                    disabled
-                    className="font-mono text-sm"
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowGroqKey(!showGroqKey)}
-                >
-                  {showGroqKey ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleCopyKey(apiKeys.groq, 'Groq key')}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Used for AI content generation
-              </p>
-            </div>
-
-            <div className="p-4 bg-blue-50 rounded-lg mt-4">
-              <p className="text-sm text-blue-700">
-                <strong>Note:</strong> These keys are read-only. To update them, modify your environment variables or contact support.
-              </p>
-            </div>
-          </div>
+          <APIKeysTab userId={user.id} />
         </CardContent>
       </Card>
 
