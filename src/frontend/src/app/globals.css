@@ -479,6 +479,11 @@ body {
   }
 }
 
+/* Global: Buttons must never wrap text to multiple lines */
+button {
+  white-space: nowrap;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
