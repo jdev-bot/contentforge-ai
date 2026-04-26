@@ -126,7 +126,6 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           'transition-all duration-200 ease-out',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
           'focus-visible:ring-blue-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900',
-          'overflow-hidden',
           'touch-manipulation',
           variants[variant],
           sizes[size],
