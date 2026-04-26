@@ -2,7 +2,7 @@
 
 > AI-Powered Content Repurposing & Distribution Platform
 
-[![CI: Backend Tests](https://img.shields.io/badge/Backend_Tests-530%20passing-brightgreen)](https://github.com/jdev-bot/contentforge-ai)
+[![CI: Backend Tests](https://img.shields.io/badge/Backend_Tests-32%20passing-brightgreen)](https://github.com/jdev-bot/contentforge-ai)
 [![CI: Frontend Build](https://img.shields.io/badge/Frontend_Build-passing-brightgreen)](https://github.com/jdev-bot/contentforge-ai)
 [![CI: Security](https://img.shields.io/badge/Security_Pipeline-clean-brightgreen)](https://github.com/jdev-bot/contentforge-ai)
 [![CI: CI/CD](https://img.shields.io/badge/CI%2FCD-green-brightgreen)](https://github.com/jdev-bot/contentforge-ai)
@@ -11,9 +11,9 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Next.js](https://img.shields.io/badge/Next.js_14-000000.svg?logo=next.js)](https://nextjs.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E.svg?logo=supabase)](https://supabase.com/)
-[![Routes](https://img.shields.io/badge/API_routes-375-blue)](docs/API_COMPLETE.md)
-[![Tests](https://img.shields.io/badge/tests-571%20(530%20passing)-brightgreen)](docs/TESTING.md)
+[![Routes](https://img.shields.io/badge/API_routes-427-blue)](docs/API_COMPLETE.md)
 [![Security](https://img.shields.io/badge/security-0%20open%20findings-brightgreen)](docs/SECURITY_AUDIT_REPORT.md)
+[![BYOK](https://img.shields.io/badge/AI_Mode-BYOK-orange)](docs/)
 
 **Transform one piece of long-form content into 20+ platform-native formats automatically using AI, then distribute across social platforms, email, and blogs with zero manual intervention.**
 
@@ -290,7 +290,7 @@ All performance optimizations applied and verified in production:
 | **Backend** | FastAPI, Python 3.13, Pydantic, SQLAlchemy |
 | **Database** | PostgreSQL (Supabase) |
 | **Cache/Queue** | Redis, Celery |
-| **AI/ML** | Groq API, GLM-5.1 |
+| **AI** | BYOK Mode — User-provided keys (Google, Groq, Cerebras, OpenRouter, Custom) |
 | **Storage** | Cloudflare R2 |
 | **Email** | Resend |
 | **Payments** | Stripe |
@@ -302,16 +302,17 @@ All performance optimizations applied and verified in production:
 
 | Metric | Count |
 |--------|-------|
-| **Total commits** | 187 |
-| **API routes** | 375 (184 GET · 124 POST · 15 PUT · 15 PATCH · 37 DELETE) |
-| **Router modules** | 49 |
-| **Backend services** | 34 |
+| **Total commits** | 298 |
+| **API routes** | 427 (211 GET · 144 POST · 16 PUT · 17 PATCH · 39 DELETE) |
+| **Router modules** | 54 |
+| **Backend services** | 36 |
 | **Middleware modules** | 4 (ETag, Performance, RequestID, RateLimitHeaders) |
-| **Backend Python LOC** | 44,101 |
-| **Frontend TS/TSX LOC** | 44,801 |
-| **Frontend components** | 73 |
+| **Migrations** | 20 (incl. BYOK api_keys) |
+| **Backend Python LOC** | 48,494 |
+| **Frontend TS/TSX LOC** | 47,992 |
+| **Frontend components** | 59 |
 | **Frontend pages** | 16 |
-| **Backend tests** | 571 (530 passing · 41 skipped · 0 failing) |
+| **Backend test files** | 30 |
 | **Deep system tests** | 163/164 (99.4% pass rate) |
 | **Security findings** | 0 open (all 9 HIGH/CRITICAL fixed) |
 

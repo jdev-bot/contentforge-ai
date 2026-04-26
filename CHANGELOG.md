@@ -5,6 +5,35 @@ All notable changes to ContentForge AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-04-26
+
+### Added — BYOK (Bring Your Own Key) & Settings UI Overhaul
+- **BYOK Architecture:** Per-user encrypted API keys (Google, Groq, Cerebras, OpenRouter, Custom)
+- **AIService:** Provider-agnostic LLM layer (renamed from GroqService)
+- **BYOKMiddleware:** JWT → user key lookup → context var for every AI request
+- **NoAPIKeyConfigured:** HTTPException(403) with `NO_API_KEY` code when no user key
+- **Migration 029:** `api_keys` table with RLS, unique `(user_id, provider)`
+- **AES-256-GCM encryption:** Auto-generated key for dev, `ENCRYPTION_KEY` env var for prod
+- **API Keys router:** 5 endpoints — CRUD + validate against provider `/models`
+- **APIKeysTab component:** Add/validate/delete keys with provider cards, `showHeader` prop
+- **SettingsClient:** Standalone `/settings` page with server auth
+- **Health check:** Shows `mode: "byok"` when no platform AI key configured
+
+### Changed — Settings UI
+- **Removed mock API keys:** No more hardcoded Stripe/Groq fake keys in Settings
+- **Generic labeling:** "AI Provider Keys" instead of Groq-specific branding
+- **Responsive mobile layouts:** Subscription, Export, Delete sections stack vertically on mobile
+- **Button component:** `whitespace-nowrap` + `inline-flex items-center` on content span, removed `overflow-hidden`
+- **Global CSS guard:** `button { white-space: nowrap; }` and `button svg { flex-shrink: 0; }`
+- **AI provider reference:** All references updated from `groq_service` to `ai_service`, `GroqService` to `AIService`
+
+### Fixed
+- **Settings page:** Fixed missing `SettingsClient` import, created standalone settings page
+- **Double header:** `APIKeysTab` `showHeader={false}` avoids duplicate card headers
+- **Button text wrapping:** Icon+text on same line in all buttons, no overflow clipping on mobile
+- **NoAPIKeyConfigured:** Properly re-raised as HTTPException(403) in all AI routers
+- **GroqService singleton:** Fixed instance creation (was referencing `llm_service` instead of `GroqService()`)
+
 ## [2.1.0] - 2026-04-14
 
 ### Added — Performance Optimizations

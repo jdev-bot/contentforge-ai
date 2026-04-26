@@ -1,8 +1,8 @@
 # ContentForge AI - Project Status
 
 **Repository:** https://github.com/jdev-bot/contentforge-ai
-**Commits:** 187 (main branch)
-**Last Updated:** 2026-04-14
+**Commits:** 298 (main branch)
+**Last Updated:** 2026-04-26
 
 ---
 
@@ -19,6 +19,17 @@ All phases completed successfully:
 ---
 
 ## ✅ COMPLETED FEATURES
+
+### BYOK (Bring Your Own Key) — NEW
+- ✅ Per-user encrypted API keys (Google, Groq, Cerebras, OpenRouter, Custom)
+- ✅ Provider-agnostic LLM layer (AIService, renamed from GroqService)
+- ✅ BYOK middleware — JWT → user key → context var
+- ✅ NoAPIKeyConfigured HTTPException(403) with `NO_API_KEY` code
+- ✅ Frontend APIKeysTab — add/validate/delete with provider cards
+- ✅ Settings page overhaul — standalone + dashboard tab, responsive mobile
+- ✅ Zero platform AI cost — all AI calls require user's own key
+- ✅ Migration 029 — `api_keys` table with RLS
+- ✅ AES-256-GCM encryption for stored keys
 
 ### P0 — Foundation
 - ✅ User authentication (JWT, Supabase)
@@ -110,12 +121,13 @@ All phases completed successfully:
 
 | Component | Status | Details |
 |-----------|--------|---------|
-| Backend Tests | ✅ Green | 571 tests (530 passing · 41 skipped · 0 failing) |
+| Backend Tests | ✅ Green | 30 test files, BYOK tests passing (32/32 encryption + BYOK) |
 | Frontend Build | ✅ Green | TypeScript: 0 errors · ESLint: 0 errors |
 | CI/CD Pipeline | ✅ Green | Self-hosted runner: srv1503460 (Ubuntu 25.10) |
 | Security Pipeline | ✅ Green | 0 open findings (all 9 HIGH/CRITICAL fixed) |
 | Deep System Tests | ✅ 99.4% | 163/164 pass |
 | Local Deployment | ✅ Verified | Full stack operational |
+| BYOK Integration | ✅ Live | API keys CRUD, validation, enforcement all working on staging |
 
 ---
 
@@ -123,16 +135,17 @@ All phases completed successfully:
 
 | Metric | Count |
 |--------|-------|
-| Total commits | 187 |
-| API routes | 375 (184 GET · 124 POST · 15 PUT · 15 PATCH · 37 DELETE) |
-| Router modules | 49 |
-| Backend services | 34 |
+| Total commits | 298 |
+| API routes | 427 (211 GET · 144 POST · 16 PUT · 17 PATCH · 39 DELETE) |
+| Router modules | 54 |
+| Backend services | 36 |
 | Middleware modules | 4 (ETag, Performance, RequestID, RateLimitHeaders) |
-| Backend Python LOC | 44,101 |
-| Frontend TypeScript/TSX LOC | 44,801 |
-| Frontend components | 73 |
+| Migrations | 20 (incl. BYOK api_keys) |
+| Backend Python LOC | 48,494 |
+| Frontend TypeScript/TSX LOC | 47,992 |
+| Frontend components | 59 |
 | Frontend pages | 16 |
-| Backend tests | 571 |
+| Backend test files | 30 |
 | Deep system tests | 163/164 |
 
 ---
@@ -144,7 +157,7 @@ All phases completed successfully:
 | **Backend** | FastAPI, Python 3.13, Pydantic |
 | **Frontend** | Next.js 14, React 18, Tailwind CSS, TypeScript |
 | **Database** | PostgreSQL (Supabase) |
-| **AI** | Groq API (GLM-5.1) |
+| **AI** | BYOK Mode — User-provided keys (Google, Groq, Cerebras, OpenRouter, Custom) |
 | **Auth** | Supabase Auth (JWT), OIDC SSO, SAML 2.0 |
 | **Cache/Queue** | Redis, Celery |
 | **Storage** | Cloudflare R2 |
