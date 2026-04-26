@@ -536,12 +536,12 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                         size="sm"
                         onClick={handleRestoreAccount}
                         disabled={restoreLoading}
-                        className="mt-3"
+                        className="mt-3 w-full sm:w-auto"
                       >
                         {restoreLoading ? (
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         ) : (
-                          <RefreshCw className="h-4 w-4 mr-2" />
+                          <RefreshCw className="h-4 w-4 mr-2 flex-shrink-0" />
                         )}
                         Restore Account
                       </Button>
@@ -566,12 +566,12 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                   variant="outline"
                   onClick={handleExportData}
                   disabled={exportLoading}
-                  className="sm:ml-4"
+                  className="sm:ml-4 w-full sm:w-auto"
                 >
                   {exportLoading ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
-                    <FileText className="h-4 w-4 mr-2" />
+                    <FileText className="h-4 w-4 mr-2 flex-shrink-0" />
                   )}
                   Export Data
                 </Button>
@@ -593,9 +593,9 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                   <Button
                     variant="danger"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="sm:ml-4"
+                    className="sm:ml-4 w-full sm:w-auto"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4 mr-2 flex-shrink-0" />
                     Delete Account
                   </Button>
                 </div>
