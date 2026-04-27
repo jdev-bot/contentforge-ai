@@ -478,7 +478,7 @@ async def predict_engagement(
     """
     try:
         # Check usage limits
-        await check_and_increment_usage(str(user.id), "engagement_prediction")
+        check_and_increment_usage(str(user.id))
 
         platform = request.platform.lower()
         if platform not in PLATFORM_CONFIG:
