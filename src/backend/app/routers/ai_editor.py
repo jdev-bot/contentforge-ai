@@ -17,8 +17,9 @@ from app.core.rate_limit import (
 from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 from app.services.ai_service import ai_service
+from app.core.byok_dependency import ensure_byok_context
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(ensure_byok_context)])
 
 
 class RewriteRequest(BaseModel):

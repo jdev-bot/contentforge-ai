@@ -22,6 +22,19 @@ _user_llm_service: contextvars.ContextVar[Optional[LLMService]] = contextvars.Co
     "_user_llm_service", default=None
 )
 
+# Fallback request-scoped storage for LLM service.
+# Starlette's BaseHTTPMiddleware creates a new anyio task for call_next(),
+# which breaks ContextVar propagation. ASGI scope["state"] survives across
+# task boundaries, so we store the service there as a fallback.
+# This dict maps request IDs (from X-Request-ID header or scope id) to services.
+_request_llm_services: dict[str, LLMService] = {}
+
+# Module-level variable that the BYOK dependency sets per-request.
+# This is set by ensure_byok_context() dependency (FastAPI Depends), which
+# runs in the same async context as the route handler.
+_current_request_service: contextvars.ContextVar[Optional[LLMService]] = contextvars.ContextVar(
+    "_current_request_service", default=None
+)
 
 from fastapi import HTTPException, status as http_status
 
@@ -52,15 +65,44 @@ def reset_user_llm_service(token: contextvars.Token) -> None:
     _user_llm_service.reset(token)
 
 
+def set_request_llm_service(request_id: str, svc: LLMService) -> None:
+    """Store the LLM service keyed by request ID for fallback lookup."""
+    _request_llm_services[request_id] = svc
+
+
+def clear_request_llm_service(request_id: str) -> None:
+    """Remove the LLM service for a request ID after the request completes."""
+    _request_llm_services.pop(request_id, None)
+
+
 def get_active_llm_service() -> LLMService:
     """Return the currently active LLM service.
 
-    Returns the per-user service if set. Raises NoAPIKeyConfigured
-    if no user key is available — there is no platform fallback.
+    Resolution order:
+    1. ContextVar (_user_llm_service) — set by BYOKMiddleware in pure ASGI mode
+    2. Current request service (_current_request_service) — set by ensure_byok_context dependency
+    3. Request ID lookup (_request_llm_services) — set by BYOKMiddleware as fallback
+
+    Raises NoAPIKeyConfigured if no user key is available.
     """
+    # 1. Check ContextVar (works in pure ASGI middleware)
     svc = _user_llm_service.get()
     if svc is not None:
         return svc
+
+    # 2. Check current request service (set by FastAPI dependency)
+    svc = _current_request_service.get()
+    if svc is not None:
+        return svc
+
+    # 3. Check request-scoped storage by request ID
+    # This is a fallback for cases where BaseHTTPMiddleware breaks ContextVar
+    if _request_llm_services:
+        # If there's only one service (common case), use it
+        if len(_request_llm_services) == 1:
+            return next(iter(_request_llm_services.values()))
+        logger.warning("BYOK: multiple request LLM services found, cannot disambiguate without request ID")
+
     # No user key configured — raise a descriptive error
     raise NoAPIKeyConfigured()
 

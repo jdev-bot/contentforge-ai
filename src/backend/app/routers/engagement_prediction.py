@@ -23,10 +23,11 @@ from app.core.rate_limit import (
 )
 from app.core.supabase import get_supabase_admin_client
 from app.routers.auth import get_auth_user
+from app.core.byok_dependency import ensure_byok_context
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/engagement-prediction", tags=["engagement-prediction"])
+router = APIRouter(prefix="/engagement-prediction", tags=["engagement-prediction"], dependencies=[Depends(ensure_byok_context)])
 
 
 # ============== Models ==============
