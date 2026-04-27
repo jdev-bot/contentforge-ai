@@ -51,9 +51,9 @@ const PRICING_TIERS: PricingTier[] = [
     cta: 'Upgrade to Pro',
   },
   {
-    name: 'Agency',
+    name: 'Enterprise',
     price: '$99',
-    description: 'For teams & agencies',
+    description: 'For teams & enterprises',
     icon: <Crown className="h-5 w-5 text-purple-500" />,
     features: [
       'Unlimited content generations',
@@ -64,7 +64,7 @@ const PRICING_TIERS: PricingTier[] = [
       'Team collaboration',
       'API access',
     ],
-    cta: 'Upgrade to Agency',
+    cta: 'Upgrade to Enterprise',
   },
 ]
 

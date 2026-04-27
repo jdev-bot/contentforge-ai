@@ -35,7 +35,7 @@ export default function UsageCounter({ onUpgrade }: UsageCounterProps) {
 
   const getTierIcon = (tier: string) => {
     switch (tier.toLowerCase()) {
-      case 'agency':
+      case 'enterprise':
         return <Crown className="h-4 w-4 text-purple-600" />
       case 'pro':
         return <Zap className="h-4 w-4 text-blue-600" />
@@ -47,7 +47,7 @@ export default function UsageCounter({ onUpgrade }: UsageCounterProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _getTierColor = (tier: string) => {
     switch (tier.toLowerCase()) {
-      case 'agency':
+      case 'enterprise':
         return 'bg-purple-50 text-purple-700 border-purple-200'
       case 'pro':
         return 'bg-blue-50 text-blue-700 border-blue-200'
@@ -141,7 +141,7 @@ export default function UsageCounter({ onUpgrade }: UsageCounterProps) {
         </div>
 
         {/* Upgrade prompt */}
-        {(isLimitReached || isApproachingLimit) && stats.subscription_tier !== 'agency' && (
+        {(isLimitReached || isApproachingLimit) && stats.subscription_tier !== 'enterprise' && (
           <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
             {isLimitReached ? (
               <div className="text-center">

@@ -69,12 +69,17 @@ SUBSCRIPTION_TIERS = {
         "can_upgrade": True,
         "features": ["basic_text_extraction", "1_project"],
     },
+    "starter": {
+        "monthly_limit": 50,
+        "can_upgrade": True,
+        "features": ["basic_text_extraction", "3_projects", "basic_ai"],
+    },
     "pro": {
         "monthly_limit": 100,
         "can_upgrade": True,
         "features": ["advanced_ai", "unlimited_projects", "analytics"],
     },
-    "agency": {
+    "enterprise": {
         "monthly_limit": float("inf"),  # Unlimited
         "can_upgrade": False,
         "features": [
@@ -94,8 +99,9 @@ _rate_limit_store: Dict[str, list] = defaultdict(list)
 # Subscription tier limits
 SUBSCRIPTION_LIMITS = {
     "free": 10,
+    "starter": 50,
     "pro": 100,
-    "agency": float("inf"),  # Unlimited
+    "enterprise": float("inf"),  # Unlimited
 }
 
 
@@ -106,7 +112,7 @@ def get_subscription_config(tier: str) -> dict:
 
 def is_unlimited_tier(tier: str) -> bool:
     """Check if the tier has unlimited usage."""
-    return tier.lower() == "agency"
+    return tier.lower() == "enterprise"
 
 
 class RateLimitExceededError(HTTPException):

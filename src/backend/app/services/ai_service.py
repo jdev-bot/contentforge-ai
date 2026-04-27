@@ -154,7 +154,7 @@ class AIService:
         return await self._svc.expand_content(*a, **kw)
 
     async def condense_content(self, *a, **kw):
-        return self._svc.condense_content(*a, **kw)
+        return await self._svc.condense_content(*a, **kw)
 
     async def optimize_content(self, *a, **kw):
         return await self._svc.optimize_content(*a, **kw)
