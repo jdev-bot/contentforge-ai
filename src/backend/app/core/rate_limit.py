@@ -22,7 +22,8 @@ from fastapi import Depends, HTTPException, Request, status as http_status
 from pydantic import BaseModel
 
 from app.core.config import get_settings
-from app.core.supabase import get_supabase_admin_client, get_supabase_client
+from app.core.supabase import get_supabase_admin_client
+from app.routers.auth import get_auth_user
 from app.tasks.email import send_usage_alert_task
 
 logger = logging.getLogger(__name__)
@@ -553,41 +554,16 @@ def check_subscription_limit(user_id: str, action: str = "content_creation"):
     return stats
 
 
-def enforce_subscription_limit(request: Request):
+def enforce_subscription_limit(user=Depends(get_auth_user)):
     """
     FastAPI dependency to enforce subscription limits on endpoints.
     Use this as a dependency for content creation and asset generation endpoints.
+
+    Requires get_auth_user to run first (as a Depends) to authenticate the user.
+    This avoids duplicating JWT verification and ensures consistent auth handling.
     """
-    auth_header = request.headers.get("authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(
-            status_code=http_status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    token = auth_header.replace("Bearer ", "")
-    supabase = get_supabase_client()
-
-    try:
-        user = supabase.auth.get_user(token)
-        if not user or not user.user:
-            raise HTTPException(
-                status_code=http_status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        user_id = str(user.user.id)
-        return check_subscription_limit(user_id)
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to check subscription: {str(e)}",
-        )
+    user_id = str(user.id)
+    return check_subscription_limit(user_id)
 
 
 class UsageTrackingMiddleware:
