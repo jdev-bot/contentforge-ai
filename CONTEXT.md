@@ -67,11 +67,23 @@
 | Password | `Test1234!` |
 | User ID | `9b2538b0-99e2-4e1e-8864-36ae7e6289a1` |
 
+## Bug Fix Verification (2026-04-28)
+
+All 3 bugs from Apr 27 are **fixed and verified** on staging:
+
+| Bug | Fix Commit | Verified |
+|-----|-----------|----------|
+| AI Condense missing await | `963204a` | ✅ No more coroutine error |
+| agency→enterprise enum | `963204a` | ✅ tier=pro, limit=1000, enum valid |
+| Engagement prediction wrong arity | `d483b9f` | ✅ 200 OK, score=61 |
+
+E2E: 12/16 pass. 4 failures are Google API 429 rate limits (external, not our bug).
+
 ## What's Next — Prioritized
 
 | # | Item | Priority | Notes |
 |---|------|----------|-------|
-| 1 | **Real API key** for full E2E BYOK test | High | Need Google AI Studio/Groq key |
+| 1 | **Re-run E2E after Google rate limit cools** | Medium | 4 endpoints hit 429 |
 | 2 | **Custom Vercel domain** | Low | |
 | 3 | **Render paid plan** — eliminate 30s cold starts | Low | $7/mo |
 | 4 | **Webhooks/API Keys CRUD backend** | Low | IntegrationsPanel shows empty state |
@@ -93,10 +105,10 @@
 
 ## Git HEAD
 
-- **Local/Remote:** `a00095d` (synced, pushed)
+- **Local/Remote:** `d483b9f` (synced, pushed)
 - **Render:** Auto-deploy from main
 - **Vercel:** Auto-deploy from main
 
 ---
 
-*Last updated: 2026-04-26 15:45 UTC*
+*Last updated: 2026-04-28 06:15 UTC*
