@@ -3,6 +3,7 @@ Organization management router with full CRUD and member management.
 """
 
 import asyncio
+import logging
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional
@@ -15,6 +16,7 @@ from app.core.supabase import get_supabase_admin_client, get_supabase_client
 from app.routers.auth import get_auth_user
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
+logger = logging.getLogger(__name__)
 
 
 class OrganizationRole(str, Enum):
@@ -58,7 +60,7 @@ class OrganizationResponse(OrganizationBase):
     id: UUID
     owner_id: UUID
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
     member_count: Optional[int] = None
     is_owner: Optional[bool] = None
 
@@ -133,6 +135,12 @@ def check_is_owner(supabase, org_id: str, user_id: str) -> bool:
 
 @router.post(
     "/", response_model=OrganizationResponse, status_code=http_status.HTTP_201_CREATED
+)
+@router.post(
+    "",
+    response_model=OrganizationResponse,
+    status_code=http_status.HTTP_201_CREATED,
+    include_in_schema=False,
 )
 async def create_organization(
     org_data: OrganizationCreate, user=Depends(get_auth_user)
@@ -210,24 +218,40 @@ async def list_organizations(
         owned_result, member_result = await asyncio.gather(
             asyncio.to_thread(fetch_owned),
             asyncio.to_thread(fetch_member_links),
+            return_exceptions=True,
         )
+        if isinstance(owned_result, Exception):
+            raise owned_result
+        if isinstance(member_result, Exception):
+            logger.warning(
+                "Organization member lookup failed for user %s: %s", user_id, member_result
+            )
+            member_org_ids = []
+        else:
+            member_org_ids = (
+                [m["org_id"] for m in member_result.data] if member_result.data else []
+            )
 
         # Get organizations where user is a member
-        member_org_ids = (
-            [m["org_id"] for m in member_result.data] if member_result.data else []
-        )
-
         # Fetch member orgs if any (separate from owned)
         member_orgs = []
         if member_org_ids:
-            member_orgs_result = (
-                supabase.table("organizations")
-                .select("*")
-                .in_("id", member_org_ids)
-                .order("created_at", desc=True)
-                .execute()
-            )
-            member_orgs = member_orgs_result.data if member_orgs_result.data else []
+            try:
+                member_orgs_result = (
+                    supabase.table("organizations")
+                    .select("*")
+                    .in_("id", member_org_ids)
+                    .order("created_at", desc=True)
+                    .execute()
+                )
+                member_orgs = member_orgs_result.data if member_orgs_result.data else []
+            except Exception as member_orgs_err:
+                logger.warning(
+                    "Organization detail lookup failed for user %s: %s",
+                    user_id,
+                    member_orgs_err,
+                )
+                member_orgs = []
 
         # Combine and deduplicate
         all_org_ids = set()
@@ -244,15 +268,22 @@ async def list_organizations(
         # Batch-fetch member counts to avoid N+1 queries
         member_counts: Dict[str, int] = {}
         if include_member_count and all_org_ids:
-            all_members_result = (
-                supabase.table("organization_members")
-                .select("org_id")
-                .in_("org_id", list(all_org_ids))
-                .execute()
-            )
-            for m in all_members_result.data or []:
-                oid = m["org_id"]
-                member_counts[oid] = member_counts.get(oid, 0) + 1
+            try:
+                all_members_result = (
+                    supabase.table("organization_members")
+                    .select("org_id")
+                    .in_("org_id", list(all_org_ids))
+                    .execute()
+                )
+                for m in all_members_result.data or []:
+                    oid = m["org_id"]
+                    member_counts[oid] = member_counts.get(oid, 0) + 1
+            except Exception as count_err:
+                logger.warning(
+                    "Organization member count lookup failed for user %s: %s",
+                    user_id,
+                    count_err,
+                )
 
         for org in all_orgs:
             is_owner = org["owner_id"] == user_id
