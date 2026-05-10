@@ -1122,6 +1122,24 @@ export interface ScheduleConflict {
   conflict_type: 'time' | 'platform'
 }
 
+function normalizeScheduledPost(raw: any): ScheduledPost {
+  const platforms = Array.isArray(raw?.platforms)
+    ? raw.platforms
+    : raw?.platform
+      ? [raw.platform]
+      : []
+  return {
+    ...raw,
+    platforms,
+  } as ScheduledPost
+}
+
+function normalizeScheduledPostList(raw: any): ScheduledPost[] {
+  const items = Array.isArray(raw) ? raw : (raw?.items || [])
+  if (!Array.isArray(items)) return []
+  return items.map((item: any) => normalizeScheduledPost(item))
+}
+
 export async function schedulePost(request: ScheduleRequest): Promise<ScheduledPost> {
     const response = await apiFetch(`${API_URL}/schedule`, {
     method: 'POST',
@@ -1133,7 +1151,8 @@ export async function schedulePost(request: ScheduleRequest): Promise<ScheduledP
     throw new Error(error.detail || 'Failed to schedule post')
   }
   
-  return response.json()
+  const data = await response.json()
+  return normalizeScheduledPost(data)
 }
 
 export async function getScheduledPosts(
@@ -1153,8 +1172,9 @@ export async function getScheduledPosts(
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch scheduled posts')
   }
-  
-  return response.json()
+
+  const data = await response.json()
+  return normalizeScheduledPostList(data)
 }
 
 export async function getScheduledPost(scheduleId: string): Promise<ScheduledPost> {
@@ -1165,7 +1185,8 @@ export async function getScheduledPost(scheduleId: string): Promise<ScheduledPos
     throw new Error(error.detail || 'Failed to fetch scheduled post')
   }
   
-  return response.json()
+  const data = await response.json()
+  return normalizeScheduledPost(data)
 }
 
 export async function updateScheduledPost(
@@ -1182,7 +1203,8 @@ export async function updateScheduledPost(
     throw new Error(error.detail || 'Failed to update scheduled post')
   }
   
-  return response.json()
+  const data = await response.json()
+  return normalizeScheduledPost(data)
 }
 
 export async function cancelScheduledPost(scheduleId: string): Promise<{ message: string }> {
@@ -1204,7 +1226,8 @@ export async function publishScheduledPost(scheduleId: string): Promise<Schedule
     throw new Error(error.detail || 'Failed to publish now')
   }
   
-  return response.json()
+  const data = await response.json()
+  return normalizeScheduledPost(data?.post || data)
 }
 
 export async function checkScheduleConflicts(
@@ -1234,7 +1257,8 @@ export async function getUpcomingPosts(limit: number = 5): Promise<ScheduledPost
     throw new Error(error.detail || 'Failed to fetch upcoming posts')
   }
   
-  return response.json()
+  const data = await response.json()
+  return normalizeScheduledPostList(data)
 }
 
 export async function duplicateSchedule(
@@ -1251,7 +1275,8 @@ export async function duplicateSchedule(
     throw new Error(error.detail || 'Failed to duplicate schedule')
   }
   
-  return response.json()
+  const data = await response.json()
+  return normalizeScheduledPost(data)
 }
 
 // ============ End Scheduled Publishing ============
@@ -2188,10 +2213,72 @@ export interface RSSStats {
   recent_entries_count: number
 }
 
+function normalizeRSSEntry(raw: any): RSSEntry {
+  const publishedAt = raw?.published_at || raw?.created_at || new Date().toISOString()
+  const createdAt = raw?.created_at || publishedAt
+  const description =
+    raw?.description ??
+    (typeof raw?.content === 'string' && raw.content.length > 0
+      ? raw.content.slice(0, 280)
+      : undefined)
+  return {
+    id: raw?.id,
+    feed_id: raw?.feed_id,
+    feed_name: raw?.feed_name || '',
+    title: raw?.title || '(Untitled entry)',
+    description,
+    content: raw?.content,
+    link: raw?.link || '#',
+    published_at: publishedAt,
+    author: raw?.author,
+    categories: Array.isArray(raw?.categories) ? raw.categories : [],
+    image_url: raw?.image_url,
+    is_imported: Boolean(raw?.is_imported ?? raw?.processed),
+    imported_as_content_id: raw?.imported_as_content_id || raw?.content_id,
+    created_at: createdAt,
+  }
+}
+
+function normalizeRSSEntryList(raw: any): RSSEntry[] {
+  const items = Array.isArray(raw) ? raw : (raw?.entries || [])
+  if (!Array.isArray(items)) return []
+  return items.map((entry: any) => normalizeRSSEntry(entry))
+}
+
+function normalizeRSSFeed(raw: any): RSSFeed {
+  const status = raw?.status
+  const fetchFrequency = raw?.fetch_frequency || raw?.frequency || 'daily'
+  return {
+    id: raw?.id,
+    name: raw?.name || '',
+    url: raw?.url || '',
+    frequency: fetchFrequency,
+    is_active: raw?.is_active ?? status === 'active',
+    last_fetched_at: raw?.last_fetched_at,
+    last_fetch_status:
+      raw?.last_fetch_status ??
+      (status === 'error' ? 'failed' : status === 'paused' ? 'pending' : 'success'),
+    entry_count: raw?.entry_count ?? 0,
+    created_at: raw?.created_at,
+    updated_at: raw?.updated_at,
+  }
+}
+
+function toRSSFeedPayload(feed: RSSFeedRequest | Partial<RSSFeedRequest>): Record<string, unknown> {
+  const frequency = feed.frequency || 'daily'
+  const fetchFrequency = frequency === 'hourly' || frequency === 'daily' ? frequency : 'daily'
+  return {
+    name: feed.name,
+    url: feed.url,
+    fetch_frequency: fetchFrequency,
+    status: feed.is_active === false ? 'paused' : 'active',
+  }
+}
+
 export async function addRSSFeed(feed: RSSFeedRequest): Promise<RSSFeed> {
-    const response = await apiFetch(`${API_URL}/rss/feeds`, {
+  const response = await apiFetch(`${API_URL}/rss/feeds`, {
     method: 'POST',
-    body: JSON.stringify(feed),
+    body: JSON.stringify(toRSSFeedPayload(feed)),
   })
   
   if (!response.ok) {
@@ -2199,24 +2286,27 @@ export async function addRSSFeed(feed: RSSFeedRequest): Promise<RSSFeed> {
     throw new Error(error.detail || 'Failed to add RSS feed')
   }
   
-  return response.json()
+  const data = await response.json()
+  return normalizeRSSFeed(data)
 }
 
 export async function getRSSFeeds(): Promise<RSSFeed[]> {
-    const response = await apiFetch(`${API_URL}/rss/feeds`)
+  const response = await apiFetch(`${API_URL}/rss/feeds`)
   
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch RSS feeds')
   }
-  
-  return response.json()
+
+  const data = await response.json()
+  const rawFeeds = Array.isArray(data) ? data : (data?.feeds || [])
+  return rawFeeds.map((feed: any) => normalizeRSSFeed(feed))
 }
 
 export async function updateRSSFeed(id: string, updates: Partial<RSSFeedRequest>): Promise<RSSFeed> {
-    const response = await apiFetch(`${API_URL}/rss/feeds/${id}`, {
+  const response = await apiFetch(`${API_URL}/rss/feeds/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify(updates),
+    body: JSON.stringify(toRSSFeedPayload(updates)),
   })
   
   if (!response.ok) {
@@ -2224,7 +2314,8 @@ export async function updateRSSFeed(id: string, updates: Partial<RSSFeedRequest>
     throw new Error(error.detail || 'Failed to update RSS feed')
   }
   
-  return response.json()
+  const data = await response.json()
+  return normalizeRSSFeed(data)
 }
 
 export async function deleteRSSFeed(id: string): Promise<void> {
@@ -2272,15 +2363,17 @@ export async function getRSSEntries(
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch RSS entries')
   }
-  
-  return response.json()
+
+  const data = await response.json()
+  return normalizeRSSEntryList(data)
 }
 
 export async function importRSSEntry(id: string, projectId?: string): Promise<Content> {
-    const body: { entry_id: string; project_id?: string } = { entry_id: id }
-  if (projectId) body.project_id = projectId
-  
-  const response = await apiFetch(`${API_URL}/rss/entries/import`, { method: 'POST', body: JSON.stringify(body) })
+  const url = projectId
+    ? `${API_URL}/rss/entries/${id}/import?project_id=${encodeURIComponent(projectId)}`
+    : `${API_URL}/rss/entries/${id}/import`
+
+  const response = await apiFetch(url, { method: 'POST' })
   
   if (!response.ok) {
     const error = await response.json()
@@ -2291,15 +2384,22 @@ export async function importRSSEntry(id: string, projectId?: string): Promise<Co
 }
 
 export async function bulkImportRSSEntries(entryIds: string[], projectId?: string): Promise<{ imported: number; failed: number; content_ids: string[] }> {
-    const response = await apiFetch(`${API_URL}/rss/entries/bulk-import`, { method: 'POST', body: JSON.stringify({ entry_ids: entryIds, project_id: projectId  }),
+  const response = await apiFetch(`${API_URL}/rss/entries/bulk-import`, {
+    method: 'POST',
+    body: JSON.stringify({ entry_ids: entryIds, project_id: projectId }),
   })
   
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to bulk import entries')
   }
-  
-  return response.json()
+
+  const data = await response.json()
+  return {
+    imported: data?.imported ?? data?.imported_count ?? 0,
+    failed: data?.failed ?? data?.failed_count ?? 0,
+    content_ids: Array.isArray(data?.content_ids) ? data.content_ids : [],
+  }
 }
 
 export async function getRSSStats(): Promise<RSSStats> {
@@ -2524,6 +2624,40 @@ export interface AuditLogStats {
   resource_distribution: Array<{ resource: string; count: number }>
 }
 
+function normalizeAuditLogsResponse(raw: any, filters?: AuditLogsFilters): AuditLogsResponse {
+  const logs = Array.isArray(raw) ? raw : (Array.isArray(raw?.logs) ? raw.logs : [])
+  const page = filters?.page ?? 1
+  const perPage = filters?.per_page ?? 20
+  const total = typeof raw?.total === 'number' ? raw.total : logs.length
+
+  return {
+    logs,
+    total,
+    page: typeof raw?.page === 'number' ? raw.page : page,
+    per_page: typeof raw?.per_page === 'number' ? raw.per_page : perPage,
+  }
+}
+
+function normalizeAuditLogStats(raw: any): AuditLogStats {
+  const actionDistribution = Array.isArray(raw?.action_distribution)
+    ? raw.action_distribution
+    : raw?.action_counts && typeof raw.action_counts === 'object'
+      ? Object.entries(raw.action_counts).map(([action, count]) => ({
+          action,
+          count: Number(count) || 0,
+        }))
+      : []
+
+  const total = Number(raw?.total) || 0
+  return {
+    total_actions_today: Number(raw?.total_actions_today) || total,
+    total_actions_week: Number(raw?.total_actions_week) || total,
+    top_actors: Array.isArray(raw?.top_actors) ? raw.top_actors : [],
+    action_distribution: actionDistribution,
+    resource_distribution: Array.isArray(raw?.resource_distribution) ? raw.resource_distribution : [],
+  }
+}
+
 export async function getAuditLogs(
   filters?: AuditLogsFilters
 ): Promise<AuditLogsResponse> {
@@ -2544,7 +2678,8 @@ export async function getAuditLogs(
     throw new Error(error.detail || 'Failed to fetch audit logs')
   }
 
-  return response.json()
+  const data = await response.json()
+  return normalizeAuditLogsResponse(data, filters)
 }
 
 export async function getAuditLogStats(): Promise<AuditLogStats> {
@@ -2555,7 +2690,8 @@ export async function getAuditLogStats(): Promise<AuditLogStats> {
     throw new Error(error.detail || 'Failed to fetch audit log stats')
   }
 
-  return response.json()
+  const data = await response.json()
+  return normalizeAuditLogStats(data)
 }
 
 export async function getAuditLogById(logId: string): Promise<AuditLogEntry> {

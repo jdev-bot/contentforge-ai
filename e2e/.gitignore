@@ -1,2 +1,4 @@
-e2e/test-artifacts/
+test-artifacts/
+test-results/
+playwright-report/
 node_modules/
